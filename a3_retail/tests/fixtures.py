@@ -8,6 +8,7 @@ the records it needs here instead of pulling in ERPNext's `_Test *` records
 """
 
 import frappe
+from frappe.utils import flt
 
 from a3_retail.setup.accounts import ensure_branch_cost_centers
 from a3_retail.setup.company import COMPANY_NAME
@@ -156,3 +157,36 @@ def ensure_sales_invoice(item_code: str = "ACC-TGL-A55", rate: float = 299) -> s
 	doc.insert(ignore_permissions=True)
 	doc.submit()
 	return doc.name
+
+
+def ensure_stock(item_code: str, warehouse: str, qty: float = 10, rate: float = 800) -> float:
+	"""Top a warehouse up to `qty` of an item via a Material Receipt.
+
+	Stock-moving tests cannot rely on the demo opening stock: ERPNext commits
+	while reposting the stock ledger, so quantities really are consumed as the
+	suite runs. Each test that moves stock provisions its own.
+	"""
+	current = flt(
+		frappe.db.get_value("Bin", {"item_code": item_code, "warehouse": warehouse}, "actual_qty")
+	)
+	shortfall = flt(qty) - current
+	if shortfall <= 0:
+		return current
+
+	entry = frappe.new_doc("Stock Entry")
+	entry.stock_entry_type = "Material Receipt"
+	entry.purpose = "Material Receipt"
+	entry.company = frappe.db.get_single_value("Global Defaults", "default_company")
+	entry.append(
+		"items",
+		{
+			"item_code": item_code,
+			"qty": shortfall,
+			"t_warehouse": warehouse,
+			"basic_rate": flt(rate),
+		},
+	)
+	entry.flags.ignore_permissions = True
+	entry.insert(ignore_permissions=True)
+	entry.submit()
+	return flt(qty)

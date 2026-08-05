@@ -68,10 +68,14 @@ def request_part(job_card: str, row_name: str, source: str = "auto",
 		source_branch = source_branch or find_branch_with_stock(row.item_code, shortfall, doc.branch)
 		source = "transfer" if source_branch else "purchase"
 
+	# An explicit request with stock already on hand still orders the full row
+	# quantity — the quantity moved can never be zero or negative.
+	request_qty = shortfall if shortfall > 0 else flt(row.qty)
+
 	if source == "transfer":
-		result = _raise_stock_request(doc, row, profile, source_branch, shortfall)
+		result = _raise_stock_request(doc, row, profile, source_branch, request_qty)
 	else:
-		result = _raise_material_request(doc, row, profile, shortfall)
+		result = _raise_material_request(doc, row, profile, request_qty)
 
 	_move_to_awaiting_parts(doc)
 	return result
@@ -104,12 +108,12 @@ def _raise_stock_request(doc, row, profile, source_branch: str, qty: float) -> d
 		# Request keeps the flow working rather than silently doing nothing.
 		return _raise_material_request(doc, row, profile, qty, purpose="Material Transfer")
 
-	source_profile = get_branch_profile(source_branch)
 	request = frappe.new_doc("Stock Request")
 	request.requesting_branch = doc.branch
 	request.requesting_warehouse = profile.service_warehouse
 	request.source_branch = source_branch
-	request.source_warehouse = source_profile.default_warehouse if source_profile else None
+	# Leave source_warehouse blank: Stock Request picks the branch warehouse that
+	# actually holds the part (a spare lives in the Service Bay, not the store).
 	request.purpose = "Service Job Card"
 	request.reference_job_card = doc.name
 	request.required_by = add_days(nowdate(), 2)

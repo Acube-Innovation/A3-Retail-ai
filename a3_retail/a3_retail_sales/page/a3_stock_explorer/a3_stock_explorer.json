@@ -1,0 +1,26 @@
+{
+ "content": null,
+ "creation": "2026-08-05 09:00:00.000000",
+ "docstatus": 0,
+ "doctype": "Page",
+ "idx": 0,
+ "modified": "2026-08-05 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "A3 Retail Sales",
+ "name": "a3-stock-explorer",
+ "owner": "Administrator",
+ "page_name": "a3-stock-explorer",
+ "roles": [
+  {"role": "Sales Executive"},
+  {"role": "Reception Executive"},
+  {"role": "Store Keeper"},
+  {"role": "Branch Manager"},
+  {"role": "Service Manager"},
+  {"role": "Technician"},
+  {"role": "A3 Retail Admin"},
+  {"role": "System Manager"}
+ ],
+ "standard": "Yes",
+ "system_page": 0,
+ "title": "Stock Explorer"
+}
