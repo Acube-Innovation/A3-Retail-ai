@@ -108,18 +108,16 @@ with how ERPNext v15 actually behaves. Each was resolved deliberately.
    warehouse tree lists 10. Kozhikode is "Sales Only" so it gets no Service Bay
    — 11 leaf warehouses result.
 
-8. **Store Keeper on Stock Entry** — see 5 above.
-
-9. **Material Request has no `branch` field.** The Branch accounting dimension is
+8. **Material Request has no `branch` field.** The Branch accounting dimension is
    only added to accounting doctypes, so parts requests are tied to a branch
    through the service warehouse instead. Assignments are guarded with
    `meta.has_field("branch")`.
 
-10. **Cancelling a Device Exchange now cancels its Purchase Receipt.** The scope
+9. **Cancelling a Device Exchange now cancels its Purchase Receipt.** The scope
     describes creating the receipt but never unwinding it; without this a
     reversed exchange left phantom used-device stock in the branch.
 
-11. **Pricing Rule priorities must differ.** The scope gives every campaign
+10. **Pricing Rule priorities must differ.** The scope gives every campaign
     priority 1. ERPNext resolves overlapping rules by priority and raises
     `MultiplePricingRuleConflict` when two of equal priority match one item, so
     the demo campaigns are seeded with distinct priorities.
