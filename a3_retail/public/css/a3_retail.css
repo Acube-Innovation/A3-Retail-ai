@@ -66,3 +66,20 @@
 	.a3-reception-body { grid-template-columns: 1fr; }
 	.a3-rail { order: -1; }
 }
+
+/* ---- Technician Workbench (scope 3.10) ---- */
+.a3-board { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 12px; align-items: flex-start; }
+.a3-column { flex: 0 0 270px; background: var(--bg-light-gray); border-radius: 8px; padding: 8px; }
+.a3-column-head { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .3px;
+	margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+.a3-jc-card { background: var(--fg-color); border: 1px solid var(--border-color); border-radius: 6px;
+	padding: 10px; margin-bottom: 8px; font-size: 12px; }
+.a3-jc-card.delayed { border-left: 3px solid var(--a3-red); }
+.a3-jc-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.a3-jc-complaint { margin: 5px 0; color: var(--text-color); }
+.a3-late { color: var(--a3-red); font-weight: 600; }
+.a3-jc-actions { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+.a3-jc-actions button { font-size: 11px; padding: 3px 8px; border: 1px solid var(--border-color);
+	background: var(--fg-color); border-radius: 4px; cursor: pointer; }
+.a3-jc-actions button:hover { background: var(--bg-light-gray); }
+.a3-jc-actions .a3-timer { border-color: var(--a3-brand); color: var(--a3-brand); font-weight: 600; }
