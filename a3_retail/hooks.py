@@ -107,6 +107,7 @@ doc_events = {
 			"a3_retail.overrides.sales_invoice.on_submit",
 			"a3_retail.a3_retail_sales.doctype.seasonal_offer_campaign.seasonal_offer_campaign.track_offer_consumption",
 			"a3_retail.a3_retail_finance.doctype.emi_application.emi_application.stamp_invoice_on_application",
+			"a3_retail.a3_retail_warranty.doctype.warranty_registration.warranty_registration.register_from_invoice",
 		],
 		"on_cancel": [
 			"a3_retail.overrides.sales_invoice.on_cancel",
@@ -158,8 +159,12 @@ scheduler_events = {
 		"a3_retail.api.portal.clear_expired_otps",
 		"a3_retail.a3_retail_sales.doctype.seasonal_offer_campaign.seasonal_offer_campaign.refresh_campaign_statuses",
 		"a3_retail.a3_retail_finance.doctype.emi_application.emi_application.nudge_stale_applications",
+		"a3_retail.a3_retail_warranty.doctype.warranty_registration.warranty_registration.recompute_statuses",
+		"a3_retail.a3_retail_warranty.doctype.warranty_registration.warranty_registration.send_renewal_reminders",
 	],
-	"weekly": [],
+	"weekly": [
+		"a3_retail.a3_retail_warranty.doctype.oem_warranty_return.oem_warranty_return.flag_overdue_returns",
+	],
 	"cron": {},
 }
 

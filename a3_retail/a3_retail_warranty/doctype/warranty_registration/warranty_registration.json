@@ -1,0 +1,534 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-08-05 09:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "registration_type",
+  "customer",
+  "customer_mobile",
+  "col_break_4",
+  "branch",
+  "branch_code",
+  "status",
+  "void_reason",
+  "device_section",
+  "serial_no",
+  "imei_1",
+  "item_code",
+  "item_name",
+  "col_break_5",
+  "brand",
+  "device_model",
+  "device_value",
+  "sales_invoice",
+  "purchase_date",
+  "brand_warranty_section",
+  "brand_warranty_months",
+  "col_break_6",
+  "brand_warranty_expiry",
+  "plan_section",
+  "ew_plan",
+  "plan_item",
+  "plan_amount",
+  "col_break_7",
+  "ew_start_date",
+  "ew_expiry_date",
+  "certificate_no",
+  "certificate_url",
+  "certificate_token_hash",
+  "claims_section",
+  "max_claims",
+  "claims_used",
+  "claim_value_used",
+  "col_break_8",
+  "claim_value_cap",
+  "deductible_amount",
+  "claims",
+  "renewal_section",
+  "renewal_reminder_sent",
+  "col_break_9",
+  "renewed_to",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "WR-.YY.-.#####",
+   "hidden": 1,
+   "default": "WR-.YY.-.#####"
+  },
+  {
+   "fieldname": "registration_type",
+   "fieldtype": "Select",
+   "label": "Type",
+   "options": "Brand Warranty Only\nExtended Warranty\nScreen Protection\nCombo\nAMC",
+   "reqd": 1,
+   "default": "Brand Warranty Only",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "label": "Customer",
+   "options": "Customer",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "customer_mobile",
+   "fieldtype": "Data",
+   "label": "Mobile",
+   "fetch_from": "customer.a3_mobile_no",
+   "read_only": 1
+  },
+  {
+   "fieldname": "col_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "branch",
+   "fieldtype": "Link",
+   "label": "Branch",
+   "options": "Branch",
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "branch_code",
+   "fieldtype": "Data",
+   "label": "Branch Code",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Active\nExpiring Soon\nExpired\nFully Claimed\nVoid\nTransferred\nCancelled",
+   "default": "Active",
+   "read_only": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "void_reason",
+   "fieldtype": "Select",
+   "label": "Void Reason",
+   "options": "\nPhysical Tampering\nThird-party Repair\nLiquid Damage (uncovered)\nIMEI Mismatch\nPlan Cancelled",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "device_section",
+   "fieldtype": "Section Break",
+   "label": "Device"
+  },
+  {
+   "fieldname": "serial_no",
+   "fieldtype": "Link",
+   "label": "Serial No (IMEI)",
+   "options": "Serial No",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "imei_1",
+   "fieldtype": "Data",
+   "label": "IMEI 1",
+   "read_only": 1
+  },
+  {
+   "fieldname": "item_code",
+   "fieldtype": "Link",
+   "label": "Item",
+   "options": "Item",
+   "read_only": 1
+  },
+  {
+   "fieldname": "item_name",
+   "fieldtype": "Data",
+   "label": "Item Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "col_break_5",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "brand",
+   "fieldtype": "Link",
+   "label": "Brand",
+   "options": "Brand",
+   "read_only": 1
+  },
+  {
+   "fieldname": "device_model",
+   "fieldtype": "Link",
+   "label": "Device Model",
+   "options": "Device Model",
+   "read_only": 1
+  },
+  {
+   "fieldname": "device_value",
+   "fieldtype": "Currency",
+   "label": "Device Value",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sales_invoice",
+   "fieldtype": "Link",
+   "label": "Sales Invoice",
+   "options": "Sales Invoice",
+   "reqd": 1
+  },
+  {
+   "fieldname": "purchase_date",
+   "fieldtype": "Date",
+   "label": "Purchase Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "brand_warranty_section",
+   "fieldtype": "Section Break",
+   "label": "Brand Warranty"
+  },
+  {
+   "fieldname": "brand_warranty_months",
+   "fieldtype": "Int",
+   "label": "Brand Warranty (Months)"
+  },
+  {
+   "fieldname": "col_break_6",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "brand_warranty_expiry",
+   "fieldtype": "Date",
+   "label": "Brand Warranty Expiry",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "plan_section",
+   "fieldtype": "Section Break",
+   "label": "Extended Plan"
+  },
+  {
+   "fieldname": "ew_plan",
+   "fieldtype": "Link",
+   "label": "Plan",
+   "options": "Extended Warranty Plan",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "plan_item",
+   "fieldtype": "Link",
+   "label": "Plan Item",
+   "options": "Item",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "plan_amount",
+   "fieldtype": "Currency",
+   "label": "Plan Amount",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "col_break_7",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "ew_start_date",
+   "fieldtype": "Date",
+   "label": "EW Start",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "ew_expiry_date",
+   "fieldtype": "Date",
+   "label": "EW Expiry",
+   "read_only": 1,
+   "in_list_view": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "certificate_no",
+   "fieldtype": "Data",
+   "label": "Certificate No",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "certificate_url",
+   "fieldtype": "Data",
+   "label": "Certificate Link",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "certificate_token_hash",
+   "fieldtype": "Data",
+   "label": "Certificate Token",
+   "read_only": 1,
+   "hidden": 1,
+   "no_copy": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "claims_section",
+   "fieldtype": "Section Break",
+   "label": "Claims"
+  },
+  {
+   "fieldname": "max_claims",
+   "fieldtype": "Int",
+   "label": "Max Claims",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "claims_used",
+   "fieldtype": "Int",
+   "label": "Claims Used",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "claim_value_used",
+   "fieldtype": "Currency",
+   "label": "Claim Value Used",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "col_break_8",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "claim_value_cap",
+   "fieldtype": "Currency",
+   "label": "Claim Cap",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "deductible_amount",
+   "fieldtype": "Currency",
+   "label": "Deductible per Claim",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "claims",
+   "fieldtype": "Table",
+   "label": "Claim History",
+   "options": "Warranty Claim Log",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "renewal_section",
+   "fieldtype": "Section Break",
+   "label": "Renewal",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "renewal_reminder_sent",
+   "fieldtype": "Check",
+   "label": "Reminder Sent",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "col_break_9",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "renewed_to",
+   "fieldtype": "Link",
+   "label": "Renewed To",
+   "options": "Warranty Registration",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "options": "Warranty Registration",
+   "read_only": 1,
+   "no_copy": 1,
+   "print_hide": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-05 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "A3 Retail Warranty",
+ "name": "Warranty Registration",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 1,
+   "cancel": 1,
+   "amend": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "A3 Retail Admin",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 1,
+   "cancel": 1,
+   "amend": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Service Manager",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Branch Manager",
+   "permlevel": 0,
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Sales Executive",
+   "permlevel": 0,
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Reception Executive",
+   "permlevel": 0,
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Technician",
+   "permlevel": 0,
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Accounts Manager",
+   "permlevel": 0,
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Telecaller",
+   "permlevel": 0,
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  }
+ ],
+ "sort_field": "purchase_date",
+ "sort_order": "DESC",
+ "states": [],
+ "autoname": "naming_series:",
+ "is_submittable": 1,
+ "title_field": "customer",
+ "search_fields": "imei_1,customer,status",
+ "track_changes": 1,
+ "naming_rule": "By \"Naming Series\" field"
+}

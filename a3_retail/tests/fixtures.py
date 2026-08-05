@@ -114,3 +114,45 @@ def ensure_branch(branch_name: str = "Kochi", code: str | None = None):
 
 def ensure_all_branches() -> list:
 	return [ensure_branch(name, spec["code"]) for name, spec in BRANCHES.items()]
+
+
+def ensure_customer(mobile: str = "9847012345", name: str = "Rahul Krishnan") -> str:
+	"""A customer to hang test transactions off."""
+	existing = frappe.db.get_value("Customer", {"a3_mobile_no": mobile}, "name")
+	if existing:
+		return existing
+
+	doc = frappe.new_doc("Customer")
+	doc.customer_name = name
+	doc.customer_type = "Individual"
+	doc.customer_group = frappe.db.get_value("Customer Group", {"is_group": 0}, "name")
+	doc.territory = frappe.db.get_value("Territory", {"is_group": 0}, "name")
+	doc.a3_mobile_no = mobile
+	doc.flags.ignore_permissions = True
+	doc.flags.ignore_mandatory = True
+	doc.insert(ignore_permissions=True)
+	return doc.name
+
+
+def ensure_sales_invoice(item_code: str = "ACC-TGL-A55", rate: float = 299) -> str:
+	"""A submitted invoice for tests that need one to link against.
+
+	Uses an accessory so the device-serial guard (step 12) does not apply.
+	"""
+	existing = frappe.db.get_value("Sales Invoice", {"docstatus": 1}, "name")
+	if existing:
+		return existing
+
+	branch = ensure_branch("Kochi", "KCH")
+	doc = frappe.new_doc("Sales Invoice")
+	doc.customer = ensure_customer()
+	doc.company = branch.company
+	doc.branch = branch.branch
+	doc.set_warehouse = branch.default_warehouse
+	doc.update_stock = 0
+	doc.append("items", {"item_code": item_code, "qty": 1, "rate": rate})
+	doc.flags.ignore_permissions = True
+	doc.flags.ignore_mandatory = True
+	doc.insert(ignore_permissions=True)
+	doc.submit()
+	return doc.name

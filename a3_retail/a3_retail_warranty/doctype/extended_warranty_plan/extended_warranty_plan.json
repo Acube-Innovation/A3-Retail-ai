@@ -1,0 +1,358 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-08-05 09:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "plan_name",
+  "plan_item",
+  "coverage_type",
+  "duration_months",
+  "col_break_1",
+  "starts_from",
+  "waiting_period_days",
+  "sale_window_days",
+  "is_active",
+  "is_transferable",
+  "pricing_section",
+  "plan_price",
+  "price_percent_of_device",
+  "min_device_value",
+  "max_device_value",
+  "col_break_2",
+  "max_claims",
+  "claim_value_cap_percent",
+  "deductible_amount",
+  "eligibility_section",
+  "eligible_item_groups",
+  "eligible_brands",
+  "col_break_3",
+  "underwriter",
+  "technician_incentive",
+  "sales_incentive",
+  "coverage_section",
+  "coverage_items",
+  "exclusions",
+  "terms"
+ ],
+ "fields": [
+  {
+   "fieldname": "plan_name",
+   "fieldtype": "Data",
+   "label": "Plan Name",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "plan_item",
+   "fieldtype": "Link",
+   "label": "Sellable Item",
+   "options": "Item",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "coverage_type",
+   "fieldtype": "Select",
+   "label": "Coverage Type",
+   "options": "Extended Warranty\nScreen Protection\nAccidental & Liquid Damage\nCombo (EW + Screen)\nTheft Protection",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "duration_months",
+   "fieldtype": "Int",
+   "label": "Duration (Months)",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "col_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "starts_from",
+   "fieldtype": "Select",
+   "label": "Coverage Starts",
+   "options": "Date of Purchase\nAfter Brand Warranty Expiry",
+   "default": "Date of Purchase"
+  },
+  {
+   "fieldname": "waiting_period_days",
+   "fieldtype": "Int",
+   "label": "Waiting Period (Days)"
+  },
+  {
+   "fieldname": "sale_window_days",
+   "fieldtype": "Int",
+   "label": "Must Be Sold Within (days)",
+   "default": "15"
+  },
+  {
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "label": "Active",
+   "default": "1"
+  },
+  {
+   "fieldname": "is_transferable",
+   "fieldtype": "Check",
+   "label": "Transferable"
+  },
+  {
+   "fieldname": "pricing_section",
+   "fieldtype": "Section Break",
+   "label": "Pricing & Limits"
+  },
+  {
+   "fieldname": "plan_price",
+   "fieldtype": "Currency",
+   "label": "Plan Price"
+  },
+  {
+   "fieldname": "price_percent_of_device",
+   "fieldtype": "Percent",
+   "label": "Price as % of Device"
+  },
+  {
+   "fieldname": "min_device_value",
+   "fieldtype": "Currency",
+   "label": "Min Device Value"
+  },
+  {
+   "fieldname": "max_device_value",
+   "fieldtype": "Currency",
+   "label": "Max Device Value"
+  },
+  {
+   "fieldname": "col_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "max_claims",
+   "fieldtype": "Int",
+   "label": "Max Claims Allowed",
+   "default": "1"
+  },
+  {
+   "fieldname": "claim_value_cap_percent",
+   "fieldtype": "Percent",
+   "label": "Claim Cap (% of device value)",
+   "default": "100"
+  },
+  {
+   "fieldname": "deductible_amount",
+   "fieldtype": "Currency",
+   "label": "Customer Deductible per Claim"
+  },
+  {
+   "fieldname": "eligibility_section",
+   "fieldtype": "Section Break",
+   "label": "Eligibility"
+  },
+  {
+   "fieldname": "eligible_item_groups",
+   "fieldtype": "Table MultiSelect",
+   "label": "Eligible Item Groups",
+   "options": "EMI Scheme Item Group"
+  },
+  {
+   "fieldname": "eligible_brands",
+   "fieldtype": "Table MultiSelect",
+   "label": "Eligible Brands",
+   "options": "EMI Scheme Brand"
+  },
+  {
+   "fieldname": "col_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "underwriter",
+   "fieldtype": "Link",
+   "label": "Underwriter / Partner",
+   "options": "Supplier"
+  },
+  {
+   "fieldname": "technician_incentive",
+   "fieldtype": "Currency",
+   "label": "Technician Incentive",
+   "permlevel": 1
+  },
+  {
+   "fieldname": "sales_incentive",
+   "fieldtype": "Currency",
+   "label": "Sales Incentive",
+   "permlevel": 1
+  },
+  {
+   "fieldname": "coverage_section",
+   "fieldtype": "Section Break",
+   "label": "Coverage"
+  },
+  {
+   "fieldname": "coverage_items",
+   "fieldtype": "Table",
+   "label": "Covered Components",
+   "options": "Warranty Coverage Item"
+  },
+  {
+   "fieldname": "exclusions",
+   "fieldtype": "Text Editor",
+   "label": "Exclusions"
+  },
+  {
+   "fieldname": "terms",
+   "fieldtype": "Link",
+   "label": "Terms & Conditions",
+   "options": "Terms and Conditions"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-05 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "A3 Retail Warranty",
+ "name": "Extended Warranty Plan",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "A3 Retail Admin",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Service Manager",
+   "permlevel": 0,
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Sales Executive",
+   "permlevel": 0,
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Branch Manager",
+   "permlevel": 0,
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Reception Executive",
+   "permlevel": 0,
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "A3 Retail Admin",
+   "permlevel": 1,
+   "read": 1,
+   "write": 1,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 0,
+   "export": 0,
+   "print": 0,
+   "email": 0,
+   "share": 0
+  },
+  {
+   "role": "Branch Manager",
+   "permlevel": 1,
+   "read": 1,
+   "write": 1,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 0,
+   "export": 0,
+   "print": 0,
+   "email": 0,
+   "share": 0
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "autoname": "field:plan_name",
+ "title_field": "plan_name",
+ "track_changes": 1,
+ "naming_rule": "By fieldname"
+}
