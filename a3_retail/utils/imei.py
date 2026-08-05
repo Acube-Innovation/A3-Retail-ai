@@ -50,16 +50,13 @@ def is_luhn_enforced() -> bool:
 
 
 def can_override_imei(user: str | None = None) -> bool:
-	"""True when the user holds one of the override roles configured in settings."""
-	# Demo seeding and data migrations set this flag: the scope document's own
-	# sample IMEIs are illustrative numbers that do not satisfy Luhn, and the
-	# spec explicitly allows an override for refurb/grey stock.
-	if frappe.flags.get("a3_bypass_imei_check"):
-		return True
+	"""True when the user holds one of the override roles configured in settings.
 
+	This only says the user is *allowed* to tick the override checkbox — it never
+	waives the check on its own, otherwise every System Manager typo would be
+	accepted silently.
+	"""
 	user = user or frappe.session.user
-	if user == "Administrator":
-		return True
 
 	override_roles = {"System Manager", "A3 Retail Admin"}
 	if frappe.db.exists("DocType", "A3 Retail Settings"):
@@ -71,8 +68,27 @@ def can_override_imei(user: str | None = None) -> bool:
 	return bool(override_roles & set(frappe.get_roles(user)))
 
 
-def enforce_imei(imei: str | None, fieldlabel: str = "IMEI", user: str | None = None) -> str:
-	"""Validate and return a normalised IMEI, throwing unless the user may override."""
+def bypass_active() -> bool:
+	"""Demo seeding and data migrations waive the check wholesale.
+
+	The scope document's own sample IMEIs are illustrative numbers that do not
+	satisfy Luhn, so the demo dataset is loaded with this flag set.
+	"""
+	return bool(frappe.flags.get("a3_bypass_imei_check"))
+
+
+def enforce_imei(
+	imei: str | None,
+	fieldlabel: str = "IMEI",
+	override: bool = False,
+	user: str | None = None,
+) -> str:
+	"""Validate and return a normalised IMEI.
+
+	`override` is the document's own override checkbox (scope 1.2: "allow bypass
+	with a System Manager-only checkbox for refurb stock with non-standard
+	IMEIs"). Ticking it requires an override role.
+	"""
 	value = normalize_imei(imei)
 	if not value:
 		return value
@@ -80,7 +96,15 @@ def enforce_imei(imei: str | None, fieldlabel: str = "IMEI", user: str | None = 
 	if validate_imei(value):
 		return value
 
-	if not is_luhn_enforced() or can_override_imei(user):
+	if bypass_active() or not is_luhn_enforced():
+		return value
+
+	if override:
+		if not can_override_imei(user):
+			frappe.throw(
+				_("Only {0} may override the IMEI check.").format("System Manager / A3 Retail Admin"),
+				frappe.PermissionError,
+			)
 		return value
 
 	frappe.throw(

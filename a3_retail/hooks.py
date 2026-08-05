@@ -84,6 +84,13 @@ doc_events = {
 		"on_update": "a3_retail.overrides.employee.on_update",
 		"on_trash": "a3_retail.overrides.employee.on_trash",
 	},
+	"Serial No": {
+		"before_insert": "a3_retail.overrides.serial_no.before_insert",
+		"validate": "a3_retail.overrides.serial_no.validate",
+	},
+	"Customer": {
+		"validate": "a3_retail.api.customer.validate_customer",
+	},
 }
 
 # ---------------------------------------------------------------------------
@@ -91,7 +98,9 @@ doc_events = {
 # ---------------------------------------------------------------------------
 scheduler_events = {
 	"hourly": [],
-	"daily": [],
+	"daily": [
+		"a3_retail.overrides.serial_no.recompute_warranty_state",
+	],
 	"weekly": [],
 	"cron": {},
 }

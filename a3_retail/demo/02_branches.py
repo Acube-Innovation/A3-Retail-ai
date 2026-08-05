@@ -3,6 +3,7 @@
 import frappe
 
 from a3_retail.setup.accounts import ensure_branch_cost_centers
+from a3_retail.utils.gst import normalize_gstin
 
 BRANCHES = [
 	{
@@ -53,7 +54,7 @@ BRANCHES = [
 	{"branch": "Head Office", "skip_profile": True},
 ]
 
-GSTIN = "32AABCM1234K1Z5"
+GSTIN = normalize_gstin("32AABCM1234K1Z5")
 
 
 def run():

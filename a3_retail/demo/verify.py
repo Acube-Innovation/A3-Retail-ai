@@ -107,6 +107,55 @@ def _branch_managers():
 	return count, count == 3
 
 
+# ---------------------------------------------------------------- step 4 checks
+@check("Items", ">= 19")
+def _items():
+	count = frappe.db.count("Item")
+	return count, count >= 19
+
+
+@check("Device items serialized", "0 problems")
+def _device_items_serialized():
+	rows = frappe.get_all("Item", filters={"a3_is_device": 1, "has_serial_no": 0}, pluck="name")
+	return len(rows), not rows
+
+
+@check("Duplicate IMEIs", "0")
+def _duplicate_imei():
+	rows = frappe.db.sql(
+		"""select a3_imei_1, count(*) c from `tabSerial No`
+		   where ifnull(a3_imei_1,'') != '' group by a3_imei_1 having c > 1"""
+	)
+	return len(rows), not rows
+
+
+@check("Duplicate customer mobiles", "0")
+def _duplicate_mobile():
+	rows = frappe.db.sql(
+		"""select a3_mobile_no, count(*) c from `tabCustomer`
+		   where ifnull(a3_mobile_no,'') != '' group by a3_mobile_no having c > 1"""
+	)
+	return len(rows), not rows
+
+
+@check("Customers", ">= 8")
+def _customers():
+	count = frappe.db.count("Customer")
+	return count, count >= 8
+
+
+@check("Suppliers", ">= 8")
+def _suppliers():
+	count = frappe.db.count("Supplier")
+	return count, count >= 8
+
+
+@check("Device Models", ">= 6")
+def _device_models():
+	count = frappe.db.count("Device Model")
+	return count, count >= 6
+
+
 def run(verbose: bool = True):
 	"""Execute every registered check; returns (passed, failed, rows)."""
 	rows = []

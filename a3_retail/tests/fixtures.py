@@ -12,11 +12,14 @@ import frappe
 from a3_retail.setup.accounts import ensure_branch_cost_centers
 from a3_retail.setup.company import COMPANY_NAME
 from a3_retail.setup.company import run as setup_company
+from a3_retail.utils.gst import normalize_gstin
+
+GSTIN = normalize_gstin("32AABCM1234K1Z5")
 
 BRANCHES = {
-	"Kochi": {"code": "KCH", "type": "Sales & Service", "hq": 1, "gstin": "32AABCM1234K1Z5"},
-	"Thiruvananthapuram": {"code": "TVM", "type": "Sales & Service", "hq": 0, "gstin": "32AABCM1234K1Z5"},
-	"Kozhikode": {"code": "CLT", "type": "Sales Only", "hq": 0, "gstin": "32AABCM1234K1Z5"},
+	"Kochi": {"code": "KCH", "type": "Sales & Service", "hq": 1, "gstin": GSTIN},
+	"Thiruvananthapuram": {"code": "TVM", "type": "Sales & Service", "hq": 0, "gstin": GSTIN},
+	"Kozhikode": {"code": "CLT", "type": "Sales Only", "hq": 0, "gstin": GSTIN},
 }
 
 
