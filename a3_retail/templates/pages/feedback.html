@@ -1,0 +1,68 @@
+{% extends "templates/web.html" %}
+{% block title %}{{ _("How did we do?") }}{% endblock %}
+
+{% block page_content %}
+<div class="a3-portal">
+	{% if error %}
+		<div class="a3-card a3-error"><h2>{{ _("Link not valid") }}</h2><p>{{ error }}</p></div>
+	{% elif already %}
+		<div class="a3-card a3-done"><h2>{{ _("Thank you") }}</h2>
+			<p>{{ _("We have already recorded your feedback for this repair.") }}</p></div>
+	{% else %}
+	<div class="a3-card">
+		<div class="a3-head"><div><h1>{{ _("How did we do?") }}</h1>
+			<div class="a3-muted">{{ job.name }} &middot; {{ job.device_model or "" }}</div></div></div>
+
+		<div class="a3-stars" id="a3-stars">
+			{% for value in [1, 2, 3, 4, 5] %}
+				<span data-value="{{ value }}">&#9733;</span>
+			{% endfor %}
+		</div>
+		<div class="a3-muted" id="a3-rating-label">{{ _("Tap a star") }}</div>
+
+		<label class="a3-muted" for="a3-nps">{{ _("How likely are you to recommend us? (0-10)") }}</label>
+		<input id="a3-nps" type="number" min="0" max="10" placeholder="0-10">
+		<textarea id="a3-comments" rows="3" placeholder="{{ _('Anything you would like to add?') }}"></textarea>
+		<button class="btn btn-primary btn-block" id="a3-submit">{{ _("Send feedback") }}</button>
+		<div id="a3-msg" class="a3-muted"></div>
+	</div>
+	{% endif %}
+</div>
+
+<script>
+(function () {
+	let rating = 0;
+	const labels = ["", "{{ _('Poor') }}", "{{ _('Fair') }}", "{{ _('Good') }}",
+		"{{ _('Very good') }}", "{{ _('Excellent') }}"];
+
+	document.querySelectorAll("#a3-stars span").forEach((star) => {
+		star.addEventListener("click", () => {
+			rating = parseInt(star.dataset.value, 10);
+			document.querySelectorAll("#a3-stars span").forEach((s) =>
+				s.classList.toggle("on", parseInt(s.dataset.value, 10) <= rating));
+			document.getElementById("a3-rating-label").textContent = labels[rating];
+		});
+	});
+
+	document.getElementById("a3-submit").addEventListener("click", async () => {
+		if (!rating) {
+			document.getElementById("a3-msg").textContent = "{{ _('Please tap a star first.') }}";
+			return;
+		}
+		try {
+			await frappe.call("a3_retail.api.portal.submit_feedback", {
+				token: "{{ token }}",
+				rating,
+				comments: document.getElementById("a3-comments").value,
+				nps: document.getElementById("a3-nps").value || null,
+			});
+			document.querySelector(".a3-card").innerHTML =
+				`<div class="a3-done"><h2>{{ _("Thank you") }}</h2>
+				 <p>{{ _("Your feedback goes straight to the branch manager.") }}</p></div>`;
+		} catch (e) {
+			document.getElementById("a3-msg").textContent = "{{ _('Could not save your feedback.') }}";
+		}
+	});
+})();
+</script>
+{% endblock %}

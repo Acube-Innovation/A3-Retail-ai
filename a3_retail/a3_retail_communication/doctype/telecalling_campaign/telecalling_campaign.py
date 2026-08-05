@@ -60,6 +60,7 @@ class TelecallingCampaign(Document):
 	@frappe.whitelist()
 	def generate_call_list(self, limit: int = 500) -> dict:
 		"""Build the queue and hand it out round-robin."""
+		self.check_permission("write")
 		if not self.get("assigned_team"):
 			frappe.throw(_("Add at least one telecaller to the team first."))
 

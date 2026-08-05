@@ -157,6 +157,11 @@ def _on_leave(employee: str, date) -> bool:
 @frappe.whitelist()
 def branch_attendance_summary(branch: str, from_date: str, to_date: str) -> dict:
 	"""Feeds the branch attendance card on the control tower."""
+	from a3_retail.api import require_branch_access, require_permission
+
+	require_permission("Attendance", "read")
+	require_branch_access(branch)
+
 	rows = frappe.db.sql(
 		"""
 		select status, count(*) as count from `tabAttendance`

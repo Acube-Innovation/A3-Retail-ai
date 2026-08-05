@@ -30,8 +30,10 @@ def lookup_customer(mobile_no: str) -> dict:
 
 @frappe.whitelist()
 def lookup_imei(imei: str) -> dict:
+	"""Device history for an IMEI — counter staff only, it exposes a customer."""
 	from a3_retail.overrides.serial_no import lookup_imei as _lookup
 
+	require_permission("Serial No", "read")
 	return _lookup(imei)
 
 

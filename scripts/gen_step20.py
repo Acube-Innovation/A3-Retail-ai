@@ -19,7 +19,8 @@ SOURCES = ("\nWalk Past\nGoogle\nInstagram / Facebook\nWhatsApp Offer\nFriend / 
            "Newspaper / Pamphlet\nExisting Customer\nOther")
 
 FEEDBACK_REF = "\nSales Invoice\nService Job Card\nIssue\nDelivery"
-FEEDBACK_CHANNELS = ("WhatsApp\nSMS Link\nIn-store Tablet\nPhone\nGoogle Review\nEmail")
+FEEDBACK_CHANNELS = ("WhatsApp\nSMS Link\nIn-store Tablet\nPhone\nGoogle Review\nEmail\n"
+                     "Web Portal")
 SENTIMENT = "Promoter\nPassive\nDetractor"
 
 print("Step 20 — footfall, CRM, helpdesk")

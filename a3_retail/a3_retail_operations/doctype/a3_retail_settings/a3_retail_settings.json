@@ -67,6 +67,9 @@
   "otp_max_requests_per_hour",
   "col_break_8",
   "payment_gateway_account",
+  "enable_online_payment",
+  "razorpay_key_id",
+  "razorpay_webhook_secret",
   "upi_vpa",
   "portal_terms",
   "hr_section",
@@ -425,6 +428,25 @@
    "fieldtype": "Link",
    "label": "Payment Gateway Account",
    "options": "Payment Gateway Account"
+  },
+  {
+   "fieldname": "enable_online_payment",
+   "fieldtype": "Check",
+   "label": "Enable Online Payment",
+   "default": "0",
+   "description": "Creates a Payment Request and portal link when a job card becomes Ready for Delivery."
+  },
+  {
+   "fieldname": "razorpay_key_id",
+   "fieldtype": "Data",
+   "label": "Razorpay Key ID",
+   "depends_on": "enable_online_payment"
+  },
+  {
+   "fieldname": "razorpay_webhook_secret",
+   "fieldtype": "Password",
+   "label": "Razorpay Webhook Secret",
+   "depends_on": "enable_online_payment"
   },
   {
    "fieldname": "upi_vpa",

@@ -40,6 +40,7 @@ A3_SCHEDULED_REPORTS = [
 # Includes
 # ---------------------------------------------------------------------------
 app_include_css = "/assets/a3_retail/css/a3_retail.css"
+web_include_css = "/assets/a3_retail/css/a3_portal.css"
 app_include_js = [
 	"/assets/a3_retail/js/a3_retail.js",
 	# POS is not a Form; the bundle patches cur_pos in place (scope 2.2).
@@ -131,6 +132,7 @@ doc_events = {
 		"on_update_after_submit": [
 			"a3_retail.a3_retail_operations.doctype.courier_dispatch.courier_dispatch.auto_draft_for_job_card",
 			"a3_retail.api.dashboard.notify",
+			"a3_retail.api.payments.request_on_ready_for_delivery",
 		],
 		"on_submit": "a3_retail.api.dashboard.notify",
 	},
@@ -191,6 +193,7 @@ doc_events = {
 # ---------------------------------------------------------------------------
 website_route_rules = [
 	{"from_route": "/approve-estimate/<token>", "to_route": "approve_estimate"},
+	{"from_route": "/track-service", "to_route": "track_service"},
 	{"from_route": "/warranty/<token>", "to_route": "warranty_certificate"},
 	{"from_route": "/feedback/<token>", "to_route": "feedback"},
 	{"from_route": "/pay/<token>", "to_route": "pay_online"},

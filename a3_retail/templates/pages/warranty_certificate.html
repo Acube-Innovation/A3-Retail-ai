@@ -1,0 +1,50 @@
+{% extends "templates/web.html" %}
+{% block title %}{{ _("Warranty Certificate") }}{% endblock %}
+
+{% block page_content %}
+<div class="a3-portal">
+	{% if error %}
+		<div class="a3-card a3-error"><h2>{{ _("Link not valid") }}</h2><p>{{ error }}</p></div>
+	{% else %}
+	<div class="a3-card">
+		<div class="a3-head">
+			<div><h1>{{ _("Warranty Certificate") }}</h1>
+				<div class="a3-muted">{{ registration.certificate_no or registration.name }}</div></div>
+			<div class="a3-status">{{ _(registration.status) }}</div>
+		</div>
+
+		<div class="a3-grid2">
+			<div><span class="a3-muted">{{ _("Device") }}</span><br>{{ registration.item_name or "-" }}</div>
+			<div><span class="a3-muted">{{ _("IMEI") }}</span><br>{{ registration.imei_1 or registration.serial_no or "-" }}</div>
+			<div><span class="a3-muted">{{ _("Purchased") }}</span><br>{{ frappe.format(registration.purchase_date, {"fieldtype": "Date"}) }}</div>
+			<div><span class="a3-muted">{{ _("Brand warranty till") }}</span><br>{{ frappe.format(registration.brand_warranty_expiry, {"fieldtype": "Date"}) }}</div>
+			{% if registration.ew_plan %}
+			<div><span class="a3-muted">{{ _("Plan") }}</span><br>{{ registration.ew_plan }}</div>
+			<div><span class="a3-muted">{{ _("Plan valid till") }}</span><br>{{ frappe.format(registration.ew_expiry_date, {"fieldtype": "Date"}) }}</div>
+			{% endif %}
+		</div>
+
+		{% if claims %}
+		<h3 class="a3-muted">{{ _("Claims used") }} ({{ registration.claims_used or 0 }} / {{ registration.max_claims or 1 }})</h3>
+		<table class="a3-table">
+			<thead><tr><th>{{ _("Job Card") }}</th><th>{{ _("Date") }}</th>
+				<th class="num">{{ _("Amount") }}</th><th>{{ _("Status") }}</th></tr></thead>
+			<tbody>
+			{% for claim in claims %}
+				<tr><td>{{ claim.job_card }}</td>
+					<td>{{ frappe.format(claim.claim_date, {"fieldtype": "Date"}) }}</td>
+					<td class="num">{{ frappe.format_value(claim.amount, {"fieldtype": "Currency"}) }}</td>
+					<td>{{ claim.status }}</td></tr>
+			{% endfor %}
+			</tbody>
+		</table>
+		{% endif %}
+
+		<div class="a3-terms">
+			{{ _("Physical damage, liquid ingress, unauthorised repair and tampered IMEI are excluded unless an accidental-damage plan is registered above.") }}
+		</div>
+		<a class="btn btn-primary btn-block" href="{{ print_url }}">{{ _("Download PDF") }}</a>
+	</div>
+	{% endif %}
+</div>
+{% endblock %}

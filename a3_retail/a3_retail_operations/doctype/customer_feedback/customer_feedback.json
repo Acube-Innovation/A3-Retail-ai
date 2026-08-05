@@ -76,7 +76,7 @@
    "fieldname": "channel",
    "fieldtype": "Select",
    "label": "Channel",
-   "options": "WhatsApp\nSMS Link\nIn-store Tablet\nPhone\nGoogle Review\nEmail",
+   "options": "WhatsApp\nSMS Link\nIn-store Tablet\nPhone\nGoogle Review\nEmail\nWeb Portal",
    "default": "WhatsApp"
   },
   {

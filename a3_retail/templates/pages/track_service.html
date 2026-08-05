@@ -1,0 +1,92 @@
+{% extends "templates/web.html" %}
+{% block title %}{{ _("Track your repair") }}{% endblock %}
+
+{% block page_content %}
+<div class="a3-portal">
+	<div class="a3-card">
+		<div class="a3-head"><div><h1>{{ _("Track your repair") }}</h1>
+			<div class="a3-muted">{{ _("Job card number or IMEI, and the mobile number you gave us.") }}</div></div></div>
+
+		<div id="a3-lookup">
+			<input id="a3-ref" placeholder="{{ _('Job card no. or IMEI') }}" value="{{ reference }}">
+			<input id="a3-mobile" inputmode="numeric" maxlength="10" placeholder="{{ _('Mobile number') }}">
+			<button class="btn btn-primary btn-block" id="a3-send">{{ _("Send OTP") }}</button>
+		</div>
+
+		<div id="a3-otp-box" style="display:none">
+			<input id="a3-otp" inputmode="numeric" maxlength="6" placeholder="{{ _('6-digit OTP') }}">
+			<button class="btn btn-primary btn-block" id="a3-verify">{{ _("Verify & track") }}</button>
+		</div>
+
+		<div id="a3-msg" class="a3-muted"></div>
+		<div id="a3-result" style="display:none"></div>
+	</div>
+</div>
+
+<script>
+(function () {
+	let otpToken = null;
+	const msg = (text, cls) => {
+		const box = document.getElementById("a3-msg");
+		box.className = cls || "a3-muted";
+		box.textContent = text;
+	};
+
+	document.getElementById("a3-send").addEventListener("click", async () => {
+		const mobile = document.getElementById("a3-mobile").value.trim();
+		try {
+			await frappe.call("a3_retail.api.portal.request_otp", { mobile_no: mobile, purpose: "Track Service" });
+			document.getElementById("a3-otp-box").style.display = "block";
+			msg("{{ _('We sent you a one-time password.') }}");
+		} catch (e) {
+			msg("{{ _('Could not send the OTP. Check the number and try again.') }}", "a3-error-text");
+		}
+	});
+
+	document.getElementById("a3-verify").addEventListener("click", async () => {
+		const mobile = document.getElementById("a3-mobile").value.trim();
+		const reference = document.getElementById("a3-ref").value.trim();
+		try {
+			const verified = await frappe.call("a3_retail.api.portal.verify_otp", {
+				mobile_no: mobile, otp: document.getElementById("a3-otp").value.trim(),
+				purpose: "Track Service",
+			});
+			otpToken = verified.message.token;
+			const result = await frappe.call("a3_retail.api.portal.track_service", {
+				reference, mobile_no: mobile, otp_token: otpToken,
+			});
+			render(result.message);
+			msg("");
+		} catch (e) {
+			msg("{{ _('We could not find that repair, or the OTP was wrong.') }}", "a3-error-text");
+		}
+	});
+
+	function render(job) {
+		const steps = job.timeline.map((s) =>
+			`<li class="${s.done ? "done" : ""} ${s.current ? "current" : ""}">${s.label}</li>`).join("");
+		document.getElementById("a3-lookup").style.display = "none";
+		document.getElementById("a3-otp-box").style.display = "none";
+		const box = document.getElementById("a3-result");
+		box.style.display = "block";
+		box.innerHTML = `
+			<div class="a3-grid2">
+				<div><span class="a3-muted">{{ _("Job card") }}</span><br>${job.job_card}</div>
+				<div><span class="a3-muted">{{ _("Status") }}</span><br><b>${job.status}</b></div>
+				<div><span class="a3-muted">{{ _("Device") }}</span><br>${job.device || "-"}</div>
+				<div><span class="a3-muted">{{ _("Branch") }}</span><br>${job.branch || "-"}</div>
+				<div><span class="a3-muted">{{ _("Received") }}</span><br>${job.received_on ? frappe.datetime.str_to_user(job.received_on) : "-"}</div>
+				<div><span class="a3-muted">{{ _("Expected") }}</span><br>${job.promised_on ? frappe.datetime.str_to_user(job.promised_on) : "-"}</div>
+			</div>
+			<ol class="a3-timeline">${steps}</ol>
+			<div class="a3-totals">
+				<div><span>{{ _("Amount") }}</span><span>${format_currency(job.amount)}</span></div>
+				<div><span>{{ _("Paid") }}</span><span>${format_currency(job.paid)}</span></div>
+				<div class="a3-grand"><span>{{ _("Outstanding") }}</span><span>${format_currency(job.outstanding)}</span></div>
+			</div>
+			${job.pay_url ? `<a class="btn btn-primary btn-block" href="${job.pay_url}">{{ _("Pay now") }}</a>` : ""}
+		`;
+	}
+})();
+</script>
+{% endblock %}

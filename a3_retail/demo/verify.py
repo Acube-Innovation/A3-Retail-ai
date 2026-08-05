@@ -315,6 +315,50 @@ def _control_tower_cross_check():
 	return "yes" if matches else "no", matches
 
 
+# --------------------------------------------------------------- step 26 checks
+@check("Portal pages", "9")
+def _portal_pages():
+	import os
+
+	folder = frappe.get_app_path("a3_retail", "templates", "pages")
+	pages = [name for name in os.listdir(folder) if name.endswith(".html")]
+	return len(pages), len(pages) >= 9
+
+
+@check("Demo seed scripts", "26")
+def _seed_scripts_present():
+	from a3_retail.demo.install import _seed_scripts
+
+	orders = [order for order, _name, _path in _seed_scripts()]
+	return len(orders), orders == [f"{index:02d}" for index in range(1, 27)]
+
+
+@check("Whitelisted methods guarded", "all")
+def _security_audit():
+	from a3_retail.setup.audit import run as audit_run
+
+	result = audit_run(verbose=False)
+	return f"{result['whitelisted']} checked", not result["unguarded"]
+
+
+@check("Sales invoices (60 days)", ">= 45")
+def _demo_sales():
+	count = frappe.db.count("Sales Invoice", {"docstatus": 1, "is_return": 0})
+	return count, count >= 45
+
+
+@check("Service job cards", ">= 60")
+def _demo_job_cards():
+	count = frappe.db.count("Service Job Card", {"docstatus": 1})
+	return count, count >= 60
+
+
+@check("Footfall visits", ">= 120")
+def _demo_visits():
+	count = frappe.db.count("Branch Visit Log")
+	return count, count >= 120
+
+
 def run(verbose: bool = True):
 	"""Execute every registered check; returns (passed, failed, rows)."""
 	rows = []

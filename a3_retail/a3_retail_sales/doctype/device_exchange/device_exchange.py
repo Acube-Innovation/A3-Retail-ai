@@ -318,6 +318,9 @@ def apply_to_invoice(exchange: str, sales_invoice: str) -> dict:
 @frappe.whitelist()
 def grading_template() -> list[dict]:
 	"""Default grading rows the counter fills in."""
+	from a3_retail.api import require_permission
+
+	require_permission("Device Exchange")
 	return [
 		{"parameter": "Display Condition", "deduction_percent": 0},
 		{"parameter": "Body Condition", "deduction_percent": 0},

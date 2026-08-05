@@ -87,6 +87,11 @@ def _setup_system_settings():
 	if not frappe.db.get_single_value("System Settings", "apply_strict_user_permissions"):
 		frappe.db.set_single_value("System Settings", "apply_strict_user_permissions", 1)
 
+	# A free-item pricing rule (scope 2.3 offers) appends a line for an item the
+	# customer may also have bought, so the same item legitimately appears twice.
+	if not frappe.db.get_single_value("Selling Settings", "allow_multiple_items"):
+		frappe.db.set_single_value("Selling Settings", "allow_multiple_items", 1)
+
 
 def _setup_accounting_dimension():
 	"""Create the Branch accounting dimension used for branch-wise P&L (ADR-01)."""

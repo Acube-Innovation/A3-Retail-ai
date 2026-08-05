@@ -55,6 +55,7 @@ class IncentiveCalculationRun(Document):
 	@frappe.whitelist()
 	def calculate(self) -> int:
 		"""Rebuild every employee row from live data."""
+		self.check_permission("write")
 		scheme = frappe.get_cached_doc("Employee Incentive Scheme", self.scheme)
 		employees = self.eligible_employees(scheme)
 
@@ -600,6 +601,7 @@ class IncentiveCalculationRun(Document):
 	@frappe.whitelist()
 	def post_to_payroll(self) -> int:
 		"""Create an Additional Salary per employee with a payout."""
+		self.check_permission("submit")
 		scheme = frappe.get_cached_doc("Employee Incentive Scheme", self.scheme)
 		component = scheme.payout_component or _default_component(self.company)
 		if not component:

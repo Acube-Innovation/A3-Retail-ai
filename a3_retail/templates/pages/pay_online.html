@@ -1,0 +1,62 @@
+{% extends "templates/web.html" %}
+{% block title %}{{ _("Pay online") }}{% endblock %}
+
+{% block page_content %}
+<div class="a3-portal">
+	{% if error %}
+		<div class="a3-card a3-error"><h2>{{ _("Link not valid") }}</h2><p>{{ error }}</p></div>
+	{% else %}
+	<div class="a3-card">
+		<div class="a3-head"><div><h1>{{ _("Pay online") }}</h1>
+			<div class="a3-muted">{{ payment.description }}</div></div></div>
+
+		<div class="a3-grid2">
+			<div><span class="a3-muted">{{ _("Customer") }}</span><br>{{ payment.customer }}</div>
+			<div><span class="a3-muted">{{ _("Branch") }}</span><br>{{ payment.branch or "-" }}</div>
+		</div>
+
+		<div class="a3-totals">
+			<div><span>{{ _("Already paid") }}</span><span>{{ frappe.format_value(payment.paid, {"fieldtype": "Currency"}) }}</span></div>
+			<div class="a3-grand"><span>{{ _("Amount due") }}</span>
+				<span>{{ frappe.format_value(payment.amount, {"fieldtype": "Currency"}) }}</span></div>
+		</div>
+
+		{% if payment.amount <= 0 %}
+			<div class="a3-done">{{ _("Nothing is outstanding. Thank you!") }}</div>
+		{% else %}
+			{% if payment.upi_uri %}
+			<a class="btn btn-primary btn-block" href="{{ payment.upi_uri }}">{{ _("Pay by UPI") }}</a>
+			{% endif %}
+			{% if payment.gateway_ready %}
+			<button class="btn btn-primary btn-block" id="a3-checkout">{{ _("Pay by card / netbanking") }}</button>
+			{% else %}
+			<div class="a3-muted" style="margin-top:10px">
+				{{ _("Card payments are not configured yet — please pay by UPI or at the counter.") }}
+			</div>
+			{% endif %}
+		{% endif %}
+		<div class="a3-terms">{{ _("Your receipt is issued automatically once the gateway confirms the payment.") }}</div>
+	</div>
+	{% endif %}
+</div>
+
+{% if payment and payment.gateway_ready %}
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+document.getElementById("a3-checkout").addEventListener("click", function () {
+	const rzp = new Razorpay({
+		key: "{{ payment.key_id }}",
+		amount: Math.round({{ payment.amount }} * 100),
+		currency: "INR",
+		name: "{{ frappe.db.get_single_value('Global Defaults', 'default_company') }}",
+		description: "{{ payment.description }}",
+		notes: {
+			reference_doctype: "{{ payment.reference_doctype }}",
+			reference_name: "{{ payment.reference_name }}",
+		},
+	});
+	rzp.open();
+});
+</script>
+{% endif %}
+{% endblock %}

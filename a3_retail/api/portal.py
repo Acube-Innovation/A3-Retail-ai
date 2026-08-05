@@ -10,7 +10,7 @@ import secrets
 
 import frappe
 from frappe import _
-from frappe.utils import add_to_date, cint, get_datetime, now_datetime
+from frappe.utils import add_to_date, cint, flt, get_datetime, now_datetime, nowdate
 
 from a3_retail.utils import commit_if_not_testing
 
@@ -187,3 +187,219 @@ def clear_expired_otps():
 	"""Daily — drop OTP rows older than a day."""
 	frappe.db.delete("Portal OTP", {"creation": ["<", add_to_date(now_datetime(), days=-1)]})
 	commit_if_not_testing()
+
+
+# ---------------------------------------------------------------------------
+# Track Service — /track-service (scope 13.1)
+# ---------------------------------------------------------------------------
+TIMELINE_STAGES = [
+	("Received", ("Open",)),
+	("Diagnosis", ("Under Diagnosis",)),
+	("Estimate", ("Estimate Pending", "Estimate Sent", "Estimate Approved", "Estimate Rejected")),
+	("Repair", ("Awaiting Parts", "In Progress", "QC Pending", "QC Failed")),
+	("Ready", ("Ready for Delivery",)),
+	("Delivered", ("Delivered", "Closed")),
+]
+
+
+@frappe.whitelist(allow_guest=True)
+def track_service(reference: str, mobile_no: str, otp_token: str) -> dict:
+	"""Live status for a job card, after the customer proves the mobile is theirs."""
+	session = verify_session_token(otp_token, "Track Service")
+	if not session:
+		frappe.throw(_("Verify the OTP sent to your mobile first."), frappe.PermissionError)
+
+	mobile = normalize_mobile(mobile_no)
+	if normalize_mobile(session["mobile"]) != mobile:
+		frappe.throw(_("This OTP belongs to a different number."), frappe.PermissionError)
+
+	reference = (reference or "").strip()
+	name = frappe.db.get_value(
+		"Service Job Card",
+		{"name": reference, "customer_mobile": mobile, "docstatus": ["<", 2]},
+		"name",
+	) or frappe.db.get_value(
+		"Service Job Card",
+		{"imei_1": reference, "customer_mobile": mobile, "docstatus": ["<", 2]},
+		"name",
+		order_by="creation desc",
+	)
+	if not name:
+		frappe.throw(_("No repair found for that reference and mobile number."))
+
+	job = frappe.get_doc("Service Job Card", name)
+	return {
+		"job_card": job.name,
+		"status": job.status,
+		"branch": job.branch,
+		"device": f"{job.brand or ''} {job.device_model or ''}".strip(),
+		"imei": job.imei_1,
+		"received_on": str(job.received_on or ""),
+		"promised_on": str(job.estimated_delivery_date or ""),
+		"delivered_on": str(job.delivered_on or ""),
+		"amount": flt(job.customer_payable),
+		"paid": flt(job.advance_amount),
+		"outstanding": flt(job.outstanding_amount),
+		"payment_status": job.payment_status,
+		"estimate": job.service_estimate,
+		"timeline": _timeline(job),
+		"pay_url": payment_link(job) if flt(job.outstanding_amount) > 0 else None,
+	}
+
+
+def _timeline(job) -> list[dict]:
+	reached = {row.to_status for row in job.get("status_log") or []} | {job.status}
+	timeline, passed = [], True
+	for label, statuses in TIMELINE_STAGES:
+		done = bool(reached & set(statuses))
+		current = job.status in statuses
+		timeline.append({"label": label, "done": done, "current": current})
+		if current:
+			passed = False
+		elif not passed:
+			timeline[-1]["done"] = False
+	return timeline
+
+
+def payment_link(job) -> str:
+	from a3_retail.utils.tokens import portal_url
+
+	return portal_url("Service Job Card", job.name, "pay", "payment")
+
+
+# ---------------------------------------------------------------------------
+# Complaints — /support (scope 13.1)
+# ---------------------------------------------------------------------------
+@frappe.whitelist(allow_guest=True)
+def submit_complaint(subject: str, description: str, mobile_no: str, otp_token: str,
+                     branch: str | None = None, category: str | None = None,
+                     job_card: str | None = None, email: str | None = None) -> dict:
+	"""Raise an Issue from the public complaint form."""
+	session = verify_session_token(otp_token, "Complaint")
+	if not session:
+		frappe.throw(_("Verify the OTP sent to your mobile first."), frappe.PermissionError)
+
+	mobile = normalize_mobile(mobile_no)
+	if normalize_mobile(session["mobile"]) != mobile:
+		frappe.throw(_("This OTP belongs to a different number."), frappe.PermissionError)
+
+	if not (subject or "").strip():
+		frappe.throw(_("Tell us briefly what went wrong."))
+
+	customer = frappe.db.get_value("Customer", {"a3_mobile_no": mobile}, "name")
+
+	issue = frappe.new_doc("Issue")
+	issue.subject = subject.strip()[:140]
+	issue.description = description
+	issue.raised_by = email or None
+	issue.customer = customer
+	issue.status = "Open"
+	if issue.meta.has_field("a3_branch"):
+		issue.a3_branch = branch
+	if issue.meta.has_field("a3_complaint_category"):
+		issue.a3_complaint_category = category
+	if issue.meta.has_field("a3_job_card"):
+		issue.a3_job_card = job_card
+	if issue.meta.has_field("a3_channel"):
+		issue.a3_channel = "Website"
+	issue.flags.ignore_permissions = True
+	issue.insert(ignore_permissions=True)
+
+	commit_if_not_testing()
+	return {"issue": issue.name, "status": issue.status}
+
+
+# ---------------------------------------------------------------------------
+# Feedback — /feedback/<token> (scope 13.1)
+# ---------------------------------------------------------------------------
+@frappe.whitelist(allow_guest=True)
+def submit_feedback(token: str, rating: float, comments: str | None = None,
+                    would_recommend: int | None = None, nps: int | None = None) -> dict:
+	"""Record a Customer Feedback against the job card the link points at."""
+	from a3_retail.utils.tokens import verify as verify_token
+
+	job_card = verify_token(token, "Service Job Card", "feedback")
+	if not job_card:
+		frappe.throw(_("This feedback link is not valid."), frappe.PermissionError)
+
+	job = frappe.get_doc("Service Job Card", job_card)
+	if job.customer_feedback and frappe.db.exists("Customer Feedback", job.customer_feedback):
+		return {"feedback": job.customer_feedback, "already_submitted": True}
+
+	stars = flt(rating)
+	doc = frappe.new_doc("Customer Feedback")
+	doc.feedback_date = nowdate()
+	doc.customer = job.customer
+	doc.mobile_no = job.customer_mobile
+	doc.branch = job.branch
+	doc.channel = "Web Portal"
+	doc.reference_type = "Service Job Card"
+	doc.reference_name = job.name
+	doc.attended_employee = job.assigned_technician
+	# Frappe stores a Rating as 0–1.
+	doc.overall_rating = stars / 5 if stars > 1 else stars
+	doc.comments = comments
+	if nps is not None:
+		doc.nps_score = cint(nps)
+	if would_recommend is not None:
+		doc.would_recommend = cint(would_recommend)
+	doc.flags.ignore_permissions = True
+	doc.insert(ignore_permissions=True)
+
+	job.db_set("customer_feedback", doc.name, update_modified=False)
+	job.db_set("feedback_rating", doc.overall_rating, update_modified=False)
+	commit_if_not_testing()
+
+	return {"feedback": doc.name, "sentiment": doc.sentiment}
+
+
+# ---------------------------------------------------------------------------
+# Public listings — /offers and /stores (scope 13.1)
+# ---------------------------------------------------------------------------
+@frappe.whitelist(allow_guest=True)
+def active_offers(branch: str | None = None) -> list[dict]:
+	filters = {"status": "Active", "docstatus": 1}
+	offers = frappe.get_all(
+		"Seasonal Offer Campaign",
+		filters=filters,
+		fields=["name", "campaign_name", "offer_type", "valid_from", "valid_upto", "description",
+		        "banner_image", "discount_percentage", "discount_amount", "coupon_code"],
+		order_by="valid_upto asc",
+	)
+
+	if branch:
+		offers = [
+			offer for offer in offers
+			if not frappe.db.exists("Offer Branch", {"parent": offer.name})
+			or frappe.db.exists("Offer Branch", {"parent": offer.name, "branch": branch})
+		]
+	return offers
+
+
+@frappe.whitelist(allow_guest=True)
+def store_locator() -> list[dict]:
+	from a3_retail.print_helpers import a3_branch_profile
+
+	stores = []
+	for row in frappe.get_all(
+		"Branch Profile",
+		filters={"is_active": 1},
+		fields=["branch", "branch_type", "latitude", "longitude", "working_hours_from",
+		        "working_hours_to", "weekly_off"],
+	):
+		profile = a3_branch_profile(row.branch)
+		stores.append(
+			{
+				"branch": row.branch,
+				"type": row.branch_type,
+				"address": profile.get("address"),
+				"phone": profile.get("phone"),
+				"email": profile.get("email"),
+				"latitude": row.latitude,
+				"longitude": row.longitude,
+				"opens": str(row.working_hours_from or ""),
+				"closes": str(row.working_hours_to or ""),
+				"weekly_off": row.weekly_off,
+			}
+		)
+	return stores

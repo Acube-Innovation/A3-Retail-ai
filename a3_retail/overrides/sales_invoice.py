@@ -273,6 +273,8 @@ def suggest_ew_plans(item_code: str) -> list[dict]:
 @frappe.whitelist()
 def cross_branch_availability(item_code: str) -> list[dict]:
 	"""P8: where else is this model in stock right now?"""
+	from a3_retail.api import require_permission
 	from a3_retail.api.stock import availability_matrix
 
+	require_permission("Bin", "read")
 	return availability_matrix(item_code)

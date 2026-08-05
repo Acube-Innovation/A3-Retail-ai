@@ -1,0 +1,78 @@
+{% extends "templates/web.html" %}
+{% block title %}{{ _("Raise a complaint") }}{% endblock %}
+
+{% block page_content %}
+<div class="a3-portal">
+	<div class="a3-card">
+		<div class="a3-head"><div><h1>{{ _("Tell us what went wrong") }}</h1>
+			<div class="a3-muted">{{ _("We reply on the mobile number you verify below.") }}</div></div></div>
+
+		<input id="a3-subject" placeholder="{{ _('Subject') }}">
+		<textarea id="a3-description" rows="4" placeholder="{{ _('What happened?') }}"></textarea>
+		<select id="a3-branch">
+			<option value="">{{ _("Which branch?") }}</option>
+			{% for branch in branches %}<option value="{{ branch }}">{{ branch }}</option>{% endfor %}
+		</select>
+		<select id="a3-category">
+			<option value="">{{ _("Category") }}</option>
+			{% for category in categories %}<option value="{{ category }}">{{ _(category) }}</option>{% endfor %}
+		</select>
+		<input id="a3-job" placeholder="{{ _('Job card number (optional)') }}">
+		<input id="a3-mobile" inputmode="numeric" maxlength="10" placeholder="{{ _('Mobile number') }}">
+		<button class="btn btn-primary btn-block" id="a3-send">{{ _("Send OTP") }}</button>
+
+		<div id="a3-otp-box" style="display:none">
+			<input id="a3-otp" inputmode="numeric" maxlength="6" placeholder="{{ _('6-digit OTP') }}">
+			<button class="btn btn-primary btn-block" id="a3-submit">{{ _("Submit complaint") }}</button>
+		</div>
+		<div id="a3-msg" class="a3-muted"></div>
+	</div>
+</div>
+
+<script>
+(function () {
+	const msg = (text, cls) => {
+		const box = document.getElementById("a3-msg");
+		box.className = cls || "a3-muted";
+		box.textContent = text;
+	};
+
+	document.getElementById("a3-send").addEventListener("click", async () => {
+		try {
+			await frappe.call("a3_retail.api.portal.request_otp", {
+				mobile_no: document.getElementById("a3-mobile").value.trim(), purpose: "Complaint",
+			});
+			document.getElementById("a3-otp-box").style.display = "block";
+			msg("{{ _('We sent you a one-time password.') }}");
+		} catch (e) {
+			msg("{{ _('Could not send the OTP. Check the number.') }}", "a3-error-text");
+		}
+	});
+
+	document.getElementById("a3-submit").addEventListener("click", async () => {
+		const mobile = document.getElementById("a3-mobile").value.trim();
+		try {
+			const verified = await frappe.call("a3_retail.api.portal.verify_otp", {
+				mobile_no: mobile, otp: document.getElementById("a3-otp").value.trim(),
+				purpose: "Complaint",
+			});
+			const result = await frappe.call("a3_retail.api.portal.submit_complaint", {
+				subject: document.getElementById("a3-subject").value,
+				description: document.getElementById("a3-description").value,
+				mobile_no: mobile,
+				otp_token: verified.message.token,
+				branch: document.getElementById("a3-branch").value,
+				category: document.getElementById("a3-category").value,
+				job_card: document.getElementById("a3-job").value,
+			});
+			document.querySelector(".a3-card").innerHTML =
+				`<div class="a3-done"><h2>{{ _("Thank you") }}</h2>
+				 <p>{{ _("Your reference is") }} <b>${result.message.issue}</b>.
+				 {{ _("A manager will call you shortly.") }}</p></div>`;
+		} catch (e) {
+			msg("{{ _('Could not submit. Please check the OTP and try again.') }}", "a3-error-text");
+		}
+	});
+})();
+</script>
+{% endblock %}

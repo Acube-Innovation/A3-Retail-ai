@@ -1,0 +1,76 @@
+/* Copyright (c) 2026, Acube Innovations Pvt Ltd and contributors
+ * Customer portal (scope 13.1). Mobile first: one column, large tap targets,
+ * nothing that needs a mouse. Loaded on every website page by hooks.web_include_css.
+ */
+
+.a3-portal { max-width: 720px; margin: 0 auto; padding: 12px; }
+.a3-portal .a3-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px;
+	padding: 18px; margin-bottom: 14px; }
+.a3-portal .a3-head { display: flex; justify-content: space-between; align-items: flex-start;
+	gap: 12px; border-bottom: 2px solid #0f62fe; padding-bottom: 10px; margin-bottom: 14px; }
+.a3-portal .a3-head h1 { font-size: 20px; margin: 0; }
+.a3-portal .a3-muted { color: #6b7280; font-size: 12px; }
+.a3-portal .a3-error h2 { color: #a2191f; font-size: 18px; }
+.a3-portal .a3-error-text { color: #a2191f; font-size: 13px; }
+
+.a3-portal .a3-status { padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600;
+	background: #f2f4f8; white-space: nowrap; }
+.a3-portal .a3-status-approved, .a3-portal .a3-status-in-warranty { background: #defbe6; color: #0e6027; }
+.a3-portal .a3-status-rejected, .a3-portal .a3-status-void { background: #fff1f1; color: #a2191f; }
+
+.a3-portal .a3-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+	margin-bottom: 16px; font-size: 13px; }
+.a3-portal .a3-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 10px; }
+.a3-portal .a3-table th { text-align: left; background: #f8fafc; padding: 6px; font-size: 11px;
+	text-transform: uppercase; }
+.a3-portal .a3-table td { padding: 6px; border-bottom: 1px solid #f1f5f9; }
+.a3-portal .a3-table .num, .a3-portal .a3-table th.num { text-align: right; }
+.a3-portal .a3-tag { display: inline-block; font-size: 10px; background: #fcf4d6; color: #8e6a00;
+	padding: 2px 6px; border-radius: 8px; margin-top: 4px; }
+
+.a3-portal .a3-totals { border-top: 1px solid #e5e7eb; padding-top: 10px; font-size: 13px; }
+.a3-portal .a3-totals div { display: flex; justify-content: space-between; padding: 3px 0; }
+.a3-portal .a3-grand { font-size: 16px; border-top: 1px solid #e5e7eb; margin-top: 6px;
+	padding-top: 8px; font-weight: 600; }
+.a3-portal .a3-terms { font-size: 11px; color: #6b7280; margin: 14px 0; }
+.a3-portal .a3-done { margin-top: 16px; padding: 16px; background: #f2f4f8; border-radius: 8px;
+	text-align: center; }
+
+.a3-portal input, .a3-portal select, .a3-portal textarea { width: 100%; padding: 11px;
+	margin: 6px 0; border: 1px solid #d1d5db; border-radius: 6px; font-size: 15px; }
+.a3-portal .btn-block { display: block; width: 100%; margin-top: 8px; padding: 11px; }
+.a3-portal .a3-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+.a3-portal .a3-buttons .btn { flex: 1 1 30%; }
+
+/* Track Service timeline */
+.a3-portal .a3-timeline { list-style: none; padding: 0; margin: 16px 0; display: flex;
+	justify-content: space-between; position: relative; }
+.a3-portal .a3-timeline:before { content: ""; position: absolute; top: 9px; left: 6%; right: 6%;
+	height: 2px; background: #e5e7eb; }
+.a3-portal .a3-timeline li { position: relative; flex: 1; text-align: center; font-size: 10px;
+	color: #6b7280; padding-top: 24px; }
+.a3-portal .a3-timeline li:after { content: ""; position: absolute; top: 3px; left: 50%;
+	transform: translateX(-50%); width: 14px; height: 14px; border-radius: 50%;
+	background: #fff; border: 2px solid #d1d5db; }
+.a3-portal .a3-timeline li.done { color: #0e6027; }
+.a3-portal .a3-timeline li.done:after { background: #24a148; border-color: #24a148; }
+.a3-portal .a3-timeline li.current { color: #0f62fe; font-weight: 600; }
+.a3-portal .a3-timeline li.current:after { background: #0f62fe; border-color: #0f62fe; }
+
+/* Feedback stars */
+.a3-portal .a3-stars { font-size: 34px; letter-spacing: 6px; color: #d1d5db; cursor: pointer;
+	text-align: center; }
+.a3-portal .a3-stars span.on { color: #f1c21b; }
+
+/* Offers and stores */
+.a3-portal .a3-offer { display: flex; gap: 12px; padding: 12px 0;
+	border-bottom: 1px solid #f1f5f9; }
+.a3-portal .a3-offer img { width: 96px; height: 96px; object-fit: cover; border-radius: 8px; }
+.a3-portal .a3-offer h3, .a3-portal .a3-store h3 { font-size: 15px; margin: 0 0 2px; }
+.a3-portal .a3-store { padding: 12px 0; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
+.a3-portal .a3-store .btn { margin-top: 6px; }
+
+@media (max-width: 600px) {
+	.a3-portal .a3-grid2 { grid-template-columns: 1fr; }
+	.a3-portal .a3-timeline li { font-size: 9px; }
+}

@@ -342,6 +342,9 @@ def pause(campaign: str) -> dict:
 @frappe.whitelist()
 def active_exchange_bonus(branch: str | None = None) -> float:
 	"""Exchange bonus offered by any live campaign — used by Device Exchange."""
+	from a3_retail.api import require_permission
+
+	require_permission("Seasonal Offer Campaign")
 	today = getdate(nowdate())
 	rows = frappe.get_all(
 		"Seasonal Offer Campaign",

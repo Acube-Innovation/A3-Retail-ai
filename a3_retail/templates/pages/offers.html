@@ -1,0 +1,28 @@
+{% extends "templates/web.html" %}
+{% block title %}{{ _("Offers") }}{% endblock %}
+
+{% block page_content %}
+<div class="a3-portal">
+	<div class="a3-card">
+		<div class="a3-head"><div><h1>{{ _("Running offers") }}</h1>
+			<div class="a3-muted">{{ _("Valid at our stores while stocks last.") }}</div></div></div>
+
+		{% if not offers %}
+			<p class="a3-muted">{{ _("No offers are running right now. Please check back soon.") }}</p>
+		{% endif %}
+
+		{% for offer in offers %}
+		<div class="a3-offer">
+			{% if offer.banner_image %}<img src="{{ offer.banner_image }}" alt="{{ offer.campaign_name }}">{% endif %}
+			<div>
+				<h3>{{ offer.campaign_name }}</h3>
+				<div class="a3-muted">{{ offer.offer_type }} &middot;
+					{{ _("till") }} {{ frappe.format(offer.valid_upto, {"fieldtype": "Date"}) }}</div>
+				{% if offer.description %}<p>{{ offer.description }}</p>{% endif %}
+				{% if offer.coupon_code %}<div class="a3-tag">{{ _("Code") }}: {{ offer.coupon_code }}</div>{% endif %}
+			</div>
+		</div>
+		{% endfor %}
+	</div>
+</div>
+{% endblock %}

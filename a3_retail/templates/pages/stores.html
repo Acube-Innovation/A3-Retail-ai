@@ -1,0 +1,29 @@
+{% extends "templates/web.html" %}
+{% block title %}{{ _("Our stores") }}{% endblock %}
+
+{% block page_content %}
+<div class="a3-portal">
+	<div class="a3-card">
+		<div class="a3-head"><div><h1>{{ _("Our stores") }}</h1>
+			<div class="a3-muted">{{ _("Walk in for sales, service or a warranty claim.") }}</div></div></div>
+
+		{% for store in stores %}
+		<div class="a3-store">
+			<h3>{{ store.branch }}</h3>
+			<div class="a3-muted">{{ store.type }}</div>
+			{% if store.address %}<div>{{ store.address }}</div>{% endif %}
+			{% if store.phone %}<div><a href="tel:{{ store.phone }}">{{ store.phone }}</a></div>{% endif %}
+			<div class="a3-muted">
+				{{ _("Open") }} {{ store.opens[:5] }}–{{ store.closes[:5] }}
+				{% if store.weekly_off %} &middot; {{ _("Closed") }} {{ store.weekly_off }}{% endif %}
+			</div>
+			{% if store.latitude and store.longitude %}
+			<a class="btn btn-secondary btn-sm" target="_blank"
+			   href="https://www.google.com/maps/search/?api=1&query={{ store.latitude }},{{ store.longitude }}">
+				{{ _("Directions") }}</a>
+			{% endif %}
+		</div>
+		{% endfor %}
+	</div>
+</div>
+{% endblock %}

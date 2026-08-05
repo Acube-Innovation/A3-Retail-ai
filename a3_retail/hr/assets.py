@@ -97,6 +97,11 @@ def block_exit_with_assets(doc, method=None):
 @frappe.whitelist()
 def custody_register(branch: str | None = None) -> list[dict]:
 	"""Who holds what, for the branch manager's handover sheet."""
+	from a3_retail.api import require_branch_access, require_permission
+
+	require_permission("Asset", "read")
+	require_branch_access(branch)
+
 	if not frappe.db.has_column("Asset", "a3_assigned_employee"):
 		return []
 

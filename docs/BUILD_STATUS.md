@@ -3,13 +3,13 @@
 App: `a3_retail` (the scope document calls it `mobicare`; every identifier was
 renamed — see *Naming map* below). Bench site: `local`.
 
-**Steps 1–25 of 26 are complete, migrated and tested: 639 tests pass.**
+**All 26 steps are complete, migrated and tested: 675 tests pass.**
 
 ```bash
 bench --site local migrate
-bench --site local run-tests --app a3_retail          # 639 passing
+bench --site local run-tests --app a3_retail          # 675 passing
 bench --site local execute a3_retail.demo.install.run # idempotent demo seed
-bench --site local execute a3_retail.demo.install.verify  # 33/33 checks pass
+bench --site local execute a3_retail.demo.install.verify  # 39/39 checks pass
 ```
 
 ## Naming map (scope document → this app)
@@ -55,15 +55,15 @@ Desk page routes are prefixed `a3-` (`a3-reception-desk`) to avoid collisions.
 | 23 | HR, incentives, assets | HRMS configuration (`setup/hr.py`), branch geofence on Employee Checkin, `Employee Incentive Scheme` + `Incentive Calculation Run` engine, Post to Payroll, asset custody and exit clearance |
 | 24 | Print | `templates/print_formats/` base + thermal macro libraries, 2 print styles, branch letter heads with `before_print` selection, 24 print formats, QR/UPI/IRN helpers (`utils/qr.py`, `print_helpers.py`), PDF smoke test |
 | 25 | Dashboards & reports | `/app/a3-control-tower` with the 12.1 data contract, realtime nudge and 60 s branch-strip cache, composite-index patch, 20 Number Cards, 15 Dashboard Charts, 9 Workspaces, 42 Script Reports (`reporting.py` applies branch permissions), 10 disabled Auto Email Reports, report smoke test |
+| 26 | Portal & hardening | 9 portal pages on signed links (`utils/tokens.py`) plus OTP, Razorpay webhook with HMAC verification and reconciliation, all 26 demo seeds, `demo/wipe.py`, security audit (`setup/audit.py`), USER_GUIDE and ADMIN_GUIDE |
 
-## Remaining steps (26)
+## All 26 steps are complete
 
-26 Portal, payments, demo data, UAT hardening.
-
-Seams already in place for them: `Portal OTP` and `website_route_rules`
-(step 26), `setup/permissions.py` `PERMISSION_MATRIX` and
-`utils/permissions.py` `BRANCH_SCOPED_DOCTYPES` (append new doctypes),
-`demo/install.py` (drop in `NN_topic.py`), `demo/verify.py` (`@check`).
+Extension seams for whatever comes next: `setup/permissions.py`
+`PERMISSION_MATRIX` and `utils/permissions.py` `BRANCH_SCOPED_DOCTYPES` (append
+new doctypes), `demo/install.py` (drop in `NN_topic.py`), `demo/verify.py`
+(`@check`), `scripts/gen_step25_reports.py` (the report register),
+`setup/print_formats.py` `FORMATS` (the print register).
 
 ## How to continue
 
@@ -187,6 +187,33 @@ with how ERPNext v15 actually behaves. Each was resolved deliberately.
 
 20. **Auto Email Report has no PDF format.** Frappe accepts HTML, XLSX and CSV
     only, so the four deliveries the scope wants as PDF go out as HTML.
+
+21. **The `payments` app is not on this bench.** Razorpay is implemented against
+    the gateway's own webhook contract — the signature is verified with the
+    shared secret in A3 Retail Settings, and the Payment Entry is created and
+    allocated here. When the `payments` app is installed its Payment Gateway
+    Account is used for the checkout instead.
+
+22. **Free-item offers put the same item on a bill twice**, which ERPNext refuses
+    unless Selling Settings allows it. `install_defaults` turns
+    `allow_multiple_items` on, because a shop that gives a free tempered glass
+    with a phone genuinely bills that item twice.
+
+23. **Portal links are signed, not stored.** `/warranty/<token>` and friends carry
+    `<document name>.<HMAC>` rather than a row in a link table: nothing to expire,
+    nothing to leak, and rotating the site key invalidates every outstanding link.
+    The estimate approval keeps its stored single-use hash.
+
+## Performance (demo dataset: 503 job cards, 236 invoices, 441 serials)
+
+| Call | Time |
+|---|---|
+| `control_tower()` all branches | 29 ms |
+| `control_tower(branch)` | 7 ms |
+| `counter_cross_check()` | 1 ms |
+| `stock.availability_matrix()` | 1 ms |
+| `stock.search_items()` | 36 ms |
+| Slowest of the 42 reports | 130 ms |
 
 ## Testing notes
 
