@@ -3,13 +3,13 @@
 App: `a3_retail` (the scope document calls it `mobicare`; every identifier was
 renamed — see *Naming map* below). Bench site: `local`.
 
-**Steps 1–24 of 26 are complete, migrated and tested: 604 tests pass.**
+**Steps 1–25 of 26 are complete, migrated and tested: 639 tests pass.**
 
 ```bash
 bench --site local migrate
-bench --site local run-tests --app a3_retail          # 604 passing
+bench --site local run-tests --app a3_retail          # 639 passing
 bench --site local execute a3_retail.demo.install.run # idempotent demo seed
-bench --site local execute a3_retail.demo.install.verify  # 26/26 checks pass
+bench --site local execute a3_retail.demo.install.verify  # 33/33 checks pass
 ```
 
 ## Naming map (scope document → this app)
@@ -54,11 +54,11 @@ Desk page routes are prefixed `a3-` (`a3-reception-desk`) to avoid collisions.
 | 22 | Communication | Stream-separated senders, `WhatsApp Template`/`Communication Rule`/`Message Log`, `doc_events["*"]` dispatcher, opt-in + quiet-hours compliance, Meta Cloud provider |
 | 23 | HR, incentives, assets | HRMS configuration (`setup/hr.py`), branch geofence on Employee Checkin, `Employee Incentive Scheme` + `Incentive Calculation Run` engine, Post to Payroll, asset custody and exit clearance |
 | 24 | Print | `templates/print_formats/` base + thermal macro libraries, 2 print styles, branch letter heads with `before_print` selection, 24 print formats, QR/UPI/IRN helpers (`utils/qr.py`, `print_helpers.py`), PDF smoke test |
+| 25 | Dashboards & reports | `/app/a3-control-tower` with the 12.1 data contract, realtime nudge and 60 s branch-strip cache, composite-index patch, 20 Number Cards, 15 Dashboard Charts, 9 Workspaces, 42 Script Reports (`reporting.py` applies branch permissions), 10 disabled Auto Email Reports, report smoke test |
 
-## Remaining steps (25–26)
+## Remaining steps (26)
 
-25 Dashboards, control tower & reports · 26 Portal, payments, demo data,
-UAT hardening.
+26 Portal, payments, demo data, UAT hardening.
 
 Seams already in place for them: `Portal OTP` and `website_route_rules`
 (step 26), `setup/permissions.py` `PERMISSION_MATRIX` and
@@ -174,6 +174,19 @@ with how ERPNext v15 actually behaves. Each was resolved deliberately.
     bench serve --port 8000 &
     bench --site local execute a3_retail.setup.print_formats.smoke_test
     ```
+
+18. **Every report is a Script Report.** The register marks some as Query
+    Reports, but a static query cannot narrow itself to the caller's permitted
+    branches — and the acceptance requires exactly that. All 42 run one SQL
+    statement through `reporting.run_query`, which injects the branch and date
+    conditions, so the "Query vs Script" column is honoured in spirit (simple
+    SQL, no computation) rather than in doctype.
+
+19. **`DELAYED` is a reserved word in MariaDB.** Two queries aliased a count as
+    `delayed` and failed to parse. Quoted, or renamed to `delayed_count`.
+
+20. **Auto Email Report has no PDF format.** Frappe accepts HTML, XLSX and CSV
+    only, so the four deliveries the scope wants as PDF go out as HTML.
 
 ## Testing notes
 

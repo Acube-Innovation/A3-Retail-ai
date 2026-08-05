@@ -256,6 +256,65 @@ def _print_render():
 	return f"{rendered} of {result['total']}", not result["failed"]
 
 
+# --------------------------------------------------------------- step 25 checks
+@check("Number cards", "20")
+def _number_cards():
+	count = frappe.db.count("Number Card", {"module": "A3 Retail Dashboard"})
+	return count, count >= 20
+
+
+@check("Dashboard charts", "15")
+def _dashboard_charts():
+	count = frappe.db.count("Dashboard Chart", {"module": "A3 Retail Dashboard"})
+	return count, count >= 15
+
+
+@check("Workspaces", "9")
+def _workspaces():
+	count = frappe.db.count("Workspace", {"module": "A3 Retail Dashboard"})
+	return count, count >= 9
+
+
+@check("Reports", "42")
+def _reports():
+	count = frappe.db.count("Report", {"module": ["like", "A3 Retail%"]})
+	return count, count >= 42
+
+
+@check("Reports execute", "42 of 42")
+def _reports_execute():
+	from a3_retail.setup.reports import smoke_test
+
+	result = smoke_test(verbose=False)
+	return f"{result['total'] - len(result['failed'])} of {result['total']}", not result["failed"]
+
+
+@check("Scheduled reports (disabled)", "10")
+def _auto_email_reports():
+	from a3_retail.setup.reports import SCHEDULES
+
+	names = [row[0] for row in SCHEDULES]
+	total = frappe.db.count("Auto Email Report", {"report": ["in", names]})
+	enabled = frappe.db.count("Auto Email Report", {"report": ["in", names], "enabled": 1})
+	return f"{total} ({enabled} on)", total >= 10 and enabled == 0
+
+
+@check("Control tower cross-check", "matches")
+def _control_tower_cross_check():
+	"""Scope 12.8 — the tower and the raw counter query must agree."""
+	from a3_retail.api.dashboard import control_tower, counter_cross_check
+
+	tower = control_tower()["counters"]
+	raw = counter_cross_check()
+	matches = (
+		tower["received_today"] == raw["received_today"]
+		and tower["ongoing"] == raw["wip"]
+		and tower["ready_for_delivery"] == raw["ready"]
+		and tower["delayed"] == raw["delayed"]
+	)
+	return "yes" if matches else "no", matches
+
+
 def run(verbose: bool = True):
 	"""Execute every registered check; returns (passed, failed, rows)."""
 	rows = []

@@ -1,0 +1,24 @@
+{
+ "content": null,
+ "creation": "2026-08-05 09:00:00.000000",
+ "docstatus": 0,
+ "doctype": "Page",
+ "idx": 0,
+ "modified": "2026-08-05 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "A3 Retail Dashboard",
+ "name": "a3-control-tower",
+ "owner": "Administrator",
+ "page_name": "a3-control-tower",
+ "roles": [
+  {"role": "Branch Manager"},
+  {"role": "Service Manager"},
+  {"role": "Reception Executive"},
+  {"role": "Accounts Manager"},
+  {"role": "A3 Retail Admin"},
+  {"role": "System Manager"}
+ ],
+ "standard": "Yes",
+ "system_page": 0,
+ "title": "Service Control Tower"
+}

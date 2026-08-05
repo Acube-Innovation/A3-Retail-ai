@@ -22,6 +22,20 @@ A3_MODULES = [
 
 A3_ROLE_NAMES = [role["role_name"] for role in A3_ROLES]
 
+# The ten scheduled deliveries in scope 12.6 (created disabled by setup.reports).
+A3_SCHEDULED_REPORTS = [
+	"Daily Service Register",
+	"Branch Sales Register",
+	"Delivery Delay Report",
+	"Awaiting Parts Register",
+	"Expiring Warranty Upsell List",
+	"Stock Ageing and Dead Stock",
+	"Footfall Conversion Analysis",
+	"Branch Profitability Statement",
+	"Incentive Payout Register",
+	"RCM Liability and ITC Register",
+]
+
 # ---------------------------------------------------------------------------
 # Includes
 # ---------------------------------------------------------------------------
@@ -56,6 +70,8 @@ fixtures = [
 	{"dt": "Workflow", "filters": [["name", "like", "A3 %"]]},
 	{"dt": "Print Style", "filters": [["name", "like", "A3 Retail%"]]},
 	{"dt": "Letter Head", "filters": [["name", "like", "%Letter Head"]]},
+	# Auto Email Report carries no module, so it is scoped by report name.
+	{"dt": "Auto Email Report", "filters": [["report", "in", A3_SCHEDULED_REPORTS]]},
 ]
 
 # ---------------------------------------------------------------------------
@@ -112,8 +128,13 @@ doc_events = {
 		"on_cancel": "a3_retail.hr.assets.clear_custody",
 	},
 	"Service Job Card": {
-		"on_update_after_submit": "a3_retail.a3_retail_operations.doctype.courier_dispatch.courier_dispatch.auto_draft_for_job_card",
+		"on_update_after_submit": [
+			"a3_retail.a3_retail_operations.doctype.courier_dispatch.courier_dispatch.auto_draft_for_job_card",
+			"a3_retail.api.dashboard.notify",
+		],
+		"on_submit": "a3_retail.api.dashboard.notify",
 	},
+	"Branch Visit Log": {"after_insert": "a3_retail.api.dashboard.notify"},
 	"Serial No": {
 		"before_insert": "a3_retail.overrides.serial_no.before_insert",
 		"validate": "a3_retail.overrides.serial_no.validate",
@@ -131,6 +152,7 @@ doc_events = {
 		],
 		"on_submit": [
 			"a3_retail.overrides.sales_invoice.on_submit",
+			"a3_retail.api.dashboard.notify",
 			"a3_retail.a3_retail_sales.doctype.seasonal_offer_campaign.seasonal_offer_campaign.track_offer_consumption",
 			"a3_retail.a3_retail_finance.doctype.emi_application.emi_application.stamp_invoice_on_application",
 			"a3_retail.a3_retail_warranty.doctype.warranty_registration.warranty_registration.register_from_invoice",
