@@ -387,6 +387,102 @@ CRM_FIELDS = {
 }
 
 
+# Step 23 — HR, incentives and asset custody (scope 10.1–10.3).
+HR_MODULE = "A3 Retail Operations"
+
+HR_FIELDS = {
+	"Employee": [
+		_field("a3_hr_section", "Retail Profile", "Section Break", HR_MODULE,
+			insert_after="branch", collapsible=1),
+		_field("a3_staff_category", "Staff Category", "Select", HR_MODULE,
+			options=("\nSales\nService\nCashier\nStore\nTelecalling\nDelivery\n"
+				"Branch Management\nHead Office"),
+			insert_after="a3_hr_section", in_standard_filter=1),
+		_field("a3_shift_pattern", "Shift Pattern", "Select", HR_MODULE,
+			options="\nGeneral\nMorning\nEvening\nSplit\nRotational",
+			insert_after="a3_staff_category"),
+		_field("a3_is_incentive_eligible", "Eligible for Incentive", "Check", HR_MODULE,
+			default="1", insert_after="a3_shift_pattern"),
+		_field("a3_hr_col_break", "", "Column Break", HR_MODULE,
+			insert_after="a3_is_incentive_eligible"),
+		_field("a3_technician_grade", "Technician Grade", "Select", HR_MODULE,
+			options="\nL1\nL2\nL3\nSenior", insert_after="a3_hr_col_break"),
+		_field("a3_can_handle_l3", "Certified for L3 Repairs", "Check", HR_MODULE,
+			insert_after="a3_technician_grade"),
+		_field("a3_geofence_exempt", "Exempt from Geofence", "Check", HR_MODULE,
+			insert_after="a3_can_handle_l3",
+			description="Field staff who legitimately check in away from the branch."),
+	],
+	"Employee Checkin": [
+		_field("a3_branch", "Branch", "Link", HR_MODULE, options="Branch",
+			insert_after="employee_name", read_only=1, in_standard_filter=1),
+		_field("a3_distance_metres", "Distance from Branch (m)", "Int", HR_MODULE,
+			insert_after="a3_branch", read_only=1),
+		_field("a3_geofence_status", "Geofence", "Select", HR_MODULE,
+			options="\nInside\nOutside\nNot Checked", insert_after="a3_distance_metres",
+			read_only=1),
+	],
+	"Attendance": [
+		_field("a3_branch", "Branch", "Link", HR_MODULE, options="Branch",
+			insert_after="department", read_only=1, in_standard_filter=1),
+	],
+	"Asset": [
+		_field("a3_custody_section", "Custody", "Section Break", HR_MODULE,
+			insert_after="asset_category"),
+		_field("a3_branch", "Branch", "Link", HR_MODULE, options="Branch",
+			insert_after="a3_custody_section", in_standard_filter=1),
+		_field("a3_assigned_employee", "Assigned Employee", "Link", HR_MODULE, options="Employee",
+			insert_after="a3_branch", read_only=1,
+			description="Maintained by Asset Movement; do not edit by hand."),
+		_field("a3_custody_since", "In Custody Since", "Date", HR_MODULE,
+			insert_after="a3_assigned_employee", read_only=1),
+		_field("a3_custody_col_break", "", "Column Break", HR_MODULE,
+			insert_after="a3_custody_since"),
+		_field("a3_asset_class", "Asset Class", "Select", HR_MODULE,
+			options=("\nService Tool\nTest Instrument\nDisplay Fixture\nIT Equipment\n"
+				"Furniture\nVehicle\nSecurity\nOther"),
+			insert_after="a3_custody_col_break"),
+		_field("a3_asset_condition", "Condition", "Select", HR_MODULE,
+			options="New\nGood\nFair\nNeeds Repair\nUnder Repair\nScrapped",
+			insert_after="a3_asset_class", default="Good"),
+		_field("a3_serial_or_imei", "Serial / IMEI", "Data", HR_MODULE,
+			insert_after="a3_asset_condition"),
+		_field("a3_maintenance_section", "Maintenance, Insurance & Warranty", "Section Break",
+			HR_MODULE, insert_after="a3_serial_or_imei", collapsible=1),
+		_field("a3_is_calibration_required", "Calibration Required", "Check", HR_MODULE,
+			insert_after="a3_maintenance_section"),
+		_field("a3_last_calibration_date", "Last Calibrated On", "Date", HR_MODULE,
+			insert_after="a3_is_calibration_required",
+			depends_on="eval:doc.a3_is_calibration_required"),
+		_field("a3_next_calibration_date", "Next Calibration Due", "Date", HR_MODULE,
+			insert_after="a3_last_calibration_date",
+			depends_on="eval:doc.a3_is_calibration_required"),
+		_field("a3_warranty_expiry", "Asset Warranty Expiry", "Date", HR_MODULE,
+			insert_after="a3_next_calibration_date"),
+		_field("a3_maintenance_col_break", "", "Column Break", HR_MODULE,
+			insert_after="a3_warranty_expiry"),
+		_field("a3_insurance_policy_no", "Insurance Policy No", "Data", HR_MODULE,
+			insert_after="a3_maintenance_col_break"),
+		_field("a3_insurance_expiry", "Insurance Expiry", "Date", HR_MODULE,
+			insert_after="a3_insurance_policy_no"),
+		_field("a3_purchase_invoice", "Purchase Invoice", "Link", HR_MODULE,
+			options="Purchase Invoice", insert_after="a3_insurance_expiry"),
+		_field("a3_qr_code", "Asset Tag (QR)", "Attach Image", HR_MODULE,
+			insert_after="a3_purchase_invoice"),
+	],
+	"Asset Movement": [
+		_field("a3_branch", "Branch", "Link", HR_MODULE, options="Branch",
+			insert_after="company", in_standard_filter=1),
+		_field("a3_acknowledged", "Acknowledged by Holder", "Check", HR_MODULE,
+			insert_after="reference_name"),
+	],
+	"Additional Salary": [
+		_field("a3_branch", "Branch", "Link", HR_MODULE, options="Branch",
+			insert_after="company", read_only=1),
+	],
+}
+
+
 ALL_FIELD_GROUPS = (
 	BRANCH_BACKREF_FIELDS,
 	MASTER_FIELDS,
@@ -396,6 +492,7 @@ ALL_FIELD_GROUPS = (
 	EMI_FIELDS,
 	DELIVERY_FIELDS,
 	CRM_FIELDS,
+	HR_FIELDS,
 )
 
 

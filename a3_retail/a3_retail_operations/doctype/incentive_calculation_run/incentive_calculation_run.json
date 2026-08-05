@@ -1,0 +1,237 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-08-05 09:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "scheme",
+  "from_date",
+  "to_date",
+  "col_break_5",
+  "branch",
+  "company",
+  "status",
+  "employees_section",
+  "employees",
+  "total_incentive",
+  "approval_section",
+  "approved_by",
+  "col_break_6",
+  "posted_on",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "INC-.YY.-.MM.-.###",
+   "hidden": 1,
+   "default": "INC-.YY.-.MM.-.###"
+  },
+  {
+   "fieldname": "scheme",
+   "fieldtype": "Link",
+   "label": "Scheme",
+   "options": "Employee Incentive Scheme",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "from_date",
+   "fieldtype": "Date",
+   "label": "From Date",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "to_date",
+   "fieldtype": "Date",
+   "label": "To Date",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "col_break_5",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "branch",
+   "fieldtype": "Link",
+   "label": "Branch",
+   "options": "Branch",
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "read_only": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Draft\nCalculated\nPending Approval\nApproved\nPosted to Payroll\nCancelled",
+   "default": "Draft",
+   "read_only": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "employees_section",
+   "fieldtype": "Section Break",
+   "label": "Employees"
+  },
+  {
+   "fieldname": "employees",
+   "fieldtype": "Table",
+   "label": "Employees",
+   "options": "Incentive Calculation Item",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "total_incentive",
+   "fieldtype": "Currency",
+   "label": "Total Incentive",
+   "read_only": 1,
+   "in_list_view": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "approval_section",
+   "fieldtype": "Section Break",
+   "label": "Approval"
+  },
+  {
+   "fieldname": "approved_by",
+   "fieldtype": "Link",
+   "label": "Approved By",
+   "options": "User",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "col_break_6",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "posted_on",
+   "fieldtype": "Datetime",
+   "label": "Posted On",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "options": "Incentive Calculation Run",
+   "read_only": 1,
+   "no_copy": 1,
+   "print_hide": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-05 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "A3 Retail Operations",
+ "name": "Incentive Calculation Run",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 1,
+   "cancel": 1,
+   "amend": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "A3 Retail Admin",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 1,
+   "cancel": 1,
+   "amend": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "HR Manager",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 1,
+   "cancel": 1,
+   "amend": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Branch Manager",
+   "permlevel": 0,
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Accounts Manager",
+   "permlevel": 0,
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  }
+ ],
+ "sort_field": "from_date",
+ "sort_order": "DESC",
+ "states": [],
+ "autoname": "naming_series:",
+ "is_submittable": 1,
+ "title_field": "scheme",
+ "track_changes": 1,
+ "naming_rule": "By \"Naming Series\" field"
+}

@@ -1,0 +1,185 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-08-05 09:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "employee",
+  "employee_name",
+  "designation",
+  "branch",
+  "target",
+  "achieved",
+  "achievement_percent",
+  "slab_applied",
+  "base_incentive",
+  "spiff_amount",
+  "clawback_amount",
+  "attendance_percent",
+  "qc_fail_percent",
+  "csat_score",
+  "gates_passed",
+  "gate_failure_reason",
+  "final_incentive",
+  "additional_salary",
+  "remarks"
+ ],
+ "fields": [
+  {
+   "fieldname": "employee",
+   "fieldtype": "Link",
+   "label": "Employee",
+   "options": "Employee",
+   "reqd": 1,
+   "in_list_view": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "employee_name",
+   "fieldtype": "Data",
+   "label": "Name",
+   "fetch_from": "employee.employee_name",
+   "read_only": 1,
+   "in_list_view": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "designation",
+   "fieldtype": "Data",
+   "label": "Designation",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "branch",
+   "fieldtype": "Link",
+   "label": "Branch",
+   "options": "Branch",
+   "read_only": 1,
+   "in_list_view": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "target",
+   "fieldtype": "Float",
+   "label": "Target",
+   "in_list_view": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "achieved",
+   "fieldtype": "Float",
+   "label": "Achieved",
+   "in_list_view": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "achievement_percent",
+   "fieldtype": "Percent",
+   "label": "Achievement %",
+   "read_only": 1,
+   "in_list_view": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "slab_applied",
+   "fieldtype": "Data",
+   "label": "Slab",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "base_incentive",
+   "fieldtype": "Currency",
+   "label": "Base Incentive",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "spiff_amount",
+   "fieldtype": "Currency",
+   "label": "Spiff",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "clawback_amount",
+   "fieldtype": "Currency",
+   "label": "Clawback",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "attendance_percent",
+   "fieldtype": "Percent",
+   "label": "Attendance %",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "qc_fail_percent",
+   "fieldtype": "Percent",
+   "label": "QC Fail %",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "csat_score",
+   "fieldtype": "Float",
+   "label": "CSAT",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "gates_passed",
+   "fieldtype": "Check",
+   "label": "Gates Passed",
+   "read_only": 1,
+   "in_list_view": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "gate_failure_reason",
+   "fieldtype": "Data",
+   "label": "Gate Failure",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "final_incentive",
+   "fieldtype": "Currency",
+   "label": "Final Incentive",
+   "read_only": 1,
+   "in_list_view": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "additional_salary",
+   "fieldtype": "Link",
+   "label": "Additional Salary",
+   "options": "Additional Salary",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Data",
+   "label": "Remarks",
+   "allow_on_submit": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-05 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "A3 Retail Operations",
+ "name": "Incentive Calculation Item",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "istable": 1
+}

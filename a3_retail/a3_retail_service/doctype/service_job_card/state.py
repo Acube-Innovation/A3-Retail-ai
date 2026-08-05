@@ -114,6 +114,11 @@ def validate_transition(from_status: str, to_status: str, user: str | None = Non
 	if from_status == to_status:
 		return
 
+	if frappe.flags.get("a3_import_history"):
+		# Back-dated history (demo seeds, go-live imports) records the state the
+		# job ended in; the shop floor already walked the real route months ago.
+		return
+
 	if not can_transition(from_status, to_status):
 		allowed = ", ".join(ALLOWED.get(from_status, ())) or _("none")
 		frappe.throw(

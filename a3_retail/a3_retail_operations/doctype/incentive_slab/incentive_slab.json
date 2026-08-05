@@ -1,0 +1,60 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-08-05 09:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "from_percent",
+  "to_percent",
+  "incentive_type",
+  "value",
+  "remarks"
+ ],
+ "fields": [
+  {
+   "fieldname": "from_percent",
+   "fieldtype": "Float",
+   "label": "From %",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "to_percent",
+   "fieldtype": "Float",
+   "label": "To %",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "incentive_type",
+   "fieldtype": "Select",
+   "label": "Type",
+   "options": "% of Metric Value\nFixed Amount\nPer Unit",
+   "default": "% of Metric Value",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "value",
+   "fieldtype": "Float",
+   "label": "Value",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Data",
+   "label": "Remarks"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-05 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "A3 Retail Operations",
+ "name": "Incentive Slab",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "istable": 1
+}

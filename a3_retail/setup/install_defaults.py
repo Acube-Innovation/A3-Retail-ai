@@ -31,7 +31,7 @@ BRANCH_DIMENSION_DOCTYPES = [
 
 def run():
 	"""Entry point called from after_install and after_migrate."""
-	from a3_retail.setup import accounts, custom_fields, helpdesk, permissions, tax
+	from a3_retail.setup import accounts, custom_fields, helpdesk, hr, permissions, tax
 
 	custom_fields.run()
 	_setup_settings_defaults()
@@ -40,6 +40,7 @@ def run():
 	accounts.run()
 	tax.run()
 	helpdesk.run()
+	hr.run()
 	permissions.run()
 	frappe.db.commit()
 

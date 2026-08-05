@@ -1,0 +1,336 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-08-05 09:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "scheme_name",
+  "applicable_to",
+  "frequency",
+  "is_active",
+  "col_break_1",
+  "designations",
+  "employees",
+  "branches",
+  "basis_section",
+  "metric",
+  "target_type",
+  "monthly_target",
+  "col_break_2",
+  "minimum_qualification_percent",
+  "slab_basis",
+  "payout_component",
+  "cap_amount",
+  "slabs_section",
+  "slabs",
+  "product_spiffs",
+  "bonus_section",
+  "bonus_rule",
+  "bonus_value",
+  "col_break_3",
+  "bonus_threshold_percent",
+  "gates_section",
+  "attendance_gate_percent",
+  "quality_gate",
+  "max_qc_fail_percent",
+  "col_break_4",
+  "csat_gate",
+  "min_csat",
+  "return_clawback"
+ ],
+ "fields": [
+  {
+   "fieldname": "scheme_name",
+   "fieldtype": "Data",
+   "label": "Scheme Name",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "applicable_to",
+   "fieldtype": "Select",
+   "label": "Applicable To",
+   "options": "Sales Executive\nBranch Manager\nTechnician\nTelecaller\nReception\nCustom (Employee List)",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "frequency",
+   "fieldtype": "Select",
+   "label": "Frequency",
+   "options": "Monthly\nQuarterly\nAnnual",
+   "default": "Monthly",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "label": "Active",
+   "default": "1"
+  },
+  {
+   "fieldname": "col_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "designations",
+   "fieldtype": "Table MultiSelect",
+   "label": "Designations",
+   "options": "Incentive Designation"
+  },
+  {
+   "fieldname": "employees",
+   "fieldtype": "Table MultiSelect",
+   "label": "Employees",
+   "options": "Incentive Employee"
+  },
+  {
+   "fieldname": "branches",
+   "fieldtype": "Table",
+   "label": "Branches",
+   "options": "Offer Branch"
+  },
+  {
+   "fieldname": "basis_section",
+   "fieldtype": "Section Break",
+   "label": "Basis"
+  },
+  {
+   "fieldname": "metric",
+   "fieldtype": "Select",
+   "label": "Metric",
+   "options": "Net Sales Value\nUnits Sold\nGross Profit\nService Revenue\nJobs Completed\nEW Plans Sold\nEMI Applications Disbursed\nAccessory Attach Value\nFootfall Conversion %\nCollections\nTelecalling Conversions",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "target_type",
+   "fieldtype": "Select",
+   "label": "Target Type",
+   "options": "Absolute Target\n% of Branch Target\nNo Target (Slab from Zero)",
+   "default": "Absolute Target"
+  },
+  {
+   "fieldname": "monthly_target",
+   "fieldtype": "Float",
+   "label": "Monthly Target"
+  },
+  {
+   "fieldname": "col_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "minimum_qualification_percent",
+   "fieldtype": "Percent",
+   "label": "Minimum Qualification %",
+   "default": "80"
+  },
+  {
+   "fieldname": "slab_basis",
+   "fieldtype": "Select",
+   "label": "Match Slabs On",
+   "options": "Achievement %\nMetric Value",
+   "default": "Achievement %",
+   "description": "Unit-based schemes (jobs, plans, applications) match the raw count; value-based schemes match the achievement percentage."
+  },
+  {
+   "fieldname": "payout_component",
+   "fieldtype": "Link",
+   "label": "Payout Component",
+   "options": "Salary Component"
+  },
+  {
+   "fieldname": "cap_amount",
+   "fieldtype": "Currency",
+   "label": "Cap per Period"
+  },
+  {
+   "fieldname": "slabs_section",
+   "fieldtype": "Section Break",
+   "label": "Slabs & Spiffs"
+  },
+  {
+   "fieldname": "slabs",
+   "fieldtype": "Table",
+   "label": "Slabs",
+   "options": "Incentive Slab"
+  },
+  {
+   "fieldname": "product_spiffs",
+   "fieldtype": "Table",
+   "label": "Product Spiffs",
+   "options": "Incentive Product Spiff"
+  },
+  {
+   "fieldname": "bonus_section",
+   "fieldtype": "Section Break",
+   "label": "Conditional Bonus"
+  },
+  {
+   "fieldname": "bonus_rule",
+   "fieldtype": "Select",
+   "label": "Bonus Rule",
+   "options": "\nEMI Approved Within 24 Hours\nBranch EW Attach Rate\nRepairs Within TAT",
+   "description": "Schemes 3 and 4 in the scope pay a bonus that no product spiff can express."
+  },
+  {
+   "fieldname": "bonus_value",
+   "fieldtype": "Currency",
+   "label": "Bonus Value",
+   "depends_on": "bonus_rule"
+  },
+  {
+   "fieldname": "col_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "bonus_threshold_percent",
+   "fieldtype": "Percent",
+   "label": "Bonus Threshold %",
+   "depends_on": "bonus_rule"
+  },
+  {
+   "fieldname": "gates_section",
+   "fieldtype": "Section Break",
+   "label": "Gates"
+  },
+  {
+   "fieldname": "attendance_gate_percent",
+   "fieldtype": "Percent",
+   "label": "Attendance Gate %",
+   "default": "90"
+  },
+  {
+   "fieldname": "quality_gate",
+   "fieldtype": "Check",
+   "label": "Apply QC Gate"
+  },
+  {
+   "fieldname": "max_qc_fail_percent",
+   "fieldtype": "Percent",
+   "label": "Max QC Fail %",
+   "default": "5",
+   "depends_on": "quality_gate"
+  },
+  {
+   "fieldname": "col_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "csat_gate",
+   "fieldtype": "Check",
+   "label": "Apply CSAT Gate"
+  },
+  {
+   "fieldname": "min_csat",
+   "fieldtype": "Float",
+   "label": "Minimum CSAT",
+   "default": "4.0",
+   "depends_on": "csat_gate"
+  },
+  {
+   "fieldname": "return_clawback",
+   "fieldtype": "Check",
+   "label": "Clawback on Returns"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-05 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "A3 Retail Operations",
+ "name": "Employee Incentive Scheme",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "A3 Retail Admin",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "HR Manager",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Branch Manager",
+   "permlevel": 0,
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Accounts Manager",
+   "permlevel": 0,
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "autoname": "field:scheme_name",
+ "title_field": "scheme_name",
+ "track_changes": 1,
+ "naming_rule": "By fieldname"
+}

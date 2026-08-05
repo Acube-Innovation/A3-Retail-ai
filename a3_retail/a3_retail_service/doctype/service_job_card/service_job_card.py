@@ -110,10 +110,12 @@ class ServiceJobCard(A3BranchMixin, Document):
 		if current in (st.ESTIMATE_PENDING, st.IN_PROGRESS) and not self.diagnosed_on:
 			self.diagnosed_on = now
 		if current == st.READY_FOR_DELIVERY:
-			self.ready_on = now
+			# A timestamp already on the document wins — back-dated history keeps
+			# the date it actually happened.
+			self.ready_on = self.ready_on or now
 			self.generate_delivery_otp()
 		if current == st.DELIVERED:
-			self.delivered_on = now
+			self.delivered_on = self.delivered_on or now
 		# Accumulate paused time so the TAT clock excludes it (scope 3.11).
 		if previous in st.PAUSED_STATUSES and current not in st.PAUSED_STATUSES:
 			self.accumulate_paused_hours(previous)

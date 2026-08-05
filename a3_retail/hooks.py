@@ -94,8 +94,20 @@ doc_events = {
 		"on_cancel": "a3_retail.communication.engine.handle",
 	},
 	"Employee": {
+		"validate": "a3_retail.hr.assets.block_exit_with_assets",
 		"on_update": "a3_retail.overrides.employee.on_update",
 		"on_trash": "a3_retail.overrides.employee.on_trash",
+	},
+	# HR, attendance and asset custody (scope 10.1, 10.3).
+	"Employee Checkin": {
+		"validate": "a3_retail.hr.attendance.validate_checkin",
+	},
+	"Attendance": {
+		"validate": "a3_retail.hr.attendance.stamp_attendance_branch",
+	},
+	"Asset Movement": {
+		"on_submit": "a3_retail.hr.assets.sync_custody",
+		"on_cancel": "a3_retail.hr.assets.clear_custody",
 	},
 	"Service Job Card": {
 		"on_update_after_submit": "a3_retail.a3_retail_operations.doctype.courier_dispatch.courier_dispatch.auto_draft_for_job_card",
@@ -136,7 +148,11 @@ doc_events = {
 		"on_cancel": "a3_retail.overrides.sales_invoice.on_cancel",
 	},
 	"Purchase Invoice": {"before_validate": "a3_retail.overrides.transactions.stamp_branch"},
-	"Journal Entry": {"before_validate": "a3_retail.overrides.transactions.stamp_branch"},
+	"Journal Entry": {
+		"before_validate": "a3_retail.overrides.transactions.stamp_branch",
+		# Payroll's accrual JE carries one row per branch cost center (scope 10.1).
+		"validate": "a3_retail.setup.hr.stamp_row_dimensions",
+	},
 	"Payment Entry": {"before_validate": "a3_retail.overrides.transactions.stamp_branch"},
 	"Stock Entry": {"before_validate": "a3_retail.overrides.transactions.stamp_branch"},
 	"Delivery Note": {"before_validate": "a3_retail.overrides.transactions.stamp_branch"},
@@ -180,11 +196,13 @@ scheduler_events = {
 		"a3_retail.a3_retail_operations.doctype.demurrage_charge.demurrage_charge.raise_storage_charges",
 		"a3_retail.a3_retail_communication.doctype.telecalling_campaign.telecalling_campaign.close_finished_campaigns",
 		"a3_retail.communication.engine.run_date_based_rules",
+		"a3_retail.hr.attendance.mark_absent_for_yesterday",
 	],
 	"weekly": [
 		"a3_retail.a3_retail_warranty.doctype.oem_warranty_return.oem_warranty_return.flag_overdue_returns",
 		"a3_retail.a3_retail_sales.doctype.stock_request.stock_request.flag_stuck_transfers",
 		"a3_retail.a3_retail_operations.doctype.demurrage_charge.demurrage_charge.generate_dead_stock_todos",
+		"a3_retail.hr.assets.calibration_reminders",
 	],
 	"cron": {},
 }

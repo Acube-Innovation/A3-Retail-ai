@@ -69,6 +69,14 @@
   "payment_gateway_account",
   "upi_vpa",
   "portal_terms",
+  "hr_section",
+  "enforce_checkin_geofence",
+  "default_geofence_radius",
+  "auto_mark_absent",
+  "col_break_10",
+  "incentive_payout_component",
+  "incentive_approval_required",
+  "asset_exit_clearance",
   "numbering_section",
   "job_card_prefix",
   "estimate_prefix",
@@ -427,6 +435,53 @@
    "fieldname": "portal_terms",
    "fieldtype": "Text Editor",
    "label": "Portal Terms"
+  },
+  {
+   "fieldname": "hr_section",
+   "fieldtype": "Section Break",
+   "label": "HR, Attendance & Incentives"
+  },
+  {
+   "fieldname": "enforce_checkin_geofence",
+   "fieldtype": "Check",
+   "label": "Enforce Check-in Geofence",
+   "default": "1",
+   "description": "Reject a mobile check-in taken outside the branch radius."
+  },
+  {
+   "fieldname": "default_geofence_radius",
+   "fieldtype": "Int",
+   "label": "Default Geofence Radius (m)",
+   "default": "200"
+  },
+  {
+   "fieldname": "auto_mark_absent",
+   "fieldtype": "Check",
+   "label": "Auto-mark Absent Nightly",
+   "default": "1",
+   "description": "Employees with neither attendance nor approved leave are marked Absent for the previous day."
+  },
+  {
+   "fieldname": "col_break_10",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "incentive_payout_component",
+   "fieldtype": "Link",
+   "label": "Default Incentive Salary Component",
+   "options": "Salary Component"
+  },
+  {
+   "fieldname": "incentive_approval_required",
+   "fieldtype": "Check",
+   "label": "Incentive Run Needs Approval",
+   "default": "1"
+  },
+  {
+   "fieldname": "asset_exit_clearance",
+   "fieldtype": "Check",
+   "label": "Block Exit with Assets Held",
+   "default": "1"
   },
   {
    "fieldname": "numbering_section",

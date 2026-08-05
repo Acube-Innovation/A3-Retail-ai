@@ -156,6 +156,84 @@ def _device_models():
 	return count, count >= 6
 
 
+# --------------------------------------------------------------- step 23 checks
+# The four validation queries in scope 10.5, plus the July incentive table.
+@check("Incentive schemes", "6")
+def _incentive_schemes():
+	count = frappe.db.count("Employee Incentive Scheme")
+	return count, count >= 6
+
+
+@check("Active staff without payroll CC", "0")
+def _payroll_cost_centers():
+	rows = frappe.db.sql(
+		"""select name from `tabEmployee`
+		   where status = 'Active' and branch != 'Head Office'
+		     and ifnull(payroll_cost_center, '') = ''"""
+	)
+	return len(rows), not rows
+
+
+@check("Submitted assets without custodian", "0")
+def _assets_without_custodian():
+	rows = frappe.db.sql(
+		"""select name from `tabAsset`
+		   where docstatus = 1 and status = 'Submitted'
+		     and ifnull(a3_assigned_employee, '') = ''"""
+	)
+	return len(rows), not rows
+
+
+@check("Left employees holding assets", "0")
+def _left_employees_with_assets():
+	rows = frappe.db.sql(
+		"""select a.name from `tabAsset` a
+		   join `tabEmployee` e on e.name = a.a3_assigned_employee
+		   where e.status = 'Left' and a.docstatus = 1"""
+	)
+	return len(rows), not rows
+
+
+@check("Incentive posted vs payroll", "matched")
+def _incentive_posted():
+	rows = frappe.db.sql(
+		"""select r.name, r.total_incentive, ifnull(sum(a.amount), 0) as posted
+		   from `tabIncentive Calculation Run` r
+		   join `tabIncentive Calculation Item` i on i.parent = r.name
+		   left join `tabAdditional Salary` a on a.name = i.additional_salary
+		   where r.status = 'Posted to Payroll' and r.docstatus = 1
+		   group by r.name""",
+		as_dict=True,
+	)
+	mismatched = [r.name for r in rows if abs(r.total_incentive - r.posted) > 1]
+	return f"{len(rows)} runs", not mismatched
+
+
+@check("July incentive table", "7 rows match")
+def _july_incentive_table():
+	"""The scope 10.2 demo table, recomputed from the seeded transactions."""
+	expected = {
+		"Vipin S": 8028,
+		"Rafeeq M": 450,
+		"Manoj Kumar": 2400,
+		"Vishnu P": 6390,
+		"Sajeer K": 0,
+		"Rijo Thomas": 5670,
+		"Sneha M": 1640,
+	}
+	rows = frappe.db.sql(
+		"""select i.employee_name, sum(i.final_incentive) as payout
+		   from `tabIncentive Calculation Item` i
+		   join `tabIncentive Calculation Run` r on r.name = i.parent
+		   where r.docstatus = 1 and r.from_date = '2026-07-01'
+		   group by i.employee_name""",
+		as_dict=True,
+	)
+	actual = {row.employee_name: row.payout for row in rows}
+	matched = sum(1 for name, value in expected.items() if abs(actual.get(name, -1) - value) < 1)
+	return f"{matched} rows", matched == len(expected)
+
+
 def run(verbose: bool = True):
 	"""Execute every registered check; returns (passed, failed, rows)."""
 	rows = []

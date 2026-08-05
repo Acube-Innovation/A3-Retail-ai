@@ -44,16 +44,22 @@ Desk page routes are prefixed `a3-` (`a3-reception-desk`) to avoid collisions.
 | 12 | POS & selling guards | `pos_extension.js` (P1–P9, patches `cur_pos` without forking POS), device-serial guard, min-price guard, sales-person rule, serial stamping on submit |
 | 13 | Seasonal offers | `Seasonal Offer Campaign` -> standard Pricing Rules per branch warehouse, budget cap with auto-pause, approval flow, daily activate/expire |
 | 14 | Device exchange | Grading engine, used Item + Serial No with the original IMEI, Purchase Receipt into Used Devices, margin-scheme resale, Exchange Adjustment payment |
+| 15 | EMI finance | `Finance Partner`, `EMI Scheme`, `EMI Document Type`, `EMI Application` with document checklist, subvention posting, financier settlement |
+| 16 | Warranty | `Warranty Registration`, extended-warranty plans with deferred revenue, `Warranty Claim`, `OEM Warranty Return`, renewal reminders |
+| 17 | Stock & transfers | Cross-branch Stock Explorer page, `Stock Request` with in-transit (Add to Transit / End Transit) legs, approval limits |
+| 18 | Damages & demurrage | `Stock Damage Report` with recovery routing, `Demurrage Charge` storage billing, dead-stock rules and provisioning |
+| 19 | Courier & logistics | `Courier Partner`, `Courier Rate Card`, zone derivation from pincode, `Courier Dispatch`, delivery trips, delay scan |
+| 20 | Footfall & CRM | `Branch Visit Log` with conversion linking, Lead capture, `Customer Feedback` (NPS), helpdesk SLA tiers and escalation ladder |
+| 21 | Telecalling | `Telecalling Campaign` list generation, `Call Task`, `Call Disposition`, DNC handling, calling console API |
+| 22 | Communication | Stream-separated senders, `WhatsApp Template`/`Communication Rule`/`Message Log`, `doc_events["*"]` dispatcher, opt-in + quiet-hours compliance, Meta Cloud provider |
+| 23 | HR, incentives, assets | HRMS configuration (`setup/hr.py`), branch geofence on Employee Checkin, `Employee Incentive Scheme` + `Incentive Calculation Run` engine, Post to Payroll, asset custody and exit clearance |
 
-## Remaining steps (15–26)
+## Remaining steps (24–26)
 
-15 EMI finance · 16 Warranty · 17 Stock explorer & transfers ·
-18 Damages/demurrage · 19 Courier & logistics · 20 Footfall/CRM ·
-21 Telecalling · 22 Communication engine · 23 HR & incentives · 24 Print
-formats · 25 Dashboards & reports · 26 Portal, payments, demo data, hardening.
+24 Print formats & letter heads · 25 Dashboards, control tower & reports ·
+26 Portal, payments, demo data, UAT hardening.
 
-Seams already in place for them: `communication/engine.py` +
-`communication/dispatch.py` (step 22), `Portal OTP` and `website_route_rules`
+Seams already in place for them: `Portal OTP` and `website_route_rules`
 (step 26), `setup/permissions.py` `PERMISSION_MATRIX` and
 `utils/permissions.py` `BRANCH_SCOPED_DOCTYPES` (append new doctypes),
 `demo/install.py` (drop in `NN_topic.py`), `demo/verify.py` (`@check`).
@@ -121,6 +127,41 @@ with how ERPNext v15 actually behaves. Each was resolved deliberately.
     priority 1. ERPNext resolves overlapping rules by priority and raises
     `MultiplePricingRuleConflict` when two of equal priority match one item, so
     the demo campaigns are seeded with distinct priorities.
+
+11. **Slabs sometimes band the count, not the percentage.** Scope 10.2's July
+    table pays Sajeer the 40–59 rate on 55 jobs against a 60-job target — i.e.
+    the slab is matched on the raw metric even though a target exists, while the
+    sales scheme matches on achievement %. Neither can be inferred, so
+    `Employee Incentive Scheme.slab_basis` makes the choice explicit.
+
+12. **Per-employee incentive targets.** The same table gives Vipin ₹6,00,000 and
+    Rafeeq ₹4,00,000 under one scheme whose headline target is ₹6,00,000.
+    `Incentive Employee.monthly_target` carries the override.
+
+13. **Two demo schemes pay a bonus no product spiff can express** — "₹150 if the
+    EMI application is approved within 24 hours" (scheme 4) and "₹2,000 if the
+    branch EW attach rate ≥ 25%" (scheme 3). `Incentive Product Spiff` is
+    item/brand/group-based, so a `bonus_rule` / `bonus_value` /
+    `bonus_threshold_percent` block was added to the scheme and its result is
+    reported in the row's spiff column, which is where the July table puts it.
+    EMI Application dates approvals rather than timestamping them, so "within 24
+    hours" is read as *approved the same or next day*.
+
+14. **A metric the scope's own list omits.** Scheme 5 pays per telecalling
+    conversion; `metric` had no such option, so `Telecalling Conversions` was
+    added alongside the ten listed.
+
+15. **Demo attendance percentages are quantised.** July 2026 gives 25 marked
+    days, so attendance moves in 2% steps (a half day is worth 1%). Sajeer 89 →
+    88, Rijo 97 → 96 and Sneha 95 → 96; every gate outcome in the table is
+    unchanged, including Sajeer failing the 90% gate with a zero payout.
+
+16. **Back-dated job cards are imported, not walked.** Reproducing the July
+    technician run needs 189 delivered repairs. Walking each through eight
+    status hops would make the seed unusable, so `frappe.flags.a3_import_history`
+    lets the state machine accept the state a historical document ended in — the
+    same treatment ERPNext gives opening entries. `on_status_changed` now keeps a
+    timestamp the document already carries instead of stamping `now`.
 
 ## Testing notes
 
