@@ -37,7 +37,7 @@
    "fieldname": "purpose",
    "fieldtype": "Select",
    "label": "Purpose",
-   "options": "Estimate Approval\nService Tracking\nPayment\nFeedback\nGeneral",
+   "options": "Estimate Approval\nService Tracking\nPayment\nFeedback\nComplaint\nGeneral",
    "default": "General",
    "in_list_view": 1
   },

@@ -35,7 +35,7 @@
 	document.getElementById("a3-send").addEventListener("click", async () => {
 		const mobile = document.getElementById("a3-mobile").value.trim();
 		try {
-			await frappe.call("a3_retail.api.portal.request_otp", { mobile_no: mobile, purpose: "Track Service" });
+			await frappe.call("a3_retail.api.portal.request_otp", { mobile_no: mobile, purpose: "Service Tracking" });
 			document.getElementById("a3-otp-box").style.display = "block";
 			msg("{{ _('We sent you a one-time password.') }}");
 		} catch (e) {
@@ -49,7 +49,7 @@
 		try {
 			const verified = await frappe.call("a3_retail.api.portal.verify_otp", {
 				mobile_no: mobile, otp: document.getElementById("a3-otp").value.trim(),
-				purpose: "Track Service",
+				purpose: "Service Tracking",
 			});
 			otpToken = verified.message.token;
 			const result = await frappe.call("a3_retail.api.portal.track_service", {

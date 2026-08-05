@@ -129,7 +129,7 @@ DT(
 DT("Portal OTP", COMM, [
 	f("mobile_no", "Data", "Mobile", reqd=1, in_list_view=1, search_index=1),
 	f("otp_hash", "Data", "OTP Hash", read_only=1),
-	f("purpose", "Select", "Purpose", "Estimate Approval\nService Tracking\nPayment\nFeedback\nGeneral",
+	f("purpose", "Select", "Purpose", "Estimate Approval\nService Tracking\nPayment\nFeedback\nComplaint\nGeneral",
 	  default="General", in_list_view=1),
 	f("reference_doctype", "Link", "Reference Type", "DocType", read_only=1),
 	f("reference_name", "Dynamic Link", "Reference", "reference_doctype", read_only=1),

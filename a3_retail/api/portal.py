@@ -205,7 +205,7 @@ TIMELINE_STAGES = [
 @frappe.whitelist(allow_guest=True)
 def track_service(reference: str, mobile_no: str, otp_token: str) -> dict:
 	"""Live status for a job card, after the customer proves the mobile is theirs."""
-	session = verify_session_token(otp_token, "Track Service")
+	session = verify_session_token(otp_token, "Service Tracking")
 	if not session:
 		frappe.throw(_("Verify the OTP sent to your mobile first."), frappe.PermissionError)
 

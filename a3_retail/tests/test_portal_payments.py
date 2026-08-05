@@ -119,7 +119,7 @@ class TestTrackService(FrappeTestCase):
 		if not job:
 			self.skipTest("no job card with a mobile number")
 
-		token = portal._issue_session_token(job.customer_mobile, "Track Service")
+		token = portal._issue_session_token(job.customer_mobile, "Service Tracking")
 		result = portal.track_service(job.name, job.customer_mobile, token)
 
 		self.assertEqual(result["job_card"], job.name)
@@ -134,13 +134,13 @@ class TestTrackService(FrappeTestCase):
 		if not job:
 			self.skipTest("no job card with a mobile number")
 
-		token = portal._issue_session_token("9000000000", "Track Service")
+		token = portal._issue_session_token("9000000000", "Service Tracking")
 		self.assertRaises(
 			frappe.PermissionError, portal.track_service, job.name, job.customer_mobile, token
 		)
 
 	def test_an_unknown_reference_is_not_found(self):
-		token = portal._issue_session_token("9847012345", "Track Service")
+		token = portal._issue_session_token("9847012345", "Service Tracking")
 		self.assertRaises(
 			frappe.ValidationError, portal.track_service, "JC-NOPE", "9847012345", token
 		)
