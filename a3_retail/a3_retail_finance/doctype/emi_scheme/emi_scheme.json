@@ -1,0 +1,287 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-08-05 09:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "scheme_name",
+  "finance_partner",
+  "scheme_code",
+  "tenure_months",
+  "col_break_4",
+  "is_no_cost_emi",
+  "interest_rate",
+  "processing_fee",
+  "processing_fee_type",
+  "is_active",
+  "terms_section",
+  "down_payment_percent",
+  "min_down_payment",
+  "subvention_percent",
+  "col_break_5",
+  "cashback_amount",
+  "min_invoice_amount",
+  "max_invoice_amount",
+  "applicability_section",
+  "applicable_brands",
+  "applicable_item_groups",
+  "col_break_6",
+  "valid_from",
+  "valid_upto",
+  "applicable_branches"
+ ],
+ "fields": [
+  {
+   "fieldname": "scheme_name",
+   "fieldtype": "Data",
+   "label": "Scheme Name",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "finance_partner",
+   "fieldtype": "Link",
+   "label": "Finance Partner",
+   "options": "Finance Partner",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "scheme_code",
+   "fieldtype": "Data",
+   "label": "Partner Scheme Code"
+  },
+  {
+   "fieldname": "tenure_months",
+   "fieldtype": "Int",
+   "label": "Tenure (Months)",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "col_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "is_no_cost_emi",
+   "fieldtype": "Check",
+   "label": "No Cost EMI",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "interest_rate",
+   "fieldtype": "Percent",
+   "label": "Interest Rate (% p.a.)"
+  },
+  {
+   "fieldname": "processing_fee",
+   "fieldtype": "Currency",
+   "label": "Processing Fee"
+  },
+  {
+   "fieldname": "processing_fee_type",
+   "fieldtype": "Select",
+   "label": "Fee Type",
+   "options": "Fixed\nPercentage",
+   "default": "Fixed"
+  },
+  {
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "label": "Active",
+   "default": "1"
+  },
+  {
+   "fieldname": "terms_section",
+   "fieldtype": "Section Break",
+   "label": "Terms"
+  },
+  {
+   "fieldname": "down_payment_percent",
+   "fieldtype": "Percent",
+   "label": "Down Payment %"
+  },
+  {
+   "fieldname": "min_down_payment",
+   "fieldtype": "Currency",
+   "label": "Min Down Payment"
+  },
+  {
+   "fieldname": "subvention_percent",
+   "fieldtype": "Percent",
+   "label": "Merchant Subvention %"
+  },
+  {
+   "fieldname": "col_break_5",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "cashback_amount",
+   "fieldtype": "Currency",
+   "label": "Cashback"
+  },
+  {
+   "fieldname": "min_invoice_amount",
+   "fieldtype": "Currency",
+   "label": "Min Invoice Amount"
+  },
+  {
+   "fieldname": "max_invoice_amount",
+   "fieldtype": "Currency",
+   "label": "Max Invoice Amount"
+  },
+  {
+   "fieldname": "applicability_section",
+   "fieldtype": "Section Break",
+   "label": "Applicability"
+  },
+  {
+   "fieldname": "applicable_brands",
+   "fieldtype": "Table MultiSelect",
+   "label": "Brands",
+   "options": "EMI Scheme Brand"
+  },
+  {
+   "fieldname": "applicable_item_groups",
+   "fieldtype": "Table MultiSelect",
+   "label": "Item Groups",
+   "options": "EMI Scheme Item Group"
+  },
+  {
+   "fieldname": "col_break_6",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "valid_from",
+   "fieldtype": "Date",
+   "label": "Valid From"
+  },
+  {
+   "fieldname": "valid_upto",
+   "fieldtype": "Date",
+   "label": "Valid Upto"
+  },
+  {
+   "fieldname": "applicable_branches",
+   "fieldtype": "Table",
+   "label": "Branches",
+   "options": "Offer Branch"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-05 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "A3 Retail Finance",
+ "name": "EMI Scheme",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "A3 Retail Admin",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "EMI Coordinator",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Sales Executive",
+   "permlevel": 0,
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Branch Manager",
+   "permlevel": 0,
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Accounts Manager",
+   "permlevel": 0,
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "autoname": "field:scheme_name",
+ "title_field": "scheme_name",
+ "track_changes": 1,
+ "naming_rule": "By fieldname"
+}

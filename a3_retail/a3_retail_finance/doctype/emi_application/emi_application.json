@@ -1,0 +1,642 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-08-05 09:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "application_date",
+  "status",
+  "col_break_8",
+  "branch",
+  "branch_code",
+  "company",
+  "customer_section",
+  "customer",
+  "customer_name",
+  "customer_mobile",
+  "customer_email",
+  "employment_type",
+  "col_break_9",
+  "monthly_income",
+  "pan_number",
+  "aadhaar_last4",
+  "date_of_birth",
+  "existing_customer_of_partner",
+  "existing_loan_account",
+  "sale_section",
+  "items",
+  "invoice_total",
+  "finance_section",
+  "finance_partner",
+  "emi_scheme",
+  "tenure_months",
+  "down_payment",
+  "loan_amount",
+  "col_break_10",
+  "processing_fee",
+  "emi_amount",
+  "first_emi_date",
+  "merchant_subvention_cost",
+  "mdr_amount",
+  "net_realisable",
+  "documents_section",
+  "documents",
+  "all_documents_received",
+  "col_break_11",
+  "documents_verified_by",
+  "response_section",
+  "submitted_on",
+  "partner_application_no",
+  "approval_date",
+  "approved_loan_amount",
+  "loan_account_number",
+  "col_break_12",
+  "rejection_reason",
+  "rejection_remarks",
+  "cibil_score",
+  "linkage_section",
+  "sales_order",
+  "sales_invoice",
+  "disbursement_date",
+  "col_break_13",
+  "settlement",
+  "amount_received",
+  "sales_person",
+  "coordinator",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "EMI-.YY.-.#####",
+   "hidden": 1,
+   "default": "EMI-.YY.-.#####"
+  },
+  {
+   "fieldname": "application_date",
+   "fieldtype": "Date",
+   "label": "Date",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Draft\nDocuments Pending\nReady to Submit\nSubmitted to Financier\nUnder Review\nApproved\nRejected\nDisbursed\nSettled\nCancelled",
+   "default": "Draft",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "col_break_8",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "branch",
+   "fieldtype": "Link",
+   "label": "Branch",
+   "options": "Branch",
+   "reqd": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "branch_code",
+   "fieldtype": "Data",
+   "label": "Branch Code",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "read_only": 1
+  },
+  {
+   "fieldname": "customer_section",
+   "fieldtype": "Section Break",
+   "label": "Customer"
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "label": "Customer",
+   "options": "Customer",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "customer_name",
+   "fieldtype": "Data",
+   "label": "Customer Name",
+   "fetch_from": "customer.customer_name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "customer_mobile",
+   "fieldtype": "Data",
+   "label": "Mobile",
+   "fetch_from": "customer.a3_mobile_no",
+   "read_only": 1
+  },
+  {
+   "fieldname": "customer_email",
+   "fieldtype": "Data",
+   "label": "Email",
+   "options": "Email",
+   "fetch_from": "customer.email_id"
+  },
+  {
+   "fieldname": "employment_type",
+   "fieldtype": "Select",
+   "label": "Employment Type",
+   "options": "Salaried\nSelf Employed\nBusiness Owner\nRetired\nStudent",
+   "reqd": 1
+  },
+  {
+   "fieldname": "col_break_9",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "monthly_income",
+   "fieldtype": "Currency",
+   "label": "Monthly Income"
+  },
+  {
+   "fieldname": "pan_number",
+   "fieldtype": "Data",
+   "label": "PAN",
+   "reqd": 1,
+   "length": 10
+  },
+  {
+   "fieldname": "aadhaar_last4",
+   "fieldtype": "Data",
+   "label": "Aadhaar (last 4)",
+   "reqd": 1,
+   "length": 4
+  },
+  {
+   "fieldname": "date_of_birth",
+   "fieldtype": "Date",
+   "label": "Date of Birth"
+  },
+  {
+   "fieldname": "existing_customer_of_partner",
+   "fieldtype": "Check",
+   "label": "Pre-approved with Partner"
+  },
+  {
+   "fieldname": "existing_loan_account",
+   "fieldtype": "Data",
+   "label": "Existing Loan A/c"
+  },
+  {
+   "fieldname": "sale_section",
+   "fieldtype": "Section Break",
+   "label": "Sale Details"
+  },
+  {
+   "fieldname": "items",
+   "fieldtype": "Table",
+   "label": "Items",
+   "options": "EMI Application Item",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "invoice_total",
+   "fieldtype": "Currency",
+   "label": "Invoice Total",
+   "reqd": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "finance_section",
+   "fieldtype": "Section Break",
+   "label": "Finance"
+  },
+  {
+   "fieldname": "finance_partner",
+   "fieldtype": "Link",
+   "label": "Finance Partner",
+   "options": "Finance Partner",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "emi_scheme",
+   "fieldtype": "Link",
+   "label": "EMI Scheme",
+   "options": "EMI Scheme",
+   "reqd": 1
+  },
+  {
+   "fieldname": "tenure_months",
+   "fieldtype": "Int",
+   "label": "Tenure",
+   "read_only": 1
+  },
+  {
+   "fieldname": "down_payment",
+   "fieldtype": "Currency",
+   "label": "Down Payment",
+   "reqd": 1
+  },
+  {
+   "fieldname": "loan_amount",
+   "fieldtype": "Currency",
+   "label": "Loan Amount",
+   "read_only": 1,
+   "in_list_view": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "col_break_10",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "processing_fee",
+   "fieldtype": "Currency",
+   "label": "Processing Fee",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "emi_amount",
+   "fieldtype": "Currency",
+   "label": "Monthly EMI",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "first_emi_date",
+   "fieldtype": "Date",
+   "label": "First EMI Date",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "merchant_subvention_cost",
+   "fieldtype": "Currency",
+   "label": "Subvention Cost (Merchant)",
+   "read_only": 1,
+   "permlevel": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "mdr_amount",
+   "fieldtype": "Currency",
+   "label": "Expected MDR",
+   "read_only": 1,
+   "permlevel": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "net_realisable",
+   "fieldtype": "Currency",
+   "label": "Net Realisable",
+   "read_only": 1,
+   "permlevel": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "documents_section",
+   "fieldtype": "Section Break",
+   "label": "Documents"
+  },
+  {
+   "fieldname": "documents",
+   "fieldtype": "Table",
+   "label": "Document Checklist",
+   "options": "EMI Document Checklist",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "all_documents_received",
+   "fieldtype": "Check",
+   "label": "Documents Complete",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "col_break_11",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "documents_verified_by",
+   "fieldtype": "Link",
+   "label": "Verified By",
+   "options": "Employee",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "response_section",
+   "fieldtype": "Section Break",
+   "label": "Financier Response"
+  },
+  {
+   "fieldname": "submitted_on",
+   "fieldtype": "Datetime",
+   "label": "Submitted On",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "partner_application_no",
+   "fieldtype": "Data",
+   "label": "Partner Application No",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "approval_date",
+   "fieldtype": "Date",
+   "label": "Approval Date",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "approved_loan_amount",
+   "fieldtype": "Currency",
+   "label": "Approved Amount",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "loan_account_number",
+   "fieldtype": "Data",
+   "label": "Loan Account No",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "col_break_12",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "rejection_reason",
+   "fieldtype": "Select",
+   "label": "Rejection Reason",
+   "options": "\nLow CIBIL Score\nInsufficient Income\nDocument Mismatch\nExisting Overdue\nAddress Verification Failed\nCustomer Withdrew\nOther",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "rejection_remarks",
+   "fieldtype": "Small Text",
+   "label": "Remarks",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "cibil_score",
+   "fieldtype": "Int",
+   "label": "CIBIL Score",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "linkage_section",
+   "fieldtype": "Section Break",
+   "label": "Linkage & Settlement"
+  },
+  {
+   "fieldname": "sales_order",
+   "fieldtype": "Link",
+   "label": "Sales Order",
+   "options": "Sales Order",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "sales_invoice",
+   "fieldtype": "Link",
+   "label": "Sales Invoice",
+   "options": "Sales Invoice",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "disbursement_date",
+   "fieldtype": "Date",
+   "label": "Disbursement Date",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "col_break_13",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "settlement",
+   "fieldtype": "Link",
+   "label": "Financier Settlement",
+   "options": "Financier Settlement",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "amount_received",
+   "fieldtype": "Currency",
+   "label": "Amount Received",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "sales_person",
+   "fieldtype": "Link",
+   "label": "Sales Person",
+   "options": "Sales Person"
+  },
+  {
+   "fieldname": "coordinator",
+   "fieldtype": "Link",
+   "label": "EMI Coordinator",
+   "options": "Employee"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "options": "EMI Application",
+   "read_only": 1,
+   "no_copy": 1,
+   "print_hide": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-05 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "A3 Retail Finance",
+ "name": "EMI Application",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 1,
+   "cancel": 1,
+   "amend": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "A3 Retail Admin",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 1,
+   "cancel": 1,
+   "amend": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Branch Manager",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 1,
+   "cancel": 1,
+   "amend": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "EMI Coordinator",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 1,
+   "cancel": 1,
+   "amend": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Sales Executive",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Reception Executive",
+   "permlevel": 0,
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Accounts Manager",
+   "permlevel": 0,
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "A3 Retail Admin",
+   "permlevel": 1,
+   "read": 1,
+   "write": 1,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 0,
+   "export": 0,
+   "print": 0,
+   "email": 0,
+   "share": 0
+  },
+  {
+   "role": "Branch Manager",
+   "permlevel": 1,
+   "read": 1,
+   "write": 1,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 0,
+   "export": 0,
+   "print": 0,
+   "email": 0,
+   "share": 0
+  },
+  {
+   "role": "Accounts Manager",
+   "permlevel": 1,
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 0,
+   "export": 0,
+   "print": 0,
+   "email": 0,
+   "share": 0
+  }
+ ],
+ "sort_field": "application_date",
+ "sort_order": "DESC",
+ "states": [],
+ "autoname": "naming_series:",
+ "is_submittable": 1,
+ "title_field": "customer_name",
+ "search_fields": "customer_name,partner_application_no,status",
+ "track_changes": 1,
+ "naming_rule": "By \"Naming Series\" field"
+}

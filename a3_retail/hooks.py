@@ -101,12 +101,17 @@ doc_events = {
 		"validate": [
 			"a3_retail.overrides.transactions.apply_margin_scheme",
 			"a3_retail.overrides.sales_invoice.validate",
+			"a3_retail.a3_retail_finance.doctype.emi_application.emi_application.validate_emi_payment",
 		],
 		"on_submit": [
 			"a3_retail.overrides.sales_invoice.on_submit",
 			"a3_retail.a3_retail_sales.doctype.seasonal_offer_campaign.seasonal_offer_campaign.track_offer_consumption",
+			"a3_retail.a3_retail_finance.doctype.emi_application.emi_application.stamp_invoice_on_application",
 		],
-		"on_cancel": "a3_retail.overrides.sales_invoice.on_cancel",
+		"on_cancel": [
+			"a3_retail.overrides.sales_invoice.on_cancel",
+			"a3_retail.a3_retail_finance.doctype.emi_application.emi_application.unstamp_invoice_on_application",
+		],
 	},
 	"POS Invoice": {
 		"before_validate": "a3_retail.overrides.transactions.stamp_branch",
@@ -152,6 +157,7 @@ scheduler_events = {
 		"a3_retail.a3_retail_service.doctype.service_estimate.service_estimate.expire_stale_estimates",
 		"a3_retail.api.portal.clear_expired_otps",
 		"a3_retail.a3_retail_sales.doctype.seasonal_offer_campaign.seasonal_offer_campaign.refresh_campaign_statuses",
+		"a3_retail.a3_retail_finance.doctype.emi_application.emi_application.nudge_stale_applications",
 	],
 	"weekly": [],
 	"cron": {},

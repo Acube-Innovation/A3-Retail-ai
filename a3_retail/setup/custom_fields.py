@@ -274,12 +274,27 @@ SELLING_FIELDS = {
 }
 
 
+
+# Step 15 — invoices paid by EMI point back at their application (scope 4.5).
+EMI_FIELDS = {
+	"Sales Invoice": [
+		_field("a3_emi_application", "EMI Application", "Link", "A3 Retail Finance",
+			options="EMI Application", insert_after="a3_ew_attached", no_copy=1),
+	],
+	"POS Invoice": [
+		_field("a3_emi_application", "EMI Application", "Link", "A3 Retail Finance",
+			options="EMI Application", insert_after="a3_ew_attached", no_copy=1),
+	],
+}
+
+
 ALL_FIELD_GROUPS = (
 	BRANCH_BACKREF_FIELDS,
 	MASTER_FIELDS,
 	MARGIN_SCHEME_FIELDS,
 	SERVICE_LINK_FIELDS,
 	SELLING_FIELDS,
+	EMI_FIELDS,
 )
 
 

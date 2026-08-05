@@ -1,0 +1,302 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-08-05 09:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "finance_partner",
+  "from_date",
+  "to_date",
+  "col_break_14",
+  "company",
+  "status",
+  "bank_account",
+  "utr_reference",
+  "applications_section",
+  "applications",
+  "totals_section",
+  "gross_amount",
+  "mdr_amount",
+  "subvention_amount",
+  "gst_on_mdr",
+  "col_break_15",
+  "tds_amount",
+  "other_deductions",
+  "net_expected",
+  "net_received",
+  "variance",
+  "posting_section",
+  "payment_entry",
+  "col_break_16",
+  "journal_entry",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "FS-.YY.-.####",
+   "hidden": 1,
+   "default": "FS-.YY.-.####"
+  },
+  {
+   "fieldname": "finance_partner",
+   "fieldtype": "Link",
+   "label": "Finance Partner",
+   "options": "Finance Partner",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "from_date",
+   "fieldtype": "Date",
+   "label": "From Date",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "to_date",
+   "fieldtype": "Date",
+   "label": "To Date",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "col_break_14",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "read_only": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Draft\nReconciled\nVariance - Under Query\nClosed",
+   "default": "Draft",
+   "read_only": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "bank_account",
+   "fieldtype": "Link",
+   "label": "Bank Account",
+   "options": "Account",
+   "reqd": 1
+  },
+  {
+   "fieldname": "utr_reference",
+   "fieldtype": "Data",
+   "label": "Bank UTR"
+  },
+  {
+   "fieldname": "applications_section",
+   "fieldtype": "Section Break",
+   "label": "Applications"
+  },
+  {
+   "fieldname": "applications",
+   "fieldtype": "Table",
+   "label": "Applications",
+   "options": "Financier Settlement Item",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "totals_section",
+   "fieldtype": "Section Break",
+   "label": "Reconciliation"
+  },
+  {
+   "fieldname": "gross_amount",
+   "fieldtype": "Currency",
+   "label": "Gross (Loan Amounts)",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "mdr_amount",
+   "fieldtype": "Currency",
+   "label": "MDR",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "subvention_amount",
+   "fieldtype": "Currency",
+   "label": "Subvention",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "gst_on_mdr",
+   "fieldtype": "Currency",
+   "label": "GST on MDR",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "col_break_15",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "tds_amount",
+   "fieldtype": "Currency",
+   "label": "TDS",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "other_deductions",
+   "fieldtype": "Currency",
+   "label": "Other Deductions",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "net_expected",
+   "fieldtype": "Currency",
+   "label": "Net Expected",
+   "read_only": 1,
+   "in_list_view": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "net_received",
+   "fieldtype": "Currency",
+   "label": "Net Received",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "variance",
+   "fieldtype": "Currency",
+   "label": "Variance",
+   "read_only": 1,
+   "bold": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "posting_section",
+   "fieldtype": "Section Break",
+   "label": "Postings"
+  },
+  {
+   "fieldname": "payment_entry",
+   "fieldtype": "Link",
+   "label": "Payment Entry",
+   "options": "Payment Entry",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "col_break_16",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "journal_entry",
+   "fieldtype": "Link",
+   "label": "Journal Entry",
+   "options": "Journal Entry",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "options": "Financier Settlement",
+   "read_only": 1,
+   "no_copy": 1,
+   "print_hide": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-05 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "A3 Retail Finance",
+ "name": "Financier Settlement",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 1,
+   "cancel": 1,
+   "amend": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "A3 Retail Admin",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 1,
+   "cancel": 1,
+   "amend": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Accounts Manager",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 1,
+   "cancel": 1,
+   "amend": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "EMI Coordinator",
+   "permlevel": 0,
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  }
+ ],
+ "sort_field": "from_date",
+ "sort_order": "DESC",
+ "states": [],
+ "autoname": "naming_series:",
+ "is_submittable": 1,
+ "title_field": "finance_partner",
+ "track_changes": 1,
+ "naming_rule": "By \"Naming Series\" field"
+}
