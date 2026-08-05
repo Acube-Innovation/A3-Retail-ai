@@ -1,0 +1,316 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-08-05 09:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "feedback_date",
+  "customer",
+  "mobile_no",
+  "col_break_5",
+  "branch",
+  "channel",
+  "reference_type",
+  "reference_name",
+  "ratings_section",
+  "overall_rating",
+  "nps_score",
+  "rating_service_quality",
+  "rating_turnaround",
+  "col_break_6",
+  "rating_staff",
+  "rating_price",
+  "rating_cleanliness",
+  "would_recommend",
+  "outcome_section",
+  "sentiment",
+  "comments",
+  "col_break_7",
+  "requires_follow_up",
+  "follow_up_issue",
+  "attended_employee"
+ ],
+ "fields": [
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "FB-.YY.-.#####",
+   "hidden": 1,
+   "default": "FB-.YY.-.#####"
+  },
+  {
+   "fieldname": "feedback_date",
+   "fieldtype": "Date",
+   "label": "Date",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "label": "Customer",
+   "options": "Customer",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "mobile_no",
+   "fieldtype": "Data",
+   "label": "Mobile"
+  },
+  {
+   "fieldname": "col_break_5",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "branch",
+   "fieldtype": "Link",
+   "label": "Branch",
+   "options": "Branch",
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "channel",
+   "fieldtype": "Select",
+   "label": "Channel",
+   "options": "WhatsApp\nSMS Link\nIn-store Tablet\nPhone\nGoogle Review\nEmail",
+   "default": "WhatsApp"
+  },
+  {
+   "fieldname": "reference_type",
+   "fieldtype": "Select",
+   "label": "Reference",
+   "options": "\nSales Invoice\nService Job Card\nIssue\nDelivery"
+  },
+  {
+   "fieldname": "reference_name",
+   "fieldtype": "Dynamic Link",
+   "label": "Reference",
+   "options": "reference_type"
+  },
+  {
+   "fieldname": "ratings_section",
+   "fieldtype": "Section Break",
+   "label": "Ratings"
+  },
+  {
+   "fieldname": "overall_rating",
+   "fieldtype": "Rating",
+   "label": "Overall Rating",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "nps_score",
+   "fieldtype": "Int",
+   "label": "NPS (0-10)"
+  },
+  {
+   "fieldname": "rating_service_quality",
+   "fieldtype": "Rating",
+   "label": "Service Quality"
+  },
+  {
+   "fieldname": "rating_turnaround",
+   "fieldtype": "Rating",
+   "label": "Turnaround"
+  },
+  {
+   "fieldname": "col_break_6",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "rating_staff",
+   "fieldtype": "Rating",
+   "label": "Staff"
+  },
+  {
+   "fieldname": "rating_price",
+   "fieldtype": "Rating",
+   "label": "Price"
+  },
+  {
+   "fieldname": "rating_cleanliness",
+   "fieldtype": "Rating",
+   "label": "Cleanliness"
+  },
+  {
+   "fieldname": "would_recommend",
+   "fieldtype": "Check",
+   "label": "Would Recommend"
+  },
+  {
+   "fieldname": "outcome_section",
+   "fieldtype": "Section Break",
+   "label": "Outcome"
+  },
+  {
+   "fieldname": "sentiment",
+   "fieldtype": "Select",
+   "label": "Sentiment",
+   "options": "Promoter\nPassive\nDetractor",
+   "read_only": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "comments",
+   "fieldtype": "Small Text",
+   "label": "Comments"
+  },
+  {
+   "fieldname": "col_break_7",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "requires_follow_up",
+   "fieldtype": "Check",
+   "label": "Requires Follow-up",
+   "read_only": 1
+  },
+  {
+   "fieldname": "follow_up_issue",
+   "fieldtype": "Link",
+   "label": "Follow-up Issue",
+   "options": "Issue",
+   "read_only": 1
+  },
+  {
+   "fieldname": "attended_employee",
+   "fieldtype": "Link",
+   "label": "Attended By",
+   "options": "Employee"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-05 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "A3 Retail Operations",
+ "name": "Customer Feedback",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "A3 Retail Admin",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Branch Manager",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Helpdesk Agent",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Telecaller",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Reception Executive",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Service Manager",
+   "permlevel": 0,
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  }
+ ],
+ "sort_field": "feedback_date",
+ "sort_order": "DESC",
+ "states": [],
+ "autoname": "naming_series:",
+ "title_field": "customer",
+ "track_changes": 1,
+ "naming_rule": "By \"Naming Series\" field"
+}

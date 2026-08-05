@@ -322,6 +322,71 @@ DELIVERY_FIELDS = {
 }
 
 
+
+# Step 20 — CRM and helpdesk fields on ERPNext's own doctypes (scope 8.2, 8.3).
+CRM_FIELDS = {
+	"Lead": [
+		_field("a3_branch", "Branch", "Link", SALES_MODULE, options="Branch",
+			insert_after="company_name", in_standard_filter=1),
+		_field("a3_visit_log", "Visit Log", "Link", SALES_MODULE, options="Branch Visit Log",
+			insert_after="a3_branch", read_only=1),
+		_field("a3_budget_range", "Budget Range", "Select", SALES_MODULE,
+			options="\n< 10K\n10K - 20K\n20K - 35K\n35K - 60K\n> 60K\nNot Disclosed",
+			insert_after="a3_visit_log"),
+		_field("a3_emi_required", "EMI Required", "Check", SALES_MODULE,
+			insert_after="a3_budget_range"),
+		_field("a3_exchange_device", "Exchange Device", "Data", SALES_MODULE,
+			insert_after="a3_emi_required"),
+		_field("a3_preferred_contact", "Preferred Contact", "Select", SALES_MODULE,
+			options="Call\nWhatsApp\nSMS", insert_after="a3_exchange_device"),
+	],
+	"Opportunity": [
+		_field("a3_branch", "Branch", "Link", SALES_MODULE, options="Branch",
+			insert_after="company", in_standard_filter=1),
+		_field("a3_competitor", "Competitor", "Data", SALES_MODULE, insert_after="a3_branch"),
+		_field("a3_emi_application", "EMI Application", "Link", "A3 Retail Finance",
+			options="EMI Application", insert_after="a3_competitor"),
+	],
+	"Issue": [
+		_field("a3_branch", "Branch", "Link", OPS_MODULE, options="Branch",
+			insert_after="customer", in_standard_filter=1),
+		_field("a3_complaint_category", "Complaint Category", "Select", OPS_MODULE,
+			options=("\nService Delay\nRepair Quality\nProduct Defect\nBilling / Invoice\n"
+				"Refund\nEMI / Finance\nDelivery Delay\nStaff Behaviour\nWarranty Denial\n"
+				"Price Dispute\nData Loss\nMissing Accessory\nOther"),
+			insert_after="a3_branch", in_standard_filter=1),
+		_field("a3_severity", "Severity", "Select", OPS_MODULE,
+			options="Low\nMedium\nHigh\nCritical (Escalated / Social Media / Consumer Court)",
+			insert_after="a3_complaint_category", default="Medium"),
+		_field("a3_job_card", "Service Job Card", "Link", SERVICE_MODULE,
+			options="Service Job Card", insert_after="a3_severity"),
+		_field("a3_sales_invoice", "Sales Invoice", "Link", SALES_MODULE, options="Sales Invoice",
+			insert_after="a3_job_card"),
+		_field("a3_imei", "IMEI", "Data", SALES_MODULE, insert_after="a3_sales_invoice"),
+		_field("a3_channel", "Channel", "Select", OPS_MODULE,
+			options="\nPhone\nWhatsApp\nEmail\nWalk-in\nWebsite\nGoogle Review\nSocial Media",
+			insert_after="a3_imei"),
+		_field("a3_escalation_level", "Escalation Level", "Select", OPS_MODULE,
+			options=("L0 - Agent\nL1 - Service Manager\nL2 - Branch Manager\n"
+				"L3 - Head Office\nL4 - Director"),
+			insert_after="a3_channel", default="L0 - Agent"),
+		_field("a3_root_cause", "Root Cause", "Select", OPS_MODULE,
+			options=("\nProcess Gap\nStaff Error\nTechnical Failure\nParts Unavailable\n"
+				"Vendor Issue\nCustomer Expectation\nNo Fault Found"),
+			insert_after="a3_escalation_level"),
+		_field("a3_compensation_type", "Compensation", "Select", OPS_MODULE,
+			options=("None\nDiscount\nFree Service\nFree Accessory\nRefund\nReplacement\n"
+				"Extended Warranty"),
+			insert_after="a3_root_cause", default="None"),
+		_field("a3_compensation_value", "Compensation Value", "Currency", OPS_MODULE,
+			insert_after="a3_compensation_type"),
+		_field("a3_resolution_summary", "Resolution Summary", "Text Editor", OPS_MODULE,
+			insert_after="a3_compensation_value"),
+		_field("a3_csat_score", "CSAT", "Rating", OPS_MODULE, insert_after="a3_resolution_summary"),
+	],
+}
+
+
 ALL_FIELD_GROUPS = (
 	BRANCH_BACKREF_FIELDS,
 	MASTER_FIELDS,
@@ -330,6 +395,7 @@ ALL_FIELD_GROUPS = (
 	SELLING_FIELDS,
 	EMI_FIELDS,
 	DELIVERY_FIELDS,
+	CRM_FIELDS,
 )
 
 

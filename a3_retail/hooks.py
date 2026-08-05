@@ -155,6 +155,7 @@ scheduler_events = {
 	"hourly": [
 		"a3_retail.a3_retail_service.doctype.service_job_card.service_job_card.flag_delayed_job_cards",
 		"a3_retail.a3_retail_operations.doctype.courier_dispatch.courier_dispatch.scan_delayed_dispatches",
+		"a3_retail.setup.helpdesk.escalate_breached_issues",
 	],
 	"daily": [
 		"a3_retail.overrides.serial_no.recompute_warranty_state",

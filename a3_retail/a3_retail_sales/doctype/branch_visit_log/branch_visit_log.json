@@ -1,0 +1,393 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-08-05 09:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "visit_datetime",
+  "branch",
+  "branch_code",
+  "col_break_1",
+  "visitor_name",
+  "mobile_no",
+  "is_existing_customer",
+  "customer",
+  "visit_section",
+  "visitor_type",
+  "purpose",
+  "interested_items",
+  "col_break_2",
+  "budget_range",
+  "attended_by",
+  "time_spent_minutes",
+  "how_did_you_hear",
+  "outcome_section",
+  "outcome",
+  "reference_type",
+  "reference_name",
+  "sale_value",
+  "col_break_3",
+  "lost_reason_detail",
+  "competitor_mentioned",
+  "marketing_consent",
+  "followup_section",
+  "follow_up_required",
+  "follow_up_date",
+  "col_break_4",
+  "assigned_telecaller",
+  "call_task",
+  "lead",
+  "remarks"
+ ],
+ "fields": [
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "FL-.branch_code.-.YY.-.######",
+   "hidden": 1,
+   "default": "FL-.branch_code.-.YY.-.######"
+  },
+  {
+   "fieldname": "visit_datetime",
+   "fieldtype": "Datetime",
+   "label": "Visit Time",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "branch",
+   "fieldtype": "Link",
+   "label": "Branch",
+   "options": "Branch",
+   "reqd": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "branch_code",
+   "fieldtype": "Data",
+   "label": "Branch Code",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "col_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "visitor_name",
+   "fieldtype": "Data",
+   "label": "Visitor Name",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "mobile_no",
+   "fieldtype": "Data",
+   "label": "Mobile",
+   "reqd": 1,
+   "in_list_view": 1,
+   "length": 10
+  },
+  {
+   "fieldname": "is_existing_customer",
+   "fieldtype": "Check",
+   "label": "Existing Customer",
+   "read_only": 1
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "label": "Customer",
+   "options": "Customer",
+   "read_only": 1
+  },
+  {
+   "fieldname": "visit_section",
+   "fieldtype": "Section Break",
+   "label": "Visit"
+  },
+  {
+   "fieldname": "visitor_type",
+   "fieldtype": "Select",
+   "label": "Visitor Type",
+   "options": "New Walk-in\nRepeat Customer\nService Follow-up\nDelivery Pickup\nAccompanying Person\nVendor / Other",
+   "default": "New Walk-in"
+  },
+  {
+   "fieldname": "purpose",
+   "fieldtype": "Select",
+   "label": "Purpose",
+   "options": "New Device Enquiry\nAccessory Purchase\nService / Repair\nService Status Enquiry\nDevice Delivery Pickup\nEMI Enquiry\nWarranty Enquiry\nExchange Enquiry\nComplaint\nJust Browsing\nBill Payment",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "interested_items",
+   "fieldtype": "Table",
+   "label": "Interested In",
+   "options": "Visit Interest"
+  },
+  {
+   "fieldname": "col_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "budget_range",
+   "fieldtype": "Select",
+   "label": "Budget Range",
+   "options": "< 10K\n10K - 20K\n20K - 35K\n35K - 60K\n> 60K\nNot Disclosed",
+   "default": "Not Disclosed"
+  },
+  {
+   "fieldname": "attended_by",
+   "fieldtype": "Link",
+   "label": "Attended By",
+   "options": "Employee",
+   "reqd": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "time_spent_minutes",
+   "fieldtype": "Int",
+   "label": "Time Spent (min)"
+  },
+  {
+   "fieldname": "how_did_you_hear",
+   "fieldtype": "Select",
+   "label": "Source",
+   "options": "\nWalk Past\nGoogle\nInstagram / Facebook\nWhatsApp Offer\nFriend / Referral\nNewspaper / Pamphlet\nExisting Customer\nOther"
+  },
+  {
+   "fieldname": "outcome_section",
+   "fieldtype": "Section Break",
+   "label": "Outcome"
+  },
+  {
+   "fieldname": "outcome",
+   "fieldtype": "Select",
+   "label": "Outcome",
+   "options": "Pending\nConverted - Sale\nConverted - Job Card\nLead Created (Follow-up)\nQuotation Given\nLost - Price\nLost - Stock Unavailable\nLost - Model Not Available\nLost - Went to Competitor\nLost - EMI Rejected\nInformation Only",
+   "default": "Pending",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "reference_type",
+   "fieldtype": "Select",
+   "label": "Converted To",
+   "options": "\nSales Invoice\nPOS Invoice\nSales Order\nService Job Card\nQuotation\nLead"
+  },
+  {
+   "fieldname": "reference_name",
+   "fieldtype": "Dynamic Link",
+   "label": "Reference",
+   "options": "reference_type"
+  },
+  {
+   "fieldname": "sale_value",
+   "fieldtype": "Currency",
+   "label": "Sale Value",
+   "read_only": 1
+  },
+  {
+   "fieldname": "col_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "lost_reason_detail",
+   "fieldtype": "Small Text",
+   "label": "Lost Reason Detail"
+  },
+  {
+   "fieldname": "competitor_mentioned",
+   "fieldtype": "Data",
+   "label": "Competitor"
+  },
+  {
+   "fieldname": "marketing_consent",
+   "fieldtype": "Check",
+   "label": "Marketing Consent",
+   "default": "1"
+  },
+  {
+   "fieldname": "followup_section",
+   "fieldtype": "Section Break",
+   "label": "Follow-up"
+  },
+  {
+   "fieldname": "follow_up_required",
+   "fieldtype": "Check",
+   "label": "Follow-up Required"
+  },
+  {
+   "fieldname": "follow_up_date",
+   "fieldtype": "Date",
+   "label": "Follow-up On",
+   "depends_on": "follow_up_required"
+  },
+  {
+   "fieldname": "col_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "assigned_telecaller",
+   "fieldtype": "Link",
+   "label": "Assigned Telecaller",
+   "options": "Employee",
+   "depends_on": "follow_up_required"
+  },
+  {
+   "fieldname": "call_task",
+   "fieldtype": "Link",
+   "label": "Call Task",
+   "options": "Call Task",
+   "read_only": 1
+  },
+  {
+   "fieldname": "lead",
+   "fieldtype": "Link",
+   "label": "Lead",
+   "options": "Lead",
+   "read_only": 1
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "label": "Remarks"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-05 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "A3 Retail Sales",
+ "name": "Branch Visit Log",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "A3 Retail Admin",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Branch Manager",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Sales Executive",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Reception Executive",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Service Manager",
+   "permlevel": 0,
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Telecaller",
+   "permlevel": 0,
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  }
+ ],
+ "sort_field": "visit_datetime",
+ "sort_order": "DESC",
+ "states": [],
+ "autoname": "naming_series:",
+ "title_field": "visitor_name",
+ "search_fields": "mobile_no,visitor_name,purpose",
+ "track_changes": 1,
+ "naming_rule": "By \"Naming Series\" field"
+}
