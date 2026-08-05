@@ -1,0 +1,77 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-08-05 09:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "param_index",
+  "param_type",
+  "source",
+  "fieldname",
+  "jinja_expression",
+  "static_value",
+  "format"
+ ],
+ "fields": [
+  {
+   "fieldname": "param_index",
+   "fieldtype": "Int",
+   "label": "Index",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "param_type",
+   "fieldtype": "Select",
+   "label": "Type",
+   "options": "Header\nBody\nButton URL",
+   "default": "Body",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "source",
+   "fieldtype": "Select",
+   "label": "Source",
+   "options": "Field\nJinja\nStatic",
+   "default": "Field",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "fieldname",
+   "fieldtype": "Data",
+   "label": "Fieldname",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "jinja_expression",
+   "fieldtype": "Small Text",
+   "label": "Jinja Expression"
+  },
+  {
+   "fieldname": "static_value",
+   "fieldtype": "Data",
+   "label": "Static Value"
+  },
+  {
+   "fieldname": "format",
+   "fieldtype": "Select",
+   "label": "Format",
+   "options": "Text\nCurrency\nDate\nDatetime",
+   "default": "Text"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-05 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "A3 Retail Communication",
+ "name": "WhatsApp Template Parameter",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "istable": 1
+}

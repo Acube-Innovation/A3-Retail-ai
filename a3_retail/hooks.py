@@ -84,6 +84,15 @@ permission_query_conditions = {
 # Document events
 # ---------------------------------------------------------------------------
 doc_events = {
+	# The communication engine listens to everything; it exits immediately when
+	# no rule matches the doctype/trigger pair (scope 9.6).
+	"*": {
+		"after_insert": "a3_retail.communication.engine.handle",
+		"on_submit": "a3_retail.communication.engine.handle",
+		"on_update": "a3_retail.communication.engine.handle",
+		"on_update_after_submit": "a3_retail.communication.engine.handle",
+		"on_cancel": "a3_retail.communication.engine.handle",
+	},
 	"Employee": {
 		"on_update": "a3_retail.overrides.employee.on_update",
 		"on_trash": "a3_retail.overrides.employee.on_trash",
@@ -156,6 +165,8 @@ scheduler_events = {
 		"a3_retail.a3_retail_service.doctype.service_job_card.service_job_card.flag_delayed_job_cards",
 		"a3_retail.a3_retail_operations.doctype.courier_dispatch.courier_dispatch.scan_delayed_dispatches",
 		"a3_retail.setup.helpdesk.escalate_breached_issues",
+		"a3_retail.communication.engine.retry_failed_messages",
+		"a3_retail.communication.engine.release_held_messages",
 	],
 	"daily": [
 		"a3_retail.overrides.serial_no.recompute_warranty_state",
@@ -168,6 +179,7 @@ scheduler_events = {
 		"a3_retail.a3_retail_warranty.doctype.warranty_registration.warranty_registration.send_renewal_reminders",
 		"a3_retail.a3_retail_operations.doctype.demurrage_charge.demurrage_charge.raise_storage_charges",
 		"a3_retail.a3_retail_communication.doctype.telecalling_campaign.telecalling_campaign.close_finished_campaigns",
+		"a3_retail.communication.engine.run_date_based_rules",
 	],
 	"weekly": [
 		"a3_retail.a3_retail_warranty.doctype.oem_warranty_return.oem_warranty_return.flag_overdue_returns",

@@ -1,0 +1,288 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-08-05 09:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "rule_name",
+  "reference_doctype",
+  "trigger_type",
+  "is_active",
+  "col_break_5",
+  "watch_field",
+  "from_value",
+  "to_value",
+  "date_field",
+  "days_offset",
+  "cron_expression",
+  "condition_section",
+  "condition",
+  "channels_section",
+  "send_whatsapp",
+  "whatsapp_template",
+  "sender_profile",
+  "col_break_6",
+  "send_email",
+  "email_template",
+  "email_account",
+  "send_sms",
+  "recipients_section",
+  "recipient_type",
+  "recipient_field",
+  "recipient_role",
+  "col_break_7",
+  "static_recipients",
+  "cc_branch_manager",
+  "control_section",
+  "max_sends_per_document",
+  "col_break_8",
+  "priority"
+ ],
+ "fields": [
+  {
+   "fieldname": "rule_name",
+   "fieldtype": "Data",
+   "label": "Rule Name",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "reference_doctype",
+   "fieldtype": "Link",
+   "label": "Reference DocType",
+   "options": "DocType",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "trigger_type",
+   "fieldtype": "Select",
+   "label": "Trigger",
+   "options": "On Insert\nOn Submit\nOn Update\nOn Status Change\nOn Cancel\nDays Before Date Field\nDays After Date Field\nScheduled (Cron)",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "label": "Active",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "col_break_5",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "watch_field",
+   "fieldtype": "Data",
+   "label": "Watch Field",
+   "description": "e.g. status, for a status change"
+  },
+  {
+   "fieldname": "from_value",
+   "fieldtype": "Data",
+   "label": "From Value"
+  },
+  {
+   "fieldname": "to_value",
+   "fieldtype": "Data",
+   "label": "To Value"
+  },
+  {
+   "fieldname": "date_field",
+   "fieldtype": "Data",
+   "label": "Date Field"
+  },
+  {
+   "fieldname": "days_offset",
+   "fieldtype": "Int",
+   "label": "Days Offset"
+  },
+  {
+   "fieldname": "cron_expression",
+   "fieldtype": "Data",
+   "label": "Cron Expression"
+  },
+  {
+   "fieldname": "condition_section",
+   "fieldtype": "Section Break",
+   "label": "Condition"
+  },
+  {
+   "fieldname": "condition",
+   "fieldtype": "Code",
+   "label": "Condition (Python)",
+   "options": "Python",
+   "description": "Evaluated with frappe.safe_eval, e.g. doc.grand_total > 0"
+  },
+  {
+   "fieldname": "channels_section",
+   "fieldtype": "Section Break",
+   "label": "Channels"
+  },
+  {
+   "fieldname": "send_whatsapp",
+   "fieldtype": "Check",
+   "label": "Send WhatsApp",
+   "default": "1"
+  },
+  {
+   "fieldname": "whatsapp_template",
+   "fieldtype": "Link",
+   "label": "WhatsApp Template",
+   "options": "WhatsApp Template",
+   "depends_on": "send_whatsapp"
+  },
+  {
+   "fieldname": "sender_profile",
+   "fieldtype": "Link",
+   "label": "Sender Profile",
+   "options": "WhatsApp Sender Profile",
+   "description": "Blank resolves from stream and branch"
+  },
+  {
+   "fieldname": "col_break_6",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "send_email",
+   "fieldtype": "Check",
+   "label": "Send Email"
+  },
+  {
+   "fieldname": "email_template",
+   "fieldtype": "Link",
+   "label": "Email Template",
+   "options": "Email Template",
+   "depends_on": "send_email"
+  },
+  {
+   "fieldname": "email_account",
+   "fieldtype": "Link",
+   "label": "Email Account",
+   "options": "Email Account",
+   "depends_on": "send_email"
+  },
+  {
+   "fieldname": "send_sms",
+   "fieldtype": "Check",
+   "label": "Send SMS (fallback)"
+  },
+  {
+   "fieldname": "recipients_section",
+   "fieldtype": "Section Break",
+   "label": "Recipients"
+  },
+  {
+   "fieldname": "recipient_type",
+   "fieldtype": "Select",
+   "label": "Recipient",
+   "options": "Customer\nField on Document\nRole\nEmployee Field\nStatic List",
+   "default": "Customer",
+   "reqd": 1
+  },
+  {
+   "fieldname": "recipient_field",
+   "fieldtype": "Data",
+   "label": "Recipient Field",
+   "depends_on": "eval:doc.recipient_type=='Field on Document'"
+  },
+  {
+   "fieldname": "recipient_role",
+   "fieldtype": "Link",
+   "label": "Role",
+   "options": "Role",
+   "depends_on": "eval:doc.recipient_type=='Role'"
+  },
+  {
+   "fieldname": "col_break_7",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "static_recipients",
+   "fieldtype": "Small Text",
+   "label": "Static Recipients",
+   "depends_on": "eval:doc.recipient_type=='Static List'"
+  },
+  {
+   "fieldname": "cc_branch_manager",
+   "fieldtype": "Check",
+   "label": "CC Branch Manager"
+  },
+  {
+   "fieldname": "control_section",
+   "fieldtype": "Section Break",
+   "label": "Control"
+  },
+  {
+   "fieldname": "max_sends_per_document",
+   "fieldtype": "Int",
+   "label": "Max Sends per Document",
+   "default": "1"
+  },
+  {
+   "fieldname": "col_break_8",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "priority",
+   "fieldtype": "Int",
+   "label": "Priority",
+   "default": "1"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-05 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "A3 Retail Communication",
+ "name": "Communication Rule",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "A3 Retail Admin",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "autoname": "field:rule_name",
+ "title_field": "rule_name",
+ "track_changes": 1,
+ "naming_rule": "By fieldname"
+}

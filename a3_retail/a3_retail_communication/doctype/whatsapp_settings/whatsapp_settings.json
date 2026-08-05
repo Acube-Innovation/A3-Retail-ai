@@ -1,0 +1,186 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-08-05 09:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "enabled",
+  "provider",
+  "api_base_url",
+  "business_account_id",
+  "col_break_11",
+  "access_token",
+  "webhook_verify_token",
+  "default_country_code",
+  "delivery_section",
+  "queue_messages",
+  "retry_attempts",
+  "retry_interval_minutes",
+  "col_break_12",
+  "log_retention_days",
+  "compliance_section",
+  "respect_marketing_optin",
+  "quiet_hours_from",
+  "quiet_hours_to",
+  "col_break_13",
+  "daily_marketing_cap_per_customer"
+ ],
+ "fields": [
+  {
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled"
+  },
+  {
+   "fieldname": "provider",
+   "fieldtype": "Select",
+   "label": "Provider",
+   "options": "Meta Cloud API\nGupshup\nTwilio\nInterakt\nAiSensy\nWati",
+   "default": "Meta Cloud API"
+  },
+  {
+   "fieldname": "api_base_url",
+   "fieldtype": "Data",
+   "label": "API Base URL",
+   "default": "https://graph.facebook.com/v20.0"
+  },
+  {
+   "fieldname": "business_account_id",
+   "fieldtype": "Data",
+   "label": "WABA ID"
+  },
+  {
+   "fieldname": "col_break_11",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "access_token",
+   "fieldtype": "Password",
+   "label": "Access Token"
+  },
+  {
+   "fieldname": "webhook_verify_token",
+   "fieldtype": "Password",
+   "label": "Webhook Verify Token"
+  },
+  {
+   "fieldname": "default_country_code",
+   "fieldtype": "Data",
+   "label": "Default Country Code",
+   "default": "91"
+  },
+  {
+   "fieldname": "delivery_section",
+   "fieldtype": "Section Break",
+   "label": "Delivery"
+  },
+  {
+   "fieldname": "queue_messages",
+   "fieldtype": "Check",
+   "label": "Send via Background Queue",
+   "default": "1"
+  },
+  {
+   "fieldname": "retry_attempts",
+   "fieldtype": "Int",
+   "label": "Retry Attempts",
+   "default": "3"
+  },
+  {
+   "fieldname": "retry_interval_minutes",
+   "fieldtype": "Int",
+   "label": "Retry Interval (minutes)",
+   "default": "15"
+  },
+  {
+   "fieldname": "col_break_12",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "log_retention_days",
+   "fieldtype": "Int",
+   "label": "Log Retention (days)",
+   "default": "365"
+  },
+  {
+   "fieldname": "compliance_section",
+   "fieldtype": "Section Break",
+   "label": "Compliance"
+  },
+  {
+   "fieldname": "respect_marketing_optin",
+   "fieldtype": "Check",
+   "label": "Respect Marketing Opt-in",
+   "default": "1"
+  },
+  {
+   "fieldname": "quiet_hours_from",
+   "fieldtype": "Time",
+   "label": "Quiet Hours From",
+   "default": "21:00:00"
+  },
+  {
+   "fieldname": "quiet_hours_to",
+   "fieldtype": "Time",
+   "label": "Quiet Hours To",
+   "default": "08:00:00"
+  },
+  {
+   "fieldname": "col_break_13",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "daily_marketing_cap_per_customer",
+   "fieldtype": "Int",
+   "label": "Daily Marketing Cap per Customer",
+   "default": "1"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-05 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "A3 Retail Communication",
+ "name": "WhatsApp Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "A3 Retail Admin",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "issingle": 1
+}

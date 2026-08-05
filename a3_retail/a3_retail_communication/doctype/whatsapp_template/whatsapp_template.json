@@ -1,0 +1,216 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-08-05 09:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "template_key",
+  "meta_template_name",
+  "stream",
+  "category",
+  "col_break_3",
+  "language",
+  "is_active",
+  "approval_status",
+  "reference_doctype",
+  "content_section",
+  "header_type",
+  "header_content",
+  "body_text",
+  "footer_text",
+  "col_break_4",
+  "attach_print_format",
+  "params_section",
+  "parameters",
+  "buttons"
+ ],
+ "fields": [
+  {
+   "fieldname": "template_key",
+   "fieldtype": "Data",
+   "label": "Template Key",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1,
+   "description": "Internal key used in code, e.g. job_card_created"
+  },
+  {
+   "fieldname": "meta_template_name",
+   "fieldtype": "Data",
+   "label": "Meta Template Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "stream",
+   "fieldtype": "Select",
+   "label": "Stream",
+   "options": "Sales\nService\nEMI / Finance\nWarranty\nHelpdesk\nMarketing\nDelivery\nHR Internal",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "category",
+   "fieldtype": "Select",
+   "label": "Category",
+   "options": "Utility\nMarketing\nAuthentication",
+   "reqd": 1,
+   "default": "Utility",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "col_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "language",
+   "fieldtype": "Select",
+   "label": "Language",
+   "options": "en\nen_US\nml\nhi",
+   "default": "en"
+  },
+  {
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "label": "Active",
+   "default": "1"
+  },
+  {
+   "fieldname": "approval_status",
+   "fieldtype": "Select",
+   "label": "Meta Approval",
+   "options": "Draft\nSubmitted to Meta\nApproved\nRejected",
+   "default": "Draft",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "reference_doctype",
+   "fieldtype": "Link",
+   "label": "Reference DocType",
+   "options": "DocType"
+  },
+  {
+   "fieldname": "content_section",
+   "fieldtype": "Section Break",
+   "label": "Content"
+  },
+  {
+   "fieldname": "header_type",
+   "fieldtype": "Select",
+   "label": "Header Type",
+   "options": "None\nText\nImage\nDocument\nVideo",
+   "default": "None"
+  },
+  {
+   "fieldname": "header_content",
+   "fieldtype": "Data",
+   "label": "Header Content",
+   "depends_on": "eval:doc.header_type!='None'"
+  },
+  {
+   "fieldname": "body_text",
+   "fieldtype": "Text",
+   "label": "Body",
+   "reqd": 1,
+   "description": "Must match the approved Meta template exactly, placeholders included"
+  },
+  {
+   "fieldname": "footer_text",
+   "fieldtype": "Data",
+   "label": "Footer"
+  },
+  {
+   "fieldname": "col_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "attach_print_format",
+   "fieldtype": "Link",
+   "label": "Attach Print Format",
+   "options": "Print Format"
+  },
+  {
+   "fieldname": "params_section",
+   "fieldtype": "Section Break",
+   "label": "Parameters"
+  },
+  {
+   "fieldname": "parameters",
+   "fieldtype": "Table",
+   "label": "Parameters",
+   "options": "WhatsApp Template Parameter"
+  },
+  {
+   "fieldname": "buttons",
+   "fieldtype": "Table",
+   "label": "Buttons",
+   "options": "WhatsApp Template Button"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-05 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "A3 Retail Communication",
+ "name": "WhatsApp Template",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "A3 Retail Admin",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Branch Manager",
+   "permlevel": 0,
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "autoname": "field:template_key",
+ "title_field": "template_key",
+ "naming_rule": "By fieldname"
+}
