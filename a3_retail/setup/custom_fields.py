@@ -215,7 +215,34 @@ MASTER_FIELDS = {
 	],
 }
 
-ALL_FIELD_GROUPS = (BRANCH_BACKREF_FIELDS, MASTER_FIELDS)
+
+# Step 5 — margin scheme on invoice lines (scope 11.2, Rule 32(5)).
+MARGIN_SCHEME_FIELDS = {
+	"Sales Invoice Item": [
+		_field("a3_is_margin_scheme", "Margin Scheme", "Check", SALES_MODULE,
+			insert_after="item_code", fetch_from="item_code.a3_is_margin_scheme",
+			read_only=1, print_hide=1),
+		_field("a3_purchase_cost", "Purchase Cost", "Currency", SALES_MODULE,
+			insert_after="a3_is_margin_scheme", depends_on="eval:doc.a3_is_margin_scheme",
+			permlevel=1, print_hide=1),
+		_field("a3_margin_value", "Margin Value", "Currency", SALES_MODULE,
+			insert_after="a3_purchase_cost", depends_on="eval:doc.a3_is_margin_scheme",
+			read_only=1, permlevel=1, print_hide=1,
+			description="Taxable value under Rule 32(5)"),
+	],
+	"POS Invoice Item": [
+		_field("a3_is_margin_scheme", "Margin Scheme", "Check", SALES_MODULE,
+			insert_after="item_code", fetch_from="item_code.a3_is_margin_scheme",
+			read_only=1, print_hide=1),
+		_field("a3_purchase_cost", "Purchase Cost", "Currency", SALES_MODULE,
+			insert_after="a3_is_margin_scheme", permlevel=1, print_hide=1),
+		_field("a3_margin_value", "Margin Value", "Currency", SALES_MODULE,
+			insert_after="a3_purchase_cost", read_only=1, permlevel=1, print_hide=1),
+	],
+}
+
+
+ALL_FIELD_GROUPS = (BRANCH_BACKREF_FIELDS, MASTER_FIELDS, MARGIN_SCHEME_FIELDS)
 
 
 def run():

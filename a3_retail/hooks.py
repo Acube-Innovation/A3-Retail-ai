@@ -91,6 +91,24 @@ doc_events = {
 	"Customer": {
 		"validate": "a3_retail.api.customer.validate_customer",
 	},
+	# Branch stamping for the accounting dimension (scope 1.1, 11.1).
+	"Sales Invoice": {
+		"before_validate": "a3_retail.overrides.transactions.stamp_branch",
+		"validate": "a3_retail.overrides.transactions.apply_margin_scheme",
+	},
+	"POS Invoice": {
+		"before_validate": "a3_retail.overrides.transactions.stamp_branch",
+		"validate": "a3_retail.overrides.transactions.apply_margin_scheme",
+	},
+	"Purchase Invoice": {"before_validate": "a3_retail.overrides.transactions.stamp_branch"},
+	"Journal Entry": {"before_validate": "a3_retail.overrides.transactions.stamp_branch"},
+	"Payment Entry": {"before_validate": "a3_retail.overrides.transactions.stamp_branch"},
+	"Stock Entry": {"before_validate": "a3_retail.overrides.transactions.stamp_branch"},
+	"Delivery Note": {"before_validate": "a3_retail.overrides.transactions.stamp_branch"},
+	"Purchase Receipt": {"before_validate": "a3_retail.overrides.transactions.stamp_branch"},
+	"Sales Order": {"before_validate": "a3_retail.overrides.transactions.stamp_branch"},
+	"Purchase Order": {"before_validate": "a3_retail.overrides.transactions.stamp_branch"},
+	"Material Request": {"before_validate": "a3_retail.overrides.transactions.stamp_branch"},
 }
 
 # ---------------------------------------------------------------------------
