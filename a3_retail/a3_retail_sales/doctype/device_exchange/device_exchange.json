@@ -1,0 +1,473 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-08-05 09:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "exchange_date",
+  "customer",
+  "customer_mobile",
+  "col_break_1",
+  "branch",
+  "branch_code",
+  "company",
+  "status",
+  "old_device_section",
+  "old_brand",
+  "old_model",
+  "old_imei",
+  "imei_override",
+  "col_break_2",
+  "old_purchase_year",
+  "old_storage",
+  "has_box",
+  "has_charger",
+  "has_bill",
+  "grading_section",
+  "grading_parameters",
+  "base_value",
+  "deductions",
+  "col_break_3",
+  "grade",
+  "exchange_bonus",
+  "final_exchange_value",
+  "verification_section",
+  "id_proof_type",
+  "id_proof_number_last4",
+  "id_proof_attachment",
+  "col_break_4",
+  "imei_check_done",
+  "declaration_signed",
+  "device_photo_1",
+  "device_photo_2",
+  "device_photo_3",
+  "linkage_section",
+  "new_sales_invoice",
+  "purchase_receipt",
+  "used_item_code",
+  "col_break_5",
+  "used_serial_no",
+  "resale_status",
+  "resale_invoice",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "EXC-.branch_code.-.YY.-.####",
+   "hidden": 1,
+   "default": "EXC-.branch_code.-.YY.-.####"
+  },
+  {
+   "fieldname": "exchange_date",
+   "fieldtype": "Date",
+   "label": "Date",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "label": "Customer",
+   "options": "Customer",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "customer_mobile",
+   "fieldtype": "Data",
+   "label": "Mobile",
+   "fetch_from": "customer.a3_mobile_no",
+   "read_only": 1
+  },
+  {
+   "fieldname": "col_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "branch",
+   "fieldtype": "Link",
+   "label": "Branch",
+   "options": "Branch",
+   "reqd": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "branch_code",
+   "fieldtype": "Data",
+   "label": "Branch Code",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "read_only": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Draft\nValued\nAccepted\nSold\nCancelled",
+   "default": "Draft",
+   "read_only": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "old_device_section",
+   "fieldtype": "Section Break",
+   "label": "Old Device"
+  },
+  {
+   "fieldname": "old_brand",
+   "fieldtype": "Link",
+   "label": "Brand",
+   "options": "Brand",
+   "reqd": 1
+  },
+  {
+   "fieldname": "old_model",
+   "fieldtype": "Link",
+   "label": "Model",
+   "options": "Device Model",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "old_imei",
+   "fieldtype": "Data",
+   "label": "IMEI",
+   "reqd": 1,
+   "length": 20
+  },
+  {
+   "fieldname": "imei_override",
+   "fieldtype": "Check",
+   "label": "Override IMEI Check"
+  },
+  {
+   "fieldname": "col_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "old_purchase_year",
+   "fieldtype": "Int",
+   "label": "Purchase Year"
+  },
+  {
+   "fieldname": "old_storage",
+   "fieldtype": "Data",
+   "label": "Storage"
+  },
+  {
+   "fieldname": "has_box",
+   "fieldtype": "Check",
+   "label": "Box Included"
+  },
+  {
+   "fieldname": "has_charger",
+   "fieldtype": "Check",
+   "label": "Charger Included"
+  },
+  {
+   "fieldname": "has_bill",
+   "fieldtype": "Check",
+   "label": "Original Bill"
+  },
+  {
+   "fieldname": "grading_section",
+   "fieldtype": "Section Break",
+   "label": "Grading"
+  },
+  {
+   "fieldname": "grading_parameters",
+   "fieldtype": "Table",
+   "label": "Grading",
+   "options": "Exchange Grading Parameter",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "base_value",
+   "fieldtype": "Currency",
+   "label": "Base Value",
+   "reqd": 1
+  },
+  {
+   "fieldname": "deductions",
+   "fieldtype": "Currency",
+   "label": "Deductions",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "col_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "grade",
+   "fieldtype": "Select",
+   "label": "Final Grade",
+   "options": "A - Like New\nB - Good\nC - Average\nD - Poor / Spares",
+   "read_only": 1,
+   "in_list_view": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "exchange_bonus",
+   "fieldtype": "Currency",
+   "label": "Exchange Bonus (Offer)",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "final_exchange_value",
+   "fieldtype": "Currency",
+   "label": "Final Exchange Value",
+   "read_only": 1,
+   "bold": 1,
+   "in_list_view": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "verification_section",
+   "fieldtype": "Section Break",
+   "label": "Verification"
+  },
+  {
+   "fieldname": "id_proof_type",
+   "fieldtype": "Select",
+   "label": "ID Proof",
+   "options": "Aadhaar\nDriving Licence\nPassport\nVoter ID",
+   "reqd": 1
+  },
+  {
+   "fieldname": "id_proof_number_last4",
+   "fieldtype": "Data",
+   "label": "ID Last 4",
+   "reqd": 1,
+   "length": 4
+  },
+  {
+   "fieldname": "id_proof_attachment",
+   "fieldtype": "Attach",
+   "label": "ID Copy"
+  },
+  {
+   "fieldname": "col_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "imei_check_done",
+   "fieldtype": "Check",
+   "label": "IMEI Blacklist Check Done"
+  },
+  {
+   "fieldname": "declaration_signed",
+   "fieldtype": "Signature",
+   "label": "Customer Declaration"
+  },
+  {
+   "fieldname": "device_photo_1",
+   "fieldtype": "Attach Image",
+   "label": "Photo 1"
+  },
+  {
+   "fieldname": "device_photo_2",
+   "fieldtype": "Attach Image",
+   "label": "Photo 2"
+  },
+  {
+   "fieldname": "device_photo_3",
+   "fieldtype": "Attach Image",
+   "label": "Photo 3"
+  },
+  {
+   "fieldname": "linkage_section",
+   "fieldtype": "Section Break",
+   "label": "Linkage & Resale"
+  },
+  {
+   "fieldname": "new_sales_invoice",
+   "fieldtype": "Link",
+   "label": "New Sale Invoice",
+   "options": "Sales Invoice",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "purchase_receipt",
+   "fieldtype": "Link",
+   "label": "Purchase Receipt",
+   "options": "Purchase Receipt",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "used_item_code",
+   "fieldtype": "Link",
+   "label": "Created Item",
+   "options": "Item",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "col_break_5",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "used_serial_no",
+   "fieldtype": "Link",
+   "label": "Created Serial",
+   "options": "Serial No",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "resale_status",
+   "fieldtype": "Select",
+   "label": "Resale Status",
+   "options": "In Stock\nUnder Refurb\nSold\nScrapped",
+   "default": "In Stock",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "resale_invoice",
+   "fieldtype": "Link",
+   "label": "Resale Invoice",
+   "options": "Sales Invoice",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "options": "Device Exchange",
+   "read_only": 1,
+   "no_copy": 1,
+   "print_hide": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-05 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "A3 Retail Sales",
+ "name": "Device Exchange",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 1,
+   "cancel": 1,
+   "amend": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "A3 Retail Admin",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 1,
+   "cancel": 1,
+   "amend": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Branch Manager",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 1,
+   "cancel": 1,
+   "amend": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Sales Executive",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Reception Executive",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Accounts Manager",
+   "permlevel": 0,
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  }
+ ],
+ "sort_field": "exchange_date",
+ "sort_order": "DESC",
+ "states": [],
+ "autoname": "naming_series:",
+ "is_submittable": 1,
+ "title_field": "customer",
+ "search_fields": "old_imei,customer,grade",
+ "track_changes": 1,
+ "naming_rule": "By \"Naming Series\" field"
+}
