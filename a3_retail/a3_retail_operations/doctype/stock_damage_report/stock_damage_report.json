@@ -1,0 +1,528 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-08-05 09:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "report_date",
+  "status",
+  "col_break_1",
+  "branch",
+  "branch_code",
+  "company",
+  "reported_by",
+  "what_section",
+  "damage_type",
+  "discovered_during",
+  "source_warehouse",
+  "col_break_2",
+  "reference_type",
+  "reference_name",
+  "photos",
+  "items_section",
+  "items",
+  "total_qty",
+  "total_value",
+  "responsibility_section",
+  "responsibility",
+  "responsible_employee",
+  "responsible_party_type",
+  "responsible_party",
+  "col_break_3",
+  "is_recoverable",
+  "recovery_amount",
+  "recovery_mode",
+  "recovery_reference",
+  "disposition_section",
+  "disposition",
+  "disposal_date",
+  "col_break_4",
+  "salvage_value",
+  "processing_section",
+  "stock_entry_transfer",
+  "stock_entry_writeoff",
+  "col_break_5",
+  "journal_entry",
+  "additional_salary",
+  "approved_by",
+  "needs_ho_approval",
+  "remarks",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "DMG-.branch_code.-.YY.-.####",
+   "hidden": 1,
+   "default": "DMG-.branch_code.-.YY.-.####"
+  },
+  {
+   "fieldname": "report_date",
+   "fieldtype": "Date",
+   "label": "Report Date",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Draft\nPending Approval\nApproved\nMoved to Damaged\nDisposed\nRecovered\nRejected",
+   "default": "Draft",
+   "read_only": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "col_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "branch",
+   "fieldtype": "Link",
+   "label": "Branch",
+   "options": "Branch",
+   "reqd": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "branch_code",
+   "fieldtype": "Data",
+   "label": "Branch Code",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "read_only": 1
+  },
+  {
+   "fieldname": "reported_by",
+   "fieldtype": "Link",
+   "label": "Reported By",
+   "options": "Employee"
+  },
+  {
+   "fieldname": "what_section",
+   "fieldtype": "Section Break",
+   "label": "What Happened"
+  },
+  {
+   "fieldname": "damage_type",
+   "fieldtype": "Select",
+   "label": "Damage Type",
+   "options": "Transit Damage\nHandling Damage\nStorage Damage\nCustomer Return - Damaged\nManufacturing Defect\nDisplay/Demo Wear\nTheft / Pilferage\nNatural Calamity\nExpiry / Obsolescence",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "discovered_during",
+   "fieldtype": "Select",
+   "label": "Discovered During",
+   "options": "Goods Receipt\nInter-branch Transfer Receipt\nStock Count\nSale\nService\nRoutine Inspection"
+  },
+  {
+   "fieldname": "source_warehouse",
+   "fieldtype": "Link",
+   "label": "From Warehouse",
+   "options": "Warehouse",
+   "reqd": 1
+  },
+  {
+   "fieldname": "col_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "reference_type",
+   "fieldtype": "Select",
+   "label": "Reference",
+   "options": "\nPurchase Receipt\nStock Request\nDelivery Note\nSales Invoice\nStock Reconciliation"
+  },
+  {
+   "fieldname": "reference_name",
+   "fieldtype": "Dynamic Link",
+   "label": "Reference Doc",
+   "options": "reference_type"
+  },
+  {
+   "fieldname": "photos",
+   "fieldtype": "Attach Image",
+   "label": "Photo"
+  },
+  {
+   "fieldname": "items_section",
+   "fieldtype": "Section Break",
+   "label": "Damaged Items"
+  },
+  {
+   "fieldname": "items",
+   "fieldtype": "Table",
+   "label": "Damaged Items",
+   "options": "Stock Damage Item",
+   "reqd": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "total_qty",
+   "fieldtype": "Float",
+   "label": "Total Qty",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "total_value",
+   "fieldtype": "Currency",
+   "label": "Total Value",
+   "read_only": 1,
+   "permlevel": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "responsibility_section",
+   "fieldtype": "Section Break",
+   "label": "Responsibility"
+  },
+  {
+   "fieldname": "responsibility",
+   "fieldtype": "Select",
+   "label": "Responsibility",
+   "options": "Company (No Recovery)\nEmployee\nSupplier\nCourier / Transporter\nCustomer\nInsurance",
+   "default": "Company (No Recovery)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "responsible_employee",
+   "fieldtype": "Link",
+   "label": "Employee",
+   "options": "Employee",
+   "depends_on": "eval:doc.responsibility=='Employee'"
+  },
+  {
+   "fieldname": "responsible_party_type",
+   "fieldtype": "Select",
+   "label": "Party Type",
+   "options": "\nSupplier\nCustomer"
+  },
+  {
+   "fieldname": "responsible_party",
+   "fieldtype": "Dynamic Link",
+   "label": "Party",
+   "options": "responsible_party_type"
+  },
+  {
+   "fieldname": "col_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "is_recoverable",
+   "fieldtype": "Check",
+   "label": "Recoverable"
+  },
+  {
+   "fieldname": "recovery_amount",
+   "fieldtype": "Currency",
+   "label": "Recovery Amount",
+   "depends_on": "is_recoverable"
+  },
+  {
+   "fieldname": "recovery_mode",
+   "fieldtype": "Select",
+   "label": "Recovery Mode",
+   "options": "\nSalary Deduction\nSupplier Credit Note\nInsurance Claim\nCourier Claim\nCustomer Charged\nWritten Off",
+   "depends_on": "is_recoverable"
+  },
+  {
+   "fieldname": "recovery_reference",
+   "fieldtype": "Data",
+   "label": "Recovery Ref",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "disposition_section",
+   "fieldtype": "Section Break",
+   "label": "Disposition"
+  },
+  {
+   "fieldname": "disposition",
+   "fieldtype": "Select",
+   "label": "Disposition",
+   "options": "\nScrap\nReturn to Supplier\nRepair & Resell\nSell as Refurbished\nUse for Spares\nInsurance Surrender",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "disposal_date",
+   "fieldtype": "Date",
+   "label": "Disposal Date",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "col_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "salvage_value",
+   "fieldtype": "Currency",
+   "label": "Salvage Value",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "processing_section",
+   "fieldtype": "Section Break",
+   "label": "Processing"
+  },
+  {
+   "fieldname": "stock_entry_transfer",
+   "fieldtype": "Link",
+   "label": "Transfer to Damaged WH",
+   "options": "Stock Entry",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "stock_entry_writeoff",
+   "fieldtype": "Link",
+   "label": "Write-off Entry",
+   "options": "Stock Entry",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "col_break_5",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "journal_entry",
+   "fieldtype": "Link",
+   "label": "Recovery JE",
+   "options": "Journal Entry",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "additional_salary",
+   "fieldtype": "Link",
+   "label": "Salary Deduction",
+   "options": "Additional Salary",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "approved_by",
+   "fieldtype": "Link",
+   "label": "Approved By",
+   "options": "User",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "needs_ho_approval",
+   "fieldtype": "Check",
+   "label": "Needs Head Office Approval",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Text",
+   "label": "Remarks",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "options": "Stock Damage Report",
+   "read_only": 1,
+   "no_copy": 1,
+   "print_hide": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-05 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "A3 Retail Operations",
+ "name": "Stock Damage Report",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 1,
+   "cancel": 1,
+   "amend": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "A3 Retail Admin",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 1,
+   "cancel": 1,
+   "amend": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Branch Manager",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "submit": 1,
+   "cancel": 1,
+   "amend": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Store Keeper",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Technician",
+   "permlevel": 0,
+   "read": 1,
+   "write": 0,
+   "create": 1,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Service Manager",
+   "permlevel": 0,
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Accounts Manager",
+   "permlevel": 0,
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "A3 Retail Admin",
+   "permlevel": 1,
+   "read": 1,
+   "write": 1,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 0,
+   "export": 0,
+   "print": 0,
+   "email": 0,
+   "share": 0
+  },
+  {
+   "role": "Branch Manager",
+   "permlevel": 1,
+   "read": 1,
+   "write": 1,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 0,
+   "export": 0,
+   "print": 0,
+   "email": 0,
+   "share": 0
+  },
+  {
+   "role": "Accounts Manager",
+   "permlevel": 1,
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 0,
+   "export": 0,
+   "print": 0,
+   "email": 0,
+   "share": 0
+  }
+ ],
+ "sort_field": "report_date",
+ "sort_order": "DESC",
+ "states": [],
+ "autoname": "naming_series:",
+ "is_submittable": 1,
+ "title_field": "damage_type",
+ "search_fields": "branch,damage_type,status",
+ "track_changes": 1,
+ "naming_rule": "By \"Naming Series\" field"
+}

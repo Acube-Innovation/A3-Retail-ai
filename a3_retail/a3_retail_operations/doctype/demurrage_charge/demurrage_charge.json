@@ -1,0 +1,330 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-08-05 09:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "charge_type",
+  "branch",
+  "status",
+  "col_break_6",
+  "party_type",
+  "party",
+  "reference_type",
+  "reference_name",
+  "period_section",
+  "arrival_date",
+  "free_days",
+  "free_until_date",
+  "col_break_7",
+  "actual_clearance_date",
+  "chargeable_days",
+  "amount_section",
+  "rate_per_day",
+  "charge_amount",
+  "gst_applicable",
+  "col_break_8",
+  "tax_amount",
+  "total_amount",
+  "payable_or_recoverable",
+  "settlement_section",
+  "purchase_invoice",
+  "journal_entry",
+  "col_break_9",
+  "responsibility",
+  "responsible_employee",
+  "remarks"
+ ],
+ "fields": [
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "DEM-.YY.-.####",
+   "hidden": 1,
+   "default": "DEM-.YY.-.####"
+  },
+  {
+   "fieldname": "charge_type",
+   "fieldtype": "Select",
+   "label": "Charge Type",
+   "options": "Transporter Demurrage\nCourier Detention\nWarehouse Storage Overstay\nCustoms / Octroi Detention\nCustomer Device Storage",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "branch",
+   "fieldtype": "Link",
+   "label": "Branch",
+   "options": "Branch",
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Draft\nApproved\nInvoiced\nPaid\nRecovered\nWaived",
+   "default": "Draft",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "col_break_6",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "party_type",
+   "fieldtype": "Select",
+   "label": "Party Type",
+   "options": "Supplier\nCustomer\nCourier Partner",
+   "reqd": 1
+  },
+  {
+   "fieldname": "party",
+   "fieldtype": "Dynamic Link",
+   "label": "Party",
+   "options": "party_type",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "reference_type",
+   "fieldtype": "Select",
+   "label": "Reference",
+   "options": "\nPurchase Receipt\nCourier Dispatch\nStock Request\nService Job Card"
+  },
+  {
+   "fieldname": "reference_name",
+   "fieldtype": "Dynamic Link",
+   "label": "Reference Doc",
+   "options": "reference_type"
+  },
+  {
+   "fieldname": "period_section",
+   "fieldtype": "Section Break",
+   "label": "Free Period"
+  },
+  {
+   "fieldname": "arrival_date",
+   "fieldtype": "Date",
+   "label": "Arrival / Ready Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "free_days",
+   "fieldtype": "Int",
+   "label": "Free Days"
+  },
+  {
+   "fieldname": "free_until_date",
+   "fieldtype": "Date",
+   "label": "Free Until",
+   "read_only": 1
+  },
+  {
+   "fieldname": "col_break_7",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "actual_clearance_date",
+   "fieldtype": "Date",
+   "label": "Cleared / Collected On"
+  },
+  {
+   "fieldname": "chargeable_days",
+   "fieldtype": "Int",
+   "label": "Chargeable Days",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "amount_section",
+   "fieldtype": "Section Break",
+   "label": "Amount"
+  },
+  {
+   "fieldname": "rate_per_day",
+   "fieldtype": "Currency",
+   "label": "Rate per Day",
+   "reqd": 1
+  },
+  {
+   "fieldname": "charge_amount",
+   "fieldtype": "Currency",
+   "label": "Charge",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "gst_applicable",
+   "fieldtype": "Check",
+   "label": "GST Applicable"
+  },
+  {
+   "fieldname": "col_break_8",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "tax_amount",
+   "fieldtype": "Currency",
+   "label": "GST",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_amount",
+   "fieldtype": "Currency",
+   "label": "Total",
+   "read_only": 1
+  },
+  {
+   "fieldname": "payable_or_recoverable",
+   "fieldtype": "Select",
+   "label": "Direction",
+   "options": "Payable by Company\nRecoverable from Party",
+   "default": "Recoverable from Party",
+   "reqd": 1
+  },
+  {
+   "fieldname": "settlement_section",
+   "fieldtype": "Section Break",
+   "label": "Settlement"
+  },
+  {
+   "fieldname": "purchase_invoice",
+   "fieldtype": "Link",
+   "label": "Purchase Invoice",
+   "options": "Purchase Invoice",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "journal_entry",
+   "fieldtype": "Link",
+   "label": "Journal Entry",
+   "options": "Journal Entry",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "col_break_9",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "responsibility",
+   "fieldtype": "Select",
+   "label": "Responsibility",
+   "options": "Company\nEmployee\nSupplier\nCourier",
+   "default": "Company"
+  },
+  {
+   "fieldname": "responsible_employee",
+   "fieldtype": "Link",
+   "label": "Employee",
+   "options": "Employee"
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "label": "Remarks"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-05 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "A3 Retail Operations",
+ "name": "Demurrage Charge",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "A3 Retail Admin",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Accounts Manager",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Branch Manager",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Store Keeper",
+   "permlevel": 0,
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  }
+ ],
+ "sort_field": "arrival_date",
+ "sort_order": "DESC",
+ "states": [],
+ "autoname": "naming_series:",
+ "title_field": "party",
+ "track_changes": 1,
+ "naming_rule": "By \"Naming Series\" field"
+}

@@ -190,3 +190,51 @@ def ensure_stock(item_code: str, warehouse: str, qty: float = 10, rate: float = 
 	entry.insert(ignore_permissions=True)
 	entry.submit()
 	return flt(qty)
+
+
+def ensure_salary_structure(employee: str, base: float = 25000) -> str:
+	"""Assign a minimal salary structure so Additional Salary can be raised.
+
+	ERPNext refuses an Additional Salary for an employee with no structure, which
+	is what damage recovery through payroll depends on.
+	"""
+	company = ensure_company()
+	name = "A3 Retail Test Structure"
+
+	if not frappe.db.exists("Salary Component", "Basic"):
+		component = frappe.new_doc("Salary Component")
+		component.salary_component = "Basic"
+		component.salary_component_abbr = "B"
+		component.type = "Earning"
+		component.flags.ignore_permissions = True
+		component.insert(ignore_permissions=True)
+
+	if not frappe.db.exists("Salary Structure", name):
+		structure = frappe.new_doc("Salary Structure")
+		structure.__newname = name
+		structure.company = company
+		structure.payroll_frequency = "Monthly"
+		structure.currency = "INR"
+		structure.append("earnings", {"salary_component": "Basic", "amount": base})
+		structure.flags.ignore_permissions = True
+		structure.flags.ignore_mandatory = True
+		structure.insert(ignore_permissions=True)
+		structure.submit()
+
+	assignment = frappe.db.exists(
+		"Salary Structure Assignment",
+		{"employee": employee, "salary_structure": name, "docstatus": 1},
+	)
+	if not assignment:
+		doc = frappe.new_doc("Salary Structure Assignment")
+		doc.employee = employee
+		doc.salary_structure = name
+		doc.company = company
+		doc.from_date = "2024-01-01"
+		doc.base = base
+		doc.flags.ignore_permissions = True
+		doc.flags.ignore_mandatory = True
+		doc.insert(ignore_permissions=True)
+		doc.submit()
+
+	return name

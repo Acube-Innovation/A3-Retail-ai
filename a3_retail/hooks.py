@@ -161,9 +161,12 @@ scheduler_events = {
 		"a3_retail.a3_retail_finance.doctype.emi_application.emi_application.nudge_stale_applications",
 		"a3_retail.a3_retail_warranty.doctype.warranty_registration.warranty_registration.recompute_statuses",
 		"a3_retail.a3_retail_warranty.doctype.warranty_registration.warranty_registration.send_renewal_reminders",
+		"a3_retail.a3_retail_operations.doctype.demurrage_charge.demurrage_charge.raise_storage_charges",
 	],
 	"weekly": [
 		"a3_retail.a3_retail_warranty.doctype.oem_warranty_return.oem_warranty_return.flag_overdue_returns",
+		"a3_retail.a3_retail_sales.doctype.stock_request.stock_request.flag_stuck_transfers",
+		"a3_retail.a3_retail_operations.doctype.demurrage_charge.demurrage_charge.generate_dead_stock_todos",
 	],
 	"cron": {},
 }
