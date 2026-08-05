@@ -167,6 +167,7 @@ scheduler_events = {
 		"a3_retail.a3_retail_warranty.doctype.warranty_registration.warranty_registration.recompute_statuses",
 		"a3_retail.a3_retail_warranty.doctype.warranty_registration.warranty_registration.send_renewal_reminders",
 		"a3_retail.a3_retail_operations.doctype.demurrage_charge.demurrage_charge.raise_storage_charges",
+		"a3_retail.a3_retail_communication.doctype.telecalling_campaign.telecalling_campaign.close_finished_campaigns",
 	],
 	"weekly": [
 		"a3_retail.a3_retail_warranty.doctype.oem_warranty_return.oem_warranty_return.flag_overdue_returns",

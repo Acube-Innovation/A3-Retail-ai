@@ -1,0 +1,133 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-08-05 09:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "disposition_name",
+  "category",
+  "col_break_1",
+  "requires_next_call",
+  "default_next_call_days",
+  "triggers_whatsapp",
+  "whatsapp_template",
+  "is_dnc"
+ ],
+ "fields": [
+  {
+   "fieldname": "disposition_name",
+   "fieldtype": "Data",
+   "label": "Disposition",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "category",
+   "fieldtype": "Select",
+   "label": "Category",
+   "options": "Positive\nNeutral\nNegative\nInvalid",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "col_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "requires_next_call",
+   "fieldtype": "Check",
+   "label": "Requires Next Call",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "default_next_call_days",
+   "fieldtype": "Int",
+   "label": "Next Call After (days)",
+   "depends_on": "requires_next_call"
+  },
+  {
+   "fieldname": "triggers_whatsapp",
+   "fieldtype": "Check",
+   "label": "Triggers WhatsApp"
+  },
+  {
+   "fieldname": "whatsapp_template",
+   "fieldtype": "Link",
+   "label": "WhatsApp Template",
+   "options": "WhatsApp Template",
+   "depends_on": "triggers_whatsapp"
+  },
+  {
+   "fieldname": "is_dnc",
+   "fieldtype": "Check",
+   "label": "Marks Do Not Call"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-05 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "A3 Retail Communication",
+ "name": "Call Disposition",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "A3 Retail Admin",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Telecaller",
+   "permlevel": 0,
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "autoname": "field:disposition_name",
+ "title_field": "disposition_name",
+ "naming_rule": "By fieldname"
+}

@@ -1,0 +1,308 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-08-05 09:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "campaign_name",
+  "naming_series",
+  "objective",
+  "branch",
+  "col_break_2",
+  "start_date",
+  "end_date",
+  "status",
+  "target_section",
+  "target_source",
+  "source_report",
+  "source_doctype",
+  "col_break_3",
+  "source_filters",
+  "exclude_contacted_days",
+  "script_section",
+  "script",
+  "objection_handling",
+  "col_break_4",
+  "offer_campaign",
+  "whatsapp_template",
+  "team_section",
+  "assigned_team",
+  "metrics_section",
+  "target_count",
+  "allocated_count",
+  "called_count",
+  "col_break_5",
+  "connected_count",
+  "converted_count",
+  "conversion_value"
+ ],
+ "fields": [
+  {
+   "fieldname": "campaign_name",
+   "fieldtype": "Data",
+   "label": "Campaign Name",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "TCC-.YY.-.####",
+   "hidden": 1,
+   "default": "TCC-.YY.-.####"
+  },
+  {
+   "fieldname": "objective",
+   "fieldtype": "Select",
+   "label": "Objective",
+   "options": "Warranty Renewal\nService Reminder\nOffer Promotion\nLost Lead Follow-up\nFeedback Collection\nPayment / EMI Reminder\nDevice Pickup Reminder\nNew Launch Announcement\nBirthday / Anniversary\nWin-back (Lapsed Customer)",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "branch",
+   "fieldtype": "Link",
+   "label": "Branch",
+   "options": "Branch",
+   "description": "Blank targets every branch"
+  },
+  {
+   "fieldname": "col_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "start_date",
+   "fieldtype": "Date",
+   "label": "Start Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "end_date",
+   "fieldtype": "Date",
+   "label": "End Date"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Draft\nActive\nPaused\nCompleted\nCancelled",
+   "default": "Draft",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "target_section",
+   "fieldtype": "Section Break",
+   "label": "Target List"
+  },
+  {
+   "fieldname": "target_source",
+   "fieldtype": "Select",
+   "label": "Target Source",
+   "options": "Report\nDocType Filter\nManual Upload (CSV)\nBranch Visit Log",
+   "default": "DocType Filter"
+  },
+  {
+   "fieldname": "source_report",
+   "fieldtype": "Link",
+   "label": "Source Report",
+   "options": "Report",
+   "depends_on": "eval:doc.target_source=='Report'"
+  },
+  {
+   "fieldname": "source_doctype",
+   "fieldtype": "Link",
+   "label": "Source DocType",
+   "options": "DocType",
+   "depends_on": "eval:doc.target_source=='DocType Filter'"
+  },
+  {
+   "fieldname": "col_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "source_filters",
+   "fieldtype": "Code",
+   "label": "Filters (JSON)",
+   "options": "JSON"
+  },
+  {
+   "fieldname": "exclude_contacted_days",
+   "fieldtype": "Int",
+   "label": "Exclude Contacted In Last (days)",
+   "default": "30"
+  },
+  {
+   "fieldname": "script_section",
+   "fieldtype": "Section Break",
+   "label": "Script"
+  },
+  {
+   "fieldname": "script",
+   "fieldtype": "Text Editor",
+   "label": "Call Script"
+  },
+  {
+   "fieldname": "objection_handling",
+   "fieldtype": "Text Editor",
+   "label": "Objection Handling"
+  },
+  {
+   "fieldname": "col_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "offer_campaign",
+   "fieldtype": "Link",
+   "label": "Offer to Pitch",
+   "options": "Seasonal Offer Campaign"
+  },
+  {
+   "fieldname": "whatsapp_template",
+   "fieldtype": "Link",
+   "label": "Follow-up Template",
+   "options": "WhatsApp Template"
+  },
+  {
+   "fieldname": "team_section",
+   "fieldtype": "Section Break",
+   "label": "Team"
+  },
+  {
+   "fieldname": "assigned_team",
+   "fieldtype": "Table",
+   "label": "Telecallers",
+   "options": "Campaign Telecaller"
+  },
+  {
+   "fieldname": "metrics_section",
+   "fieldtype": "Section Break",
+   "label": "Metrics"
+  },
+  {
+   "fieldname": "target_count",
+   "fieldtype": "Int",
+   "label": "Target",
+   "read_only": 1
+  },
+  {
+   "fieldname": "allocated_count",
+   "fieldtype": "Int",
+   "label": "Allocated",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "called_count",
+   "fieldtype": "Int",
+   "label": "Called",
+   "read_only": 1
+  },
+  {
+   "fieldname": "col_break_5",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "connected_count",
+   "fieldtype": "Int",
+   "label": "Connected",
+   "read_only": 1
+  },
+  {
+   "fieldname": "converted_count",
+   "fieldtype": "Int",
+   "label": "Converted",
+   "read_only": 1
+  },
+  {
+   "fieldname": "conversion_value",
+   "fieldtype": "Currency",
+   "label": "Conversion Value",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-05 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "A3 Retail Communication",
+ "name": "Telecalling Campaign",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "A3 Retail Admin",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Branch Manager",
+   "permlevel": 0,
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Telecaller",
+   "permlevel": 0,
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  }
+ ],
+ "sort_field": "start_date",
+ "sort_order": "DESC",
+ "states": [],
+ "autoname": "naming_series:",
+ "title_field": "campaign_name",
+ "track_changes": 1,
+ "naming_rule": "By \"Naming Series\" field"
+}

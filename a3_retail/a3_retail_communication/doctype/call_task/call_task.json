@@ -1,0 +1,336 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-08-05 09:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "campaign",
+  "customer",
+  "contact_name",
+  "mobile_no",
+  "col_break_6",
+  "branch",
+  "assigned_to",
+  "priority",
+  "scheduled_date",
+  "context_section",
+  "context",
+  "reference_type",
+  "col_break_7",
+  "reference_name",
+  "call_section",
+  "call_status",
+  "disposition",
+  "call_datetime",
+  "duration_seconds",
+  "col_break_8",
+  "attempt_no",
+  "recording_url",
+  "call_log",
+  "notes",
+  "outcome_section",
+  "outcome",
+  "outcome_reference_type",
+  "outcome_reference_name",
+  "col_break_9",
+  "conversion_value",
+  "next_call_date",
+  "whatsapp_sent"
+ ],
+ "fields": [
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "CT-.YY.-.######",
+   "hidden": 1,
+   "default": "CT-.YY.-.######"
+  },
+  {
+   "fieldname": "campaign",
+   "fieldtype": "Link",
+   "label": "Campaign",
+   "options": "Telecalling Campaign",
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "label": "Customer",
+   "options": "Customer",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "contact_name",
+   "fieldtype": "Data",
+   "label": "Contact Name",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "mobile_no",
+   "fieldtype": "Data",
+   "label": "Mobile",
+   "reqd": 1,
+   "in_list_view": 1,
+   "length": 10
+  },
+  {
+   "fieldname": "col_break_6",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "branch",
+   "fieldtype": "Link",
+   "label": "Branch",
+   "options": "Branch",
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "assigned_to",
+   "fieldtype": "Link",
+   "label": "Assigned To",
+   "options": "Employee",
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "priority",
+   "fieldtype": "Select",
+   "label": "Priority",
+   "options": "Low\nNormal\nHigh",
+   "default": "Normal"
+  },
+  {
+   "fieldname": "scheduled_date",
+   "fieldtype": "Date",
+   "label": "Scheduled",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "context_section",
+   "fieldtype": "Section Break",
+   "label": "Context"
+  },
+  {
+   "fieldname": "context",
+   "fieldtype": "Small Text",
+   "label": "Context"
+  },
+  {
+   "fieldname": "reference_type",
+   "fieldtype": "Select",
+   "label": "Reference",
+   "options": "\nWarranty Registration\nService Job Card\nBranch Visit Log\nLead\nCustomer"
+  },
+  {
+   "fieldname": "col_break_7",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "reference_name",
+   "fieldtype": "Dynamic Link",
+   "label": "Reference",
+   "options": "reference_type"
+  },
+  {
+   "fieldname": "call_section",
+   "fieldtype": "Section Break",
+   "label": "Call"
+  },
+  {
+   "fieldname": "call_status",
+   "fieldtype": "Select",
+   "label": "Call Status",
+   "options": "Not Called\nConnected\nNo Answer\nBusy\nSwitched Off\nWrong Number\nCall Back Later\nDo Not Call",
+   "default": "Not Called",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "disposition",
+   "fieldtype": "Link",
+   "label": "Disposition",
+   "options": "Call Disposition"
+  },
+  {
+   "fieldname": "call_datetime",
+   "fieldtype": "Datetime",
+   "label": "Called On"
+  },
+  {
+   "fieldname": "duration_seconds",
+   "fieldtype": "Int",
+   "label": "Duration (s)"
+  },
+  {
+   "fieldname": "col_break_8",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "attempt_no",
+   "fieldtype": "Int",
+   "label": "Attempt",
+   "default": "1"
+  },
+  {
+   "fieldname": "recording_url",
+   "fieldtype": "Data",
+   "label": "Recording"
+  },
+  {
+   "fieldname": "call_log",
+   "fieldtype": "Link",
+   "label": "Call Log",
+   "options": "Call Log"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "outcome_section",
+   "fieldtype": "Section Break",
+   "label": "Outcome"
+  },
+  {
+   "fieldname": "outcome",
+   "fieldtype": "Select",
+   "label": "Outcome",
+   "options": "Pending\nConverted\nInterested - Follow-up\nNot Interested\nAlready Done Elsewhere\nInvalid Contact",
+   "default": "Pending",
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "outcome_reference_type",
+   "fieldtype": "Select",
+   "label": "Converted To",
+   "options": "\nSales Invoice\nService Job Card\nWarranty Registration\nLead\nQuotation"
+  },
+  {
+   "fieldname": "outcome_reference_name",
+   "fieldtype": "Dynamic Link",
+   "label": "Reference",
+   "options": "outcome_reference_type"
+  },
+  {
+   "fieldname": "col_break_9",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "conversion_value",
+   "fieldtype": "Currency",
+   "label": "Conversion Value"
+  },
+  {
+   "fieldname": "next_call_date",
+   "fieldtype": "Date",
+   "label": "Next Call"
+  },
+  {
+   "fieldname": "whatsapp_sent",
+   "fieldtype": "Check",
+   "label": "WhatsApp Sent"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-05 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "A3 Retail Communication",
+ "name": "Call Task",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "A3 Retail Admin",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Telecaller",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Branch Manager",
+   "permlevel": 0,
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Helpdesk Agent",
+   "permlevel": 0,
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  }
+ ],
+ "sort_field": "scheduled_date",
+ "sort_order": "DESC",
+ "states": [],
+ "autoname": "naming_series:",
+ "title_field": "contact_name",
+ "search_fields": "mobile_no,contact_name,call_status",
+ "track_changes": 1,
+ "naming_rule": "By \"Naming Series\" field"
+}
