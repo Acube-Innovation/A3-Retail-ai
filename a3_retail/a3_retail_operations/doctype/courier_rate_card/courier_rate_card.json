@@ -1,0 +1,85 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-08-05 09:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "zone",
+  "service_type",
+  "weight_slab_from",
+  "weight_slab_to",
+  "base_rate",
+  "per_additional_500g",
+  "fuel_surcharge_percent",
+  "tat_days"
+ ],
+ "fields": [
+  {
+   "fieldname": "zone",
+   "fieldtype": "Select",
+   "label": "Zone",
+   "options": "Within City\nWithin State\nMetro\nRest of India\nNorth East & J&K",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "service_type",
+   "fieldtype": "Select",
+   "label": "Service Type",
+   "options": "Surface\nAir\nExpress\nSame Day",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "weight_slab_from",
+   "fieldtype": "Float",
+   "label": "From (kg)",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "weight_slab_to",
+   "fieldtype": "Float",
+   "label": "To (kg)",
+   "default": "0.5",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "base_rate",
+   "fieldtype": "Currency",
+   "label": "Base Rate",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "per_additional_500g",
+   "fieldtype": "Currency",
+   "label": "Per Extra 500 g"
+  },
+  {
+   "fieldname": "fuel_surcharge_percent",
+   "fieldtype": "Percent",
+   "label": "Fuel Surcharge %"
+  },
+  {
+   "fieldname": "tat_days",
+   "fieldtype": "Int",
+   "label": "TAT (days)",
+   "default": "2",
+   "in_list_view": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-05 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "A3 Retail Operations",
+ "name": "Courier Rate Card",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "istable": 1
+}

@@ -288,6 +288,40 @@ EMI_FIELDS = {
 }
 
 
+
+# Step 19 — Delivery Trip is configured, not rebuilt (scope 7.2).
+DELIVERY_FIELDS = {
+	"Delivery Trip": [
+		_field("a3_branch", "Branch", "Link", OPS_MODULE, options="Branch",
+			insert_after="company", in_standard_filter=1),
+		_field("a3_trip_type", "Trip Type", "Select", OPS_MODULE,
+			options="Sales Delivery\nService Pickup\nService Return\nMixed",
+			insert_after="a3_branch", default="Sales Delivery"),
+		_field("a3_cod_collected", "COD Collected", "Currency", OPS_MODULE,
+			insert_after="a3_trip_type"),
+		_field("a3_cod_deposited", "COD Deposited", "Check", OPS_MODULE,
+			insert_after="a3_cod_collected"),
+		_field("a3_deposit_journal_entry", "Deposit Entry", "Link", OPS_MODULE,
+			options="Journal Entry", insert_after="a3_cod_deposited", read_only=1),
+	],
+	"Delivery Stop": [
+		_field("a3_job_card", "Service Job Card", "Link", SERVICE_MODULE,
+			options="Service Job Card", insert_after="customer"),
+		_field("a3_otp", "Delivery OTP", "Data", SERVICE_MODULE, insert_after="a3_job_card",
+			read_only=1),
+		_field("a3_otp_verified", "OTP Verified", "Check", SERVICE_MODULE, insert_after="a3_otp"),
+		_field("a3_signature", "Signature", "Signature", SERVICE_MODULE,
+			insert_after="a3_otp_verified"),
+		_field("a3_cod_amount", "COD Amount", "Currency", OPS_MODULE, insert_after="a3_signature"),
+		_field("a3_delivery_photo", "Delivery Photo", "Attach Image", OPS_MODULE,
+			insert_after="a3_cod_amount"),
+		_field("a3_failure_reason", "Failure Reason", "Select", OPS_MODULE,
+			options="\nCustomer Unavailable\nAddress Wrong\nRefused\nPayment Not Ready\nRescheduled",
+			insert_after="a3_delivery_photo"),
+	],
+}
+
+
 ALL_FIELD_GROUPS = (
 	BRANCH_BACKREF_FIELDS,
 	MASTER_FIELDS,
@@ -295,6 +329,7 @@ ALL_FIELD_GROUPS = (
 	SERVICE_LINK_FIELDS,
 	SELLING_FIELDS,
 	EMI_FIELDS,
+	DELIVERY_FIELDS,
 )
 
 

@@ -1,0 +1,196 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-08-05 09:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "partner_name",
+  "supplier",
+  "is_active",
+  "col_break_1",
+  "standard_tat_days",
+  "free_days_before_demurrage",
+  "pickup_contact",
+  "pickup_phone",
+  "service_section",
+  "service_types",
+  "tracking_url_pattern",
+  "rates_section",
+  "rate_card"
+ ],
+ "fields": [
+  {
+   "fieldname": "partner_name",
+   "fieldtype": "Data",
+   "label": "Partner Name",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "supplier",
+   "fieldtype": "Link",
+   "label": "Supplier",
+   "options": "Supplier",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "label": "Active",
+   "default": "1"
+  },
+  {
+   "fieldname": "col_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "standard_tat_days",
+   "fieldtype": "Int",
+   "label": "Standard TAT (days)",
+   "default": "2"
+  },
+  {
+   "fieldname": "free_days_before_demurrage",
+   "fieldtype": "Int",
+   "label": "Free Days Before Detention",
+   "default": "1"
+  },
+  {
+   "fieldname": "pickup_contact",
+   "fieldtype": "Data",
+   "label": "Pickup Contact"
+  },
+  {
+   "fieldname": "pickup_phone",
+   "fieldtype": "Data",
+   "label": "Pickup Phone"
+  },
+  {
+   "fieldname": "service_section",
+   "fieldtype": "Section Break",
+   "label": "Services"
+  },
+  {
+   "fieldname": "service_types",
+   "fieldtype": "Table MultiSelect",
+   "label": "Service Types",
+   "options": "Courier Service Type"
+  },
+  {
+   "fieldname": "tracking_url_pattern",
+   "fieldtype": "Data",
+   "label": "Tracking URL Pattern",
+   "description": "Use {awb} as the placeholder, e.g. https://track.example.com/?awb={awb}"
+  },
+  {
+   "fieldname": "rates_section",
+   "fieldtype": "Section Break",
+   "label": "Rate Card"
+  },
+  {
+   "fieldname": "rate_card",
+   "fieldtype": "Table",
+   "label": "Rate Card",
+   "options": "Courier Rate Card"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-05 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "A3 Retail Operations",
+ "name": "Courier Partner",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "A3 Retail Admin",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Branch Manager",
+   "permlevel": 0,
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Store Keeper",
+   "permlevel": 0,
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Accounts Manager",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "autoname": "field:partner_name",
+ "title_field": "partner_name",
+ "track_changes": 1,
+ "naming_rule": "By fieldname"
+}

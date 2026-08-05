@@ -88,6 +88,9 @@ doc_events = {
 		"on_update": "a3_retail.overrides.employee.on_update",
 		"on_trash": "a3_retail.overrides.employee.on_trash",
 	},
+	"Service Job Card": {
+		"on_update_after_submit": "a3_retail.a3_retail_operations.doctype.courier_dispatch.courier_dispatch.auto_draft_for_job_card",
+	},
 	"Serial No": {
 		"before_insert": "a3_retail.overrides.serial_no.before_insert",
 		"validate": "a3_retail.overrides.serial_no.validate",
@@ -151,6 +154,7 @@ website_route_rules = [
 scheduler_events = {
 	"hourly": [
 		"a3_retail.a3_retail_service.doctype.service_job_card.service_job_card.flag_delayed_job_cards",
+		"a3_retail.a3_retail_operations.doctype.courier_dispatch.courier_dispatch.scan_delayed_dispatches",
 	],
 	"daily": [
 		"a3_retail.overrides.serial_no.recompute_warranty_state",

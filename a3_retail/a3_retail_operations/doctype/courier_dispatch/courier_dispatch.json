@@ -1,0 +1,537 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-08-05 09:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "dispatch_type",
+  "branch",
+  "branch_code",
+  "col_break_2",
+  "status",
+  "status_updated_on",
+  "company",
+  "reference_section",
+  "reference_type",
+  "reference_name",
+  "col_break_3",
+  "courier_partner",
+  "service_type",
+  "awb_no",
+  "tracking_url",
+  "consignee_section",
+  "consignee_type",
+  "consignee",
+  "consignee_name",
+  "col_break_4",
+  "consignee_mobile",
+  "consignee_address",
+  "pincode",
+  "zone",
+  "package_section",
+  "items",
+  "no_of_packages",
+  "weight_kg",
+  "col_break_5",
+  "declared_value",
+  "is_insured",
+  "insurance_amount",
+  "is_cod",
+  "cod_amount",
+  "dates_section",
+  "dispatch_date",
+  "expected_delivery_date",
+  "col_break_6",
+  "actual_delivery_date",
+  "delay_days",
+  "pod_attachment",
+  "received_by",
+  "cost_section",
+  "freight_amount",
+  "fuel_surcharge",
+  "other_charges",
+  "col_break_7",
+  "gst_amount",
+  "total_cost",
+  "is_billable_to_customer",
+  "charged_in_invoice",
+  "purchase_invoice",
+  "remarks",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "CD-.YY.-.#####",
+   "hidden": 1,
+   "default": "CD-.YY.-.#####"
+  },
+  {
+   "fieldname": "dispatch_type",
+   "fieldtype": "Select",
+   "label": "Dispatch Type",
+   "options": "Sales Delivery\nService Device Return\nService Device Pickup\nInter-branch Stock\nOEM Warranty Return\nDocument / Cheque\nMarketing Material",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "branch",
+   "fieldtype": "Link",
+   "label": "Branch",
+   "options": "Branch",
+   "reqd": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "branch_code",
+   "fieldtype": "Data",
+   "label": "Branch Code",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "col_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Booked\nPicked Up\nIn Transit\nOut for Delivery\nDelivered\nDelivery Failed\nRTO (Returned)\nLost / Damaged",
+   "default": "Booked",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "status_updated_on",
+   "fieldtype": "Datetime",
+   "label": "Last Update",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "read_only": 1
+  },
+  {
+   "fieldname": "reference_section",
+   "fieldtype": "Section Break",
+   "label": "Reference"
+  },
+  {
+   "fieldname": "reference_type",
+   "fieldtype": "Select",
+   "label": "Reference",
+   "options": "\nDelivery Note\nService Job Card\nStock Request\nOEM Warranty Return\nSales Invoice"
+  },
+  {
+   "fieldname": "reference_name",
+   "fieldtype": "Dynamic Link",
+   "label": "Reference Doc",
+   "options": "reference_type"
+  },
+  {
+   "fieldname": "col_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "courier_partner",
+   "fieldtype": "Link",
+   "label": "Courier Partner",
+   "options": "Courier Partner",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "service_type",
+   "fieldtype": "Select",
+   "label": "Service Type",
+   "options": "Surface\nAir\nExpress\nSame Day",
+   "default": "Surface"
+  },
+  {
+   "fieldname": "awb_no",
+   "fieldtype": "Data",
+   "label": "AWB / Docket No",
+   "in_list_view": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "tracking_url",
+   "fieldtype": "Data",
+   "label": "Tracking URL",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "consignee_section",
+   "fieldtype": "Section Break",
+   "label": "Consignee"
+  },
+  {
+   "fieldname": "consignee_type",
+   "fieldtype": "Select",
+   "label": "Consignee Type",
+   "options": "Customer\nBranch\nSupplier\nEmployee",
+   "default": "Customer"
+  },
+  {
+   "fieldname": "consignee",
+   "fieldtype": "Dynamic Link",
+   "label": "Consignee",
+   "options": "consignee_type"
+  },
+  {
+   "fieldname": "consignee_name",
+   "fieldtype": "Data",
+   "label": "Name"
+  },
+  {
+   "fieldname": "col_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "consignee_mobile",
+   "fieldtype": "Data",
+   "label": "Mobile"
+  },
+  {
+   "fieldname": "consignee_address",
+   "fieldtype": "Small Text",
+   "label": "Address"
+  },
+  {
+   "fieldname": "pincode",
+   "fieldtype": "Data",
+   "label": "Pincode",
+   "reqd": 1,
+   "length": 6
+  },
+  {
+   "fieldname": "zone",
+   "fieldtype": "Select",
+   "label": "Zone",
+   "options": "Within City\nWithin State\nMetro\nRest of India\nNorth East & J&K",
+   "description": "Derived from the pincode; drives the rate card"
+  },
+  {
+   "fieldname": "package_section",
+   "fieldtype": "Section Break",
+   "label": "Package"
+  },
+  {
+   "fieldname": "items",
+   "fieldtype": "Table",
+   "label": "Contents",
+   "options": "Courier Dispatch Item",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "no_of_packages",
+   "fieldtype": "Int",
+   "label": "Packages",
+   "default": "1"
+  },
+  {
+   "fieldname": "weight_kg",
+   "fieldtype": "Float",
+   "label": "Weight (kg)",
+   "default": "0.5"
+  },
+  {
+   "fieldname": "col_break_5",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "declared_value",
+   "fieldtype": "Currency",
+   "label": "Declared Value"
+  },
+  {
+   "fieldname": "is_insured",
+   "fieldtype": "Check",
+   "label": "Insured"
+  },
+  {
+   "fieldname": "insurance_amount",
+   "fieldtype": "Currency",
+   "label": "Insurance",
+   "depends_on": "is_insured"
+  },
+  {
+   "fieldname": "is_cod",
+   "fieldtype": "Check",
+   "label": "COD"
+  },
+  {
+   "fieldname": "cod_amount",
+   "fieldtype": "Currency",
+   "label": "COD Amount",
+   "depends_on": "is_cod"
+  },
+  {
+   "fieldname": "dates_section",
+   "fieldtype": "Section Break",
+   "label": "Dates"
+  },
+  {
+   "fieldname": "dispatch_date",
+   "fieldtype": "Datetime",
+   "label": "Dispatch Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "expected_delivery_date",
+   "fieldtype": "Date",
+   "label": "Expected Delivery",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "col_break_6",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "actual_delivery_date",
+   "fieldtype": "Datetime",
+   "label": "Actual Delivery",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "delay_days",
+   "fieldtype": "Int",
+   "label": "Delay (days)",
+   "read_only": 1,
+   "in_list_view": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "pod_attachment",
+   "fieldtype": "Attach",
+   "label": "POD",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "received_by",
+   "fieldtype": "Data",
+   "label": "Received By",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "cost_section",
+   "fieldtype": "Section Break",
+   "label": "Cost"
+  },
+  {
+   "fieldname": "freight_amount",
+   "fieldtype": "Currency",
+   "label": "Freight",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "fuel_surcharge",
+   "fieldtype": "Currency",
+   "label": "Fuel Surcharge",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "other_charges",
+   "fieldtype": "Currency",
+   "label": "Other Charges",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "col_break_7",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "gst_amount",
+   "fieldtype": "Currency",
+   "label": "GST",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "total_cost",
+   "fieldtype": "Currency",
+   "label": "Total Cost",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "is_billable_to_customer",
+   "fieldtype": "Check",
+   "label": "Charge to Customer"
+  },
+  {
+   "fieldname": "charged_in_invoice",
+   "fieldtype": "Link",
+   "label": "Charged In",
+   "options": "Sales Invoice",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "purchase_invoice",
+   "fieldtype": "Link",
+   "label": "Courier Bill",
+   "options": "Purchase Invoice",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "label": "Remarks",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "options": "Courier Dispatch",
+   "read_only": 1,
+   "no_copy": 1,
+   "print_hide": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-05 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "A3 Retail Operations",
+ "name": "Courier Dispatch",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 1,
+   "cancel": 1,
+   "amend": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "A3 Retail Admin",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 1,
+   "cancel": 1,
+   "amend": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Branch Manager",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 1,
+   "cancel": 1,
+   "amend": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Store Keeper",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "submit": 1,
+   "cancel": 1,
+   "amend": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Service Manager",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Reception Executive",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Accounts Manager",
+   "permlevel": 0,
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  }
+ ],
+ "sort_field": "dispatch_date",
+ "sort_order": "DESC",
+ "states": [],
+ "autoname": "naming_series:",
+ "is_submittable": 1,
+ "title_field": "consignee_name",
+ "search_fields": "awb_no,consignee_name,status",
+ "track_changes": 1,
+ "naming_rule": "By \"Naming Series\" field"
+}
