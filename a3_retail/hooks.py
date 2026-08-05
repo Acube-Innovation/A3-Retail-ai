@@ -102,7 +102,10 @@ doc_events = {
 			"a3_retail.overrides.transactions.apply_margin_scheme",
 			"a3_retail.overrides.sales_invoice.validate",
 		],
-		"on_submit": "a3_retail.overrides.sales_invoice.on_submit",
+		"on_submit": [
+			"a3_retail.overrides.sales_invoice.on_submit",
+			"a3_retail.a3_retail_sales.doctype.seasonal_offer_campaign.seasonal_offer_campaign.track_offer_consumption",
+		],
 		"on_cancel": "a3_retail.overrides.sales_invoice.on_cancel",
 	},
 	"POS Invoice": {
@@ -148,6 +151,7 @@ scheduler_events = {
 		"a3_retail.a3_retail_service.doctype.service_job_card.service_job_card.auto_close_delivered",
 		"a3_retail.a3_retail_service.doctype.service_estimate.service_estimate.expire_stale_estimates",
 		"a3_retail.api.portal.clear_expired_otps",
+		"a3_retail.a3_retail_sales.doctype.seasonal_offer_campaign.seasonal_offer_campaign.refresh_campaign_statuses",
 	],
 	"weekly": [],
 	"cron": {},

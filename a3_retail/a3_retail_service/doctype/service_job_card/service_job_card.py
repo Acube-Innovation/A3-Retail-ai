@@ -13,7 +13,7 @@ from frappe.utils import add_days, cint, flt, get_datetime, getdate, now_datetim
 
 from a3_retail.a3_retail_service import tat
 from a3_retail.a3_retail_service.doctype.service_job_card import state as st
-from a3_retail.utils import money, publish_dashboard_update
+from a3_retail.utils import commit_if_not_testing, money, publish_dashboard_update
 from a3_retail.utils.branch import A3BranchMixin, get_branch_profile
 from a3_retail.utils.imei import enforce_imei, normalize_imei
 from a3_retail.utils.naming import set_branch_code
@@ -489,7 +489,7 @@ def flag_delayed_job_cards():
 		)
 		flagged += 1
 
-	frappe.db.commit()
+	commit_if_not_testing()
 	return flagged
 
 
@@ -526,7 +526,7 @@ def auto_close_delivered():
 		doc.flags.ignore_permissions = True
 		doc.save(ignore_permissions=True)
 
-	frappe.db.commit()
+	commit_if_not_testing()
 	return len(names)
 
 

@@ -10,6 +10,8 @@ import frappe
 from frappe import _
 from frappe.utils import add_months, getdate, nowdate
 
+from a3_retail.utils import commit_if_not_testing
+
 from a3_retail.utils.imei import enforce_imei, normalize_imei
 
 WARRANTY_STATES = ("Not Sold", "In Warranty", "In Extended Warranty", "Out of Warranty", "Void")
@@ -122,7 +124,7 @@ def recompute_warranty_state():
 			frappe.db.set_value("Serial No", serial.name, "a3_warranty_state", state, update_modified=False)
 			updated += 1
 
-	frappe.db.commit()
+	commit_if_not_testing()
 	return updated
 
 

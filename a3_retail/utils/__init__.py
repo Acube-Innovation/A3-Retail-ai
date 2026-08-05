@@ -30,3 +30,15 @@ def publish_dashboard_update(branch_code: str | None = None, payload: dict | Non
 		room=f"branch:{branch_code}" if branch_code else None,
 		after_commit=True,
 	)
+
+
+def commit_if_not_testing():
+	"""Commit long-running scheduler loops, but never inside the test runner.
+
+	FrappeTestCase isolates each test by rolling the transaction back. A commit
+	inside a scheduler helper defeats that and leaks fixtures into the site —
+	which then shows up as unrelated failures elsewhere in the suite.
+	"""
+	if frappe.flags.in_test:
+		return
+	frappe.db.commit()

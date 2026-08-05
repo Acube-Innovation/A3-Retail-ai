@@ -17,7 +17,7 @@ from frappe.model.document import Document
 from frappe.utils import add_days, flt, get_url, getdate, now_datetime, nowdate
 
 from a3_retail.a3_retail_service.doctype.service_job_card import state as st
-from a3_retail.utils import money
+from a3_retail.utils import commit_if_not_testing, money
 from a3_retail.utils.branch import A3BranchMixin
 from a3_retail.utils.naming import set_branch_code
 
@@ -284,7 +284,7 @@ def expire_stale_estimates():
 	for name in names:
 		frappe.db.set_value("Service Estimate", name, "approval_status", "Expired", update_modified=False)
 
-	frappe.db.commit()
+	commit_if_not_testing()
 	return len(names)
 
 

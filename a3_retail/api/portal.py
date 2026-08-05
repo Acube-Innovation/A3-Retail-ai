@@ -12,6 +12,8 @@ import frappe
 from frappe import _
 from frappe.utils import add_to_date, cint, get_datetime, now_datetime
 
+from a3_retail.utils import commit_if_not_testing
+
 from a3_retail.api.customer import normalize_mobile
 
 OTP_LENGTH = 6
@@ -64,7 +66,7 @@ def request_otp(mobile_no: str, purpose: str = "General", reference_doctype: str
 	doc.ip_address = _client_ip()
 	doc.flags.ignore_permissions = True
 	doc.insert(ignore_permissions=True)
-	frappe.db.commit()
+	commit_if_not_testing()
 
 	# Delivery goes through the communication engine (step 22). In developer
 	# mode the OTP is returned so the flow can be exercised without a WABA.
@@ -113,12 +115,12 @@ def verify_otp(mobile_no: str, otp: str, purpose: str = "General") -> dict:
 	doc.db_set("attempts", cint(doc.attempts) + 1, update_modified=False)
 
 	if doc.otp_hash != _hash(otp):
-		frappe.db.commit()
+		commit_if_not_testing()
 		frappe.throw(_("Incorrect OTP."))
 
 	doc.db_set("verified", 1, update_modified=False)
 	doc.db_set("verified_on", now_datetime(), update_modified=False)
-	frappe.db.commit()
+	commit_if_not_testing()
 
 	return {"verified": True, "token": _issue_session_token(mobile, purpose)}
 
@@ -184,4 +186,4 @@ def submit_estimate_decision(token: str, decision: str, otp_token: str | None = 
 def clear_expired_otps():
 	"""Daily — drop OTP rows older than a day."""
 	frappe.db.delete("Portal OTP", {"creation": ["<", add_to_date(now_datetime(), days=-1)]})
-	frappe.db.commit()
+	commit_if_not_testing()
