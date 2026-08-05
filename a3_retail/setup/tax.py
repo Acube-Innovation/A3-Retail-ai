@@ -32,7 +32,7 @@ COA_ADDITIONS = [
 	("Exchange Clearing", "Loans and Advances", None),
 	# Current liabilities
 	("Gift Voucher Liability", "Current Liabilities", None),
-	("Advance from Customers - Service", "Current Liabilities", None),
+	("Advance from Customers - Service", "Current Liabilities", "Receivable"),
 	("Deferred EW Revenue", "Current Liabilities", None),
 	("Provision for Slow Moving Stock", "Current Liabilities", None),
 	# Income
@@ -202,7 +202,34 @@ def ensure_accounts(company: str):
 	for account_name, parent_hint, account_type, root_type in RCM_ACCOUNTS:
 		ensure_account(company, account_name, parent_hint, account_type, root_type)
 
+	_set_company_defaults(company)
 	_point_settings_at_accounts(company)
+
+
+def _set_company_defaults(company: str):
+	"""Advances need their own party account so branch-wise liability is visible.
+
+	`book_advance_payments_in_separate_party_account` (scope 3.5) makes ERPNext
+	demand `default_advance_received_account`, so the two are set together.
+	"""
+	abbr = get_abbr(company)
+	advance_account = f"Advance from Customers - Service - {abbr}"
+	if not frappe.db.exists("Account", advance_account):
+		return
+
+	doc = frappe.get_doc("Company", company)
+	changed = False
+
+	if doc.meta.has_field("default_advance_received_account") and not doc.get(
+		"default_advance_received_account"
+	):
+		doc.default_advance_received_account = advance_account
+		changed = True
+
+	if changed:
+		doc.flags.ignore_permissions = True
+		doc.flags.ignore_mandatory = True
+		doc.save(ignore_permissions=True)
 
 
 def _point_settings_at_accounts(company: str):
