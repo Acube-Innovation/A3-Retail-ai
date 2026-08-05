@@ -1,0 +1,55 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-08-05 09:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "brand",
+  "repair_category",
+  "proficiency",
+  "certified_on"
+ ],
+ "fields": [
+  {
+   "fieldname": "brand",
+   "fieldtype": "Link",
+   "label": "Brand",
+   "options": "Brand",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "repair_category",
+   "fieldtype": "Select",
+   "label": "Repair Category",
+   "options": "Software\nHardware - Component\nHardware - Board Level\nPhysical Damage\nLiquid Damage\nBattery\nDisplay\nAccessory",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "proficiency",
+   "fieldtype": "Select",
+   "label": "Proficiency",
+   "options": "Beginner\nIntermediate\nExpert",
+   "default": "Intermediate",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "certified_on",
+   "fieldtype": "Date",
+   "label": "Certified On"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-05 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "A3 Retail Service",
+ "name": "Technician Skill",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "istable": 1
+}
