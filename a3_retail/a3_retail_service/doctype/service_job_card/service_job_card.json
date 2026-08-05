@@ -1,0 +1,1149 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-08-05 09:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "status",
+  "col_break_1",
+  "branch",
+  "branch_code",
+  "company",
+  "customer_section",
+  "customer",
+  "customer_name",
+  "customer_mobile",
+  "alternate_mobile",
+  "col_break_2",
+  "customer_email",
+  "customer_address",
+  "lead_source",
+  "is_repeat_customer",
+  "device_section",
+  "device_type",
+  "brand",
+  "device_model",
+  "imei_1",
+  "imei_2",
+  "imei_override",
+  "col_break_3",
+  "serial_no",
+  "sold_by_us",
+  "purchase_invoice_ref",
+  "device_purchase_date",
+  "warranty_section",
+  "warranty_type",
+  "warranty_expiry_date",
+  "col_break_4",
+  "warranty_registration",
+  "is_chargeable",
+  "intake_section",
+  "received_on",
+  "received_by",
+  "complaint_description",
+  "reported_issues",
+  "repair_category",
+  "col_break_5",
+  "priority",
+  "physical_condition",
+  "device_password",
+  "data_backup_required",
+  "data_loss_consent",
+  "estimated_delivery_date",
+  "condition_section",
+  "device_condition_checklist",
+  "device_photo_1",
+  "device_photo_2",
+  "col_break_6",
+  "device_photo_3",
+  "device_photo_4",
+  "customer_signature",
+  "diagnosis_section",
+  "assigned_technician",
+  "assigned_on",
+  "diagnosed_on",
+  "root_cause",
+  "col_break_7",
+  "requires_estimate",
+  "service_estimate",
+  "estimate_status",
+  "diagnosis_notes",
+  "parts_section",
+  "parts",
+  "labour",
+  "totals_section",
+  "parts_total",
+  "labour_total",
+  "total_before_discount",
+  "discount_amount",
+  "discount_reason",
+  "col_break_8",
+  "net_total",
+  "tax_template",
+  "tax_amount",
+  "grand_total",
+  "warranty_borne_amount",
+  "customer_payable",
+  "payment_section",
+  "advance_amount",
+  "advance_payment_entry",
+  "sales_order",
+  "col_break_9",
+  "sales_invoice",
+  "outstanding_amount",
+  "payment_status",
+  "sla_section",
+  "tat_policy",
+  "sla_due_on",
+  "is_delayed",
+  "delay_hours",
+  "paused_hours",
+  "col_break_10",
+  "delay_reason",
+  "escalation_level",
+  "hold_reason",
+  "status_log",
+  "delivery_section",
+  "delivery_mode",
+  "ready_on",
+  "delivery_otp",
+  "otp_verified",
+  "delivered_on",
+  "delivered_by",
+  "col_break_11",
+  "receiver_name",
+  "receiver_id_proof",
+  "receiver_signature",
+  "accessories_returned",
+  "courier_dispatch",
+  "delivery_note",
+  "feedback_section",
+  "feedback_rating",
+  "feedback_comments",
+  "col_break_12",
+  "customer_feedback",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "JC-.branch_code.-.YY.-.#####",
+   "hidden": 1,
+   "default": "JC-.branch_code.-.YY.-.#####"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Draft\nOpen\nUnder Diagnosis\nEstimate Pending\nEstimate Sent\nEstimate Approved\nEstimate Rejected\nAwaiting Parts\nIn Progress\nOn Hold\nRepair Completed\nQC Failed\nQC Passed\nNot Repairable\nReady for Delivery\nDelivered\nClosed\nCancelled",
+   "default": "Draft",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "no_copy": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "col_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "branch",
+   "fieldtype": "Link",
+   "label": "Branch",
+   "options": "Branch",
+   "reqd": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "branch_code",
+   "fieldtype": "Data",
+   "label": "Branch Code",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "read_only": 1
+  },
+  {
+   "fieldname": "customer_section",
+   "fieldtype": "Section Break",
+   "label": "Customer"
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "label": "Customer",
+   "options": "Customer",
+   "reqd": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "customer_name",
+   "fieldtype": "Data",
+   "label": "Customer Name",
+   "fetch_from": "customer.customer_name",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "customer_mobile",
+   "fieldtype": "Data",
+   "label": "Mobile",
+   "fetch_from": "customer.a3_mobile_no",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "alternate_mobile",
+   "fieldtype": "Data",
+   "label": "Alternate Mobile"
+  },
+  {
+   "fieldname": "col_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "customer_email",
+   "fieldtype": "Data",
+   "label": "Email",
+   "options": "Email",
+   "fetch_from": "customer.email_id"
+  },
+  {
+   "fieldname": "customer_address",
+   "fieldtype": "Link",
+   "label": "Address",
+   "options": "Address"
+  },
+  {
+   "fieldname": "lead_source",
+   "fieldtype": "Select",
+   "label": "Source",
+   "options": "Walk-in\nPhone Call\nWhatsApp\nWebsite\nReferral\nRepeat Customer\nCorporate AMC",
+   "default": "Walk-in"
+  },
+  {
+   "fieldname": "is_repeat_customer",
+   "fieldtype": "Check",
+   "label": "Repeat Customer",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "device_section",
+   "fieldtype": "Section Break",
+   "label": "Device"
+  },
+  {
+   "fieldname": "device_type",
+   "fieldtype": "Select",
+   "label": "Device Type",
+   "options": "Mobile\nTablet\nSmartwatch\nEarbuds\nOther",
+   "default": "Mobile",
+   "reqd": 1
+  },
+  {
+   "fieldname": "brand",
+   "fieldtype": "Link",
+   "label": "Brand",
+   "options": "Brand",
+   "reqd": 1
+  },
+  {
+   "fieldname": "device_model",
+   "fieldtype": "Link",
+   "label": "Model",
+   "options": "Device Model",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "imei_1",
+   "fieldtype": "Data",
+   "label": "IMEI 1",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "length": 20
+  },
+  {
+   "fieldname": "imei_2",
+   "fieldtype": "Data",
+   "label": "IMEI 2",
+   "length": 20
+  },
+  {
+   "fieldname": "imei_override",
+   "fieldtype": "Check",
+   "label": "Override IMEI Check"
+  },
+  {
+   "fieldname": "col_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "serial_no",
+   "fieldtype": "Link",
+   "label": "Serial No (sold by us)",
+   "options": "Serial No",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "sold_by_us",
+   "fieldtype": "Check",
+   "label": "Purchased From Us",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "purchase_invoice_ref",
+   "fieldtype": "Link",
+   "label": "Original Invoice",
+   "options": "Sales Invoice",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "device_purchase_date",
+   "fieldtype": "Date",
+   "label": "Purchase Date",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "warranty_section",
+   "fieldtype": "Section Break",
+   "label": "Warranty"
+  },
+  {
+   "fieldname": "warranty_type",
+   "fieldtype": "Select",
+   "label": "Warranty Type",
+   "options": "Brand Warranty\nExtended Warranty\nScreen Protection Plan\nInsurance Claim\nOut of Warranty\nGoodwill/Free",
+   "default": "Out of Warranty",
+   "reqd": 1,
+   "in_standard_filter": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "warranty_expiry_date",
+   "fieldtype": "Date",
+   "label": "Warranty Expiry",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "col_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "warranty_registration",
+   "fieldtype": "Link",
+   "label": "EW Registration",
+   "options": "Warranty Registration",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "is_chargeable",
+   "fieldtype": "Check",
+   "label": "Chargeable to Customer",
+   "default": "1",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "intake_section",
+   "fieldtype": "Section Break",
+   "label": "Intake"
+  },
+  {
+   "fieldname": "received_on",
+   "fieldtype": "Datetime",
+   "label": "Received On",
+   "reqd": 1
+  },
+  {
+   "fieldname": "received_by",
+   "fieldtype": "Link",
+   "label": "Received By",
+   "options": "Employee"
+  },
+  {
+   "fieldname": "complaint_description",
+   "fieldtype": "Small Text",
+   "label": "Customer Complaint",
+   "reqd": 1
+  },
+  {
+   "fieldname": "reported_issues",
+   "fieldtype": "Table MultiSelect",
+   "label": "Reported Issues",
+   "options": "Job Card Reported Issue"
+  },
+  {
+   "fieldname": "repair_category",
+   "fieldtype": "Select",
+   "label": "Repair Category",
+   "options": "Software\nHardware - Component\nHardware - Board Level\nPhysical Damage\nLiquid Damage\nBattery\nDisplay\nAccessory",
+   "in_standard_filter": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "col_break_5",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "priority",
+   "fieldtype": "Select",
+   "label": "Priority",
+   "options": "Low\nNormal\nHigh\nUrgent (Same Day)",
+   "default": "Normal",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "physical_condition",
+   "fieldtype": "Small Text",
+   "label": "Physical Condition Notes",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "device_password",
+   "fieldtype": "Password",
+   "label": "Device Lock Code / Pattern"
+  },
+  {
+   "fieldname": "data_backup_required",
+   "fieldtype": "Check",
+   "label": "Data Backup Required"
+  },
+  {
+   "fieldname": "data_loss_consent",
+   "fieldtype": "Check",
+   "label": "Customer Consented to Data Loss"
+  },
+  {
+   "fieldname": "estimated_delivery_date",
+   "fieldtype": "Datetime",
+   "label": "Promised Delivery",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "condition_section",
+   "fieldtype": "Section Break",
+   "label": "Condition & Evidence",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "device_condition_checklist",
+   "fieldtype": "Table",
+   "label": "Accessory / Condition Checklist",
+   "options": "Job Card Accessory",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "device_photo_1",
+   "fieldtype": "Attach Image",
+   "label": "Photo 1"
+  },
+  {
+   "fieldname": "device_photo_2",
+   "fieldtype": "Attach Image",
+   "label": "Photo 2"
+  },
+  {
+   "fieldname": "col_break_6",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "device_photo_3",
+   "fieldtype": "Attach Image",
+   "label": "Photo 3"
+  },
+  {
+   "fieldname": "device_photo_4",
+   "fieldtype": "Attach Image",
+   "label": "Photo 4"
+  },
+  {
+   "fieldname": "customer_signature",
+   "fieldtype": "Signature",
+   "label": "Customer Signature"
+  },
+  {
+   "fieldname": "diagnosis_section",
+   "fieldtype": "Section Break",
+   "label": "Diagnosis & Assignment"
+  },
+  {
+   "fieldname": "assigned_technician",
+   "fieldtype": "Link",
+   "label": "Technician",
+   "options": "Employee",
+   "in_standard_filter": 1,
+   "in_list_view": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "assigned_on",
+   "fieldtype": "Datetime",
+   "label": "Assigned On",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "diagnosed_on",
+   "fieldtype": "Datetime",
+   "label": "Diagnosed On",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "root_cause",
+   "fieldtype": "Select",
+   "label": "Root Cause",
+   "options": "\nManufacturing Defect\nUser Damage\nLiquid Ingress\nWear & Tear\nSoftware Corruption\nThird-party Repair\nNo Fault Found",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "col_break_7",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "requires_estimate",
+   "fieldtype": "Check",
+   "label": "Requires Customer Estimate",
+   "default": "1",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "service_estimate",
+   "fieldtype": "Link",
+   "label": "Estimate",
+   "options": "Service Estimate",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "estimate_status",
+   "fieldtype": "Select",
+   "label": "Estimate Status",
+   "options": "Not Required\nPending\nSent\nApproved\nRejected\nRevision Requested",
+   "default": "Not Required",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "diagnosis_notes",
+   "fieldtype": "Text Editor",
+   "label": "Diagnosis",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "parts_section",
+   "fieldtype": "Section Break",
+   "label": "Parts & Labour"
+  },
+  {
+   "fieldname": "parts",
+   "fieldtype": "Table",
+   "label": "Parts Used",
+   "options": "Job Card Part",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "labour",
+   "fieldtype": "Table",
+   "label": "Labour",
+   "options": "Job Card Labour",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "totals_section",
+   "fieldtype": "Section Break",
+   "label": "Totals"
+  },
+  {
+   "fieldname": "parts_total",
+   "fieldtype": "Currency",
+   "label": "Parts Total",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "labour_total",
+   "fieldtype": "Currency",
+   "label": "Labour Total",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "total_before_discount",
+   "fieldtype": "Currency",
+   "label": "Total",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "discount_amount",
+   "fieldtype": "Currency",
+   "label": "Discount",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "discount_reason",
+   "fieldtype": "Small Text",
+   "label": "Discount Reason",
+   "depends_on": "eval:doc.discount_amount>0",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "col_break_8",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "net_total",
+   "fieldtype": "Currency",
+   "label": "Net Total",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "tax_template",
+   "fieldtype": "Link",
+   "label": "Tax Template",
+   "options": "Sales Taxes and Charges Template",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "tax_amount",
+   "fieldtype": "Currency",
+   "label": "GST",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "grand_total",
+   "fieldtype": "Currency",
+   "label": "Grand Total",
+   "read_only": 1,
+   "in_list_view": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "warranty_borne_amount",
+   "fieldtype": "Currency",
+   "label": "Amount Borne (Warranty)",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "customer_payable",
+   "fieldtype": "Currency",
+   "label": "Customer Payable",
+   "read_only": 1,
+   "bold": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "payment_section",
+   "fieldtype": "Section Break",
+   "label": "Payments"
+  },
+  {
+   "fieldname": "advance_amount",
+   "fieldtype": "Currency",
+   "label": "Advance Received",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "advance_payment_entry",
+   "fieldtype": "Link",
+   "label": "Advance Payment Entry",
+   "options": "Payment Entry",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "sales_order",
+   "fieldtype": "Link",
+   "label": "Sales Order",
+   "options": "Sales Order",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "col_break_9",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "sales_invoice",
+   "fieldtype": "Link",
+   "label": "Sales Invoice",
+   "options": "Sales Invoice",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "outstanding_amount",
+   "fieldtype": "Currency",
+   "label": "Balance Due",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "payment_status",
+   "fieldtype": "Select",
+   "label": "Payment Status",
+   "options": "Unpaid\nPartly Paid (Advance)\nPaid\nWarranty - No Charge",
+   "default": "Unpaid",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "sla_section",
+   "fieldtype": "Section Break",
+   "label": "Status & SLA"
+  },
+  {
+   "fieldname": "tat_policy",
+   "fieldtype": "Link",
+   "label": "TAT Policy",
+   "options": "Service TAT Policy",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "sla_due_on",
+   "fieldtype": "Datetime",
+   "label": "SLA Due",
+   "read_only": 1,
+   "in_list_view": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "is_delayed",
+   "fieldtype": "Check",
+   "label": "Delayed",
+   "read_only": 1,
+   "in_standard_filter": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "delay_hours",
+   "fieldtype": "Float",
+   "label": "Delay (hrs)",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "paused_hours",
+   "fieldtype": "Float",
+   "label": "Paused (hrs)",
+   "read_only": 1,
+   "description": "Time awaiting parts, approval or payment \u2014 excluded from the TAT clock",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "col_break_10",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "delay_reason",
+   "fieldtype": "Select",
+   "label": "Delay Reason",
+   "options": "\nAwaiting Parts\nAwaiting Customer Approval\nAwaiting Payment\nTechnician Unavailable\nComplex Repair\nVendor/OEM Delay\nCustomer Not Reachable",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "escalation_level",
+   "fieldtype": "Select",
+   "label": "Escalation",
+   "options": "None\nL1 - Service Manager\nL2 - Branch Manager\nL3 - Head Office",
+   "default": "None",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "hold_reason",
+   "fieldtype": "Small Text",
+   "label": "On Hold Reason",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "status_log",
+   "fieldtype": "Table",
+   "label": "Status History",
+   "options": "Job Card Status Log",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "delivery_section",
+   "fieldtype": "Section Break",
+   "label": "Delivery"
+  },
+  {
+   "fieldname": "delivery_mode",
+   "fieldtype": "Select",
+   "label": "Delivery Mode",
+   "options": "Counter Pickup\nHome Delivery\nCourier",
+   "default": "Counter Pickup",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "ready_on",
+   "fieldtype": "Datetime",
+   "label": "Ready On",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "delivery_otp",
+   "fieldtype": "Data",
+   "label": "Delivery OTP",
+   "read_only": 1,
+   "no_copy": 1,
+   "hidden": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "otp_verified",
+   "fieldtype": "Check",
+   "label": "OTP Verified",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "delivered_on",
+   "fieldtype": "Datetime",
+   "label": "Delivered On",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "delivered_by",
+   "fieldtype": "Link",
+   "label": "Delivered By",
+   "options": "Employee",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "col_break_11",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "receiver_name",
+   "fieldtype": "Data",
+   "label": "Received By (Name)",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "receiver_id_proof",
+   "fieldtype": "Data",
+   "label": "ID Proof Ref",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "receiver_signature",
+   "fieldtype": "Signature",
+   "label": "Receiver Signature",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "accessories_returned",
+   "fieldtype": "Check",
+   "label": "Accessories Returned",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "courier_dispatch",
+   "fieldtype": "Link",
+   "label": "Courier Dispatch",
+   "options": "Courier Dispatch",
+   "depends_on": "eval:doc.delivery_mode=='Courier'",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "delivery_note",
+   "fieldtype": "Link",
+   "label": "Delivery Note",
+   "options": "Delivery Note",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "feedback_section",
+   "fieldtype": "Section Break",
+   "label": "Feedback",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "feedback_rating",
+   "fieldtype": "Rating",
+   "label": "Feedback",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "feedback_comments",
+   "fieldtype": "Small Text",
+   "label": "Feedback Comments",
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "col_break_12",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "customer_feedback",
+   "fieldtype": "Link",
+   "label": "Feedback Record",
+   "options": "Customer Feedback",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "options": "Service Job Card",
+   "read_only": 1,
+   "no_copy": 1,
+   "print_hide": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-05 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "A3 Retail Service",
+ "name": "Service Job Card",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 1,
+   "cancel": 1,
+   "amend": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "A3 Retail Admin",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 1,
+   "cancel": 1,
+   "amend": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Branch Manager",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 1,
+   "cancel": 1,
+   "amend": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Service Manager",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 1,
+   "cancel": 1,
+   "amend": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Reception Executive",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "submit": 1,
+   "cancel": 1,
+   "amend": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Technician",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Sales Executive",
+   "permlevel": 0,
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Store Keeper",
+   "permlevel": 0,
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Accounts Manager",
+   "permlevel": 0,
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Telecaller",
+   "permlevel": 0,
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "A3 Retail Admin",
+   "permlevel": 1,
+   "read": 1,
+   "write": 1,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 0,
+   "export": 0,
+   "print": 0,
+   "email": 0,
+   "share": 0
+  },
+  {
+   "role": "Branch Manager",
+   "permlevel": 1,
+   "read": 1,
+   "write": 1,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 0,
+   "export": 0,
+   "print": 0,
+   "email": 0,
+   "share": 0
+  },
+  {
+   "role": "Accounts Manager",
+   "permlevel": 1,
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 0,
+   "export": 0,
+   "print": 0,
+   "email": 0,
+   "share": 0
+  }
+ ],
+ "sort_field": "received_on",
+ "sort_order": "DESC",
+ "states": [],
+ "autoname": "naming_series:",
+ "is_submittable": 1,
+ "title_field": "customer_name",
+ "search_fields": "imei_1,customer_mobile,customer_name,status",
+ "track_changes": 1,
+ "naming_rule": "By \"Naming Series\" field"
+}

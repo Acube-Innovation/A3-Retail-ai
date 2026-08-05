@@ -115,9 +115,12 @@ doc_events = {
 # Scheduler
 # ---------------------------------------------------------------------------
 scheduler_events = {
-	"hourly": [],
+	"hourly": [
+		"a3_retail.a3_retail_service.doctype.service_job_card.service_job_card.flag_delayed_job_cards",
+	],
 	"daily": [
 		"a3_retail.overrides.serial_no.recompute_warranty_state",
+		"a3_retail.a3_retail_service.doctype.service_job_card.service_job_card.auto_close_delivered",
 	],
 	"weekly": [],
 	"cron": {},
