@@ -242,7 +242,30 @@ MARGIN_SCHEME_FIELDS = {
 }
 
 
-ALL_FIELD_GROUPS = (BRANCH_BACKREF_FIELDS, MASTER_FIELDS, MARGIN_SCHEME_FIELDS)
+
+# Step 8 — service documents link back to their job card (scope 3.4, ADR-04).
+SERVICE_LINK_FIELDS = {
+	"Sales Order": [
+		_field("a3_service_job_card", "Service Job Card", "Link", SERVICE_MODULE,
+			options="Service Job Card", insert_after="order_type", read_only=1, no_copy=1),
+	],
+	"Sales Invoice": [
+		_field("a3_service_job_card", "Service Job Card", "Link", SERVICE_MODULE,
+			options="Service Job Card", insert_after="po_no", read_only=1, no_copy=1),
+	],
+	"Payment Entry": [
+		_field("a3_service_job_card", "Service Job Card", "Link", SERVICE_MODULE,
+			options="Service Job Card", insert_after="party_name", no_copy=1),
+	],
+}
+
+
+ALL_FIELD_GROUPS = (
+	BRANCH_BACKREF_FIELDS,
+	MASTER_FIELDS,
+	MARGIN_SCHEME_FIELDS,
+	SERVICE_LINK_FIELDS,
+)
 
 
 def run():

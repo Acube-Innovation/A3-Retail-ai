@@ -160,3 +160,31 @@ def log_transition(doc, from_status: str, to_status: str, remarks: str | None = 
 
 def next_statuses(status: str) -> tuple[str, ...]:
 	return ALLOWED.get(status, ())
+
+
+def path_to(from_status: str, to_status: str) -> list[str]:
+	"""Shortest legal route between two statuses, excluding the starting point.
+
+	Callers that drive the job card indirectly (an approved estimate, a received
+	transfer) know the destination but not the intermediate hops. Walking the
+	real path keeps the status log honest instead of teleporting.
+	Returns [] when no route exists.
+	"""
+	if from_status == to_status:
+		return []
+
+	queue: list[tuple[str, list[str]]] = [(from_status, [])]
+	seen = {from_status}
+
+	while queue:
+		current, route = queue.pop(0)
+		for nxt in ALLOWED.get(current, ()):
+			if nxt in seen:
+				continue
+			path = [*route, nxt]
+			if nxt == to_status:
+				return path
+			seen.add(nxt)
+			queue.append((nxt, path))
+
+	return []

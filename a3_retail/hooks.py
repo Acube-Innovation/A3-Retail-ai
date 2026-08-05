@@ -112,6 +112,17 @@ doc_events = {
 }
 
 # ---------------------------------------------------------------------------
+# Website routes — customer portal (scope 13.1)
+# ---------------------------------------------------------------------------
+website_route_rules = [
+	{"from_route": "/approve-estimate/<token>", "to_route": "approve_estimate"},
+	{"from_route": "/warranty/<token>", "to_route": "warranty_certificate"},
+	{"from_route": "/feedback/<token>", "to_route": "feedback"},
+	{"from_route": "/pay/<token>", "to_route": "pay_online"},
+	{"from_route": "/invoice/<token>", "to_route": "invoice_download"},
+]
+
+# ---------------------------------------------------------------------------
 # Scheduler
 # ---------------------------------------------------------------------------
 scheduler_events = {
@@ -121,6 +132,8 @@ scheduler_events = {
 	"daily": [
 		"a3_retail.overrides.serial_no.recompute_warranty_state",
 		"a3_retail.a3_retail_service.doctype.service_job_card.service_job_card.auto_close_delivered",
+		"a3_retail.a3_retail_service.doctype.service_estimate.service_estimate.expire_stale_estimates",
+		"a3_retail.api.portal.clear_expired_otps",
 	],
 	"weekly": [],
 	"cron": {},
