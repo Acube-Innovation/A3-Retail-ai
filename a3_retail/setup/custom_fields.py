@@ -260,11 +260,26 @@ SERVICE_LINK_FIELDS = {
 }
 
 
+
+# Step 12 — sales flags used by incentives and the attach-rate report (scope 2.5).
+SELLING_FIELDS = {
+	"Sales Invoice": [
+		_field("a3_ew_attached", "EW Plan Attached", "Check", SALES_MODULE,
+			insert_after="a3_service_job_card", read_only=1, print_hide=1),
+	],
+	"POS Invoice": [
+		_field("a3_ew_attached", "EW Plan Attached", "Check", SALES_MODULE,
+			insert_after="customer", read_only=1, print_hide=1),
+	],
+}
+
+
 ALL_FIELD_GROUPS = (
 	BRANCH_BACKREF_FIELDS,
 	MASTER_FIELDS,
 	MARGIN_SCHEME_FIELDS,
 	SERVICE_LINK_FIELDS,
+	SELLING_FIELDS,
 )
 
 

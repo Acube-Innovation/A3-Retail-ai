@@ -26,7 +26,11 @@ A3_ROLE_NAMES = [role["role_name"] for role in A3_ROLES]
 # Includes
 # ---------------------------------------------------------------------------
 app_include_css = "/assets/a3_retail/css/a3_retail.css"
-app_include_js = "/assets/a3_retail/js/a3_retail.js"
+app_include_js = [
+	"/assets/a3_retail/js/a3_retail.js",
+	# POS is not a Form; the bundle patches cur_pos in place (scope 2.2).
+	"/assets/a3_retail/js/pos_extension.js",
+]
 
 # ---------------------------------------------------------------------------
 # Installation
@@ -94,11 +98,21 @@ doc_events = {
 	# Branch stamping for the accounting dimension (scope 1.1, 11.1).
 	"Sales Invoice": {
 		"before_validate": "a3_retail.overrides.transactions.stamp_branch",
-		"validate": "a3_retail.overrides.transactions.apply_margin_scheme",
+		"validate": [
+			"a3_retail.overrides.transactions.apply_margin_scheme",
+			"a3_retail.overrides.sales_invoice.validate",
+		],
+		"on_submit": "a3_retail.overrides.sales_invoice.on_submit",
+		"on_cancel": "a3_retail.overrides.sales_invoice.on_cancel",
 	},
 	"POS Invoice": {
 		"before_validate": "a3_retail.overrides.transactions.stamp_branch",
-		"validate": "a3_retail.overrides.transactions.apply_margin_scheme",
+		"validate": [
+			"a3_retail.overrides.transactions.apply_margin_scheme",
+			"a3_retail.overrides.sales_invoice.validate",
+		],
+		"on_submit": "a3_retail.overrides.sales_invoice.on_submit",
+		"on_cancel": "a3_retail.overrides.sales_invoice.on_cancel",
 	},
 	"Purchase Invoice": {"before_validate": "a3_retail.overrides.transactions.stamp_branch"},
 	"Journal Entry": {"before_validate": "a3_retail.overrides.transactions.stamp_branch"},

@@ -83,3 +83,8 @@
 	background: var(--fg-color); border-radius: 4px; cursor: pointer; }
 .a3-jc-actions button:hover { background: var(--bg-light-gray); }
 .a3-jc-actions .a3-timer { border-color: var(--a3-brand); color: var(--a3-brand); font-weight: 600; }
+
+/* ---- POS extensions (scope 2.2) ---- */
+.a3-pos-savings { background: #defbe6; color: #0e6027; padding: 6px 12px; font-weight: 600;
+	font-size: 13px; text-align: center; }
+.a3-pos-error { color: var(--a3-red); font-size: 12px; margin-top: 6px; }
