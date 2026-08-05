@@ -3,11 +3,11 @@
 App: `a3_retail` (the scope document calls it `mobicare`; every identifier was
 renamed — see *Naming map* below). Bench site: `local`.
 
-**Steps 1–10 of 26 are complete, migrated and tested: 171 tests pass.**
+**Steps 1–14 of 26 are complete, migrated and tested: 240 tests pass.**
 
 ```bash
 bench --site local migrate
-bench --site local run-tests --app a3_retail          # 171 passing
+bench --site local run-tests --app a3_retail          # 240 passing
 bench --site local execute a3_retail.demo.install.run # idempotent demo seed
 bench --site local execute a3_retail.demo.verify.run  # 17/17 checks pass
 ```
@@ -40,12 +40,15 @@ Desk page routes are prefixed `a3-` (`a3-reception-desk`) to avoid collisions.
 | 8 | Estimate | `Service Estimate` + children, hashed single-use portal token, `/approve-estimate/<token>`, OTP store, revisions, Sales Order on approval |
 | 9 | Money & delivery | Advance Payment Entry, service Sales Invoice (update_stock from Service Bay), OTP-verified delivery, refunds |
 | 10 | Reception Desk | `/app/a3-reception-desk` — 6-step intake, scanner + camera, client-side image compression, signature pad, live rail |
+| 11 | Workbench & parts | `/app/a3-technician-workbench` kanban with work timer; parts request -> Stock Request / Material Request, TAT pause and auto-resume, issue/return Stock Entries |
+| 12 | POS & selling guards | `pos_extension.js` (P1–P9, patches `cur_pos` without forking POS), device-serial guard, min-price guard, sales-person rule, serial stamping on submit |
+| 13 | Seasonal offers | `Seasonal Offer Campaign` -> standard Pricing Rules per branch warehouse, budget cap with auto-pause, approval flow, daily activate/expire |
+| 14 | Device exchange | Grading engine, used Item + Serial No with the original IMEI, Purchase Receipt into Used Devices, margin-scheme resale, Exchange Adjustment payment |
 
-## Remaining steps (11–26)
+## Remaining steps (15–26)
 
-11 Technician Workbench · 12 POS extensions · 13 Seasonal offers ·
-14 Device exchange · 15 EMI finance · 16 Warranty · 17 Stock explorer &
-transfers · 18 Damages/demurrage · 19 Courier & logistics · 20 Footfall/CRM ·
+15 EMI finance · 16 Warranty · 17 Stock explorer & transfers ·
+18 Damages/demurrage · 19 Courier & logistics · 20 Footfall/CRM ·
 21 Telecalling · 22 Communication engine · 23 HR & incentives · 24 Print
 formats · 25 Dashboards & reports · 26 Portal, payments, demo data, hardening.
 
@@ -104,6 +107,36 @@ with how ERPNext v15 actually behaves. Each was resolved deliberately.
 7. **Warehouse count.** Step 2 expects 12 branch warehouses; the scope's own
    warehouse tree lists 10. Kozhikode is "Sales Only" so it gets no Service Bay
    — 11 leaf warehouses result.
+
+8. **Store Keeper on Stock Entry** — see 5 above.
+
+9. **Material Request has no `branch` field.** The Branch accounting dimension is
+   only added to accounting doctypes, so parts requests are tied to a branch
+   through the service warehouse instead. Assignments are guarded with
+   `meta.has_field("branch")`.
+
+10. **Cancelling a Device Exchange now cancels its Purchase Receipt.** The scope
+    describes creating the receipt but never unwinding it; without this a
+    reversed exchange left phantom used-device stock in the branch.
+
+11. **Pricing Rule priorities must differ.** The scope gives every campaign
+    priority 1. ERPNext resolves overlapping rules by priority and raises
+    `MultiplePricingRuleConflict` when two of equal priority match one item, so
+    the demo campaigns are seeded with distinct priorities.
+
+## Testing notes
+
+Two classes of test-isolation bug were found and fixed; both are worth knowing
+about before adding tests:
+
+- **Scheduler helpers must not commit.** `frappe.db.commit()` inside a scheduler
+  function defeats `FrappeTestCase`'s per-test rollback and leaks fixtures into
+  the site, which then surfaces as unrelated failures elsewhere. Use
+  `a3_retail.utils.commit_if_not_testing()`.
+- **Stock-moving tests need unique serials.** Submitting a Purchase Receipt makes
+  ERPNext commit while reposting stock, so tests that share one IMEI become
+  order-dependent. `tests/test_exchange.py` generates a fresh Luhn-valid IMEI per
+  test — copy that pattern.
 
 ## Environment repairs applied to this site
 
