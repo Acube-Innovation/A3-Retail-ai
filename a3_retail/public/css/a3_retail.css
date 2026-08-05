@@ -29,3 +29,40 @@
 @media (max-width: 768px) {
 	.a3-counter { flex: 1 1 45%; }
 }
+
+/* ---- Reception Desk (scope 3.9) ---- */
+.a3-reception-body { display: grid; grid-template-columns: 1fr 320px; gap: 16px; }
+.a3-step h4 { margin-bottom: 10px; }
+.a3-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; flex-wrap: wrap; }
+.a3-bigin { flex: 1 1 220px; font-size: 20px; padding: 10px 12px; letter-spacing: 1px;
+	border: 1px solid var(--border-color); border-radius: 6px; }
+.a3-narrow { max-width: 190px; }
+.a3-check { display: block; font-size: 13px; margin: 6px 0; font-weight: 400; }
+.a3-context { font-size: 12px; margin-top: 8px; }
+.a3-past { margin-top: 4px; color: var(--text-muted); font-size: 11px; }
+.a3-tiles { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.a3-tile { border: 1px solid var(--border-color); background: var(--fg-color); border-radius: 6px;
+	padding: 8px 14px; font-size: 13px; cursor: pointer; }
+.a3-tile.selected { border-color: var(--a3-brand); background: #eef4ff; font-weight: 600; }
+.a3-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.a3-chip { border: 1px solid var(--border-color); background: var(--fg-color); border-radius: 14px;
+	padding: 5px 12px; font-size: 12px; cursor: pointer; }
+.a3-chip.selected { border-color: var(--a3-brand); background: #eef4ff; font-weight: 600; }
+.a3-accessories { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 6px;
+	margin-bottom: 10px; }
+.a3-acc { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 400; }
+.a3-acc-cond { font-size: 11px; padding: 1px 4px; margin-left: auto; }
+.a3-photo-strip { display: flex; gap: 6px; margin-top: 8px; }
+.a3-thumb { width: 64px; height: 64px; object-fit: cover; border-radius: 6px;
+	border: 1px solid var(--border-color); }
+.a3-signature-wrap { margin-top: 10px; }
+.a3-actionbar { display: flex; gap: 8px; flex-wrap: wrap; position: sticky; bottom: 0;
+	background: var(--bg-color); padding: 10px 0; }
+.a3-today-list { max-height: 60vh; overflow-y: auto; margin-top: 8px; }
+.a3-today-row { display: flex; justify-content: space-between; align-items: center; gap: 8px;
+	padding: 8px 4px; border-bottom: 1px solid var(--border-color); cursor: pointer; font-size: 12px; }
+.a3-today-row:hover { background: var(--bg-light-gray); }
+@media (max-width: 992px) {
+	.a3-reception-body { grid-template-columns: 1fr; }
+	.a3-rail { order: -1; }
+}

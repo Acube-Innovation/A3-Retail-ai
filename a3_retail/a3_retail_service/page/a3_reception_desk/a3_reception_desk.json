@@ -1,0 +1,25 @@
+{
+ "content": null,
+ "creation": "2026-08-05 09:00:00.000000",
+ "docstatus": 0,
+ "doctype": "Page",
+ "idx": 0,
+ "modified": "2026-08-05 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "A3 Retail Service",
+ "name": "a3-reception-desk",
+ "owner": "Administrator",
+ "page_name": "a3-reception-desk",
+ "roles": [
+  {"role": "Reception Executive"},
+  {"role": "Branch Manager"},
+  {"role": "Service Manager"},
+  {"role": "A3 Retail Admin"},
+  {"role": "System Manager"}
+ ],
+ "script": null,
+ "standard": "Yes",
+ "style": null,
+ "system_page": 0,
+ "title": "Reception Desk"
+}
