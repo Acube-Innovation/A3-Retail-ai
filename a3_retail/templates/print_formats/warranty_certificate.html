@@ -1,0 +1,33 @@
+{% import "a3_retail/templates/print_formats/a3_base.html" as base %}
+{{ base.styles() }}
+<div style="text-align:center;margin-bottom:8px">
+	<div style="font-size:18pt;font-weight:700;letter-spacing:2px;color:#0F62FE">WARRANTY CERTIFICATE</div>
+	<div class="a3-muted">{{ doc.certificate_no or doc.name }}</div>
+</div>
+{{ base.party_block("Registered Owner", '<strong>' ~ (doc.customer or "") ~ '</strong><br>' ~ (doc.customer_mobile or ""),
+	"Device", (doc.item_name or "") ~ '<br>IMEI: ' ~ (doc.imei_1 or doc.serial_no or "") ~
+	'<br>Purchased: ' ~ frappe.format(doc.purchase_date, {"fieldtype": "Date"})) }}
+<table class="a3-items">
+	<thead><tr><th>Coverage</th><th>From</th><th>To</th><th class="a3-num">Value Cap</th></tr></thead>
+	<tbody>
+		<tr><td>Manufacturer warranty</td><td>{{ frappe.format(doc.purchase_date, {"fieldtype": "Date"}) }}</td>
+			<td>{{ frappe.format(doc.brand_warranty_expiry, {"fieldtype": "Date"}) }}</td><td class="a3-num">—</td></tr>
+		{% if doc.ew_plan %}
+		<tr><td>{{ doc.ew_plan }}</td><td>{{ frappe.format(doc.ew_start_date, {"fieldtype": "Date"}) }}</td>
+			<td>{{ frappe.format(doc.ew_expiry_date, {"fieldtype": "Date"}) }}</td>
+			<td class="a3-num">{{ a3_money(doc.claim_value_cap) }}</td></tr>
+		{% endif %}
+	</tbody>
+</table>
+<div class="a3-block"><h4>Exclusions</h4>
+	Physical damage, liquid ingress, unauthorised repair, tampered IMEI, consumables and cosmetic wear are
+	not covered unless an accidental-damage plan is registered above. Claims are limited to
+	{{ doc.max_claims or 1 }} in the plan period.</div>
+<div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:14px">
+	<div class="a3-qr"><img src="{{ a3_tracking_qr(doc, 4) }}"><div>Verify online</div></div>
+	<div style="text-align:right">
+		<div class="a3-line" style="border-top:1px solid #9CA3AF;padding-top:3px;width:200px;margin-left:auto">
+			For {{ a3_company_name() }}<br><span class="a3-muted">Authorised Signatory</span></div>
+	</div>
+</div>
+{{ base.footer(doc) }}

@@ -1,0 +1,22 @@
+{% import "a3_retail/templates/print_formats/a3_base.html" as base %}
+{{ base.styles() }}
+<div style="border:2px solid #0F62FE;border-radius:6px;padding:10px;width:86mm">
+	<div style="display:flex;justify-content:space-between;align-items:center">
+		<div>
+			<div style="font-weight:700;font-size:11pt">{{ a3_company_name() }}</div>
+			<div class="a3-muted" style="font-size:8pt">Extended Warranty Card</div>
+		</div>
+		<img src="{{ a3_tracking_qr(doc, 2) }}" style="width:52px;height:52px">
+	</div>
+	<table class="a3-kv" style="margin-top:6px">
+		<tr><td class="a3-k">Plan</td><td>{{ doc.ew_plan or "—" }}</td></tr>
+		<tr><td class="a3-k">Certificate</td><td>{{ doc.certificate_no or doc.name }}</td></tr>
+		<tr><td class="a3-k">Device</td><td>{{ doc.item_name or "" }}</td></tr>
+		<tr><td class="a3-k">IMEI</td><td>{{ doc.imei_1 or doc.serial_no or "" }}</td></tr>
+		<tr><td class="a3-k">Valid</td><td>{{ frappe.format(doc.ew_start_date, {"fieldtype": "Date"}) }}
+			– {{ frappe.format(doc.ew_expiry_date, {"fieldtype": "Date"}) }}</td></tr>
+		<tr><td class="a3-k">Claims</td><td>{{ doc.claims_used or 0 }} / {{ doc.max_claims or 1 }}</td></tr>
+	</table>
+	<div class="a3-muted" style="font-size:7pt;margin-top:4px">Carry this card and the original invoice for any claim.</div>
+</div>
+{{ base.footer(doc) }}

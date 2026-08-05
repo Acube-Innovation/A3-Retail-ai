@@ -1,0 +1,60 @@
+{#-
+  80 mm thermal base (scope 13.3).
+
+  No letterhead image, no colour, no page furniture: a thermal roll prints a
+  single narrow column and the paper is cut when the content ends.
+-#}
+
+{%- macro styles() -%}
+<style>
+	@page { size: 80mm auto; margin: 2mm; }
+	.print-format { width: 76mm; font-family: "DejaVu Sans Mono", "Courier New", monospace;
+		font-size: 8pt; color: #000; line-height: 1.35; }
+	.t-center { text-align: center; }
+	.t-right { text-align: right; }
+	.t-bold { font-weight: 700; }
+	.t-big { font-size: 10pt; font-weight: 700; }
+	.t-rule { border-top: 1px dashed #000; margin: 4px 0; }
+	table.t-items { width: 100%; border-collapse: collapse; }
+	table.t-items th { border-bottom: 1px solid #000; text-align: left; padding: 2px 0;
+		font-size: 7.5pt; }
+	table.t-items td { padding: 2px 0; vertical-align: top; }
+	table.t-kv { width: 100%; border-collapse: collapse; }
+	table.t-kv td { padding: 1px 0; vertical-align: top; }
+	table.t-kv td.t-k { width: 38%; }
+	.t-qr { text-align: center; margin-top: 4px; }
+	.t-qr img { width: 96px; height: 96px; }
+	.t-small { font-size: 7pt; }
+</style>
+{%- endmacro -%}
+
+{%- macro shop_header(branch=None) -%}
+{%- set company = frappe.db.get_single_value("Global Defaults", "default_company") -%}
+{%- set profile = a3_branch_profile(branch) -%}
+<div class="t-center">
+	<div class="t-big">{{ company or "" }}</div>
+	{% if profile %}
+		{% if profile.address %}<div>{{ profile.address }}</div>{% endif %}
+		{% if profile.phone %}<div>Ph: {{ profile.phone }}</div>{% endif %}
+		{% if profile.gstin %}<div>GSTIN: {{ profile.gstin }}</div>{% endif %}
+	{% endif %}
+</div>
+<div class="t-rule"></div>
+{%- endmacro -%}
+
+{%- macro kv(rows) -%}
+<table class="t-kv">
+	{% for key, value in rows %}
+		{% if value %}<tr><td class="t-k">{{ key }}</td><td>{{ value }}</td></tr>{% endif %}
+	{% endfor %}
+</table>
+{%- endmacro -%}
+
+{%- macro qr(image, caption="") -%}
+{% if image %}<div class="t-qr"><img src="{{ image }}">{% if caption %}<div class="t-small">{{ caption }}</div>{% endif %}</div>{% endif %}
+{%- endmacro -%}
+
+{%- macro footer(note="This is a computer-generated receipt.") -%}
+<div class="t-rule"></div>
+<div class="t-center t-small">{{ note }}</div>
+{%- endmacro -%}

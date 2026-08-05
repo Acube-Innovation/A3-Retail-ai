@@ -53,11 +53,12 @@ Desk page routes are prefixed `a3-` (`a3-reception-desk`) to avoid collisions.
 | 21 | Telecalling | `Telecalling Campaign` list generation, `Call Task`, `Call Disposition`, DNC handling, calling console API |
 | 22 | Communication | Stream-separated senders, `WhatsApp Template`/`Communication Rule`/`Message Log`, `doc_events["*"]` dispatcher, opt-in + quiet-hours compliance, Meta Cloud provider |
 | 23 | HR, incentives, assets | HRMS configuration (`setup/hr.py`), branch geofence on Employee Checkin, `Employee Incentive Scheme` + `Incentive Calculation Run` engine, Post to Payroll, asset custody and exit clearance |
+| 24 | Print | `templates/print_formats/` base + thermal macro libraries, 2 print styles, branch letter heads with `before_print` selection, 24 print formats, QR/UPI/IRN helpers (`utils/qr.py`, `print_helpers.py`), PDF smoke test |
 
-## Remaining steps (24–26)
+## Remaining steps (25–26)
 
-24 Print formats & letter heads · 25 Dashboards, control tower & reports ·
-26 Portal, payments, demo data, UAT hardening.
+25 Dashboards, control tower & reports · 26 Portal, payments, demo data,
+UAT hardening.
 
 Seams already in place for them: `Portal OTP` and `website_route_rules`
 (step 26), `setup/permissions.py` `PERMISSION_MATRIX` and
@@ -162,6 +163,17 @@ with how ERPNext v15 actually behaves. Each was resolved deliberately.
     lets the state machine accept the state a historical document ended in — the
     same treatment ERPNext gives opening entries. `on_status_changed` now keeps a
     timestamp the document already carries instead of stamping `now`.
+
+17. **PDF rendering needs the web server.** wkhtmltopdf fetches the site
+    stylesheet over HTTP, so `setup.print_formats.smoke_test()` exits with
+    `ConnectionRefusedError` on a bench with nothing serving. The sweep reports
+    that as "no server" rather than a format failure, and the test suite renders
+    HTML (all 24) rather than PDF so it stays fast and self-contained:
+
+    ```bash
+    bench serve --port 8000 &
+    bench --site local execute a3_retail.setup.print_formats.smoke_test
+    ```
 
 ## Testing notes
 

@@ -1,0 +1,26 @@
+{% import "a3_retail/templates/print_formats/a3_thermal.html" as t %}
+{{ t.styles() }}
+{{ t.shop_header(doc.branch) }}
+<div class="t-center t-big">JOB CARD</div>
+<div class="t-center">{{ doc.name }}</div>
+{% if a3_barcode(doc.name) %}<div class="t-qr"><img src="{{ a3_barcode(doc.name) }}" style="width:180px;height:44px"></div>{% endif %}
+<div class="t-rule"></div>
+{{ t.kv([
+	("Received", frappe.format(doc.received_on, {"fieldtype": "Datetime"})),
+	("Customer", doc.customer_name),
+	("Mobile", doc.customer_mobile),
+	("Device", (doc.brand or "") ~ " " ~ (doc.device_model or "")),
+	("IMEI", doc.imei_1),
+	("Complaint", doc.complaint_description),
+	("Promised", frappe.format(doc.estimated_delivery_date, {"fieldtype": "Datetime"})),
+	("Advance", a3_money(doc.advance_amount) if doc.advance_amount else None),
+]) }}
+{% if doc.device_condition_checklist %}
+<div class="t-rule"></div><div class="t-bold">Accessories received</div>
+{% for row in doc.device_condition_checklist %}{% if row.get("is_received") %}<div>- {{ row.get("accessory") or row.get("item") }}</div>{% endif %}{% endfor %}
+{% endif %}
+<div class="t-rule"></div>
+<div class="t-small">Devices uncollected beyond {{ a3_setting("free_storage_days") or 15 }} days attract storage charges.
+Data loss is not the responsibility of the service centre. Estimate is approximate; final charges may vary.</div>
+{{ t.qr(a3_tracking_qr(doc), "Track this repair") }}
+{{ t.footer() }}

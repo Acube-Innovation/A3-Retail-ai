@@ -234,6 +234,28 @@ def _july_incentive_table():
 	return f"{matched} rows", matched == len(expected)
 
 
+# --------------------------------------------------------------- step 24 checks
+@check("Print formats", "24")
+def _print_formats():
+	count = frappe.db.count("Print Format", {"module": ["like", "A3 Retail%"]})
+	return count, count >= 24
+
+
+@check("Branch letter heads", "3")
+def _letter_heads():
+	count = frappe.db.count("Letter Head", {"name": ["like", "% Letter Head"]})
+	return count, count >= 3
+
+
+@check("Print formats render", "24 of 24")
+def _print_render():
+	from a3_retail.setup.print_formats import smoke_test
+
+	result = smoke_test(as_pdf=False, verbose=False)
+	rendered = result["total"] - len(result["failed"])
+	return f"{rendered} of {result['total']}", not result["failed"]
+
+
 def run(verbose: bool = True):
 	"""Execute every registered check; returns (passed, failed, rows)."""
 	rows = []

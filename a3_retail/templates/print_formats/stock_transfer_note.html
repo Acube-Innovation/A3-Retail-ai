@@ -1,0 +1,14 @@
+{% import "a3_retail/templates/print_formats/a3_base.html" as base %}
+{{ base.styles() }}
+{{ base.title_band(doc, "Stock Transfer Note") }}
+{{ base.party_block("From", (doc.get("source_branch") or "") ~ '<br>' ~ (doc.get("source_warehouse") or ""),
+	"To", (doc.get("requesting_branch") or "") ~ '<br>' ~ (doc.get("requesting_warehouse") or "")) }}
+<table class="a3-kv">
+	<tr><td class="a3-k">Request date</td><td>{{ frappe.format(doc.get("request_date"), {"fieldtype": "Date"}) }}</td>
+		<td class="a3-k">Status</td><td>{{ doc.get("status") or "" }}</td></tr>
+	<tr><td class="a3-k">Purpose</td><td>{{ doc.get("purpose") or "" }}</td>
+		<td class="a3-k">Transit</td><td>{{ doc.get("transit_warehouse") or "—" }}</td></tr>
+</table>
+{{ base.items_table(doc.items, [("Item", "item_name", ""), ("Requested", "qty", "num"), ("Approved", "approved_qty", "num"), ("Serial / IMEI", "serial_no", ""), ("Value", "amount", "money")]) }}
+{{ base.signatures("Dispatched By", "Received By") }}
+{{ base.footer(doc) }}

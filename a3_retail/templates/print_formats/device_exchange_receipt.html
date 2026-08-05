@@ -1,0 +1,15 @@
+{% import "a3_retail/templates/print_formats/a3_base.html" as base %}
+{{ base.styles() }}
+{{ base.title_band(doc, "Device Exchange Receipt") }}
+{{ base.party_block("Customer", '<strong>' ~ (doc.customer or "") ~ '</strong><br>' ~ (doc.customer_mobile or "") ~
+	'<br>ID: ' ~ (doc.id_proof_type or "") ~ ' ****' ~ (doc.id_proof_number_last4 or ""),
+	"Old Device", (doc.old_brand or "") ~ ' ' ~ (doc.old_model or "") ~ '<br>IMEI: ' ~ (doc.old_imei or "") ~
+	'<br>Year: ' ~ (doc.old_purchase_year or "—")) }}
+{{ base.items_table(doc.grading_parameters, [("Parameter", "parameter", ""), ("Response", "response", ""), ("Deduction", "deduction_amount", "money")], "No grading recorded.") }}
+{{ base.totals([("Base value", doc.base_value), ("Deductions", -doc.deductions if doc.deductions else 0), ("Exchange bonus", doc.exchange_bonus)],
+	"Exchange Value", doc.final_exchange_value) }}
+<div class="a3-block"><h4>Customer declaration</h4>
+	I confirm I am the lawful owner of the device handed over, that it is not stolen or under any loan,
+	and that all personal data has been removed by me. Grade awarded: <strong>{{ doc.grade or "—" }}</strong>.</div>
+{{ base.signatures("Customer Signature") }}
+{{ base.footer(doc) }}

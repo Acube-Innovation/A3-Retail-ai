@@ -1,0 +1,14 @@
+{% import "a3_retail/templates/print_formats/a3_base.html" as base %}
+{{ base.styles() }}
+{{ base.title_band(doc, "Delivery Challan") }}
+{{ base.party_block("Ship To", (doc.get("shipping_address") or doc.get("address_display") or doc.customer_name),
+	"Dispatch",
+	'Date: ' ~ frappe.format(doc.posting_date, {"fieldtype": "Date"}) ~
+	('<br>Vehicle: ' ~ doc.get("vehicle_no") if doc.get("vehicle_no") else "") ~
+	('<br>e-Way Bill: ' ~ doc.get("ewaybill") if doc.get("ewaybill") else "")) }}
+{{ base.items_table(doc.items, [("Item", "item_name", ""), ("Qty", "qty", "num"), ("UOM", "uom", ""), ("Amount", "amount", "money")]) }}
+{% set imei_rows = a3_serial_lines(doc) %}
+{% if imei_rows %}<div class="a3-block"><h4>Serial / IMEI</h4>{{ imei_rows|join("<br>") }}</div>{% endif %}
+{{ base.terms(doc) }}
+{{ base.signatures("Received in good condition") }}
+{{ base.footer(doc) }}

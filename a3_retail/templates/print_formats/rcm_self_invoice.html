@@ -1,0 +1,16 @@
+{% import "a3_retail/templates/print_formats/a3_base.html" as base %}
+{{ base.styles() }}
+{{ base.title_band(doc, "Self Invoice · Section 31(3)(f)") }}
+{{ base.party_block("Supplier (Unregistered)",
+	'<strong>' ~ (doc.supplier_name or "") ~ '</strong><br>' ~ (doc.get("address_display") or ""),
+	"Recipient (Self)",
+	(doc.company or "") ~ '<br>GSTIN: ' ~ (doc.get("company_gstin") or "") ~
+	'<br>Date: ' ~ frappe.format(doc.posting_date, {"fieldtype": "Date"})) }}
+{{ base.items_table(doc.items, [("Description", "item_name", ""), ("HSN", "gst_hsn_code", ""), ("Qty", "qty", "num"), ("Rate", "rate", "money"), ("Taxable", "amount", "money")]) }}
+{{ base.hsn_summary(doc) }}
+{{ base.totals(a3_invoice_total_lines(doc), "Invoice Value", doc.grand_total, doc.currency) }}
+<div class="a3-block"><h4>Reverse charge</h4>
+	Tax on this supply is payable by the recipient under Section 9(3)/9(4) of the CGST Act.
+	This self-invoice is issued under Section 31(3)(f) read with Rule 46.</div>
+{{ base.signatures("Prepared By", "For " ~ a3_company_name()) }}
+{{ base.footer(doc) }}

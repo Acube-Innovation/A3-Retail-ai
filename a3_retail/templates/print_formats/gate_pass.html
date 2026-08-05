@@ -1,0 +1,16 @@
+{% import "a3_retail/templates/print_formats/a3_base.html" as base %}
+{{ base.styles() }}
+{{ base.title_band(doc, "Gate Pass", a3_tracking_qr(doc), "Verify") }}
+<table class="a3-kv">
+	<tr><td class="a3-k">Reference</td><td>{{ doc.get("reference_name") or doc.name }}</td>
+		<td class="a3-k">Branch</td><td>{{ doc.get("branch") or "" }}</td></tr>
+	<tr><td class="a3-k">Carrier</td><td>{{ doc.get("courier_partner") or doc.get("received_by") or "" }}</td>
+		<td class="a3-k">AWB</td><td>{{ doc.get("awb_no") or "—" }}</td></tr>
+	<tr><td class="a3-k">Packages</td><td>{{ doc.get("no_of_packages") or 1 }}</td>
+		<td class="a3-k">Weight</td><td>{{ doc.get("weight_kg") or 0 }} kg</td></tr>
+	<tr><td class="a3-k">Declared value</td><td>{{ a3_money(doc.get("declared_value")) }}</td>
+		<td class="a3-k">Dispatch date</td><td>{{ frappe.format(doc.get("dispatch_date"), {"fieldtype": "Date"}) }}</td></tr>
+</table>
+{{ base.items_table(doc.get("items"), [("Description", "description", ""), ("Qty", "qty", "num"), ("Serial / IMEI", "serial_no", "")], "Contents listed on the attached manifest.") }}
+{{ base.signatures("Security", "Authorised By") }}
+{{ base.footer(doc) }}

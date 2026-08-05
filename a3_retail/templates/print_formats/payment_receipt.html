@@ -1,0 +1,15 @@
+{% import "a3_retail/templates/print_formats/a3_base.html" as base %}
+{{ base.styles() }}
+{{ base.title_band(doc, "Payment Receipt", a3_upi_qr(doc.get("paid_amount"), doc.name), "UPI") }}
+<table class="a3-kv">
+	<tr><td class="a3-k">Received from</td><td>{{ doc.get("party_name") or doc.get("party") or "" }}</td>
+		<td class="a3-k">Date</td><td>{{ frappe.format(doc.posting_date, {"fieldtype": "Date"}) }}</td></tr>
+	<tr><td class="a3-k">Mode</td><td>{{ doc.get("mode_of_payment") or "" }}</td>
+		<td class="a3-k">Reference</td><td>{{ doc.get("reference_no") or "—" }}</td></tr>
+	<tr><td class="a3-k">Branch</td><td>{{ doc.get("branch") or "" }}</td>
+		<td class="a3-k">Account</td><td>{{ doc.get("paid_to") or "" }}</td></tr>
+</table>
+{{ base.items_table(doc.get("references"), [("Against", "reference_name", ""), ("Type", "reference_doctype", ""), ("Outstanding", "outstanding_amount", "money"), ("Allocated", "allocated_amount", "money")], "On account.") }}
+{{ base.totals([], "Amount Received", doc.get("paid_amount")) }}
+{{ base.signatures("Payer", "Cashier") }}
+{{ base.footer(doc) }}

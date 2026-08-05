@@ -1,0 +1,11 @@
+{% import "a3_retail/templates/print_formats/a3_base.html" as base %}
+{{ base.styles() }}
+{{ base.title_band(doc, "Purchase Order") }}
+{{ base.party_block("Supplier", '<strong>' ~ (doc.supplier_name or "") ~ '</strong><br>' ~ (doc.get("address_display") or ""),
+	"Deliver To", (doc.get("shipping_address") or doc.get("company") or "") ~
+	'<br>Required by: ' ~ frappe.format(doc.get("schedule_date"), {"fieldtype": "Date"})) }}
+{{ base.items_table(doc.items, [("Item", "item_name", ""), ("HSN", "gst_hsn_code", ""), ("Qty", "qty", "num"), ("Rate", "rate", "money"), ("Amount", "amount", "money")]) }}
+{{ base.totals(a3_invoice_total_lines(doc), "Order Value", doc.grand_total, doc.currency) }}
+{{ base.terms(doc) }}
+{{ base.signatures("Supplier Acknowledgement", "For " ~ a3_company_name()) }}
+{{ base.footer(doc) }}

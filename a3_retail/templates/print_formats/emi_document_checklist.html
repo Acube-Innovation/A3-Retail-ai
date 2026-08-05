@@ -1,0 +1,22 @@
+{% import "a3_retail/templates/print_formats/a3_base.html" as base %}
+{{ base.styles() }}
+{{ base.title_band(doc, "EMI Document Checklist") }}
+<table class="a3-kv">
+	<tr><td class="a3-k">Applicant</td><td>{{ doc.customer_name or "" }}</td>
+		<td class="a3-k">Partner</td><td>{{ doc.finance_partner or "" }}</td></tr>
+	<tr><td class="a3-k">Employment</td><td>{{ doc.employment_type or "" }}</td>
+		<td class="a3-k">Application</td><td>{{ doc.name }}</td></tr>
+</table>
+<table class="a3-items">
+	<thead><tr><th style="width:26px">#</th><th>Document</th><th>Mandatory</th><th>Collected</th><th>Verified</th></tr></thead>
+	<tbody>
+	{% for row in doc.documents %}
+		<tr><td>{{ loop.index }}</td><td>{{ row.document_type }}</td>
+			<td>{{ "Yes" if row.is_mandatory else "No" }}</td>
+			<td><span class="a3-tick"></span></td><td><span class="a3-tick"></span></td></tr>
+	{% endfor %}
+	</tbody>
+</table>
+<div class="a3-muted" style="margin-top:8px">Counter staff: tick as each original is seen and the scan is attached.</div>
+{{ base.signatures("Collected By", "Verified By") }}
+{{ base.footer(doc) }}

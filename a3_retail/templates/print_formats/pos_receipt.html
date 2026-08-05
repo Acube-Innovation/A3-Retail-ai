@@ -1,0 +1,26 @@
+{% import "a3_retail/templates/print_formats/a3_thermal.html" as t %}
+{{ t.styles() }}
+{{ t.shop_header(doc.get("branch")) }}
+<div class="t-center t-bold">TAX INVOICE</div>
+{{ t.kv([("Bill", doc.name), ("Date", frappe.format(doc.posting_date, {"fieldtype": "Date"})),
+         ("Customer", doc.customer_name), ("Mobile", doc.get("contact_mobile"))]) }}
+<div class="t-rule"></div>
+<table class="t-items">
+	<thead><tr><th>Item</th><th class="t-right">Qty</th><th class="t-right">Amount</th></tr></thead>
+	<tbody>
+	{% for row in doc.items %}
+		<tr><td>{{ row.item_name }}{% if a3_serials(row) %}<div class="t-small">IMEI {{ a3_serials(row) }}</div>{% endif %}</td>
+			<td class="t-right">{{ row.qty }}</td><td class="t-right">{{ a3_money(row.amount) }}</td></tr>
+	{% endfor %}
+	</tbody>
+</table>
+<div class="t-rule"></div>
+{{ t.kv(a3_thermal_total_lines(doc)) }}
+<div class="t-bold t-right t-big">TOTAL {{ a3_money(doc.grand_total) }}</div>
+{% if doc.get("payments") %}
+<div class="t-rule"></div>
+{{ t.kv(a3_payment_lines(doc)) }}
+{% endif %}
+<div class="t-small">{{ a3_words(doc.grand_total, doc.currency) }}</div>
+{{ t.qr(a3_payment_qr(doc), "Scan to pay") }}
+{{ t.footer("Thank you. Goods once sold are exchangeable only per policy.") }}

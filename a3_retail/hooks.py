@@ -55,6 +55,7 @@ fixtures = [
 	{"dt": "Role", "filters": [["name", "in", A3_ROLE_NAMES]]},
 	{"dt": "Workflow", "filters": [["name", "like", "A3 %"]]},
 	{"dt": "Print Style", "filters": [["name", "like", "A3 Retail%"]]},
+	{"dt": "Letter Head", "filters": [["name", "like", "%Letter Head"]]},
 ]
 
 # ---------------------------------------------------------------------------
@@ -87,6 +88,7 @@ doc_events = {
 	# The communication engine listens to everything; it exits immediately when
 	# no rule matches the doctype/trigger pair (scope 9.6).
 	"*": {
+		"before_print": "a3_retail.setup.print_formats.apply_branch_letter_head",
 		"after_insert": "a3_retail.communication.engine.handle",
 		"on_submit": "a3_retail.communication.engine.handle",
 		"on_update": "a3_retail.communication.engine.handle",
@@ -213,5 +215,7 @@ scheduler_events = {
 jinja = {
 	"methods": [
 		"a3_retail.utils.imei.format_imei",
+		# Everything a print format needs: QR codes, HSN summaries, branch strips.
+		"a3_retail.print_helpers",
 	],
 }

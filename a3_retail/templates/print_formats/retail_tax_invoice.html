@@ -1,0 +1,24 @@
+{% import "a3_retail/templates/print_formats/a3_base.html" as base %}
+{% set is_service = doc.get("a3_job_card") %}
+{{ base.styles() }}
+{{ base.title_band(doc, "Tax Invoice", a3_payment_qr(doc), "Scan to pay") }}
+{{ base.party_block(
+	"Bill To", base.customer_block(doc),
+	"Invoice Details",
+	'Date: ' ~ frappe.format(doc.posting_date, {"fieldtype": "Date"}) ~
+	'<br>Branch: ' ~ (doc.get("branch") or "") ~
+	('<br>Job Card: ' ~ doc.get("a3_job_card") if doc.get("a3_job_card") else "") ~
+	('<br>IRN: ' ~ doc.get("irn") if doc.get("irn") else "")) }}
+{{ base.items_table(doc.items, [("Item", "item_name", ""), ("HSN", "gst_hsn_code", ""), ("Qty", "qty", "num"), ("Rate", "rate", "money"), ("Amount", "amount", "money")]) }}
+{% set imei_rows = a3_serial_lines(doc) %}
+{% if imei_rows %}<div class="a3-block"><h4>IMEI / Serial</h4>{{ imei_rows|join("<br>") }}</div>{% endif %}
+{{ base.hsn_summary(doc) }}
+{{ base.totals(a3_invoice_total_lines(doc), "Grand Total", doc.grand_total, doc.currency) }}
+<div class="a3-block">
+	<h4>Warranty</h4>
+	{% if is_service %}Repairs carry {{ a3_setting("service_warranty_days") or 90 }} days of service warranty on the work performed.
+	{% else %}Manufacturer warranty applies as printed on the box. Physical and liquid damage are excluded.{% endif %}
+</div>
+{{ base.terms(doc) }}
+{{ base.signatures("Received By") }}
+{{ base.footer(doc) }}

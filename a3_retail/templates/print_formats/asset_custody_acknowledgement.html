@@ -1,0 +1,16 @@
+{% import "a3_retail/templates/print_formats/a3_base.html" as base %}
+{{ base.styles() }}
+{{ base.title_band(doc, "Asset Custody Acknowledgement") }}
+<table class="a3-kv">
+	<tr><td class="a3-k">Purpose</td><td>{{ doc.purpose }}</td>
+		<td class="a3-k">Date</td><td>{{ frappe.format(doc.transaction_date, {"fieldtype": "Datetime"}) }}</td></tr>
+	<tr><td class="a3-k">Branch</td><td>{{ doc.get("a3_branch") or "" }}</td>
+		<td class="a3-k">Company</td><td>{{ doc.company }}</td></tr>
+</table>
+{{ base.items_table(doc.assets, [("Asset", "asset_name", ""), ("Asset ID", "asset", ""), ("To Employee", "to_employee", ""), ("From Employee", "from_employee", ""), ("Location", "target_location", "")]) }}
+<div class="a3-block"><h4>Employee declaration</h4>
+	I have received the assets listed above in working condition, will use them for company work only,
+	and will return them on transfer or separation. Loss or damage through negligence is recoverable
+	from my dues.</div>
+{{ base.signatures("Employee Signature", "Issued By") }}
+{{ base.footer(doc) }}

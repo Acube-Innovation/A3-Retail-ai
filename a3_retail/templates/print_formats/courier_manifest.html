@@ -1,0 +1,22 @@
+{% import "a3_retail/templates/print_formats/a3_base.html" as base %}
+{{ base.styles() }}
+{{ base.title_band(doc, "Courier Manifest") }}
+<table class="a3-kv">
+	<tr><td class="a3-k">Courier</td><td>{{ doc.courier_partner or "" }}</td>
+		<td class="a3-k">Service</td><td>{{ doc.service_type or "" }}</td></tr>
+	<tr><td class="a3-k">Branch</td><td>{{ doc.branch or "" }}</td>
+		<td class="a3-k">Dispatch date</td><td>{{ frappe.format(doc.dispatch_date, {"fieldtype": "Date"}) }}</td></tr>
+	<tr><td class="a3-k">AWB</td><td>{{ doc.awb_no or "—" }}</td>
+		<td class="a3-k">Consignee</td><td>{{ doc.consignee_name or "" }}, {{ doc.pincode or "" }}</td></tr>
+</table>
+{{ base.items_table(doc.items, [("Description", "description", ""), ("Reference", "reference_name", ""), ("Qty", "qty", "num"), ("Serial / IMEI", "serial_no", ""), ("Value", "declared_value", "money")], "No line items.") }}
+<table class="a3-kv" style="margin-top:8px">
+	<tr><td class="a3-k">Packages</td><td>{{ doc.no_of_packages or 1 }}</td>
+		<td class="a3-k">Weight</td><td>{{ doc.weight_kg or 0 }} kg</td></tr>
+	<tr><td class="a3-k">Declared value</td><td>{{ a3_money(doc.declared_value) }}</td>
+		<td class="a3-k">COD</td><td>{{ a3_money(doc.cod_amount) if doc.is_cod else "—" }}</td></tr>
+	<tr><td class="a3-k">Freight</td><td>{{ a3_money(doc.total_cost) }}</td>
+		<td class="a3-k">Expected delivery</td><td>{{ frappe.format(doc.expected_delivery_date, {"fieldtype": "Date"}) }}</td></tr>
+</table>
+{{ base.signatures("Courier Executive", "Handed Over By") }}
+{{ base.footer(doc) }}

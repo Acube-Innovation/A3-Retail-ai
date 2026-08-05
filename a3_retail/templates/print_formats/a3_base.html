@@ -1,0 +1,187 @@
+{#-
+  A3 Retail print base (scope 13.3).
+
+  Every A4/A5 format includes this file and calls the macros below, so a change
+  to the item table or the totals block lands on all twenty-four formats at once.
+  The header/footer divs are lifted out by frappe.utils.pdf and handed to
+  wkhtmltopdf as --header-html / --footer-html, which is what repeats them on
+  every page and fills in "Page x of y".
+-#}
+
+{%- macro styles() -%}
+<style>
+	.print-format { font-family: "Inter", "Helvetica Neue", Helvetica, sans-serif;
+		font-size: 9.5pt; color: #1f2937; }
+	.a3-header { border-bottom: 2px solid #0F62FE; padding-bottom: 6px; margin-bottom: 10px; }
+	.a3-title { background: #F1F5F9; padding: 6px 10px; font-weight: 600; letter-spacing: .5px;
+		display: flex; justify-content: space-between; align-items: center; }
+	.a3-title h2 { font-size: 12pt; margin: 0; text-transform: uppercase; }
+	.a3-title .a3-meta { text-align: right; font-size: 8.5pt; color: #4b5563; }
+	.a3-parties { display: flex; gap: 12px; margin: 10px 0; }
+	.a3-party { flex: 1; border: 1px solid #E5E7EB; padding: 6px 8px; }
+	.a3-party h4 { margin: 0 0 3px; font-size: 8pt; text-transform: uppercase;
+		letter-spacing: .6px; color: #6B7280; }
+	table.a3-items { width: 100%; border-collapse: collapse; margin-top: 8px; }
+	table.a3-items th { background: #0F62FE; color: #fff; padding: 6px; font-weight: 600;
+		font-size: 8.5pt; text-align: left; }
+	table.a3-items td { border-bottom: 1px solid #E5E7EB; padding: 5px 6px; vertical-align: top; }
+	table.a3-items tbody tr:nth-child(even) td { background: #F8FAFC; }
+	.a3-num { text-align: right; font-variant-numeric: tabular-nums; }
+	.a3-totals { width: 46%; margin-left: auto; margin-top: 8px; border-collapse: collapse; }
+	.a3-totals td { padding: 3px 6px; }
+	.a3-totals tr.a3-grand td { border-top: 1px solid #1f2937; border-bottom: 2px solid #1f2937;
+		font-weight: 700; font-size: 10.5pt; }
+	.a3-words { margin-top: 6px; font-style: italic; font-size: 8.5pt; }
+	.a3-terms { margin-top: 10px; font-size: 8pt; color: #4b5563; }
+	.a3-terms h4, .a3-block h4 { font-size: 8pt; text-transform: uppercase; letter-spacing: .6px;
+		color: #6B7280; margin: 0 0 3px; }
+	.a3-block { border: 1px solid #E5E7EB; padding: 6px 8px; margin-top: 8px; }
+	.a3-sign { display: flex; justify-content: space-between; margin-top: 22px; }
+	.a3-sign div { width: 45%; font-size: 8.5pt; }
+	.a3-sign .a3-line { border-top: 1px solid #9CA3AF; margin-top: 34px; padding-top: 3px; }
+	.a3-footer { border-top: 1px solid #E5E7EB; color: #6B7280; font-size: 7.5pt;
+		padding-top: 4px; display: flex; justify-content: space-between; }
+	.a3-qr { text-align: center; font-size: 7pt; color: #6B7280; }
+	.a3-qr img { width: 74px; height: 74px; }
+	.a3-kv { width: 100%; border-collapse: collapse; font-size: 8.5pt; }
+	.a3-kv td { padding: 2px 4px; vertical-align: top; }
+	.a3-kv td.a3-k { color: #6B7280; width: 34%; }
+	.a3-chip { display: inline-block; padding: 1px 6px; border-radius: 8px; font-size: 7.5pt;
+		background: #E0E7FF; color: #1E3A8A; }
+	.a3-muted { color: #6B7280; }
+	.a3-page-break { page-break-after: always; }
+	.a3-tick { display: inline-block; width: 9px; height: 9px; border: 1px solid #6B7280;
+		margin-right: 4px; vertical-align: middle; }
+	.a3-photos { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+	.a3-photos img { width: 118px; height: 88px; object-fit: cover; border: 1px solid #E5E7EB; }
+</style>
+{%- endmacro -%}
+
+{%- macro title_band(doc, title, qr=None, qr_caption="Scan") -%}
+<div class="a3-title">
+	<div>
+		<h2>{{ title }}</h2>
+		<div class="a3-meta" style="text-align:left">
+			{{ doc.name }}
+			{%- if doc.get("posting_date") %} · {{ frappe.format(doc.posting_date, {"fieldtype": "Date"}) }}{% endif -%}
+			{%- if doc.get("transaction_date") %} · {{ frappe.format(doc.transaction_date, {"fieldtype": "Date"}) }}{% endif -%}
+		</div>
+	</div>
+	{% if qr %}<div class="a3-qr"><img src="{{ qr }}"><div>{{ qr_caption }}</div></div>{% endif %}
+</div>
+{%- endmacro -%}
+
+{%- macro party_block(left_title, left_html, right_title, right_html) -%}
+<div class="a3-parties">
+	<div class="a3-party"><h4>{{ left_title }}</h4>{{ left_html }}</div>
+	<div class="a3-party"><h4>{{ right_title }}</h4>{{ right_html }}</div>
+</div>
+{%- endmacro -%}
+
+{%- macro customer_block(doc) -%}
+	<strong>{{ doc.get("customer_name") or doc.get("customer") or "" }}</strong><br>
+	{%- if doc.get("a3_mobile_no") or doc.get("contact_mobile") %}
+		{{ doc.get("a3_mobile_no") or doc.get("contact_mobile") }}<br>
+	{%- endif %}
+	{%- if doc.get("address_display") %}{{ doc.address_display }}{% endif %}
+	{%- if doc.get("customer_gstin") %}<br>GSTIN: {{ doc.customer_gstin }}{% endif %}
+{%- endmacro -%}
+
+{#- columns: list of (label, fieldname, kind) where kind is "", "num" or "money" -#}
+{%- macro items_table(rows, columns, empty="No rows.") -%}
+{% if rows %}
+<table class="a3-items">
+	<thead>
+		<tr>
+			<th style="width:26px">#</th>
+			{% for column in columns %}<th class="{{ 'a3-num' if column[2] else '' }}">{{ column[0] }}</th>{% endfor %}
+		</tr>
+	</thead>
+	<tbody>
+	{% for row in rows %}
+		<tr>
+			<td>{{ loop.index }}</td>
+			{% for column in columns %}
+				<td class="{{ 'a3-num' if column[2] else '' }}">
+					{%- if column[2] == "money" -%}{{ a3_money(row.get(column[1])) }}
+					{%- elif column[2] == "num" -%}{{ row.get(column[1]) or 0 }}
+					{%- else -%}{{ row.get(column[1]) or "" }}{%- endif -%}
+				</td>
+			{% endfor %}
+		</tr>
+	{% endfor %}
+	</tbody>
+</table>
+{% else %}<p class="a3-muted">{{ empty }}</p>{% endif %}
+{%- endmacro -%}
+
+{%- macro totals(lines, grand_label="Grand Total", grand_value=0, currency=None) -%}
+<table class="a3-totals">
+	{% for label, value in lines %}
+		{% if value %}<tr><td>{{ label }}</td><td class="a3-num">{{ a3_money(value, currency) }}</td></tr>{% endif %}
+	{% endfor %}
+	<tr class="a3-grand"><td>{{ grand_label }}</td>
+		<td class="a3-num">{{ a3_money(grand_value, currency) }}</td></tr>
+</table>
+<div class="a3-words">{{ a3_words(grand_value, currency) }}</div>
+{%- endmacro -%}
+
+{%- macro hsn_summary(doc) -%}
+{%- set summary = a3_hsn_summary(doc) -%}
+{% if summary %}
+<table class="a3-items" style="margin-top:10px">
+	<thead><tr>
+		<th>HSN / SAC</th><th class="a3-num">Qty</th><th class="a3-num">Taxable</th>
+		<th class="a3-num">CGST</th><th class="a3-num">SGST</th><th class="a3-num">IGST</th>
+		<th class="a3-num">Total</th>
+	</tr></thead>
+	<tbody>
+	{% for bucket in summary %}
+		<tr>
+			<td>{{ bucket.hsn }}</td>
+			<td class="a3-num">{{ "%.0f"|format(bucket.qty) }}</td>
+			<td class="a3-num">{{ a3_money(bucket.taxable) }}</td>
+			<td class="a3-num">{{ a3_money(bucket.cgst) }}</td>
+			<td class="a3-num">{{ a3_money(bucket.sgst) }}</td>
+			<td class="a3-num">{{ a3_money(bucket.igst) }}</td>
+			<td class="a3-num">{{ a3_money(bucket.total) }}</td>
+		</tr>
+	{% endfor %}
+	</tbody>
+</table>
+{% endif %}
+{%- endmacro -%}
+
+{%- macro terms(doc, fallback="") -%}
+{%- set text = doc.get("terms") or fallback -%}
+{% if text %}<div class="a3-terms"><h4>Terms &amp; Conditions</h4>{{ text }}</div>{% endif %}
+{%- endmacro -%}
+
+{%- macro signatures(left="Customer Signature", right=None, signature_image=None) -%}
+<div class="a3-sign">
+	<div>
+		{% if signature_image %}<img src="{{ signature_image }}" style="height:44px">{% endif %}
+		<div class="a3-line">{{ left }}</div>
+	</div>
+	<div style="text-align:right">
+		<div class="a3-line">{{ right or ("For " ~ (frappe.db.get_single_value("Global Defaults", "default_company") or "")) }}<br>
+			<span class="a3-muted">Authorised Signatory</span></div>
+	</div>
+</div>
+{%- endmacro -%}
+
+{%- macro footer(doc, branch=None) -%}
+<div id="footer-html" class="visible-pdf">
+	<div class="a3-footer">
+		<span>{{ branch or doc.get("branch") or "" }} · This is a computer-generated document.</span>
+		<span>Page <span class="page"></span> of <span class="topage"></span></span>
+	</div>
+</div>
+{%- endmacro -%}
+
+{%- macro page(doc, title, body, qr=None, qr_caption="Scan", branch=None) -%}
+{{ styles() }}
+{{ title_band(doc, title, qr, qr_caption) }}
+{{ body }}
+{{ footer(doc, branch) }}
+{%- endmacro -%}

@@ -1,0 +1,27 @@
+{% import "a3_retail/templates/print_formats/a3_base.html" as base %}
+{{ base.styles() }}
+{{ base.title_band(doc, "Salary Slip") }}
+<table class="a3-kv">
+	<tr><td class="a3-k">Employee</td><td>{{ doc.employee_name }} ({{ doc.employee }})</td>
+		<td class="a3-k">Designation</td><td>{{ doc.get("designation") or "" }}</td></tr>
+	<tr><td class="a3-k">Branch</td><td>{{ doc.get("branch") or "" }}</td>
+		<td class="a3-k">Period</td><td>{{ frappe.format(doc.start_date, {"fieldtype": "Date"}) }}
+			– {{ frappe.format(doc.end_date, {"fieldtype": "Date"}) }}</td></tr>
+	<tr><td class="a3-k">Payment days</td><td>{{ doc.payment_days }}</td>
+		<td class="a3-k">LWP</td><td>{{ doc.leave_without_pay or 0 }}</td></tr>
+</table>
+<div style="display:flex;gap:12px;margin-top:8px">
+	<div style="flex:1">
+		<h4>Earnings</h4>
+		{{ base.items_table(doc.earnings, [("Component", "salary_component", ""), ("Amount", "amount", "money")], "—") }}
+	</div>
+	<div style="flex:1">
+		<h4>Deductions</h4>
+		{{ base.items_table(doc.deductions, [("Component", "salary_component", ""), ("Amount", "amount", "money")], "—") }}
+	</div>
+</div>
+{{ base.totals([("Gross pay", doc.gross_pay), ("Total deduction", -doc.total_deduction if doc.total_deduction else 0)],
+	"Net Pay", doc.net_pay) }}
+<div class="a3-muted" style="margin-top:8px">Incentive earnings are paid through Additional Salary and appear in the
+earnings column for the month in which the incentive run was posted.</div>
+{{ base.footer(doc) }}

@@ -1,0 +1,21 @@
+{% import "a3_retail/templates/print_formats/a3_base.html" as base %}
+{{ base.styles() }}
+{{ base.title_band(doc, "Service Estimate", a3_tracking_qr(doc), "Approve online") }}
+{{ base.party_block(
+	"Customer", '<strong>' ~ (doc.customer_name or "") ~ '</strong><br>' ~ (doc.customer_mobile or ""),
+	"Device", (doc.device_model or "") ~ '<br>IMEI: ' ~ (doc.imei_1 or "") ~ '<br>Job Card: ' ~ (doc.job_card or "")) }}
+<h4>Parts</h4>
+{{ base.items_table(doc.parts, [("Part", "item_name", ""), ("Qty", "qty", "num"), ("Rate", "rate", "money"), ("Amount", "amount", "money"), ("Optional", "is_optional", "num")], "No parts quoted.") }}
+<h4>Labour</h4>
+{{ base.items_table(doc.labour, [("Service", "item_name", ""), ("Minutes", "minutes", "num"), ("Amount", "amount", "money")], "No labour quoted.") }}
+{{ base.totals([("Parts", doc.parts_total), ("Labour", doc.labour_total), ("Discount", -doc.discount if doc.discount else 0), ("Tax", doc.tax_amount)], "Estimate Total", doc.grand_total) }}
+<div class="a3-block">
+	<h4>Validity &amp; Approval</h4>
+	Valid till <strong>{{ frappe.format(doc.valid_till, {"fieldtype": "Date"}) }}</strong> ·
+	Expected turnaround {{ doc.expected_tat_hours or 0 }} hours ·
+	Status: <span class="a3-chip">{{ doc.approval_status }}</span>
+	<div style="margin-top:6px">Approve on the portal by scanning the code above, or sign below.</div>
+</div>
+{{ base.terms(doc) }}
+{{ base.signatures("Customer Approval") }}
+{{ base.footer(doc) }}

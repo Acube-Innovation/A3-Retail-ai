@@ -1,0 +1,20 @@
+{% import "a3_retail/templates/print_formats/a3_base.html" as base %}
+{{ base.styles() }}
+{{ base.title_band(doc, "Device Delivery Note", a3_tracking_qr(doc), "Job history") }}
+{{ base.party_block("Customer", '<strong>' ~ (doc.customer_name or "") ~ '</strong><br>' ~ (doc.customer_mobile or ""),
+	"Device", (doc.brand or "") ~ ' ' ~ (doc.device_model or "") ~ '<br>IMEI: ' ~ (doc.imei_1 or "")) }}
+<div class="a3-block"><h4>Work done</h4>{{ doc.diagnosis_notes or doc.complaint_description or "" }}
+	{% if doc.root_cause %}<div class="a3-muted">Root cause: {{ doc.root_cause }}</div>{% endif %}</div>
+<h4>Parts replaced</h4>
+{{ base.items_table(doc.parts, [("Part", "item_name", ""), ("Qty", "qty", "num"), ("Warranty (months)", "warranty_months", "num")], "No parts replaced.") }}
+{{ base.totals(a3_job_card_totals(doc), "Amount Payable", doc.customer_payable) }}
+<div class="a3-block">
+	<h4>Handover</h4>
+	Delivered on {{ frappe.format(doc.delivered_on, {"fieldtype": "Datetime"}) }} ·
+	Received by {{ doc.receiver_name or doc.customer_name }}
+	{% if doc.otp_verified %}· OTP verified{% endif %}
+	{% if doc.accessories_returned %}<div>Accessories returned: {{ doc.accessories_returned }}</div>{% endif %}
+	<div>Service warranty: {{ a3_setting("service_warranty_days") or 90 }} days on the work performed.</div>
+</div>
+{{ base.signatures("Receiver Signature", None, doc.receiver_signature) }}
+{{ base.footer(doc) }}

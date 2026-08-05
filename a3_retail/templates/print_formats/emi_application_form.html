@@ -1,0 +1,27 @@
+{% import "a3_retail/templates/print_formats/a3_base.html" as base %}
+{{ base.styles() }}
+{{ base.title_band(doc, "EMI Application") }}
+{{ base.party_block("Applicant",
+	'<strong>' ~ (doc.customer_name or "") ~ '</strong><br>' ~ (doc.customer_mobile or "") ~
+	'<br>PAN: ' ~ (doc.pan_number or "") ~ '<br>Aadhaar: XXXX XXXX ' ~ (doc.aadhaar_last4 or ""),
+	"Finance",
+	'Partner: ' ~ (doc.finance_partner or "") ~ '<br>Scheme: ' ~ (doc.emi_scheme or "") ~
+	'<br>Status: ' ~ (doc.status or "")) }}
+<table class="a3-kv">
+	<tr><td class="a3-k">Employment</td><td>{{ doc.employment_type or "" }}</td>
+		<td class="a3-k">Monthly income</td><td>{{ a3_money(doc.monthly_income) }}</td></tr>
+	<tr><td class="a3-k">Invoice total</td><td>{{ a3_money(doc.invoice_total) }}</td>
+		<td class="a3-k">Down payment</td><td>{{ a3_money(doc.down_payment) }}</td></tr>
+	<tr><td class="a3-k">Loan amount</td><td>{{ a3_money(doc.loan_amount) }}</td>
+		<td class="a3-k">Tenure</td><td>{{ doc.tenure_months or 0 }} months</td></tr>
+	<tr><td class="a3-k">EMI</td><td>{{ a3_money(doc.emi_amount) }}</td>
+		<td class="a3-k">First EMI</td><td>{{ frappe.format(doc.first_emi_date, {"fieldtype": "Date"}) }}</td></tr>
+</table>
+{{ base.items_table(doc.items, [("Item", "item_name", ""), ("Qty", "qty", "num"), ("Amount", "amount", "money")], "No items listed.") }}
+<h4>Document checklist</h4>
+{{ base.items_table(doc.documents, [("Document", "document_type", ""), ("Mandatory", "is_mandatory", "num"), ("Received", "is_received", "num"), ("Remarks", "remarks", "")], "No documents listed.") }}
+<div class="a3-block"><h4>Declaration</h4>
+	I confirm the information above is true, authorise the financier to verify my credentials with any
+	bureau, and accept the scheme charges disclosed to me.</div>
+{{ base.signatures("Applicant Signature", "For " ~ a3_company_name()) }}
+{{ base.footer(doc) }}

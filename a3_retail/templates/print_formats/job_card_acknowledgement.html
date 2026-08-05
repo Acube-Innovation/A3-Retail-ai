@@ -1,0 +1,25 @@
+{% import "a3_retail/templates/print_formats/a3_base.html" as base %}
+{{ base.styles() }}
+{{ base.title_band(doc, "Job Card Acknowledgement", a3_tracking_qr(doc), "Track repair") }}
+{{ base.party_block(
+	"Customer",
+	'<strong>' ~ (doc.customer_name or "") ~ '</strong><br>' ~ (doc.customer_mobile or "") ~ '<br>' ~ (doc.customer_email or ""),
+	"Device",
+	(doc.brand or "") ~ ' ' ~ (doc.device_model or "") ~ '<br>IMEI: ' ~ (doc.imei_1 or "") ~ '<br>' ~ (doc.warranty_type or "")) }}
+<table class="a3-kv">
+	<tr><td class="a3-k">Received on</td><td>{{ frappe.format(doc.received_on, {"fieldtype": "Datetime"}) }}</td>
+		<td class="a3-k">Promised by</td><td>{{ frappe.format(doc.estimated_delivery_date, {"fieldtype": "Datetime"}) }}</td></tr>
+	<tr><td class="a3-k">Complaint</td><td colspan="3">{{ doc.complaint_description or "" }}</td></tr>
+	<tr><td class="a3-k">Physical condition</td><td colspan="3">{{ doc.physical_condition or "" }}</td></tr>
+	<tr><td class="a3-k">Priority</td><td>{{ doc.priority or "" }}</td>
+		<td class="a3-k">Repair category</td><td>{{ doc.repair_category or "" }}</td></tr>
+</table>
+{{ base.items_table(doc.device_condition_checklist, [("Accessory", "accessory", ""), ("Received", "is_received", "num"), ("Remarks", "remarks", "")], "No accessories recorded.") }}
+<div class="a3-block">
+	<h4>Consent</h4>
+	<span class="a3-tick"></span>{{ "Data-loss consent recorded" if doc.data_loss_consent else "Data-loss consent NOT recorded" }}
+	{% if doc.data_backup_required %} · Backup requested{% endif %}
+</div>
+{{ base.terms(doc, "Devices uncollected beyond the free storage period attract storage charges. Estimates are approximate until diagnosis is complete.") }}
+{{ base.signatures("Customer Signature", None, doc.customer_signature) }}
+{{ base.footer(doc) }}

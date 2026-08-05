@@ -1,0 +1,11 @@
+{% import "a3_retail/templates/print_formats/a3_base.html" as base %}
+{{ base.styles() }}
+{{ base.title_band(doc, "Quotation") }}
+{{ base.party_block("Prepared For", base.customer_block(doc),
+	"Validity", 'Date: ' ~ frappe.format(doc.transaction_date, {"fieldtype": "Date"}) ~
+	'<br>Valid till: ' ~ frappe.format(doc.get("valid_till"), {"fieldtype": "Date"})) }}
+{{ base.items_table(doc.items, [("Item", "item_name", ""), ("Qty", "qty", "num"), ("Rate", "rate", "money"), ("Discount %", "discount_percentage", "num"), ("Amount", "amount", "money")]) }}
+{{ base.totals(a3_invoice_total_lines(doc), "Quotation Total", doc.grand_total, doc.currency) }}
+{{ base.terms(doc) }}
+{{ base.signatures("Customer Acceptance") }}
+{{ base.footer(doc) }}

@@ -1,0 +1,17 @@
+{% import "a3_retail/templates/print_formats/a3_thermal.html" as t %}
+{{ t.styles() }}
+{{ t.shop_header(doc.get("branch")) }}
+<div class="t-center t-big">ADVANCE RECEIPT</div>
+{{ t.kv([("Receipt", doc.name),
+         ("Date", frappe.format(doc.posting_date, {"fieldtype": "Date"})),
+         ("From", doc.get("party_name") or doc.get("party")),
+         ("Mode", doc.get("mode_of_payment")),
+         ("Reference", doc.get("reference_no"))]) }}
+<div class="t-rule"></div>
+{% for row in doc.get("references") or [] %}
+<div>{{ row.reference_doctype }} {{ row.reference_name }} — {{ a3_money(row.allocated_amount) }}</div>
+{% endfor %}
+<div class="t-rule"></div>
+<div class="t-big t-right">{{ a3_money(doc.get("paid_amount")) }}</div>
+<div class="t-small">{{ a3_words(doc.get("paid_amount")) }}</div>
+{{ t.footer("Please present this slip when collecting your device.") }}
