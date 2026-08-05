@@ -1,0 +1,85 @@
+from a3_retail.install import A3_ROLES
+
+app_name = "a3_retail"
+app_title = "A3 Retail"
+app_publisher = "Acube Innovations Pvt Ltd"
+app_description = "Mobile retail and service chain management for ERPNext"
+app_email = "saaspurchases@acube.co"
+app_license = "mit"
+
+required_apps = ["frappe/erpnext"]
+
+# Modules owned by this app — used to scope every fixture export.
+A3_MODULES = [
+	"A3 Retail Service",
+	"A3 Retail Sales",
+	"A3 Retail Finance",
+	"A3 Retail Warranty",
+	"A3 Retail Communication",
+	"A3 Retail Operations",
+	"A3 Retail Dashboard",
+]
+
+A3_ROLE_NAMES = [role["role_name"] for role in A3_ROLES]
+
+# ---------------------------------------------------------------------------
+# Includes
+# ---------------------------------------------------------------------------
+app_include_css = "/assets/a3_retail/css/a3_retail.css"
+app_include_js = "/assets/a3_retail/js/a3_retail.js"
+
+# ---------------------------------------------------------------------------
+# Installation
+# ---------------------------------------------------------------------------
+before_install = "a3_retail.install.before_install"
+after_install = "a3_retail.install.after_install"
+after_migrate = "a3_retail.install.after_migrate"
+before_tests = "a3_retail.install.before_tests"
+
+# ---------------------------------------------------------------------------
+# Fixtures — every customisation ships as data so migrations are reproducible.
+# Workflow and Role have no `module` field, so those are filtered by name.
+# ---------------------------------------------------------------------------
+fixtures = [
+	{"dt": "Custom Field", "filters": [["module", "in", A3_MODULES]]},
+	{"dt": "Property Setter", "filters": [["module", "in", A3_MODULES]]},
+	{"dt": "Client Script", "filters": [["module", "in", A3_MODULES]]},
+	{"dt": "Print Format", "filters": [["module", "in", A3_MODULES]]},
+	{"dt": "Number Card", "filters": [["module", "in", A3_MODULES]]},
+	{"dt": "Dashboard Chart", "filters": [["module", "in", A3_MODULES]]},
+	{"dt": "Workspace", "filters": [["module", "in", A3_MODULES]]},
+	{"dt": "Role", "filters": [["name", "in", A3_ROLE_NAMES]]},
+	{"dt": "Workflow", "filters": [["name", "like", "A3 %"]]},
+	{"dt": "Print Style", "filters": [["name", "like", "A3 Retail%"]]},
+]
+
+# ---------------------------------------------------------------------------
+# Permissions — branch isolation on list views and reports.
+# ---------------------------------------------------------------------------
+permission_query_conditions = {
+	"Branch Profile": "a3_retail.utils.permissions.branch_profile_query",
+}
+
+# ---------------------------------------------------------------------------
+# Document events
+# ---------------------------------------------------------------------------
+doc_events = {}
+
+# ---------------------------------------------------------------------------
+# Scheduler
+# ---------------------------------------------------------------------------
+scheduler_events = {
+	"hourly": [],
+	"daily": [],
+	"weekly": [],
+	"cron": {},
+}
+
+# ---------------------------------------------------------------------------
+# Jinja
+# ---------------------------------------------------------------------------
+jinja = {
+	"methods": [
+		"a3_retail.utils.imei.format_imei",
+	],
+}

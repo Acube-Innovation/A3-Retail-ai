@@ -1,0 +1,4 @@
+[pre_model_sync]
+a3_retail.patches.create_roles
+
+[post_model_sync]

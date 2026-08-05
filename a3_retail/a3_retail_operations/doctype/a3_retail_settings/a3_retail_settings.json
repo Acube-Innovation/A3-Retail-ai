@@ -1,0 +1,539 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-08-05 09:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "general_section",
+  "default_company",
+  "enable_realtime_dashboard",
+  "dashboard_refresh_seconds",
+  "col_break_1",
+  "demo_data_installed",
+  "demo_data_installed_on",
+  "service_section",
+  "default_tat_hours",
+  "require_device_photos",
+  "min_photos",
+  "require_signature",
+  "diagnostic_charge_item",
+  "charge_diagnostic_on_rejection",
+  "col_break_2",
+  "free_storage_days",
+  "storage_charge_per_day",
+  "storage_charge_item",
+  "service_warranty_days",
+  "auto_close_after_days",
+  "imei_section",
+  "enforce_luhn_check",
+  "allow_imei_override_roles",
+  "sales_section",
+  "enforce_min_selling_price",
+  "allow_discount_roles",
+  "max_discount_percent_branch_user",
+  "col_break_3",
+  "require_sales_person",
+  "require_serial_on_device_sale",
+  "walkin_public_supplier",
+  "warranty_section",
+  "ew_sale_window_days",
+  "ew_reminder_days",
+  "col_break_4",
+  "deferred_revenue_enabled",
+  "deferred_revenue_account",
+  "warranty_expense_account",
+  "emi_section",
+  "require_all_documents_before_submit",
+  "auto_cancel_approved_after_days",
+  "col_break_5",
+  "emi_followup_after_days",
+  "inventory_section",
+  "dead_stock_rules",
+  "col_break_6",
+  "transit_warehouse",
+  "stock_request_auto_approve_limit",
+  "stock_request_ho_approval_limit",
+  "communication_section",
+  "enable_whatsapp",
+  "enable_email",
+  "activate_communication_rules",
+  "col_break_7",
+  "default_country_code",
+  "portal_section",
+  "otp_validity_minutes",
+  "otp_max_attempts",
+  "otp_max_requests_per_hour",
+  "col_break_8",
+  "payment_gateway_account",
+  "upi_vpa",
+  "portal_terms",
+  "numbering_section",
+  "job_card_prefix",
+  "estimate_prefix",
+  "stock_request_prefix",
+  "damage_prefix",
+  "col_break_9",
+  "exchange_prefix",
+  "visit_log_prefix"
+ ],
+ "fields": [
+  {
+   "fieldname": "general_section",
+   "fieldtype": "Section Break",
+   "label": "General"
+  },
+  {
+   "fieldname": "default_company",
+   "fieldtype": "Link",
+   "label": "Default Company",
+   "options": "Company"
+  },
+  {
+   "fieldname": "enable_realtime_dashboard",
+   "fieldtype": "Check",
+   "label": "Enable Realtime Dashboard",
+   "default": "1"
+  },
+  {
+   "fieldname": "dashboard_refresh_seconds",
+   "fieldtype": "Int",
+   "label": "Dashboard Refresh (seconds)",
+   "default": "30"
+  },
+  {
+   "fieldname": "col_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "demo_data_installed",
+   "fieldtype": "Check",
+   "label": "Demo Data Installed",
+   "read_only": 1
+  },
+  {
+   "fieldname": "demo_data_installed_on",
+   "fieldtype": "Datetime",
+   "label": "Demo Data Installed On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "service_section",
+   "fieldtype": "Section Break",
+   "label": "Service"
+  },
+  {
+   "fieldname": "default_tat_hours",
+   "fieldtype": "Int",
+   "label": "Default TAT (hours)",
+   "default": "48"
+  },
+  {
+   "fieldname": "require_device_photos",
+   "fieldtype": "Check",
+   "label": "Require Device Photos",
+   "default": "1"
+  },
+  {
+   "fieldname": "min_photos",
+   "fieldtype": "Int",
+   "label": "Minimum Photos",
+   "default": "1",
+   "depends_on": "require_device_photos"
+  },
+  {
+   "fieldname": "require_signature",
+   "fieldtype": "Check",
+   "label": "Require Customer Signature",
+   "default": "1"
+  },
+  {
+   "fieldname": "diagnostic_charge_item",
+   "fieldtype": "Link",
+   "label": "Diagnostic Charge Item",
+   "options": "Item"
+  },
+  {
+   "fieldname": "charge_diagnostic_on_rejection",
+   "fieldtype": "Check",
+   "label": "Charge Diagnostic Fee on Estimate Rejection"
+  },
+  {
+   "fieldname": "col_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "free_storage_days",
+   "fieldtype": "Int",
+   "label": "Free Storage Days",
+   "default": "15"
+  },
+  {
+   "fieldname": "storage_charge_per_day",
+   "fieldtype": "Currency",
+   "label": "Storage Charge per Day",
+   "default": "20"
+  },
+  {
+   "fieldname": "storage_charge_item",
+   "fieldtype": "Link",
+   "label": "Storage Charge Item",
+   "options": "Item"
+  },
+  {
+   "fieldname": "service_warranty_days",
+   "fieldtype": "Int",
+   "label": "Warranty on Repair (days)",
+   "default": "90"
+  },
+  {
+   "fieldname": "auto_close_after_days",
+   "fieldtype": "Int",
+   "label": "Auto Close Delivered Job Cards After (days)",
+   "default": "7"
+  },
+  {
+   "fieldname": "imei_section",
+   "fieldtype": "Section Break",
+   "label": "IMEI"
+  },
+  {
+   "fieldname": "enforce_luhn_check",
+   "fieldtype": "Check",
+   "label": "Enforce IMEI Luhn Check",
+   "default": "1"
+  },
+  {
+   "fieldname": "allow_imei_override_roles",
+   "fieldtype": "Table MultiSelect",
+   "label": "Roles Allowed to Override IMEI Check",
+   "options": "A3 Role Item"
+  },
+  {
+   "fieldname": "sales_section",
+   "fieldtype": "Section Break",
+   "label": "Sales"
+  },
+  {
+   "fieldname": "enforce_min_selling_price",
+   "fieldtype": "Check",
+   "label": "Enforce Minimum Selling Price",
+   "default": "1"
+  },
+  {
+   "fieldname": "allow_discount_roles",
+   "fieldtype": "Table MultiSelect",
+   "label": "Roles Allowed to Discount",
+   "options": "A3 Role Item"
+  },
+  {
+   "fieldname": "max_discount_percent_branch_user",
+   "fieldtype": "Percent",
+   "label": "Max Discount % (Branch User)",
+   "default": "5"
+  },
+  {
+   "fieldname": "col_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "require_sales_person",
+   "fieldtype": "Check",
+   "label": "Require Sales Person on Invoice",
+   "default": "1"
+  },
+  {
+   "fieldname": "require_serial_on_device_sale",
+   "fieldtype": "Check",
+   "label": "Require IMEI on Device Sale",
+   "default": "1"
+  },
+  {
+   "fieldname": "walkin_public_supplier",
+   "fieldtype": "Link",
+   "label": "Walk-in Public Supplier",
+   "options": "Supplier"
+  },
+  {
+   "fieldname": "warranty_section",
+   "fieldtype": "Section Break",
+   "label": "Warranty"
+  },
+  {
+   "fieldname": "ew_sale_window_days",
+   "fieldtype": "Int",
+   "label": "Extended Warranty Sale Window (days)",
+   "default": "15"
+  },
+  {
+   "fieldname": "ew_reminder_days",
+   "fieldtype": "Table",
+   "label": "Warranty Reminder Schedule",
+   "options": "A3 Reminder Day"
+  },
+  {
+   "fieldname": "col_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "deferred_revenue_enabled",
+   "fieldtype": "Check",
+   "label": "Defer Extended Warranty Revenue",
+   "default": "1"
+  },
+  {
+   "fieldname": "deferred_revenue_account",
+   "fieldtype": "Link",
+   "label": "Deferred EW Revenue Account",
+   "options": "Account"
+  },
+  {
+   "fieldname": "warranty_expense_account",
+   "fieldtype": "Link",
+   "label": "Warranty Expense Account",
+   "options": "Account"
+  },
+  {
+   "fieldname": "emi_section",
+   "fieldtype": "Section Break",
+   "label": "EMI"
+  },
+  {
+   "fieldname": "require_all_documents_before_submit",
+   "fieldtype": "Check",
+   "label": "Require All Documents Before Submit",
+   "default": "1"
+  },
+  {
+   "fieldname": "auto_cancel_approved_after_days",
+   "fieldtype": "Int",
+   "label": "Auto Cancel Approved Applications After (days)",
+   "default": "7"
+  },
+  {
+   "fieldname": "col_break_5",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "emi_followup_after_days",
+   "fieldtype": "Int",
+   "label": "Nudge Coordinator After (days)",
+   "default": "3"
+  },
+  {
+   "fieldname": "inventory_section",
+   "fieldtype": "Section Break",
+   "label": "Inventory"
+  },
+  {
+   "fieldname": "dead_stock_rules",
+   "fieldtype": "Table",
+   "label": "Dead Stock Thresholds",
+   "options": "A3 Dead Stock Rule"
+  },
+  {
+   "fieldname": "col_break_6",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "transit_warehouse",
+   "fieldtype": "Link",
+   "label": "Goods In Transit Warehouse",
+   "options": "Warehouse"
+  },
+  {
+   "fieldname": "stock_request_auto_approve_limit",
+   "fieldtype": "Currency",
+   "label": "Auto-approve Service Requests Upto",
+   "default": "10000"
+  },
+  {
+   "fieldname": "stock_request_ho_approval_limit",
+   "fieldtype": "Currency",
+   "label": "Head Office Approval Above",
+   "default": "25000"
+  },
+  {
+   "fieldname": "communication_section",
+   "fieldtype": "Section Break",
+   "label": "Communication"
+  },
+  {
+   "fieldname": "enable_whatsapp",
+   "fieldtype": "Check",
+   "label": "Enable WhatsApp"
+  },
+  {
+   "fieldname": "enable_email",
+   "fieldtype": "Check",
+   "label": "Enable Email",
+   "default": "1"
+  },
+  {
+   "fieldname": "activate_communication_rules",
+   "fieldtype": "Check",
+   "label": "Activate Communication Rules"
+  },
+  {
+   "fieldname": "col_break_7",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "default_country_code",
+   "fieldtype": "Data",
+   "label": "Default Country Code",
+   "default": "91"
+  },
+  {
+   "fieldname": "portal_section",
+   "fieldtype": "Section Break",
+   "label": "Portal"
+  },
+  {
+   "fieldname": "otp_validity_minutes",
+   "fieldtype": "Int",
+   "label": "OTP Validity (minutes)",
+   "default": "10"
+  },
+  {
+   "fieldname": "otp_max_attempts",
+   "fieldtype": "Int",
+   "label": "Max OTP Attempts",
+   "default": "5"
+  },
+  {
+   "fieldname": "otp_max_requests_per_hour",
+   "fieldtype": "Int",
+   "label": "Max OTP Requests per Hour",
+   "default": "5"
+  },
+  {
+   "fieldname": "col_break_8",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "payment_gateway_account",
+   "fieldtype": "Link",
+   "label": "Payment Gateway Account",
+   "options": "Payment Gateway Account"
+  },
+  {
+   "fieldname": "upi_vpa",
+   "fieldtype": "Data",
+   "label": "UPI VPA"
+  },
+  {
+   "fieldname": "portal_terms",
+   "fieldtype": "Text Editor",
+   "label": "Portal Terms"
+  },
+  {
+   "fieldname": "numbering_section",
+   "fieldtype": "Section Break",
+   "label": "Numbering"
+  },
+  {
+   "fieldname": "job_card_prefix",
+   "fieldtype": "Data",
+   "label": "Job Card Prefix",
+   "default": "JC"
+  },
+  {
+   "fieldname": "estimate_prefix",
+   "fieldtype": "Data",
+   "label": "Estimate Prefix",
+   "default": "EST"
+  },
+  {
+   "fieldname": "stock_request_prefix",
+   "fieldtype": "Data",
+   "label": "Stock Request Prefix",
+   "default": "SR"
+  },
+  {
+   "fieldname": "damage_prefix",
+   "fieldtype": "Data",
+   "label": "Damage Report Prefix",
+   "default": "DMG"
+  },
+  {
+   "fieldname": "col_break_9",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "exchange_prefix",
+   "fieldtype": "Data",
+   "label": "Device Exchange Prefix",
+   "default": "EXC"
+  },
+  {
+   "fieldname": "visit_log_prefix",
+   "fieldtype": "Data",
+   "label": "Visit Log Prefix",
+   "default": "FL"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-05 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "A3 Retail Operations",
+ "name": "A3 Retail Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "A3 Retail Admin",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Accounts Manager",
+   "permlevel": 0,
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "issingle": 1,
+ "track_changes": 1
+}
