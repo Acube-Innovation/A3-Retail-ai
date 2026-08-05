@@ -3,13 +3,13 @@
 App: `a3_retail` (the scope document calls it `mobicare`; every identifier was
 renamed — see *Naming map* below). Bench site: `local`.
 
-**Steps 1–14 of 26 are complete, migrated and tested: 240 tests pass.**
+**Steps 1–24 of 26 are complete, migrated and tested: 604 tests pass.**
 
 ```bash
 bench --site local migrate
-bench --site local run-tests --app a3_retail          # 240 passing
+bench --site local run-tests --app a3_retail          # 604 passing
 bench --site local execute a3_retail.demo.install.run # idempotent demo seed
-bench --site local execute a3_retail.demo.verify.run  # 17/17 checks pass
+bench --site local execute a3_retail.demo.install.verify  # 26/26 checks pass
 ```
 
 ## Naming map (scope document → this app)
