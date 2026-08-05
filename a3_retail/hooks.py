@@ -58,12 +58,33 @@ fixtures = [
 # ---------------------------------------------------------------------------
 permission_query_conditions = {
 	"Branch Profile": "a3_retail.utils.permissions.branch_profile_query",
+	"Service Job Card": "a3_retail.utils.permissions.service_job_card_query",
+	"Service Estimate": "a3_retail.utils.permissions.service_estimate_query",
+	"Technician Profile": "a3_retail.utils.permissions.technician_profile_query",
+	"Stock Request": "a3_retail.utils.permissions.stock_request_query",
+	"Stock Damage Report": "a3_retail.utils.permissions.stock_damage_report_query",
+	"Demurrage Charge": "a3_retail.utils.permissions.demurrage_charge_query",
+	"Device Exchange": "a3_retail.utils.permissions.device_exchange_query",
+	"EMI Application": "a3_retail.utils.permissions.emi_application_query",
+	"Warranty Registration": "a3_retail.utils.permissions.warranty_registration_query",
+	"OEM Warranty Return": "a3_retail.utils.permissions.oem_warranty_return_query",
+	"Branch Visit Log": "a3_retail.utils.permissions.branch_visit_log_query",
+	"Customer Feedback": "a3_retail.utils.permissions.customer_feedback_query",
+	"Call Task": "a3_retail.utils.permissions.call_task_query",
+	"Courier Dispatch": "a3_retail.utils.permissions.courier_dispatch_query",
+	"Incentive Calculation Run": "a3_retail.utils.permissions.incentive_calculation_run_query",
+	"WhatsApp Message Log": "a3_retail.utils.permissions.whatsapp_message_log_query",
 }
 
 # ---------------------------------------------------------------------------
 # Document events
 # ---------------------------------------------------------------------------
-doc_events = {}
+doc_events = {
+	"Employee": {
+		"on_update": "a3_retail.overrides.employee.on_update",
+		"on_trash": "a3_retail.overrides.employee.on_trash",
+	},
+}
 
 # ---------------------------------------------------------------------------
 # Scheduler

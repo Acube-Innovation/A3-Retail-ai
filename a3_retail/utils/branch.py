@@ -53,11 +53,15 @@ def get_user_branches(user: str | None = None) -> list[str]:
 	if unrestricted & set(frappe.get_roles(user)):
 		return []
 
-	branches = frappe.get_all(
+	# One User Permission row exists per applicable doctype, so the same branch
+	# repeats; dedupe while keeping a stable order for readable SQL conditions.
+	rows = frappe.get_all(
 		"User Permission",
 		filters={"user": user, "allow": "Branch"},
 		pluck="for_value",
+		order_by="for_value asc",
 	)
+	branches = list(dict.fromkeys(rows))
 	if branches:
 		return branches
 

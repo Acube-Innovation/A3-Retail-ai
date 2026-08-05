@@ -61,6 +61,52 @@ def _profiles_complete():
 	return complete, complete == len(rows) and complete > 0
 
 
+# ---------------------------------------------------------------- step 3 checks
+@check("Demo users", ">= 13")
+def _users():
+	count = frappe.db.count("User", {"email": ["like", "%@mobileworld.in"]})
+	return count, count >= 13
+
+
+@check("Employees", "17")
+def _employees():
+	count = frappe.db.count("Employee", {"status": "Active"})
+	return count, count >= 17
+
+
+@check("Users without branch permission", "0")
+def _users_without_branch_permission():
+	"""Scope 13.5: every branch system user must be scoped to a Branch."""
+	exempt = ("System Manager", "A3 Retail Admin", "Accounts Manager", "HR Manager", "Auditor")
+	rows = frappe.db.sql(
+		"""
+		select u.name from `tabUser` u
+		where u.enabled = 1 and u.user_type = 'System User'
+		  and u.name like '%%@mobileworld.in'
+		  and not exists (
+			select 1 from `tabUser Permission` p
+			where p.user = u.name and p.allow = 'Branch')
+		  and not exists (
+			select 1 from `tabHas Role` r
+			where r.parent = u.name and r.role in %(exempt)s)
+		""",
+		{"exempt": exempt},
+	)
+	return len(rows), len(rows) == 0
+
+
+@check("Custom DocPerm rows", ">= 100")
+def _custom_docperms():
+	count = frappe.db.count("Custom DocPerm")
+	return count, count >= 100
+
+
+@check("Branch managers linked", "3")
+def _branch_managers():
+	count = frappe.db.count("Branch Profile", {"branch_manager": ["is", "set"]})
+	return count, count == 3
+
+
 def run(verbose: bool = True):
 	"""Execute every registered check; returns (passed, failed, rows)."""
 	rows = []
