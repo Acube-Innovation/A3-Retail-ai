@@ -447,8 +447,9 @@ body.side-collapsed .side-nav a, body.side-collapsed .side-soon { justify-conten
 
 /* search */
 .pos-search { display: flex; align-items: center; gap: 18px; margin-bottom: 6px; }
-.pos-search-box { flex: 0 1 560px; display: flex; align-items: center; gap: 10px; background: var(--card);
-	border: 1px solid var(--line-strong); border-radius: var(--radius-sm); padding: 0 14px; }
+.pos-search-box { position: relative; flex: 0 1 560px; display: flex; align-items: center; gap: 10px;
+	background: var(--card); border: 1px solid var(--line-strong); border-radius: var(--radius-sm);
+	padding: 0 14px; }
 .pos-search-box .ico { color: var(--faint); }
 .pos-search-box input { flex: 1; border: 0; padding: 12px 0; font-family: inherit; font-size: 14.5px;
 	background: transparent; color: var(--ink); }
@@ -549,9 +550,13 @@ body.side-collapsed .side-nav a, body.side-collapsed .side-soon { justify-conten
 .btn-find:hover { background: #e8f2fc; }
 /* `hidden` has to beat the flex/inline-flex display rules above it. */
 [hidden] { display: none !important; }
-.cust-results { position: absolute; top: 46px; left: 0; right: 120px; z-index: 6; list-style: none;
-	margin: 0; padding: 6px; background: var(--card); border: 1px solid var(--line);
-	border-radius: var(--radius-sm); box-shadow: var(--shadow-pop); max-height: 240px; overflow-y: auto; }
+/* Hangs off the box it belongs to — `top: 46px` only landed in the right place
+   while the list happened to sit inside a positioned wrapper of that height. */
+.cust-results { position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 20;
+	list-style: none; margin: 0; padding: 6px; background: var(--card);
+	border: 1px solid var(--line); border-radius: var(--radius-sm); box-shadow: var(--shadow-pop);
+	max-height: 260px; overflow-y: auto; }
+.pos-cust-search .cust-results { right: 120px; }
 .cust-results button { width: 100%; text-align: left; border: 0; background: none; cursor: pointer;
 	padding: 8px 10px; border-radius: 6px; font-family: inherit; font-size: 13px; }
 .cust-results button:hover { background: #f1f5f9; }
@@ -559,8 +564,13 @@ body.side-collapsed .side-nav a, body.side-collapsed .side-soon { justify-conten
 .pos-cust-phone { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
 .input-icon { flex: 0 0 250px; display: flex; align-items: center; gap: 8px; background: var(--card);
 	border: 1px solid var(--line-strong); border-radius: var(--radius-sm); padding: 0 12px; }
-.input-icon .ico { color: var(--faint); }
-.input-icon input { border: 0 !important; box-shadow: none !important; padding-left: 0 !important; }
+.input-icon .ico { flex: none; color: var(--faint); }
+/* Carries its own size: the box is the border, the input inside it is not. */
+.input-icon input, .input-icon input:focus {
+	flex: 1; min-width: 0; width: 100%; border: 0; outline: none; box-shadow: none;
+	background: transparent; padding: 10px 0; font-family: inherit; font-size: 13.5px;
+	color: var(--ink); }
+.input-icon:focus-within { border-color: var(--sky); box-shadow: 0 0 0 3px rgba(41, 171, 226, .16); }
 .pos-cust-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 .pos-cust-foot { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
 .pos-history { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -724,8 +734,10 @@ body.side-collapsed .side-nav a, body.side-collapsed .side-soon { justify-conten
 	border-radius: var(--radius-sm); padding: 8px 14px; white-space: nowrap; }
 
 .svc-actions { display: flex; align-items: center; gap: 12px; padding: 14px 20px 0; }
-.svc-actions .pos-search-box { flex: 1 1 330px; }
-.scan-box { flex: 0 1 260px; }
+.svc-actions .pos-search-box { flex: 1 1 300px; min-width: 0; }
+.svc-actions .btn { white-space: nowrap; }
+.scan-box { flex: 0 1 250px; }
+.scan-box input { font-size: 13.5px; }
 .seg { display: flex; gap: 6px; margin-left: auto; }
 .seg-btn { display: flex; align-items: center; gap: 7px; border: 1px solid var(--line);
 	background: var(--card); border-radius: var(--radius-sm); padding: 9px 14px;

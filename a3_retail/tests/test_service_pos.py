@@ -62,6 +62,23 @@ class TestServicePage(FrappeTestCase):
 		).read()
 		self.assertIn("a3_branch.css?v={{ asset_v }}", markup)
 
+	def test_the_suggestion_list_hangs_off_its_own_search_box(self):
+		"""It anchored to whatever ancestor happened to be positioned, and flew
+		to the top of the page on any screen whose search box was not wrapped
+		the way the sales counter wraps it."""
+		css = open(frappe.get_app_path("a3_retail", "public", "css", "a3_branch.css")).read()
+		box = css[css.index(".pos-search-box {"):css.index(".pos-search-box .ico")]
+		self.assertIn("position: relative", box)
+		results = css[css.index(".cust-results {"):css.index(".cust-results button")]
+		self.assertIn("top: calc(100%", results)
+
+	def test_the_phone_box_carries_its_own_size(self):
+		"""Its height came from a wrapper that only exists on the sales page."""
+		css = open(frappe.get_app_path("a3_retail", "public", "css", "a3_branch.css")).read()
+		rule = css[css.index(".input-icon input"):css.index(".input-icon:focus-within")]
+		self.assertIn("padding: 10px 0", rule)
+		self.assertNotIn("!important", rule)
+
 	def test_services_is_a_live_entry_in_the_sidebar(self):
 		sidebar = open(
 			os.path.join(frappe.get_app_path("a3_retail", "www", "branch"), "_sidebar.html")
