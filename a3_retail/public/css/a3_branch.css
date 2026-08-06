@@ -777,7 +777,7 @@ body.side-collapsed .side-nav a, body.side-collapsed .side-soon { justify-conten
 .counter { position: absolute; right: 8px; bottom: 8px; font-size: 10.5px; color: var(--faint); }
 
 .svc-device { background: #fafbfd; border: 1px solid var(--line); border-radius: 10px;
-	padding: 14px; display: flex; gap: 14px; align-items: flex-start; }
+	padding: 14px; display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-start; }
 .device-empty { color: var(--muted); font-size: 13px; padding: 22px 6px; text-align: center;
 	width: 100%; }
 .device-photo { flex: 0 0 64px; height: 92px; display: flex; align-items: center;
@@ -789,7 +789,17 @@ body.side-collapsed .side-nav a, body.side-collapsed .side-soon { justify-conten
 .device-facts dd { margin: 0; font-size: 12.5px; font-weight: 600; color: var(--ink); }
 .warn-red { color: var(--danger-dark) !important; }
 .warn-good { color: var(--success) !important; }
-.device-history { flex-basis: 100%; margin-top: 8px; font-size: 11.5px; color: var(--faint); }
+/* the device card, typed by hand */
+.device-foot { flex-basis: 100%; display: flex; align-items: center; justify-content: space-between;
+	gap: 12px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line);
+	font-size: 11.5px; }
+.device-none { color: var(--faint); font-size: 11.5px; }
+.device-form { width: 100%; }
+.device-form-head { display: flex; align-items: baseline; justify-content: space-between;
+	gap: 10px; margin-bottom: 10px; }
+.device-form-head h3 { margin: 0; font-size: 13px; font-weight: 700; color: var(--sky-dark); }
+.device-hint { font-size: 11px; color: var(--faint); }
+.device-form-foot { margin-top: 2px; }
 .linkish { border: 0; background: none; padding: 0; font-family: inherit; font-size: inherit;
 	color: var(--sky-dark); font-weight: 600; cursor: pointer; }
 

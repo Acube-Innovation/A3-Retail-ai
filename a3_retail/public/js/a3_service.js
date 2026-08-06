@@ -16,6 +16,7 @@ window.SVC = (function () {
 		branch: "", step: "booking", jobCard: null, status: "Booking",
 		customer: null, device: null, serviceType: "general", priority: "Normal",
 		leadSource: "Walk-in", lines: [], issues: [], technicians: [], types: [], signed: false, photos: [],
+		brands: [], models: [], canAddModel: false,
 	};
 	const $ = (id) => document.getElementById(id);
 	const money = (value) =>
@@ -44,7 +45,7 @@ window.SVC = (function () {
 			state.device = found;
 			if (!found.known) state.device.imei_1 = found.imei_1 || code;
 			paintDevice();
-			say(found.known ? "" : "Not a device we sold — type the model to book it in.");
+			say(found.known ? "" : "Not a handset we sold — name the make and model below.");
 		} catch (error) {
 			say(error.message, "error");
 		}
@@ -53,25 +54,28 @@ window.SVC = (function () {
 	function paintDevice() {
 		const box = $("device-card");
 		const device = state.device;
-		if (!device) {
-			box.innerHTML = '<div class="device-empty">Scan the IMEI, or type the model below.</div>';
-			return;
+
+		// The device answers the "Service Type" question, not the counter.
+		if (device && device.warranty_type && $("warranty-type")) {
+			$("warranty-type").value = device.warranty_type;
+			paintTotals();
 		}
 
+		if (!device || !device.known) return paintDeviceForm(box, device || {});
+		paintDeviceFacts(box, device);
+	}
+
+	/** A handset this shop sold: its own sale answers every question. */
+	function paintDeviceFacts(box, device) {
+		const out = device.warranty_type === "Out of Warranty";
 		const rows = [
 			["Device", device.device_name || device.device_model || "—"],
 			["IMEI", device.imei_1 || "—"],
-			["Model / Variant", device.device_model || "PICK"],
+			["Model / Variant", device.device_model || "—"],
 			["Warranty Status", device.warranty_type || "Out of Warranty"],
 			["Purchase Date", device.purchase_date || "—"],
 			["Accessories", device.accessories || "—"],
 		];
-		const out = device.warranty_type === "Out of Warranty";
-		// The device answers the "Service Type" question, not the counter.
-		if (device.warranty_type && $("warranty-type")) {
-			$("warranty-type").value = device.warranty_type;
-			paintTotals();
-		}
 
 		box.innerHTML = `
 			<div class="device-photo">${device.image
@@ -81,29 +85,14 @@ window.SVC = (function () {
 				${rows.map(([label, value]) => `
 					<dt>${esc(label)}</dt>
 					<dd class="${label === "Warranty Status" ? (out ? "warn-red" : "warn-good") : ""}">
-						${value === "PICK"
-							? '<select id="device-model" class="model-pick"></select>'
-							: esc(value)}</dd>`).join("")}
+						${esc(value)}</dd>`).join("")}
 			</dl>
-			${(device.history || []).length
-				? `<div class="device-history">${device.history.length} earlier repair(s) ·
-					<button class="linkish" id="history">see them</button></div>` : ""}`;
-
-		// A handset we did not sell still has to be booked against a model, so the
-		// counter picks one rather than typing free text nobody can report on.
-		const picker = $("device-model");
-		if (picker) {
-			A3.call("a3_retail.api.service_pos.device_models", {}).then((models) => {
-				picker.innerHTML = '<option value="">Pick the model…</option>'
-					+ models.map((row) => `<option value="${esc(row.name)}">${esc(row.name)}</option>`).join("");
-				picker.addEventListener("change", () => {
-					state.device.device_model = picker.value;
-					state.device.brand = (models.find((m) => m.name === picker.value) || {}).brand;
-					state.device.device_type =
-						(models.find((m) => m.name === picker.value) || {}).device_type || "Mobile";
-				});
-			});
-		}
+			<div class="device-foot">
+				${(device.history || []).length
+					? `<button class="linkish" id="history">${device.history.length} earlier repair(s)</button>`
+					: '<span class="device-none">No earlier repairs on this device.</span>'}
+				<button class="linkish" id="edit-device">Not this device? Enter it by hand</button>
+			</div>`;
 
 		const history = $("history");
 		if (history) {
@@ -113,6 +102,100 @@ window.SVC = (function () {
 					title: row.name + " · " + row.status,
 					sub: row.complaint_description || "",
 				}))));
+		}
+		$("edit-device").addEventListener("click", () => {
+			state.device = { known: false, imei_1: device.imei_1, brand: device.brand,
+			                 device_model: device.device_model,
+			                 device_type: device.device_type || "Mobile",
+			                 warranty_type: "Out of Warranty" };
+			paintDevice();
+		});
+	}
+
+	/** Anything else — a handset from another shop, or one bought online. The
+	 *  counter types the IMEI and names the make and model itself. */
+	function paintDeviceForm(box, device) {
+		const brands = state.brands || [];
+		box.innerHTML = `
+			<div class="device-form">
+				<div class="device-form-head">
+					<h3>Device</h3>
+					<span class="device-hint">Scan the IMEI above to fill this in, or type it here.</span>
+				</div>
+				<label class="field"><span>IMEI / Serial</span>
+					<input id="d-imei" inputmode="numeric" maxlength="15"
+					       value="${esc(device.imei_1 || "")}" placeholder="15 digits"></label>
+				<div class="field-grid">
+					<label class="field"><span>Make</span>
+						<select id="d-brand">
+							<option value="">Pick the make…</option>
+							${brands.map((brand) => `<option value="${esc(brand)}"${
+								brand === device.brand ? " selected" : ""}>${esc(brand)}</option>`).join("")}
+						</select></label>
+					<label class="field"><span>Model / Variant</span>
+						<select id="d-model"><option value="">Pick the model…</option></select></label>
+				</div>
+				<div class="device-form-foot">
+					${state.canAddModel
+						? '<button class="linkish" id="new-model">+ The model is not listed</button>'
+						: '<span class="device-none">Ask a manager to add a model that is not listed.</span>'}
+				</div>
+			</div>`;
+
+		fillModels(device.brand, device.device_model);
+
+		$("d-imei").addEventListener("input", () => {
+			state.device = state.device || {};
+			state.device.imei_1 = $("d-imei").value.trim();
+		});
+		$("d-brand").addEventListener("change", () => {
+			state.device.brand = $("d-brand").value;
+			state.device.device_model = "";
+			fillModels(state.device.brand, "");
+		});
+		if ($("new-model")) $("new-model").addEventListener("click", askNewModel);
+	}
+
+	/** Models for the chosen make — every model when no make is picked yet. */
+	function fillModels(brand, selected) {
+		const picker = $("d-model");
+		if (!picker) return;
+		const models = (state.models || []).filter((row) => !brand || row.brand === brand);
+
+		picker.innerHTML = '<option value="">Pick the model…</option>'
+			+ models.map((row) => `<option value="${esc(row.name)}"${
+				row.name === selected ? " selected" : ""}>${esc(row.model_name || row.name)}</option>`).join("");
+
+		picker.onchange = () => {
+			const model = models.find((row) => row.name === picker.value);
+			state.device.device_model = picker.value;
+			if (model) {
+				state.device.brand = model.brand;
+				state.device.device_type = model.device_type || "Mobile";
+				if ($("d-brand")) $("d-brand").value = model.brand;
+			}
+		};
+	}
+
+	async function askNewModel() {
+		const brand = ($("d-brand") && $("d-brand").value) || "";
+		if (!brand) return say("Pick the make first, then add the model under it.", "error");
+
+		const model = window.prompt("Model name, without the make (e.g. Galaxy A15)");
+		if (!model) return;
+
+		try {
+			const created = await A3.call("a3_retail.api.service_pos.create_device_model",
+				{ brand, model_name: model.trim(), device_type: "Mobile" });
+			state.models.push({ name: created.name, model_name: model.trim(),
+			                    brand, device_type: created.device_type || "Mobile" });
+			state.device.brand = brand;
+			state.device.device_model = created.name;
+			state.device.device_type = created.device_type || "Mobile";
+			fillModels(brand, created.name);
+			say(created.created ? created.name + " added." : created.name + " was already listed.", "ok");
+		} catch (error) {
+			say(error.message, "error");
 		}
 	}
 
@@ -606,6 +689,9 @@ window.SVC = (function () {
 		state.types = boot.service_types;
 		state.issues = boot.issues;
 		state.technicians = boot.technicians;
+		state.brands = boot.brands || [];
+		state.canAddModel = !!boot.can_add_model;
+		state.models = await A3.call("a3_retail.api.service_pos.device_models", { limit: 500 });
 
 		// The tiles themselves are server-rendered so they carry the real icons.
 		$("service-types").addEventListener("click", (event) => {
@@ -638,6 +724,11 @@ window.SVC = (function () {
 		$("new-customer").addEventListener("click", newCustomer);
 		$("another-device").addEventListener("click", () => {
 			state.device = null; paintDevice(); $("scan").focus();
+		});
+		$("scan").addEventListener("blur", () => {
+			// A counter that types the IMEI and tabs away should not lose it.
+			const typed = $("scan").value.trim();
+			if (typed && /^\d{15}$/.test(typed)) lookupDevice(typed);
 		});
 
 		$("add-line").addEventListener("click", openLinePicker);
@@ -732,6 +823,7 @@ window.SVC = (function () {
 		});
 
 		paintLines();
+		paintDevice();
 		$("scan").focus();
 	}
 

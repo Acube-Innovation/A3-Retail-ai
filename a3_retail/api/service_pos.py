@@ -64,10 +64,23 @@ def bootstrap() -> dict:
 		],
 		"issues": issue_types(),
 		"technicians": technicians(),
+		"brands": _brands(),
+		"device_types": (frappe.get_meta("Service Job Card")
+		                 .get_field("device_type").options or "").split("\n"),
+		"can_add_model": bool(frappe.has_permission("Device Model", "create")),
 		"lead_sources": ["Walk-in", "Phone Call", "WhatsApp", "Website", "Referral"],
 		"warranty_types": ["Brand Warranty", "Extended Warranty", "Screen Protection Plan",
 		                   "Insurance Claim", "Out of Warranty", "Goodwill/Free"],
 	}
+
+
+def _brands() -> list[str]:
+	"""The makes this counter can pick. ERPNext's own test fixtures are not
+	makes anybody services, so they stay out of the list."""
+	return [
+		brand for brand in frappe.get_all("Brand", pluck="name", order_by="name")
+		if not brand.startswith("_Test")
+	]
 
 
 @frappe.whitelist()
@@ -184,6 +197,41 @@ def device_models(query: str = "", limit: int = 40) -> list[dict]:
 		"Device Model", filters=filters, fields=["name", "model_name", "brand", "device_type"],
 		order_by="brand, model_name", limit=cint(limit) or 40,
 	)
+
+
+@frappe.whitelist()
+def create_device_model(brand: str, model_name: str, device_type: str = "Mobile") -> dict:
+	"""Name a model the shop has never sold, so it can service one.
+
+	Deliberately thin: a brand, a name and what kind of thing it is. Everything
+	else on a Device Model — standard parts, average turnaround — is filled in
+	later by whoever owns the service catalogue.
+	"""
+	_me()
+	require_permission("Device Model", "create")
+
+	brand = (brand or "").strip()
+	model_name = (model_name or "").strip()
+	if not brand or not model_name:
+		frappe.throw(_("A model needs a brand and a name."), title=_("Not enough to go on"))
+
+	if not frappe.db.exists("Brand", brand):
+		frappe.throw(_("{0} is not a brand this shop carries.").format(brand))
+
+	name = f"{brand} {model_name}"
+	if frappe.db.exists("Device Model", name):
+		return {"name": name, "created": False}
+
+	doc = frappe.new_doc("Device Model")
+	doc.__newname = name
+	doc.model_name = model_name
+	doc.brand = brand
+	doc.device_type = device_type or "Mobile"
+	doc.is_active = 1
+	doc.insert()
+
+	return {"name": doc.name, "created": True, "brand": brand,
+	        "device_type": doc.device_type}
 
 
 def _device_type(item_code: str) -> str:

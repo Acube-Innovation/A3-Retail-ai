@@ -72,7 +72,10 @@ PERMISSION_MATRIX: dict[str, dict[str, str]] = {
 		"Reception Executive": "CRU",
 		"Sales Executive": "R",
 		"Technician": "R",
-		"Branch Manager": "R",
+		# A shop services models it never sold. Whoever is standing at the
+		# counter has to be able to name one, and in a one-desk branch that is
+		# the manager.
+		"Branch Manager": "CRU",
 	},
 	# ------------------------------------------------------------------ sales
 	"Sales Invoice": {

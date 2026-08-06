@@ -157,6 +157,33 @@ class TestServiceCounter(FrappeTestCase):
 	def test_the_model_list_is_there_for_a_device_we_did_not_sell(self):
 		self.assertTrue(service_pos.device_models())
 
+	def test_the_counter_gets_the_makes_it_can_pick_from(self):
+		boot = service_pos.bootstrap()
+		self.assertTrue(boot["brands"])
+		self.assertFalse([b for b in boot["brands"] if b.startswith("_Test")],
+		                 "ERPNext's own test fixtures are not makes anybody services")
+		self.assertIn("Mobile", boot["device_types"])
+
+	def test_a_model_the_shop_never_sold_can_be_named_at_the_counter(self):
+		created = service_pos.create_device_model("Apple", "iPhone 13 mini", "Mobile")
+		self.addCleanup(
+			lambda: frappe.db.exists("Device Model", created["name"])
+			and frappe.delete_doc("Device Model", created["name"], force=True, ignore_permissions=True)
+		)
+		self.assertEqual(created["name"], "Apple iPhone 13 mini")
+		self.assertTrue(frappe.db.exists("Device Model", created["name"]))
+
+		again = service_pos.create_device_model("Apple", "iPhone 13 mini")
+		self.assertFalse(again["created"], "naming it twice is not an error")
+
+	def test_a_make_the_shop_does_not_carry_is_refused(self):
+		self.assertRaises(
+			frappe.ValidationError, service_pos.create_device_model, "Nothing", "Phone 2"
+		)
+
+	def test_a_model_needs_both_halves_of_its_name(self):
+		self.assertRaises(frappe.ValidationError, service_pos.create_device_model, "Apple", "  ")
+
 	# ----------------------------------------------------------------- lines
 	def test_the_line_picker_offers_parts_labour_and_accessories(self):
 		kinds = {row["kind"] for row in service_pos.search_items(limit=60)}
@@ -320,6 +347,9 @@ class TestCounterPermissions(FrappeTestCase):
 
 	def test_the_counter_can_take_an_advance(self):
 		self.assertTrue(frappe.has_permission("Payment Entry", "create"))
+
+	def test_the_counter_can_name_a_model_it_has_to_service(self):
+		self.assertTrue(frappe.has_permission("Device Model", "create"))
 
 	def test_the_counter_can_open_a_job_card(self):
 		self.assertTrue(frappe.has_permission("Service Job Card", "create"))
