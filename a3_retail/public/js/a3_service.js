@@ -132,7 +132,16 @@ window.SVC = (function () {
 				</div>
 				<label class="field"><span>IMEI / Serial</span>
 					<input id="d-imei" inputmode="numeric" maxlength="15"
-					       value="${esc(device.imei_1 || "")}" placeholder="15 digits"></label>
+					       value="${esc(device.imei_1 || "")}" placeholder="15 digits"
+					       ${device.imei_unreadable ? "disabled" : ""}></label>
+				<label class="tickbox"><input type="checkbox" id="d-noimei"
+					${device.imei_unreadable ? "checked" : ""}>
+					<span>The device cannot show its IMEI</span></label>
+				<label class="field" id="d-condition-field"
+				       ${device.imei_unreadable ? "" : "hidden"}>
+					<span>Describe the device</span>
+					<input id="d-condition" value="${esc(device.condition || "")}"
+					       placeholder="Colour, marks, what came with it"></label>
 				<div class="field-grid">
 					<label class="field"><span>Make</span>
 						<select id="d-brand">
@@ -153,8 +162,19 @@ window.SVC = (function () {
 		fillModels(device.brand, device.device_model);
 
 		$("d-imei").addEventListener("input", () => {
-			state.device = state.device || {};
 			state.device.imei_1 = $("d-imei").value.trim();
+		});
+		$("d-noimei").addEventListener("change", () => {
+			const off = $("d-noimei").checked;
+			state.device.imei_unreadable = off;
+			if (off) state.device.imei_1 = "";
+			$("d-imei").value = "";
+			$("d-imei").disabled = off;
+			$("d-condition-field").hidden = !off;
+			if (off) $("d-condition").focus();
+		});
+		$("d-condition").addEventListener("input", () => {
+			state.device.condition = $("d-condition").value;
 		});
 		$("d-brand").addEventListener("change", () => {
 			state.device.brand = $("d-brand").value;
@@ -513,6 +533,15 @@ window.SVC = (function () {
 		}
 
 		const device = state.device || {};
+		if (!device.imei_1 && !device.imei_unreadable) {
+			if ($("d-imei")) $("d-imei").focus();
+			return say("Scan or type the IMEI — or tick that the device cannot show one.", "error");
+		}
+		if (device.imei_unreadable && !(device.condition || "").trim()) {
+			if ($("d-condition")) $("d-condition").focus();
+			return say("Describe the device — with no IMEI, that description is all that "
+				+ "identifies it.", "error");
+		}
 		if (!device.device_model) {
 			if ($("d-model")) $("d-model").focus();
 			return say("Pick the make and model of the device — or scan its IMEI.", "error");
@@ -538,6 +567,8 @@ window.SVC = (function () {
 					customer_name: $("customer-name").value.trim(),
 					serial_no: device.serial_no,
 					imei_1: device.imei_1 || "",
+					imei_unreadable: device.imei_unreadable ? 1 : 0,
+					device_condition: device.condition || "",
 					brand: device.brand,
 					device_model: device.device_model,
 					device_type: device.device_type,

@@ -138,7 +138,22 @@ class ServiceJobCard(A3BranchMixin, Document):
 		self.imei_2 = normalize_imei(self.imei_2)
 
 		if self.device_type in ("Mobile", "Tablet") and not self.imei_1:
-			frappe.throw(_("IMEI 1 is required for a {0}.").format(self.device_type))
+			# A dead handset with a smashed screen cannot be asked for its IMEI,
+			# and the box is rarely still around. The shop still takes it in —
+			# but somebody has to say so on the card, which is what the override
+			# is for, and the physical condition then has to describe what came
+			# across the counter.
+			if not self.imei_override:
+				frappe.throw(
+					_("IMEI 1 is required for a {0}. Tick 'IMEI Override' if the device "
+					  "cannot show one, and describe it under physical condition.").format(
+						self.device_type)
+				)
+			if not (self.physical_condition or "").strip():
+				frappe.throw(
+					_("Describe the device under physical condition — it came in without "
+					  "an IMEI, so that description is all that identifies it.")
+				)
 
 		if self.imei_1:
 			self.imei_1 = enforce_imei(self.imei_1, "IMEI 1", override=bool(self.imei_override))

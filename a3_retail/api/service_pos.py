@@ -424,6 +424,7 @@ def save_booking(payload) -> dict:
 	doc.brand = data.get("brand")
 	doc.device_model = data.get("device_model")
 	doc.imei_1 = data.get("imei_1")
+	doc.imei_override = cint(data.get("imei_unreadable"))
 	doc.serial_no = data.get("serial_no")
 	doc.device_purchase_date = data.get("purchase_date") or None
 	doc.warranty_type = data.get("warranty_type") or "Out of Warranty"
@@ -439,7 +440,9 @@ def save_booking(payload) -> dict:
 	doc.estimated_delivery_date = _promised(data.get("expected_delivery"))
 	doc.data_backup_required = cint(data.get("data_backup_required"))
 	doc.data_loss_consent = cint(data.get("data_loss_consent"))
-	doc.physical_condition = data.get("notes")
+	# The counter's note about the device doubles as its description when there is
+	# no IMEI to identify it by.
+	doc.physical_condition = data.get("device_condition") or data.get("notes")
 	doc.customer_signature = data.get("signature")
 
 	for index, photo in enumerate((data.get("photos") or [])[:4], start=1):
