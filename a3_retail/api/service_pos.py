@@ -68,6 +68,13 @@ def bootstrap() -> dict:
 		"device_types": (frappe.get_meta("Service Job Card")
 		                 .get_field("device_type").options or "").split("\n"),
 		"can_add_model": bool(frappe.has_permission("Device Model", "create")),
+		# What this shop insists on before it takes someone's device in. The
+		# screen asks for these up front rather than at the end of the booking.
+		"require_photos": bool(frappe.db.get_single_value("A3 Retail Settings",
+		                                                 "require_device_photos")),
+		"min_photos": cint(frappe.db.get_single_value("A3 Retail Settings", "min_photos")) or 1,
+		"require_signature": bool(frappe.db.get_single_value("A3 Retail Settings",
+		                                                     "require_signature")),
 		"lead_sources": ["Walk-in", "Phone Call", "WhatsApp", "Website", "Referral"],
 		"warranty_types": ["Brand Warranty", "Extended Warranty", "Screen Protection Plan",
 		                   "Insurance Claim", "Out of Warranty", "Goodwill/Free"],

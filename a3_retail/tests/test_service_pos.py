@@ -122,6 +122,19 @@ class TestServiceCounter(FrappeTestCase):
 		self.assertTrue(boot["issues"])
 		self.assertIn("Out of Warranty", boot["warranty_types"])
 
+	def test_the_screen_is_told_what_this_shop_insists_on(self):
+		"""A wrong field name here throws inside `bootstrap`, and the whole page
+		then wires up no listeners at all — alive on screen, doing nothing."""
+		boot = service_pos.bootstrap()
+		for key in ("require_photos", "min_photos", "require_signature", "can_add_model"):
+			self.assertIn(key, boot, key)
+		self.assertGreaterEqual(boot["min_photos"], 1)
+
+	def test_the_intake_rules_are_read_from_fields_that_exist(self):
+		meta = frappe.get_meta("A3 Retail Settings")
+		for field in ("require_device_photos", "min_photos", "require_signature"):
+			self.assertTrue(meta.has_field(field), field)
+
 	def test_the_six_tiles_map_to_repair_categories_the_job_card_knows(self):
 		options = frappe.get_meta("Service Job Card").get_field("repair_category").options.split("\n")
 		for key, _label, category, _icon in service_pos.SERVICE_TYPES:

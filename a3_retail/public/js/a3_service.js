@@ -17,6 +17,7 @@ window.SVC = (function () {
 		customer: null, device: null, serviceType: "general", priority: "Normal",
 		leadSource: "Walk-in", lines: [], issues: [], technicians: [], types: [], signed: false, photos: [],
 		brands: [], models: [], canAddModel: false,
+		requirePhotos: false, minPhotos: 1,
 	};
 	const $ = (id) => document.getElementById(id);
 	const money = (value) =>
@@ -53,15 +54,22 @@ window.SVC = (function () {
 
 	function paintDevice() {
 		const box = $("device-card");
+		// The form writes straight into `state.device`, so there has to be one
+		// before it is drawn. Handing it a throwaway object meant every make and
+		// model the counter picked went nowhere, and saving asked for a model
+		// that was already on the screen.
+		if (!state.device) {
+			state.device = { known: false, device_type: "Mobile", warranty_type: "Out of Warranty" };
+		}
 		const device = state.device;
 
 		// The device answers the "Service Type" question, not the counter.
-		if (device && device.warranty_type && $("warranty-type")) {
+		if (device.warranty_type && $("warranty-type")) {
 			$("warranty-type").value = device.warranty_type;
 			paintTotals();
 		}
 
-		if (!device || !device.known) return paintDeviceForm(box, device || {});
+		if (!device.known) return paintDeviceForm(box, device);
 		paintDeviceFacts(box, device);
 	}
 
@@ -442,10 +450,15 @@ window.SVC = (function () {
 
 	function paintPhotos() {
 		const box = $("photos");
-		box.hidden = !state.photos.length;
+		const short = state.requirePhotos && state.photos.length < state.minPhotos;
+		box.hidden = !state.photos.length && !short;
 		box.innerHTML = state.photos.map((url, index) => `
 			<span class="shot"><img src="${esc(url)}" alt="">
-				<button data-i="${index}" aria-label="Remove">×</button></span>`).join("");
+				<button data-i="${index}" aria-label="Remove">×</button></span>`).join("")
+			+ (short
+				? `<button class="shot shot-add" id="shot-add">+<small>Device photo</small></button>`
+				: "");
+		if ($("shot-add")) $("shot-add").addEventListener("click", addPhoto);
 		box.querySelectorAll("button").forEach((node) => {
 			node.addEventListener("click", () => {
 				state.photos.splice(Number(node.dataset.i), 1);
@@ -499,10 +512,22 @@ window.SVC = (function () {
 			return say("Tick either 'Data backup required' or 'Customer accepts data loss'.", "error");
 		}
 
+		const device = state.device || {};
+		if (!device.device_model) {
+			if ($("d-model")) $("d-model").focus();
+			return say("Pick the make and model of the device — or scan its IMEI.", "error");
+		}
+
+		if (state.requirePhotos && state.photos.length < state.minPhotos) {
+			say(`This shop photographs a device before it takes it in — `
+				+ `${state.minPhotos} photo(s), and there ${state.photos.length === 1 ? "is" : "are"} `
+				+ `${state.photos.length}.`, "error");
+			return addPhoto();
+		}
+
 		if (!state.signed) return askSignature();
 
 		const sums = totals();
-		const device = state.device || {};
 		$("save-booking").disabled = true;
 
 		try {
@@ -685,12 +710,23 @@ window.SVC = (function () {
 		state.branch = options.branch;
 		$("promised").value = options.today;
 
-		const boot = await A3.call("a3_retail.api.service_pos.bootstrap", {});
+		let boot;
+		try {
+			boot = await A3.call("a3_retail.api.service_pos.bootstrap", {});
+		} catch (error) {
+			// Without this the whole screen wires up no listeners and looks alive
+			// while doing nothing at all.
+			say("The counter could not start: " + error.message
+				+ " — reload, and tell whoever runs the system.", "error");
+			throw error;
+		}
 		state.types = boot.service_types;
 		state.issues = boot.issues;
 		state.technicians = boot.technicians;
 		state.brands = boot.brands || [];
 		state.canAddModel = !!boot.can_add_model;
+		state.requirePhotos = !!boot.require_photos;
+		state.minPhotos = boot.min_photos || 1;
 		state.models = await A3.call("a3_retail.api.service_pos.device_models", { limit: 500 });
 
 		// The tiles themselves are server-rendered so they carry the real icons.
@@ -824,6 +860,7 @@ window.SVC = (function () {
 
 		paintLines();
 		paintDevice();
+		paintPhotos();
 		$("scan").focus();
 	}
 
