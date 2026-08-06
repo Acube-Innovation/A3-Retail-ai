@@ -16,6 +16,9 @@ ATTEMPT_WINDOW_SECONDS = 900
 
 
 def get_context(context):
+	from a3_retail.www.branch import asset_version
+
+	context.asset_v = asset_version()
 	from a3_retail.setup.staff_portal import HOME_PAGE, current_employee
 
 	context.no_cache = 1

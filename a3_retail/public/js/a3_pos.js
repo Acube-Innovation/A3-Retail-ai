@@ -49,8 +49,16 @@ window.POS = (function () {
 		}
 	}
 
+	/** A photograph fills its tile; a drawing sits inside it. */
+	function isPhoto(image) {
+		return String(image || "").indexOf("/photos/") !== -1;
+	}
+
 	function thumb(item) {
-		if (item.image) return `<img src="${esc(item.image)}" alt="">`;
+		if (item.image) {
+			return `<img class="${isPhoto(item.image) ? "is-photo" : ""}"
+			             src="${esc(item.image)}" alt="">`;
+		}
 		const initials = (item.item_name || "?").replace(/[^A-Za-z0-9 ]/g, "")
 			.split(" ").filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
 		return `<span class="thumb-fallback">${esc(initials || "?")}</span>`;
@@ -260,7 +268,9 @@ window.POS = (function () {
 			rows.innerHTML = state.cart.map((line, index) => `
 				<div class="bill-row">
 					<div class="bill-item">
-						<div class="bill-thumb">${line.image ? `<img src="${esc(line.image)}" alt="">` : ""}</div>
+						<div class="bill-thumb">${line.image
+						? `<img class="${isPhoto(line.image) ? "is-photo" : ""}" src="${esc(line.image)}" alt="">`
+						: ""}</div>
 						<div>
 							<div class="bill-name">${esc(line.item_name)}</div>
 							${line.serials.length

@@ -11,6 +11,9 @@ no_cache = 1
 
 
 def get_context(context):
+	from a3_retail.www.branch import asset_version
+
+	context.asset_v = asset_version()
 	from a3_retail.setup.staff_portal import current_employee
 
 	context.no_cache = 1

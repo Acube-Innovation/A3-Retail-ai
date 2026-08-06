@@ -18,6 +18,29 @@ import os
 import frappe
 
 FOLDER = "/assets/a3_retail/images/catalogue"
+PHOTOS = FOLDER + "/photos"
+
+# Real photographs, where a real photograph of that thing reads at thumbnail
+# size. Matched on the item's own name so a shop that renames "Redmi Note 13"
+# to "Redmi Note 13 Pro" keeps its picture. Credits and licences are in
+# public/images/catalogue/CREDITS.md.
+PHOTO_RULES = [
+	(("iphone", "apl-15"), "iphone-15-black"),
+	(("galaxy a", "galaxy s", "sam-a"), "samsung-phone"),
+	(("redmi note", "xia-n"), "redmi-phone"),
+	(("vivo",), "vivo-phone"),
+	(("tab ", "tablet", "tab-"), "tablet"),
+	(("watch",), "apple-watch-se"),
+	(("buds", "earbud", "airdopes"), "earbuds"),
+	(("headphone", "headset", "rockerz"), "headphones"),
+	(("charger", "adapter"), "charger"),
+	(("tempered glass", "screen guard", "screen protector"), "tempered-glass"),
+]
+
+# A photograph of a whole handset is the wrong picture for the display that
+# came out of one, and no photograph of an hour's labour exists. Those groups
+# keep the drawings, which say what the line is at a glance.
+PHOTO_GROUPS = {"mobile phones", "tablets", "smart wearables", "accessories", "used devices"}
 
 # Checked in name order, first match wins. The device colours are handled
 # separately because a handset's picture follows its colour, not its words.
@@ -52,6 +75,18 @@ COLOURS = [
 # Handsets that name no colour still need a face. Spread them so a shelf of
 # them does not come out as one long row of the same picture.
 UNNAMED_COLOURS = ["phone-grey", "phone-blue", "phone-black", "phone-green", "phone-silver"]
+
+
+def photo(item: dict) -> str | None:
+	"""The photograph for this item, if one of ours shows what it is."""
+	name = f"{item.get('item_name') or ''} {item.get('item_code') or ''}".lower()
+	group = (item.get("item_group") or "").lower()
+	if item.get("is_fixed_asset") or item.get("a3_is_ew_plan") or group not in PHOTO_GROUPS:
+		return None
+	for words, art in PHOTO_RULES:
+		if any(word in name for word in words):
+			return art
+	return None
 
 
 def pick(item: dict) -> str:
@@ -94,6 +129,7 @@ def run(overwrite: bool = False, verbose: bool = True) -> int:
 	"""Hang a picture on every demo item that has none. Idempotent."""
 	root = frappe.get_app_path("a3_retail", "public", "images", "catalogue")
 	available = {f[:-4] for f in os.listdir(root) if f.endswith(".svg")}
+	photos = {f[:-4] for f in os.listdir(os.path.join(root, "photos")) if f.endswith(".jpg")}
 
 	items = frappe.get_all(
 		"Item",
@@ -105,11 +141,14 @@ def run(overwrite: bool = False, verbose: bool = True) -> int:
 	for item in items:
 		if item.image and not overwrite:
 			continue
-		art = pick(item)
-		if art not in available:
-			art = "box"
-		frappe.db.set_value("Item", item.name, "image", f"{FOLDER}/{art}.svg",
-		                    update_modified=False)
+		shot = photo(item)
+		if shot and shot in photos:
+			url = f"{PHOTOS}/{shot}.jpg"
+		else:
+			art = pick(item)
+			url = f"{FOLDER}/{art if art in available else 'box'}.svg"
+
+		frappe.db.set_value("Item", item.name, "image", url, update_modified=False)
 		painted += 1
 
 	frappe.db.commit()
