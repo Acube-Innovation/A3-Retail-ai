@@ -43,7 +43,7 @@
 					<div class="role">{{ me.roles|join(" · ") if me.roles else me.user }}</div>
 				</div>
 				<div class="avatar" title="{{ me.user }}">{{ initials }}</div>
-				<button class="btn btn-quiet" id="signout" type="button">{{ _("Sign out") }}</button>
+				<a class="btn btn-quiet" href="/branch/logout">{{ _("Sign out") }}</a>
 			</div>
 		</header>
 
@@ -130,8 +130,6 @@
 
 <script>
 window.addEventListener("DOMContentLoaded", function () {
-	document.getElementById("signout").addEventListener("click", A3.logout);
-
 	const refresh = document.getElementById("refresh");
 	refresh.addEventListener("click", async function () {
 		refresh.disabled = true;

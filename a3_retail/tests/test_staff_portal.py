@@ -84,7 +84,7 @@ class TestPortalPagesExist(FrappeTestCase):
 	def test_the_www_pages_are_in_place(self):
 		folder = frappe.get_app_path("a3_retail", "www", "branch")
 		for name in ("index.html", "index.py", "login.html", "login.py",
-		             "dashboard.html", "dashboard.py"):
+		             "dashboard.html", "dashboard.py", "logout.py"):
 			self.assertTrue(os.path.exists(os.path.join(folder, name)), name)
 
 	def test_the_pages_are_standalone_documents(self):
@@ -102,6 +102,22 @@ class TestPortalPagesExist(FrappeTestCase):
 			os.path.join(frappe.get_app_path("a3_retail", "templates", "pages"), "support.html")
 		).read()
 		self.assertIn("templates/web.html", markup)
+
+	def test_sign_in_works_without_javascript(self):
+		"""The counter browser may block scripts; the form must still post."""
+		markup = open(
+			os.path.join(frappe.get_app_path("a3_retail", "www", "branch"), "login.html")
+		).read()
+		self.assertIn('method="post"', markup)
+		self.assertIn('action="/branch/login"', markup)
+		self.assertIn('name="usr"', markup)
+		self.assertIn('name="pwd"', markup)
+
+	def test_sign_out_is_a_plain_link(self):
+		markup = open(
+			os.path.join(frappe.get_app_path("a3_retail", "www", "branch"), "dashboard.html")
+		).read()
+		self.assertIn('href="/branch/logout"', markup)
 
 	def test_the_branch_assets_exist(self):
 		for asset in ("css/a3_branch.css", "js/a3_branch.js"):
@@ -152,10 +168,11 @@ class TestLanding(FrappeTestCase):
 		)
 
 	def test_signing_out_returns_to_the_landing_page(self):
-		client = open(
-			os.path.join(frappe.get_app_path("a3_retail", "public"), "js", "a3_branch.js")
+		page = open(
+			os.path.join(frappe.get_app_path("a3_retail", "www", "branch"), "logout.py")
 		).read()
-		self.assertIn('window.location.href = "/branch";', client)
+		self.assertIn('redirect_location = "/branch', page)
+		self.assertIn("login_manager.logout()", page)
 
 
 class TestSessionBoundary(FrappeTestCase):

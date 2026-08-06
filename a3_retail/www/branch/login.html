@@ -4,74 +4,48 @@
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>{{ _("Sign in") }} · {{ app_name }}</title>
-	<meta name="description" content="{{ _('Branch app for A3 Retail — sign in to your shop.') }}">
 	<meta name="robots" content="noindex">
 	<link rel="stylesheet" href="/assets/a3_retail/css/a3_branch.css">
-	<script src="/assets/a3_retail/js/a3_branch.js" defer></script>
 </head>
 <body>
 <main class="login-shell">
 	<div class="login-box">
 		<div class="login-head">
-			{% include "a3_retail/www/branch/_mark.html" %}
+			<a href="/branch">{% include "a3_retail/www/branch/_mark.html" %}</a>
 			<h1>{{ _("Sign in") }}</h1>
 			<p>{{ _("Welcome back to the {0} branch app").format(company) }}</p>
 		</div>
 
-		<form class="card" id="login-form" autocomplete="on" novalidate>
+		{% if other_session %}
+		<div class="notice is-warn" style="margin-bottom:14px">
+			{{ _("You are signed in as {0}.").format(other_session) }}
+			<a href="/branch/logout">{{ _("Sign out") }}</a> {{ _("to use the branch app.") }}
+		</div>
+		{% endif %}
+
+		<form class="card" method="post" action="/branch/login" autocomplete="on">
 			<div class="field">
 				<label for="usr">{{ _("Work email") }}</label>
-				<input id="usr" name="username" type="email" inputmode="email"
-				       autocomplete="username" placeholder="you@mobileworld.in"
-				       autofocus required>
+				<input id="usr" name="usr" type="email" inputmode="email" autocomplete="username"
+				       placeholder="you@mobileworld.in" value="{{ username }}" autofocus required>
 			</div>
 
 			<div class="field">
 				<label for="pwd">{{ _("Password") }}</label>
-				<input id="pwd" name="password" type="password"
-				       autocomplete="current-password" placeholder="••••••••" required>
+				<input id="pwd" name="pwd" type="password" autocomplete="current-password"
+				       placeholder="••••••••" required>
 			</div>
 
-			<button class="btn btn-primary btn-block" type="submit" id="submit">
-				{{ _("Sign in") }}
-			</button>
+			<button class="btn btn-primary btn-block" type="submit">{{ _("Sign in") }}</button>
 
-			<div class="msg" id="msg" role="status" aria-live="polite"></div>
+			{% if error %}<div class="msg error">{{ error }}</div>{% endif %}
 		</form>
 
 		<p class="login-foot">
 			{{ _("Trouble signing in? Ask your branch manager.") }}<br>
-			{{ _("Head office and accounts use the main system.") }}
+			<a href="/app">{{ _("Head office and accounts sign in here") }}</a>
 		</p>
 	</div>
 </main>
-
-<script>
-window.addEventListener("DOMContentLoaded", function () {
-	const form = document.getElementById("login-form");
-	const button = document.getElementById("submit");
-	const msg = document.getElementById("msg");
-
-	form.addEventListener("submit", async function (event) {
-		event.preventDefault();
-		button.disabled = true;
-		msg.className = "msg";
-		msg.textContent = "{{ _('Signing you in…') }}";
-
-		try {
-			await A3.login(
-				document.getElementById("usr").value.trim(),
-				document.getElementById("pwd").value
-			);
-			window.location.href = "{{ home_page }}";
-		} catch (error) {
-			msg.className = "msg error";
-			msg.textContent = "{{ _('That email and password do not match.') }}";
-			button.disabled = false;
-			document.getElementById("pwd").select();
-		}
-	});
-});
-</script>
 </body>
 </html>

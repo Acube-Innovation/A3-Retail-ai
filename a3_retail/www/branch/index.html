@@ -10,88 +10,168 @@
 </head>
 <body class="landing">
 
-<header class="landing-head">
-	{% include "a3_retail/www/branch/_mark.html" %}
+<div class="shell">
 
-	<nav class="landing-nav">
-		{% if signed_in %}
-			<span class="landing-who">{{ employee_name }} · {{ branch }}</span>
-			<a class="btn btn-primary" href="/branch/dashboard">{{ _("Open dashboard") }}</a>
-		{% else %}
-			<a class="landing-link" href="/track-service">{{ _("Track a repair") }}</a>
-			<a class="btn btn-primary" href="/branch/login">{{ _("Sign in") }}</a>
-		{% endif %}
+	<!-- ---------------------------------------------------------- top bar -->
+	<header class="lp-top">
+		<a class="lp-brand" href="/branch">{% include "a3_retail/www/branch/_mark.html" %}</a>
+
+		<form class="lp-search" method="get" action="/track-service">
+			<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+			<input name="ref" type="search" placeholder="{{ _('Job card number or IMEI') }}"
+			       aria-label="{{ _('Track a repair') }}">
+			<button type="submit">{{ _("Track") }}</button>
+		</form>
+
+		<div class="lp-account">
+			{% if signed_in %}
+				<span class="lp-user">{{ employee_name }}<small>{{ branch }}</small></span>
+				<a class="btn btn-primary" href="/branch/dashboard">{{ _("Open dashboard") }}</a>
+				<a class="lp-quiet" href="/branch/logout">{{ _("Sign out") }}</a>
+			{% else %}
+				<a class="lp-quiet" href="/stores">{{ _("Stores") }}</a>
+				<a class="btn btn-primary" href="/branch/login">{{ _("Sign in") }}</a>
+			{% endif %}
+		</div>
+	</header>
+
+	<!-- ------------------------------------------------------- nav ribbon -->
+	<nav class="lp-nav">
+		<div class="lp-nav-links">
+			<a class="is-active" href="/branch">{{ _("Home") }}</a>
+			<a href="#what">{{ _("What it does") }}</a>
+			<a href="#roles">{{ _("For your team") }}</a>
+			<a href="#customers">{{ _("For customers") }}</a>
+			<a href="/offers">{{ _("Offers") }}</a>
+		</div>
+		<a class="lp-help" href="/support">{{ _("Help & Support") }}</a>
 	</nav>
-</header>
 
-<main class="landing-main">
-	<span class="badge">{{ _("Branch app") }} · {{ branch_count }} {{ _("branches live") }}</span>
+	<!-- -------------------------------------------------------------- hero -->
+	<section class="lp-hero">
+		<div class="lp-hero-copy">
+			<span class="badge">{{ branch_count }} {{ _("branches live") }}</span>
+			<h1>
+				<span class="gradient-text">{{ _("Everything your branch does,") }}</span>
+				{{ _("on one screen") }}
+			</h1>
+			<p>{{ _("Repairs, sales, stock and the people who handle them — running on {0}, without anyone needing the back-office system.").format(company) }}</p>
+			<div class="lp-hero-cta">
+				{% if signed_in %}
+					<a class="btn btn-primary btn-lg" href="/branch/dashboard">{{ _("Open my dashboard") }}</a>
+				{% else %}
+					<a class="btn btn-primary btn-lg" href="/branch/login">{{ _("Sign in") }}</a>
+				{% endif %}
+				<a class="btn btn-quiet btn-lg" href="#what">{{ _("See what it does") }}</a>
+			</div>
+		</div>
 
-	<h1>
-		{{ _("Everything your branch does,") }}
-		<span class="gradient-text">{{ _("in one screen") }}</span>
-	</h1>
-
-	<p class="landing-lede">
-		{{ _("Repairs, sales, stock and the people who handle them — running on {0}, without anyone needing the back-office system.").format(company) }}
-	</p>
-
-	<div class="landing-cta">
-		{% if signed_in %}
-			<a class="btn btn-primary btn-lg" href="/branch/dashboard">{{ _("Open my dashboard") }}</a>
-			<button class="btn btn-quiet btn-lg" id="signout" type="button">{{ _("Sign out") }}</button>
-		{% else %}
-			<a class="btn btn-primary btn-lg" href="/branch/login">{{ _("Sign in to your branch") }}</a>
-			<a class="btn btn-quiet btn-lg" href="/stores">{{ _("Find a store") }}</a>
-		{% endif %}
-	</div>
-
-	<section class="landing-cards">
-		<article class="landing-card">
-			<div class="landing-icon sky">◧</div>
-			<h3>{{ _("Your branch at a glance") }}</h3>
-			<p>{{ _("Repairs received, work in progress, devices waiting for collection, anything past its promised time, and today's takings — counted live for your branch only.") }}</p>
-		</article>
-
-		<article class="landing-card">
-			<div class="landing-icon orange">✓</div>
-			<h3>{{ _("What needs you today") }}</h3>
-			<p>{{ _("A technician sees their own jobs, reception sees devices ready to hand over, the store keeper sees transfers waiting for approval. One list, in the order it matters.") }}</p>
-		</article>
-
-		<article class="landing-card">
-			<div class="landing-icon sky">◱</div>
-			<h3>{{ _("Built for the counter") }}</h3>
-			<p>{{ _("Works on the phone in your pocket. No back-office system to learn, and nothing on the screen that belongs to another branch.") }}</p>
-		</article>
+		{#- A miniature of the real dashboard: the product is the illustration. -#}
+		<div class="lp-hero-art" aria-hidden="true">
+			<div class="mock">
+				<div class="mock-bar">
+					<span class="mock-dot"></span><span class="mock-dot"></span><span class="mock-dot"></span>
+					<span class="mock-title">{{ branch or _("Kochi") }}</span>
+				</div>
+				<div class="mock-body">
+					<div class="mock-tiles">
+						<div class="mock-tile"><b>18</b><i>{{ _("Received") }}</i></div>
+						<div class="mock-tile"><b>42</b><i>{{ _("In progress") }}</i></div>
+						<div class="mock-tile good"><b>11</b><i>{{ _("Ready") }}</i></div>
+						<div class="mock-tile bad"><b>6</b><i>{{ _("Delayed") }}</i></div>
+					</div>
+					<div class="mock-row"><span class="mock-chip">{{ _("Repair") }}</span><span class="mock-line w70"></span></div>
+					<div class="mock-row"><span class="mock-chip warn">{{ _("Hand over") }}</span><span class="mock-line w50"></span></div>
+					<div class="mock-row"><span class="mock-chip">{{ _("Call") }}</span><span class="mock-line w60"></span></div>
+				</div>
+			</div>
+		</div>
 	</section>
 
-	<section class="landing-strip">
-		<div>
-			<strong>{{ _("Customers have their own pages") }}</strong>
-			<p>{{ _("Send them a link — they track the repair, approve an estimate, pay, or leave feedback without signing in.") }}</p>
+	<!-- ------------------------------------------------------- dark cards -->
+	<section class="lp-section" id="what">
+		<div class="lp-section-head">
+			<h2>{{ _("What the branch app does") }}</h2>
+			<a href="/branch/login">{{ _("Sign in to use it") }} →</a>
 		</div>
-		<div class="landing-strip-links">
+
+		<div class="lp-cards">
+			<article class="lp-card">
+				<span class="lp-card-label">{{ _("Live counters") }}</span>
+				<h3>{{ _("Your branch at a glance") }}</h3>
+				<p>{{ _("Received, in progress, ready for collection, past the promised time, and today's takings.") }}</p>
+				<a class="lp-card-link" href="#roles">{{ _("How it works") }}</a>
+				<div class="lp-card-art"><span class="ring"></span><span class="ring small"></span></div>
+			</article>
+
+			<article class="lp-card">
+				<span class="lp-card-label">{{ _("Your own list") }}</span>
+				<h3>{{ _("What needs you today") }}</h3>
+				<p>{{ _("Sorted so the job that is closest to breaching its promise is at the top.") }}</p>
+				<a class="lp-card-link" href="#roles">{{ _("See by role") }}</a>
+				<div class="lp-card-art"><span class="bar"></span><span class="bar mid"></span><span class="bar short"></span></div>
+			</article>
+
+			<article class="lp-card">
+				<span class="lp-card-label">{{ _("Counter ready") }}</span>
+				<h3>{{ _("Works on the shop phone") }}</h3>
+				<p>{{ _("One column, big targets, nothing on screen that belongs to another branch.") }}</p>
+				<a class="lp-card-link" href="/branch/login">{{ _("Sign in") }}</a>
+				<div class="lp-card-art"><span class="phone"></span></div>
+			</article>
+		</div>
+	</section>
+
+	<!-- ------------------------------------------------------------ roles -->
+	<section class="lp-section" id="roles">
+		<div class="lp-section-head"><h2>{{ _("What each person sees") }}</h2></div>
+
+		<div class="lp-roles">
+			<div class="lp-role">
+				<span class="lp-role-tag">{{ _("Branch Manager") }}</span>
+				<p>{{ _("Every counter for the branch, stock requests waiting on approval, and what is running late.") }}</p>
+			</div>
+			<div class="lp-role">
+				<span class="lp-role-tag">{{ _("Technician") }}</span>
+				<p>{{ _("Only their own repairs, the delayed ones first, with the promised time on each.") }}</p>
+			</div>
+			<div class="lp-role">
+				<span class="lp-role-tag">{{ _("Reception") }}</span>
+				<p>{{ _("Devices ready for collection and what is still to be paid on each.") }}</p>
+			</div>
+			<div class="lp-role">
+				<span class="lp-role-tag">{{ _("Sales") }}</span>
+				<p>{{ _("Today's sales and footfall for the branch.") }}</p>
+			</div>
+			<div class="lp-role">
+				<span class="lp-role-tag">{{ _("Store Keeper") }}</span>
+				<p>{{ _("Transfers from other branches waiting to be approved or dispatched.") }}</p>
+			</div>
+			<div class="lp-role">
+				<span class="lp-role-tag">{{ _("Telecaller") }}</span>
+				<p>{{ _("The calls still in their queue for the day.") }}</p>
+			</div>
+		</div>
+	</section>
+
+	<!-- -------------------------------------------------------- customers -->
+	<section class="lp-strip" id="customers">
+		<div>
+			<h2>{{ _("Customers have their own pages") }}</h2>
+			<p>{{ _("Send a link — they track the repair, approve an estimate, pay or leave feedback without signing in.") }}</p>
+		</div>
+		<div class="lp-strip-links">
 			<a href="/track-service">{{ _("Track a repair") }}</a>
 			<a href="/offers">{{ _("Offers") }}</a>
 			<a href="/stores">{{ _("Stores") }}</a>
 			<a href="/support">{{ _("Raise a complaint") }}</a>
 		</div>
 	</section>
-</main>
 
-<footer class="landing-foot">
-	<span>{{ company }}</span>
-	<span>{{ _("Head office and accounts use the main system.") }}</span>
-</footer>
-
-{% if signed_in %}
-<script src="/assets/a3_retail/js/a3_branch.js" defer></script>
-<script>
-window.addEventListener("DOMContentLoaded", function () {
-	document.getElementById("signout").addEventListener("click", A3.logout);
-});
-</script>
-{% endif %}
+	<footer class="lp-foot">
+		<span>{{ company }} · {{ _("Branch app") }}</span>
+		<span><a href="/app">{{ _("Head office system") }}</a></span>
+	</footer>
+</div>
 </body>
 </html>
