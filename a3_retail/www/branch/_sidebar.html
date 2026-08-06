@@ -28,16 +28,17 @@
 	</nav>
 
 	<div class="side-foot">
+		<a href="/support">{{ _("Need help?") }}</a>
 		{% if me and me.is_manager %}
-			<a href="/branch/logout?to=/login">{{ _("Head office system") }}</a>
-		{% else %}
-			<a href="/support">{{ _("Need help?") }}</a>
+		<a href="/branch/logout?to=/login">{{ _("Head office system") }}</a>
 		{% endif %}
 		<div class="side-org">{{ company }}</div>
 		<div class="side-org">{{ _("Branch") }}: {{ me.branch if me else "" }}</div>
 		{% if stamp %}<div class="side-org" id="stamp">{{ _("Updated") }} {{ stamp }}</div>{% endif %}
 	</div>
 
-	<button class="side-collapse" id="side-collapse" type="button"
-	        aria-label="{{ _('Collapse menu') }}">‹</button>
+	<div class="side-collapse-row">
+		<button class="side-collapse" id="side-collapse" type="button"
+		        aria-label="{{ _('Collapse menu') }}">‹</button>
+	</div>
 </aside>

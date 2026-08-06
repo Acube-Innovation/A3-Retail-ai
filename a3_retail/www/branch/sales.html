@@ -87,10 +87,10 @@
 						<div class="input-icon">
 							{% set icon = "phone" %}{% include "a3_retail/www/branch/_icons.html" %}
 							<input id="mobile" inputmode="numeric" maxlength="10"
-							       placeholder="{{ _('Mobile number') }}">
+							       placeholder="{{ _('+91 00000 00000') }}">
 						</div>
-						<button class="btn btn-outline" id="find-customer">{{ _("Find") }}</button>
-						<span class="chip" id="customer-chip">{{ _("Walk-in") }}</span>
+						<button class="btn btn-find" id="find-customer">{{ _("Find") }}</button>
+						<span class="chip" id="customer-chip" hidden></span>
 					</div>
 
 					<div class="pos-cust-grid">
@@ -103,8 +103,8 @@
 						<input id="customer-pin" inputmode="numeric" maxlength="6" placeholder="{{ _('PIN') }}">
 					</div>
 
-					<div class="pos-cust-foot">
-						<button class="btn btn-quiet" id="save-customer">{{ _("Save customer") }}</button>
+					<div class="pos-cust-foot" id="cust-foot" hidden>
+						<button class="btn btn-outline" id="save-customer">{{ _("Save customer") }}</button>
 						<div id="customer-history" class="pos-history"></div>
 					</div>
 				</section>
@@ -121,9 +121,12 @@
 							("loyalty", "Loyalty", "F7", "heart"),
 							("price", "Price Check", "F8", "price")] %}
 						<button class="quick" data-action="{{ key }}">
-							{% set icon = icon_name %}{% include "a3_retail/www/branch/_icons.html" %}
-							<span class="quick-label">{{ _(label) }}</span>
-							<span class="quick-key">{{ shortcut }}</span>
+							<span class="quick-ico">
+								{% set icon = icon_name %}{% include "a3_retail/www/branch/_icons.html" %}</span>
+							<span class="quick-text">
+								<span class="quick-label">{{ _(label) }}</span>
+								<span class="quick-key">{{ shortcut }}</span>
+							</span>
 						</button>
 						{% endfor %}
 					</div>

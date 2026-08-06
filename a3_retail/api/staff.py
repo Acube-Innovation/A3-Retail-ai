@@ -141,9 +141,11 @@ def _sales_today(branch: str, today: str) -> float:
 
 
 def _money(value) -> str:
+	"""Whole rupees. A day's takings on a tile does not need the paise, and the
+	two extra characters push the number off the edge of the tile."""
 	from frappe.utils import fmt_money
 
-	return fmt_money(flt(value), currency="INR")
+	return fmt_money(flt(value), precision=0, currency="INR")
 
 
 # ----------------------------------------------------------------- my work

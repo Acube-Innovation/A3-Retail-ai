@@ -62,6 +62,25 @@ window.POS = (function () {
 		return "";
 	}
 
+	/** The card reads brand, then model, then what the line will need. */
+	function cardLines(item) {
+		const brand = item.brand || "";
+		let name = item.item_name || item.item_code;
+		if (brand && name.toLowerCase().startsWith(brand.toLowerCase() + " ")) {
+			name = name.slice(brand.length + 1);
+		}
+		let tag = "";
+		if (item.is_device) tag = "IMEI";
+		else if (item.is_plan) tag = item.item_group || "Plan";
+		else if (!item.is_stock_item) tag = "Service";
+		else tag = item.item_group || "";
+
+		return `${brand ? `<div class="card-brand">${esc(brand)}</div>` : ""}
+			<div class="card-name">${esc(name)}</div>
+			${tag ? `<div class="card-tag">${esc(tag)}</div>` : ""}
+			${item.sellable ? "" : '<div class="card-tag out">Not here</div>'}`;
+	}
+
 	function paintCatalogue() {
 		const grid = $("grid");
 		grid.className = "pos-grid" + (state.view === "list" ? " is-list" : "");
@@ -72,21 +91,17 @@ window.POS = (function () {
 		}
 
 		grid.innerHTML = state.items.map((item) => `
-			<article class="card ${item.sellable ? "" : "is-out"}" data-code="${esc(item.item_code)}">
+			<article class="card ${item.sellable ? "" : "is-out"}" data-code="${esc(item.item_code)}"
+			         title="${esc(item.item_name)}${item.is_stock_item
+					? " · " + (item.branch_qty > 0 ? item.branch_qty + " in stock here" : "none here")
+					: ""}">
 				${badge(item)}
-				<div class="card-thumb">${thumb(item)}</div>
-				<div class="card-body">
-					<div class="card-name">${esc(item.item_name)}</div>
-					<div class="card-meta">${esc(item.brand || item.item_group || "")}
-						${item.is_device ? '<span class="imei-tag">IMEI</span>' : ""}
-						${item.is_plan ? '<span class="imei-tag plan">PLAN</span>' : ""}</div>
+				<div class="card-main">
+					<div class="card-thumb">${thumb(item)}</div>
+					<div class="card-body">${cardLines(item)}</div>
 				</div>
 				<div class="card-foot">
 					<span class="card-rate">${moneyShort(item.rate)}</span>
-					<span class="card-stock ${item.sellable ? "" : "out"}">${
-						item.is_stock_item
-							? (item.branch_qty > 0 ? item.branch_qty + " in stock" : "Not here")
-							: "Service"}</span>
 					<button class="card-add" data-code="${esc(item.item_code)}" aria-label="Add">+</button>
 				</div>
 			</article>`).join("");
@@ -257,8 +272,8 @@ window.POS = (function () {
 						<span>${line.qty}</span>
 						<button data-act="plus" data-i="${index}">+</button>
 					</div>
-					<input class="rate" data-i="${index}" type="number" min="0" step="1"
-					       value="${line.rate}" aria-label="Rate">
+					<input class="rate" data-i="${index}" inputmode="decimal"
+					       value="${moneyShort(line.rate)}" aria-label="Rate">
 					<span class="amount">${moneyShort(line.rate * line.qty)}</span>
 					<button class="row-x" data-act="remove" data-i="${index}" aria-label="Remove">×</button>
 				</div>`).join("");
@@ -288,7 +303,9 @@ window.POS = (function () {
 		rows.querySelectorAll(".rate").forEach((node) => {
 			node.addEventListener("change", () => {
 				const line = state.cart[Number(node.dataset.i)];
-				const rate = Number(node.value);
+				// The cell reads like the printed bill (₹79,999), so strip the
+				// formatting back off before believing the number.
+				const rate = Number(String(node.value).replace(/[^0-9.]/g, ""));
 				if (line.min_price && rate < line.min_price) {
 					say(line.item_name + " cannot go below " + moneyShort(line.min_price)
 						+ " — a manager has to approve that.", "error");
@@ -372,10 +389,14 @@ window.POS = (function () {
 		paintTotals();
 	}
 
+	/** The chip and the save row stay out of the way until there is a customer
+	 *  in play — a resting counter shows the plain panel. */
 	function setChip(text, tone) {
 		const chip = $("customer-chip");
-		chip.textContent = text;
+		chip.textContent = text || "";
 		chip.className = "chip" + (tone ? " " + tone : "");
+		chip.hidden = !text;
+		$("cust-foot").hidden = !text;
 	}
 
 	async function saveCustomer() {
@@ -569,6 +590,7 @@ window.POS = (function () {
 		state.cart = [];
 		state.customer = null;
 		newCustomer();
+		setChip("");
 		$("notes").value = "";
 		$("received").value = "";
 		$("discount-value").value = "";
