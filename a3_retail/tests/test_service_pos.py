@@ -72,6 +72,21 @@ class TestServicePage(FrappeTestCase):
 		results = css[css.index(".cust-results {"):css.index(".cust-results button")]
 		self.assertIn("top: calc(100%", results)
 
+	def test_the_quick_actions_stay_inside_their_panel(self):
+		"""`1fr` is `minmax(auto, 1fr)`, so six tracks that cannot shrink below
+		their content ran straight off the edge of the panel."""
+		css = open(frappe.get_app_path("a3_retail", "public", "css", "a3_branch.css")).read()
+		row = css[css.index(".quick-row {"):css.index(".quick {")]
+		self.assertIn("minmax(0, 1fr)", row)
+		labels = css[css.index(".quick-label, .quick-key"):css.index(".quick-key {")]
+		self.assertNotIn("text-overflow", labels, "a counter cannot read 'Price Che…'")
+
+	def test_the_line_table_scrolls_rather_than_squashing(self):
+		css = open(frappe.get_app_path("a3_retail", "public", "css", "a3_branch.css")).read()
+		table = css[css.index(".line-table {"):css.index(".line-head, .line-row { display")]
+		self.assertIn("overflow-x: auto", table)
+		self.assertIn("min-width: 780px", table)
+
 	def test_the_phone_box_carries_its_own_size(self):
 		"""Its height came from a wrapper that only exists on the sales page."""
 		css = open(frappe.get_app_path("a3_retail", "public", "css", "a3_branch.css")).read()

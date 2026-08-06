@@ -577,7 +577,10 @@ body.side-collapsed .side-nav a, body.side-collapsed .side-soon { justify-conten
 .pos-history span { font-size: 11.5px; color: var(--muted); background: rgba(42, 51, 66, .05);
 	border-radius: var(--radius-pill); padding: 3px 10px; }
 
-.quick-row { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
+/* `1fr` is `minmax(auto, 1fr)`: a track will not shrink below its content, so
+   six of these ran straight off the edge of the panel. `minmax(0, …)` lets them
+   shrink, and `auto-fit` wraps them onto a second row before they get silly. */
+.quick-row { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
 .quick { display: flex; align-items: center; gap: 9px; background: var(--card);
 	border: 1px solid var(--line); border-radius: 10px; padding: 9px 10px;
 	font-family: inherit; text-align: left; cursor: pointer; color: var(--ink); }
@@ -586,7 +589,9 @@ body.side-collapsed .side-nav a, body.side-collapsed .side-soon { justify-conten
 	color: #46536b; display: flex; align-items: center; justify-content: center; }
 .quick[data-action="loyalty"] .quick-ico { background: #fdecec; color: #e5484d; }
 .quick-text { display: flex; flex-direction: column; min-width: 0; }
-.quick-label { font-size: 11.5px; font-weight: 600; line-height: 1.35; white-space: nowrap; }
+/* Wrap rather than truncate: "Price Che…" is no use to anyone at a counter. */
+.quick-label, .quick-key { overflow-wrap: break-word; }
+.quick-label { font-size: 11.5px; font-weight: 600; line-height: 1.35; }
 .quick-key { font-size: 10.5px; color: var(--faint); }
 
 /* ------------------------------------------------------------ bill panel */
@@ -711,7 +716,7 @@ body.side-collapsed .side-nav a, body.side-collapsed .side-soon { justify-conten
 
 @media (max-width: 1280px) {
 	.pos { grid-template-columns: minmax(0, 1fr) 370px; gap: 24px; }
-	.quick-row { grid-template-columns: repeat(3, 1fr); }
+	.quick-row { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 @media (max-width: 1000px) {
 	.pos { grid-template-columns: 1fr; }
@@ -825,7 +830,13 @@ body.side-collapsed .side-nav a, body.side-collapsed .side-soon { justify-conten
 .consent input { width: 15px; height: 15px; accent-color: var(--sky); }
 
 /* the repair's lines */
-.line-table { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+/* Narrow screens scroll this table rather than squashing "Item / Service" into
+   a column three words wide. */
+.line-table { border: 1px solid var(--line); border-radius: 10px; overflow-x: auto; }
+/* Wide enough that the item column is still an item column: everything else on
+   the row is fixed, so the leftovers are what "Item / Service" gets. */
+.line-head, .line-row { min-width: 780px; }
+.line-head span { white-space: nowrap; }
 .line-head, .line-row { display: grid;
 	grid-template-columns: 28px minmax(0, 1fr) 84px 62px 78px 82px 82px 92px 44px;
 	align-items: center; gap: 8px; padding: 10px 12px; }
@@ -856,7 +867,8 @@ body.side-collapsed .side-nav a, body.side-collapsed .side-soon { justify-conten
 .line-totals b { color: var(--ink); }
 .line-totals .sub { background: #f8fafc; border: 1px solid var(--line); border-radius: 8px;
 	padding: 8px 14px; }
-.quick-row.six { grid-template-columns: repeat(6, 1fr); }
+.quick-row.six { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+
 
 /* the right rail */
 .bill-totals.flat { margin: 0 0 14px; padding: 0; background: none; border: 0; }
@@ -904,7 +916,7 @@ body.side-collapsed .side-nav a, body.side-collapsed .side-soon { justify-conten
 @media (max-width: 1400px) {
 	.svc { grid-template-columns: minmax(0, 1fr) 360px; gap: 16px; }
 	.svc-details { grid-template-columns: 1fr; }
-	.quick-row.six { grid-template-columns: repeat(3, 1fr); }
+	.quick-row.six { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 @media (max-width: 1050px) {
 	.svc { grid-template-columns: 1fr; }
@@ -916,7 +928,10 @@ body.side-collapsed .side-nav a, body.side-collapsed .side-soon { justify-conten
 	max-width: 190px; }
 .sign-pad { width: 100%; height: 150px; border: 1px dashed var(--line-strong);
 	border-radius: 10px; background: #fcfdff; touch-action: none; cursor: crosshair; }
-.photos { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.photos { display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+	margin: 0 0 14px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+.photos-label { flex-basis: 100%; margin: 0 0 2px; font-size: 11px; font-weight: 600;
+	color: var(--faint); }
 .shot { position: relative; width: 62px; height: 62px; border-radius: 8px; overflow: hidden;
 	border: 1px solid var(--line); }
 .shot img { width: 100%; height: 100%; object-fit: cover; }

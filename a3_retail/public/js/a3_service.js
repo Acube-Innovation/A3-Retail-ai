@@ -472,11 +472,16 @@ window.SVC = (function () {
 		const box = $("photos");
 		const short = state.requirePhotos && state.photos.length < state.minPhotos;
 		box.hidden = !state.photos.length && !short;
-		box.innerHTML = state.photos.map((url, index) => `
-			<span class="shot"><img src="${esc(url)}" alt="">
-				<button data-i="${index}" aria-label="Remove">×</button></span>`).join("")
-			+ (short
-				? `<button class="shot shot-add" id="shot-add">+<small>Device photo</small></button>`
+		const caption = short
+			? `Device photos — ${state.minPhotos} needed before this device can be booked in`
+			: `Device photos (${state.photos.length})`;
+
+		box.innerHTML = `<p class="photos-label">${caption}</p>`
+			+ state.photos.map((url, index) => `
+				<span class="shot"><img src="${esc(url)}" alt="">
+					<button data-i="${index}" aria-label="Remove">×</button></span>`).join("")
+			+ (short || state.photos.length < 4
+				? `<button class="shot shot-add" id="shot-add">+<small>Add photo</small></button>`
 				: "");
 		if ($("shot-add")) $("shot-add").addEventListener("click", addPhoto);
 		box.querySelectorAll("button").forEach((node) => {
