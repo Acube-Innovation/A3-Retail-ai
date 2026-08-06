@@ -23,6 +23,7 @@
 		</nav>
 
 		<div class="side-foot">
+			{% if me.is_manager %}<a href="/branch/logout?to=/login">{{ _("Head office system") }}</a><br>{% endif %}
 			{{ company }}<br>
 			{{ _("Branch app") }} · {{ me.branch }}<br>
 			<span id="stamp">{{ _("Updated") }} {{ data.as_of[11:16] }}</span>

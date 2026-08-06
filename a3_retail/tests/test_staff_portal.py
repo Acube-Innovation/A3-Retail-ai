@@ -113,6 +113,27 @@ class TestPortalPagesExist(FrappeTestCase):
 		self.assertIn('name="usr"', markup)
 		self.assertIn('name="pwd"', markup)
 
+	def test_switching_to_the_desk_signs_the_branch_session_out(self):
+		"""Frappe bounces a signed-in user away from /login, so the link has to
+		end this session on the way there — otherwise the desk is unreachable."""
+		folder = frappe.get_app_path("a3_retail", "www", "branch")
+		for name in ("index.html", "login.html", "dashboard.html"):
+			markup = open(os.path.join(folder, name)).read()
+			if "/login" in markup:
+				self.assertIn("/branch/logout?to=/login", markup, name)
+
+	def test_logout_only_redirects_within_the_site(self):
+		import importlib.util
+
+		path = os.path.join(frappe.get_app_path("a3_retail", "www", "branch"), "logout.py")
+		spec = importlib.util.spec_from_file_location("branch_logout", path)
+		module = importlib.util.module_from_spec(spec)
+		spec.loader.exec_module(module)
+
+		self.assertEqual(module.safe_destination("/login"), "/login")
+		for hostile in ("//evil.example", "https://evil.example", "\\evil", "", None):
+			self.assertEqual(module.safe_destination(hostile), module.DEFAULT_DESTINATION)
+
 	def test_sign_out_is_a_plain_link(self):
 		markup = open(
 			os.path.join(frappe.get_app_path("a3_retail", "www", "branch"), "dashboard.html")
@@ -171,7 +192,7 @@ class TestLanding(FrappeTestCase):
 		page = open(
 			os.path.join(frappe.get_app_path("a3_retail", "www", "branch"), "logout.py")
 		).read()
-		self.assertIn('redirect_location = "/branch', page)
+		self.assertIn('DEFAULT_DESTINATION = "/branch', page)
 		self.assertIn("login_manager.logout()", page)
 
 
