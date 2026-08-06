@@ -12,23 +12,7 @@
 <body>
 <div class="app" id="top">
 
-	<aside class="side">
-		{% include "a3_retail/www/branch/_mark.html" %}
-
-		<nav class="side-nav">
-			{% for key, label, href in nav %}
-			<a href="{{ href }}" class="{{ 'is-active' if loop.first else '' }}"
-			   data-nav="{{ key }}"><span class="dot"></span>{{ _(label) }}</a>
-			{% endfor %}
-		</nav>
-
-		<div class="side-foot">
-			{% if me.is_manager %}<a href="/branch/logout?to=/login">{{ _("Head office system") }}</a><br>{% endif %}
-			{{ company }}<br>
-			{{ _("Branch app") }} · {{ me.branch }}<br>
-			<span id="stamp">{{ _("Updated") }} {{ data.as_of[11:16] }}</span>
-		</div>
-	</aside>
+	{% include "a3_retail/www/branch/_sidebar.html" %}
 
 	<div class="main">
 		<header class="topbar">

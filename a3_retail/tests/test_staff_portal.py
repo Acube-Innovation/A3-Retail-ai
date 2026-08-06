@@ -116,11 +116,17 @@ class TestPortalPagesExist(FrappeTestCase):
 	def test_switching_to_the_desk_signs_the_branch_session_out(self):
 		"""Frappe bounces a signed-in user away from /login, so the link has to
 		end this session on the way there — otherwise the desk is unreachable."""
+		import re
+
 		folder = frappe.get_app_path("a3_retail", "www", "branch")
-		for name in ("index.html", "login.html", "dashboard.html"):
+		for name in os.listdir(folder):
+			if not name.endswith(".html"):
+				continue
 			markup = open(os.path.join(folder, name)).read()
-			if "/login" in markup:
-				self.assertIn("/branch/logout?to=/login", markup, name)
+			# Every reference to the desk's own /login must go through logout.
+			# /branch/login is this app's form and is not the desk.
+			bare = re.findall(r'href="(/login[^"]*)"', markup)
+			self.assertFalse(bare, f"{name} links straight at the desk login: {bare}")
 
 	def test_logout_only_redirects_within_the_site(self):
 		import importlib.util

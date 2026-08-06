@@ -9,13 +9,6 @@ import frappe
 
 no_cache = 1
 
-NAV = [
-	("dashboard", "Dashboard", "#top"),
-	("work", "What needs you", "#work"),
-	("activity", "Branch activity", "#activity"),
-]
-
-
 def get_context(context):
 	from a3_retail.api.staff import dashboard as dashboard_data
 	from a3_retail.setup.staff_portal import current_employee
@@ -33,7 +26,8 @@ def get_context(context):
 	context.company = frappe.db.get_single_value("Global Defaults", "default_company") or "A3 Retail"
 	context.greeting = _greeting()
 	context.initials = _initials(context.me["employee_name"])
-	context.nav = NAV
+	context.active = "dashboard"
+	context.stamp = data["as_of"][11:16]
 	context.csrf_token = frappe.sessions.get_csrf_token()
 	frappe.db.commit()
 	return context

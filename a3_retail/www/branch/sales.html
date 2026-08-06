@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="csrf-token" content="{{ csrf_token }}">
+	<meta name="robots" content="noindex">
+	<title>{{ _("Sell") }} · {{ me.branch }} · {{ app_name }}</title>
+	<link rel="stylesheet" href="/assets/a3_retail/css/a3_branch.css">
+	<script src="/assets/a3_retail/js/a3_branch.js" defer></script>
+	<script src="/assets/a3_retail/js/a3_pos.js" defer></script>
+</head>
+<body>
+<div class="app">
+
+	{% include "a3_retail/www/branch/_sidebar.html" %}
+
+	<div class="main">
+		<header class="topbar">
+			<div class="topbar-branch">
+				<h1>{{ _("Sell") }}</h1>
+				<span class="chip">{{ me.branch }}</span>
+			</div>
+			<div class="topbar-right">
+				<a class="btn btn-quiet" href="/branch/dashboard">{{ _("Dashboard") }}</a>
+				<div class="who">
+					<div class="name">{{ me.employee_name }}</div>
+					<div class="role">{{ me.designation or "" }}</div>
+				</div>
+				<div class="avatar">{{ initials }}</div>
+				<a class="btn btn-quiet" href="/branch/logout">{{ _("Sign out") }}</a>
+			</div>
+		</header>
+
+		<main class="pos">
+
+			<!-- ------------------------------------------------ catalogue -->
+			<section class="pos-catalogue">
+				<div class="pos-search">
+					<input id="q" type="search" autocomplete="off" autofocus
+					       placeholder="{{ _('Search a phone, accessory or plan — name, brand or code') }}">
+					<label class="pos-toggle">
+						<input type="checkbox" id="in-stock" checked>
+						<span>{{ _("In stock here") }}</span>
+					</label>
+				</div>
+
+				<div class="pos-groups" id="groups">
+					<button class="pill is-active" data-group="">{{ _("Everything") }}</button>
+					{% for group in groups %}
+					<button class="pill" data-group="{{ group }}">{{ group }}</button>
+					{% endfor %}
+				</div>
+
+				<div class="pos-grid" id="grid">
+					<div class="pos-loading">{{ _("Loading the catalogue…") }}</div>
+				</div>
+			</section>
+
+			<!-- ----------------------------------------------------- bill -->
+			<aside class="pos-bill">
+				<div class="pos-customer" id="customer-box">
+					<div class="pos-customer-head">
+						<h2>{{ _("Customer") }}</h2>
+						<span class="chip" id="customer-chip">{{ _("Walk-in") }}</span>
+					</div>
+
+					<div class="pos-row">
+						<input id="mobile" inputmode="numeric" maxlength="10"
+						       placeholder="{{ _('Mobile number') }}">
+						<button class="btn btn-quiet" id="find-customer">{{ _("Find") }}</button>
+					</div>
+
+					<div id="customer-detail" class="pos-customer-detail" hidden>
+						<input id="customer-name" placeholder="{{ _('Customer name') }}">
+						<input id="customer-email" type="email" placeholder="{{ _('Email (optional)') }}">
+						<input id="customer-address" placeholder="{{ _('Address') }}">
+						<div class="pos-row">
+							<input id="customer-city" placeholder="{{ _('City') }}">
+							<input id="customer-state" placeholder="{{ _('State') }}"
+							       value="{{ profile.state or '' }}">
+							<input id="customer-pin" inputmode="numeric" maxlength="6"
+							       placeholder="{{ _('PIN') }}">
+						</div>
+						<button class="btn btn-quiet btn-block" id="save-customer">{{ _("Save customer") }}</button>
+					</div>
+
+					<div id="customer-history" class="pos-history"></div>
+				</div>
+
+				<div class="pos-cart">
+					<div class="pos-cart-head">
+						<h2>{{ _("Bill") }}</h2>
+						<button class="pos-link" id="clear-cart">{{ _("Clear") }}</button>
+					</div>
+					<ul class="pos-lines" id="lines">
+						<li class="pos-empty">{{ _("Tap an item to start the bill.") }}</li>
+					</ul>
+				</div>
+
+				<div class="pos-total">
+					<div class="pos-total-row"><span>{{ _("Items") }}</span><span id="count">0</span></div>
+					<div class="pos-total-row pos-total-grand">
+						<span>{{ _("Subtotal") }}</span><span id="subtotal">₹0</span>
+					</div>
+					<div class="pos-total-note">{{ _("GST is calculated on the invoice.") }}</div>
+
+					<select id="mode">
+						{% for mode in payment_modes %}<option value="{{ mode }}">{{ mode }}</option>{% endfor %}
+					</select>
+					<button class="btn btn-primary btn-block" id="checkout" disabled>
+						{{ _("Complete sale") }}
+					</button>
+					<div class="msg" id="pos-msg"></div>
+				</div>
+
+				<div class="pos-recent">
+					<h2>{{ _("Today's bills") }}</h2>
+					<ul id="recent"><li class="pos-empty">{{ _("Nothing billed yet.") }}</li></ul>
+				</div>
+			</aside>
+		</main>
+	</div>
+</div>
+
+<!-- ------------------------------------------------------------- dialogs -->
+<div class="modal" id="serial-modal" hidden>
+	<div class="modal-card">
+		<h3 id="serial-title">{{ _("Pick the IMEI") }}</h3>
+		<p class="modal-note">{{ _("Scan or tap the handset you are handing over. A device cannot be billed without it.") }}</p>
+		<input id="serial-scan" placeholder="{{ _('Scan IMEI') }}" autocomplete="off">
+		<ul class="serial-list" id="serial-list"></ul>
+		<div class="modal-actions">
+			<button class="btn btn-quiet" data-close>{{ _("Cancel") }}</button>
+		</div>
+	</div>
+</div>
+
+<div class="modal" id="elsewhere-modal" hidden>
+	<div class="modal-card">
+		<h3 id="elsewhere-title">{{ _("Not in this branch") }}</h3>
+		<p class="modal-note" id="elsewhere-note"></p>
+		<ul class="branch-list" id="elsewhere-list"></ul>
+		<div class="modal-actions">
+			<button class="btn btn-quiet" data-close>{{ _("Close") }}</button>
+		</div>
+	</div>
+</div>
+
+<div class="modal" id="done-modal" hidden>
+	<div class="modal-card modal-done">
+		<div class="done-tick">✓</div>
+		<h3 id="done-title">{{ _("Sale complete") }}</h3>
+		<p class="modal-note" id="done-note"></p>
+		<a class="btn btn-primary btn-block" id="print-invoice" target="_blank" rel="noopener">
+			{{ _("Print invoice (PDF)") }}
+		</a>
+		<button class="btn btn-quiet btn-block" data-close>{{ _("Next customer") }}</button>
+	</div>
+</div>
+
+<script>
+window.addEventListener("DOMContentLoaded", function () {
+	POS.start({ branch: {{ me.branch|tojson }} });
+});
+</script>
+</body>
+</html>

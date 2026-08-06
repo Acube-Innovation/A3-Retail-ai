@@ -284,10 +284,12 @@ def validate_emi_payment(doc, method=None):
 	if doc.get("is_return"):
 		return
 
+	# A POS Profile lists every mode it accepts, so an EMI row with no amount on
+	# it is an option the cashier did not take — not a payment to validate.
 	emi_modes = [
 		row.mode_of_payment
 		for row in doc.get("payments") or []
-		if (row.mode_of_payment or "").upper().startswith("EMI")
+		if (row.mode_of_payment or "").upper().startswith("EMI") and flt(row.amount)
 	]
 	if not emi_modes:
 		return

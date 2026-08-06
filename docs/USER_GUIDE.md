@@ -81,7 +81,27 @@ Move the card to **QC Pending**. Once QC passes, the card goes to
 
 ## 3. Sales Executive
 
-### Selling a phone
+### Selling at the counter (branch app)
+
+Open **Sales** in the branch app (`/branch/sales`).
+
+1. **Find the customer** — type their mobile number and press *Find*. A known
+   number fills in the name, address and their history; a new one asks for a
+   name, then *Save customer*.
+2. **Build the bill** — search or tap items. The tile shows this branch's stock
+   and the selling price. A phone asks for its IMEI: scan it, or tap it from the
+   list of handsets actually in your branch.
+3. **Not in stock here?** The tile says so, and tapping it shows which branch has
+   one — with a button that raises the transfer request.
+4. **Adjust** — change quantity or the rate on the line. Going below the minimum
+   selling price warns you, and a manager has to approve it.
+5. **Complete sale** — pick the payment mode and press it. GST is applied by the
+   invoice, and *Print invoice (PDF)* appears straight after.
+
+Today's bills are listed under the total, each with its own PDF link, so a
+reprint never needs the back office.
+
+### Selling from the desk (head office)
 
 1. Open **POS**. Scan the item, then scan the IMEI — the sale will not submit
    without it.

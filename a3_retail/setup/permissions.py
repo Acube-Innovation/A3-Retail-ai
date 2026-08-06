@@ -19,6 +19,9 @@ PTYPE_MAP = {
 	"U": ("write",),
 	"D": ("delete",),
 	"S": ("submit", "cancel", "amend"),
+	# "L" is select-only: the role may reference the record from a link field but
+	# cannot open or list it. ERPNext checks for exactly this on Account.
+	"L": ("select",),
 }
 
 # doctype -> {role: flags}
@@ -109,6 +112,58 @@ PERMISSION_MATRIX: dict[str, dict[str, str]] = {
 		"Technician": "R",
 		"Store Keeper": "RU",
 		"Accounts Manager": "R",
+	},
+	# Scope 11.1 keeps the chart of accounts away from the shop floor — but
+	# pricing an invoice makes ERPNext resolve the customer's receivable account,
+	# and it checks `select` when that is all the role holds. Select-only lets the
+	# sale go through without opening a single account to a branch user.
+	"Account": {
+		"Branch Manager": "L",
+		"Service Manager": "L",
+		"Sales Executive": "L",
+		"Reception Executive": "L",
+		"Store Keeper": "L",
+	},
+	# The counter captures the delivery address with the customer (scope 2.1).
+	"Address": {
+		"A3 Retail Admin": "CRUD",
+		"Branch Manager": "CRU",
+		"Service Manager": "CRU",
+		"Sales Executive": "CRU",
+		"Reception Executive": "CRU",
+		"Accounts Manager": "CRUD",
+		"Telecaller": "R",
+	},
+	"Contact": {
+		"A3 Retail Admin": "CRUD",
+		"Branch Manager": "CRU",
+		"Sales Executive": "CRU",
+		"Reception Executive": "CRU",
+		"Telecaller": "R",
+	},
+	# Submitting an invoice for a serialised phone makes ERPNext create the
+	# bundle that records which handset left the shop.
+	"Serial and Batch Bundle": {
+		"A3 Retail Admin": "CRUDS",
+		"Branch Manager": "CRUDS",
+		"Service Manager": "CRUDS",
+		"Sales Executive": "CRUS",
+		"Reception Executive": "CRUS",
+		"Store Keeper": "CRUDS",
+		"Accounts Manager": "R",
+	},
+	# A counter cannot bill a phone without reading its IMEI, and cannot take one
+	# in for repair without finding it (scope 2.2, step 12 P1).
+	"Serial No": {
+		"A3 Retail Admin": "CRUD",
+		"Branch Manager": "CRU",
+		"Service Manager": "CRU",
+		"Sales Executive": "RU",
+		"Reception Executive": "RU",
+		"Technician": "R",
+		"Store Keeper": "CRUD",
+		"Accounts Manager": "R",
+		"Auditor": "R",
 	},
 	"Seasonal Offer Campaign": {
 		"A3 Retail Admin": "CRUDS",
@@ -355,16 +410,18 @@ def _apply(doctype: str, role: str, flags: str, permlevel: int = 0):
 	for flag in flags.upper():
 		wanted.update(PTYPE_MAP.get(flag, ()))
 
-	# Read is implied by every other permission.
-	if wanted:
+	# Read is implied by every other permission — but not by select, which exists
+	# precisely to let a role reference a record it may not open.
+	if wanted - {"select"}:
 		wanted.add("read")
 
-	for ptype in ("read", "write", "create", "delete", "submit", "cancel", "amend"):
+	for ptype in ("read", "write", "create", "delete", "submit", "cancel", "amend", "select"):
 		value = 1 if ptype in wanted else 0
 		update_permission_property(doctype, role, permlevel, ptype, value, validate=False)
 
+	desk = 1 if wanted - {"select"} else 0
 	for ptype in ("report", "export", "print", "email", "share"):
-		update_permission_property(doctype, role, permlevel, ptype, 1 if wanted else 0, validate=False)
+		update_permission_property(doctype, role, permlevel, ptype, desk, validate=False)
 
 
 def _apply_permlevel_one():

@@ -1,0 +1,18 @@
+{#- Branch app navigation. `active` is set by each page. -#}
+<aside class="side">
+	<a href="/branch">{% include "a3_retail/www/branch/_mark.html" %}</a>
+
+	<nav class="side-nav">
+		<a href="/branch/dashboard" class="{{ 'is-active' if active == 'dashboard' else '' }}">
+			<span class="dot"></span>{{ _("Dashboard") }}</a>
+		<a href="/branch/sales" class="{{ 'is-active' if active == 'sales' else '' }}">
+			<span class="dot"></span>{{ _("Sales") }}</a>
+	</nav>
+
+	<div class="side-foot">
+		{% if me and me.is_manager %}<a href="/branch/logout?to=/login">{{ _("Head office system") }}</a><br>{% endif %}
+		{{ company }}<br>
+		{{ _("Branch app") }}{% if me %} · {{ me.branch }}{% endif %}
+		{% if stamp %}<br><span id="stamp">{{ _("Updated") }} {{ stamp }}</span>{% endif %}
+	</div>
+</aside>
