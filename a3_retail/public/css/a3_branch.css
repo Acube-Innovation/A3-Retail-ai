@@ -441,13 +441,15 @@ body.side-collapsed .side-nav a, body.side-collapsed .side-soon { justify-conten
 /* tabs */
 .pos-tabsrow { display: flex; align-items: center; justify-content: space-between; gap: 12px;
 	border-bottom: 1px solid var(--line); margin-bottom: 14px; }
-.pos-tabs { display: flex; gap: 4px; overflow-x: auto; }
+.pos-tabs { display: flex; gap: 4px; min-width: 0; overflow-x: auto;
+	scrollbar-width: none; }
+.pos-tabs::-webkit-scrollbar { display: none; }
 .tab { border: 0; background: none; font-family: inherit; font-size: 13.5px; font-weight: 600;
 	color: var(--muted); padding: 11px 14px; white-space: nowrap; cursor: pointer;
 	border-bottom: 2px solid transparent; margin-bottom: -1px; }
 .tab:hover { color: var(--ink); }
 .tab.is-active { color: var(--brand-dark); border-bottom-color: var(--brand); }
-.tab-more { color: var(--sky-dark); }
+.tab-more { color: var(--sky-dark); flex: none; }
 .pos-view { display: flex; gap: 2px; background: #eef1f6; border-radius: var(--radius-sm);
 	padding: 3px; margin-bottom: 6px; }
 .view { border: 0; background: none; padding: 5px 8px; border-radius: 6px; cursor: pointer;

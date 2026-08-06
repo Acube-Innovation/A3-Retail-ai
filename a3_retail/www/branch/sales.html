@@ -54,10 +54,12 @@
 						{% for group in groups[:6] %}
 						<button class="tab" data-group="{{ group }}">{{ group }}</button>
 						{% endfor %}
-						{% if groups|length > 6 %}
-						<button class="tab tab-more" id="more-groups">+ {{ _("More") }}</button>
-						{% endif %}
 					</div>
+					{% if groups|length > 6 %}
+					{#- Outside the scrolling strip, so the groups that did not fit stay
+					    reachable however narrow the screen gets. -#}
+					<button class="tab tab-more" id="more-groups">+ {{ groups|length - 6 }} {{ _("More") }}</button>
+					{% endif %}
 					<div class="pos-view">
 						<button class="view is-active" data-view="grid" title="{{ _('Grid') }}">
 							{% set icon = "tiles" %}{% include "a3_retail/www/branch/_icons.html" %}</button>

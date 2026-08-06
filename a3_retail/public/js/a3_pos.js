@@ -591,7 +591,9 @@ window.POS = (function () {
 		});
 		$("in-stock").addEventListener("change", loadCatalogue);
 
-		$("groups").addEventListener("click", (event) => {
+		// Listen on the row, not the strip: "+ N More" sits outside the scrolling
+		// strip so it cannot be pushed off the edge.
+		document.querySelector(".pos-tabsrow").addEventListener("click", (event) => {
 			const tab = event.target.closest(".tab");
 			if (!tab) return;
 			if (tab.id === "more-groups") return showAllGroups();
