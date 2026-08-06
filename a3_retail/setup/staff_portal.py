@@ -99,12 +99,10 @@ def provision(branch: str | None = None, password: str | None = None,
 		"Employee", filters=filters,
 		fields=["name", "employee_name", "user_id", "branch", "designation"],
 	):
-		if employee.branch == "Head Office":
-			continue
-
 		roles = set(frappe.get_roles(employee.user_id))
 		if roles & DESK_ROLES:
-			# A head-office role on a branch employee: leave them in the desk.
+			# Accounts, HR, admin and audit work in the desk — leave them there.
+			# A head-office telecaller, on the other hand, belongs in the app.
 			continue
 
 		_convert(employee.user_id, password)
