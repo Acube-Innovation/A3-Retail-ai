@@ -1,0 +1,83 @@
+{% extends "templates/web.html" %}
+{% block title %}{{ _("Branch Sign In") }}{% endblock %}
+
+{% block page_content %}
+<div class="a3-staff a3-staff-login">
+	<div class="a3-staff-card">
+		<div class="a3-staff-brand">
+			<div class="a3-staff-logo">A3</div>
+			<div>
+				<h1>{{ company }}</h1>
+				<p>{{ _("Branch staff sign-in") }}</p>
+			</div>
+		</div>
+
+		<form id="a3-login-form" autocomplete="on">
+			<label for="a3-usr">{{ _("Work email") }}</label>
+			<input id="a3-usr" name="username" type="email" autocomplete="username"
+			       placeholder="you@mobileworld.in" required>
+
+			<label for="a3-pwd">{{ _("Password") }}</label>
+			<input id="a3-pwd" name="password" type="password" autocomplete="current-password"
+			       placeholder="••••••••" required>
+
+			<button class="a3-staff-btn" type="submit" id="a3-submit">{{ _("Sign in") }}</button>
+		</form>
+
+		<div id="a3-login-msg" class="a3-staff-msg" role="status"></div>
+
+		<div class="a3-staff-foot">
+			<a href="/?forgot=1" id="a3-forgot">{{ _("Forgot password?") }}</a>
+			<span>{{ _("Trouble signing in? Ask your branch manager.") }}</span>
+		</div>
+	</div>
+
+	<p class="a3-staff-note">
+		{{ _("This is the branch app. Head office and accounts use the main system.") }}
+	</p>
+</div>
+
+<script>
+(function () {
+	const form = document.getElementById("a3-login-form");
+	const button = document.getElementById("a3-submit");
+	const message = document.getElementById("a3-login-msg");
+
+	function say(text, kind) {
+		message.textContent = text;
+		message.className = "a3-staff-msg" + (kind ? " is-" + kind : "");
+	}
+
+	form.addEventListener("submit", async function (event) {
+		event.preventDefault();
+		button.disabled = true;
+		say("{{ _('Signing you in…') }}");
+
+		const body = new URLSearchParams({
+			usr: document.getElementById("a3-usr").value.trim(),
+			pwd: document.getElementById("a3-pwd").value,
+		});
+
+		try {
+			const response = await fetch("/api/method/login", {
+				method: "POST",
+				headers: { "Content-Type": "application/x-www-form-urlencoded" },
+				body,
+			});
+			const data = await response.json().catch(() => ({}));
+
+			// Frappe answers "Logged In" for desk users and "No App" for website
+			// users — both mean the session is open.
+			const ok = data.message === "Logged In" || data.message === "No App";
+			if (!response.ok || !ok) {
+				throw new Error("{{ _('Wrong email or password.') }}");
+			}
+			window.location.href = "{{ home_page }}";
+		} catch (error) {
+			say(error.message || "{{ _('Wrong email or password.') }}", "error");
+			button.disabled = false;
+		}
+	});
+})();
+</script>
+{% endblock %}

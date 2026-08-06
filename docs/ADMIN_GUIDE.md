@@ -69,7 +69,41 @@ stored password *and* signs the customer portal links. Losing it invalidates bot
 
 ---
 
-## 3. Credentials and integrations
+## 3. Two front doors
+
+| Who | Where | Account type |
+|---|---|---|
+| Branch staff — managers, technicians, reception, sales, store, telecalling | `/branch/login` | **Website User** — `/app` is refused |
+| Head office — admin, accounts, HR, audit | `/app` (ERPNext desk) | System User |
+
+Which door an account gets is decided by one thing: whether any role it holds has
+**desk access**. `a3_retail/install.py` ships the shop-floor roles with
+`desk_access = 0` and the head-office roles with `desk_access = 1`, and every
+migrate re-applies that. Give a branch user a desk role and Frappe promotes them
+back to a System User on the next save — that is the switch to watch.
+
+```bash
+# Turn branch employees into portal accounts (idempotent)
+bench --site a3.local execute a3_retail.setup.staff_portal.provision
+
+# Demo or UAT only — sets one password for every account it provisions
+bench --site a3.local console
+>>> from a3_retail.setup import staff_portal
+>>> staff_portal.provision(password="branch@123")
+
+# Put one account back in the desk
+>>> staff_portal.revoke("arun@mobileworld.in")
+```
+
+Head-office employees are skipped automatically, and so is anyone holding
+System Manager, A3 Retail Admin, Accounts Manager, HR Manager or Auditor.
+
+**Consequence to plan for:** the desk pages built for the shop floor — Reception
+Desk, Technician Workbench, Stock Explorer, Control Tower — are desk pages, so
+branch staff can no longer open them. They are reachable by head-office accounts;
+the branch app is where the equivalent screens belong.
+
+## 4. Credentials and integrations
 
 ### WhatsApp (Meta Cloud API)
 
@@ -106,7 +140,7 @@ are right.
 
 ---
 
-## 4. The monthly GST routine
+## 5. The monthly GST routine
 
 | Day | Task | Where |
 |---|---|---|
@@ -124,7 +158,7 @@ liability and the input credit both appear and net to zero in the P&L.
 
 ---
 
-## 5. Scheduled jobs
+## 6. Scheduled jobs
 
 | When | What |
 |---|---|
@@ -137,7 +171,7 @@ is the usual reason "reminders stopped working".
 
 ---
 
-## 6. Health checks
+## 7. Health checks
 
 ```bash
 # Everything the app promises, verified against live data
@@ -155,7 +189,7 @@ bench --site a3.local execute a3_retail.setup.audit.run
 
 ---
 
-## 7. Common problems
+## 8. Common problems
 
 | Symptom | Cause | Fix |
 |---|---|---|
@@ -169,11 +203,13 @@ bench --site a3.local execute a3_retail.setup.audit.run
 
 ---
 
-## 8. Where things live
+## 9. Where things live
 
 | Concern | Path |
 |---|---|
 | App configuration on every migrate | `a3_retail/setup/install_defaults.py` |
+| Branch staff app | `a3_retail/www/branch/`, `a3_retail/api/staff.py` |
+| Who gets the desk | `a3_retail/install.py` (`A3_ROLES`), `setup/staff_portal.py` |
 | Roles and the permission matrix | `a3_retail/setup/permissions.py` |
 | Print templates | `a3_retail/templates/print_formats/` |
 | Portal pages | `a3_retail/templates/pages/` |

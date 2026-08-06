@@ -33,6 +33,9 @@ GUARDS = {
 	"resolve_token",
 	"check_permission",
 	"only_for",
+	# The branch portal's own gate: refuses a guest, and refuses anyone whose
+	# account is not linked to an active Employee (api/staff.py).
+	"_me",
 }
 
 # Guest endpoints that are safe without a document permission, with the reason.

@@ -359,6 +359,30 @@ def _demo_visits():
 	return count, count >= 120
 
 
+@check("Branch portal accounts", ">= 8")
+def _portal_accounts():
+	from a3_retail.setup.staff_portal import PORTAL_ROLE
+
+	users = frappe.get_all("Has Role", filters={"role": PORTAL_ROLE, "parenttype": "User"},
+	                       pluck="parent")
+	website_users = [
+		user for user in users
+		if frappe.db.get_value("User", user, "user_type") == "Website User"
+	]
+	return f"{len(website_users)} of {len(users)}", len(website_users) >= 8 and len(website_users) == len(users)
+
+
+@check("Shop-floor roles have no desk", "0 with desk")
+def _branch_roles_deskless():
+	from a3_retail.setup.staff_portal import BRANCH_ROLES
+
+	with_desk = [
+		role for role in BRANCH_ROLES
+		if frappe.db.exists("Role", role) and frappe.db.get_value("Role", role, "desk_access")
+	]
+	return len(with_desk), not with_desk
+
+
 def run(verbose: bool = True):
 	"""Execute every registered check; returns (passed, failed, rows)."""
 	rows = []

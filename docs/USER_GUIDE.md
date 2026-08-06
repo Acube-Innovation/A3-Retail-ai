@@ -7,6 +7,15 @@ Screens marked *(screenshot)* are where a picture belongs in the printed manual.
 
 ---
 
+## 0. Signing in
+
+Branch staff use the **branch app**, not ERPNext: open **`/branch/login`**, sign
+in with your work email, and you land on your dashboard. It works on a phone.
+
+The dashboard shows your branch's numbers, the notices that need chasing, and
+*What needs you today* — the rows you personally have to act on. Head office
+(accounts, HR, admin) uses the main system at `/app` instead.
+
 ## 1. Reception Executive
 
 ### Taking in a repair — the 60-second intake

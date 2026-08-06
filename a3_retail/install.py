@@ -10,21 +10,25 @@ create the Roles that our DocType permission rows link to — a missing Role mak
 import frappe
 
 # Roles from scope 13.2. "System Manager" ships with Frappe and is not recreated.
+# `desk_access` decides where a role's holders work. Shop-floor roles are 0 so
+# their accounts become Website Users and the branch app at /branch is the only
+# way in; head-office roles keep the desk (scope 13.2, branch portal).
 A3_ROLES = [
 	{"role_name": "A3 Retail Admin", "desk_access": 1},
-	{"role_name": "Branch Manager", "desk_access": 1},
-	{"role_name": "Service Manager", "desk_access": 1},
-	{"role_name": "Sales Executive", "desk_access": 1},
-	{"role_name": "Reception Executive", "desk_access": 1},
-	{"role_name": "Technician", "desk_access": 1},
-	{"role_name": "Store Keeper", "desk_access": 1},
-	{"role_name": "EMI Coordinator", "desk_access": 1},
 	{"role_name": "Accounts Manager", "desk_access": 1},
 	{"role_name": "Accounts Executive", "desk_access": 1},
 	{"role_name": "HR Manager", "desk_access": 1},
-	{"role_name": "Telecaller", "desk_access": 1},
-	{"role_name": "Helpdesk Agent", "desk_access": 1},
 	{"role_name": "Auditor", "desk_access": 1},
+	{"role_name": "Branch Manager", "desk_access": 0},
+	{"role_name": "Service Manager", "desk_access": 0},
+	{"role_name": "Sales Executive", "desk_access": 0},
+	{"role_name": "Reception Executive", "desk_access": 0},
+	{"role_name": "Technician", "desk_access": 0},
+	{"role_name": "Store Keeper", "desk_access": 0},
+	{"role_name": "EMI Coordinator", "desk_access": 0},
+	{"role_name": "Telecaller", "desk_access": 0},
+	{"role_name": "Helpdesk Agent", "desk_access": 0},
+	{"role_name": "A3 Branch Staff", "desk_access": 0},
 ]
 
 

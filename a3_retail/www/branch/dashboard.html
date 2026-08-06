@@ -1,0 +1,101 @@
+{% extends "templates/web.html" %}
+{% block title %}{{ _("Branch Dashboard") }}{% endblock %}
+
+{% block page_content %}
+{%- set context_data = data.context -%}
+<div class="a3-staff">
+
+	<header class="a3-staff-header">
+		<div>
+			<div class="a3-staff-hello">{{ greeting }}, {{ context_data.employee_name.split(" ")[0] }}</div>
+			<h1>{{ context_data.branch }}</h1>
+			<div class="a3-staff-sub">
+				{{ context_data.designation or _("Staff") }}
+				{%- if context_data.roles %} · {{ context_data.roles|join(" · ") }}{% endif %}
+			</div>
+		</div>
+		<div class="a3-staff-actions">
+			<span class="a3-staff-user">{{ context_data.user }}</span>
+			<button class="a3-staff-btn a3-staff-btn-quiet" id="a3-logout">{{ _("Sign out") }}</button>
+		</div>
+	</header>
+
+	{% if data.notices %}
+	<section class="a3-staff-notices">
+		{% for notice in data.notices %}
+			<div class="a3-staff-notice is-{{ notice.tone }}">{{ notice.text }}</div>
+		{% endfor %}
+	</section>
+	{% endif %}
+
+	{% if data.tiles %}
+	<section class="a3-staff-tiles">
+		{% for tile in data.tiles %}
+		<div class="a3-staff-tile is-{{ tile.tone }}">
+			<div class="a3-staff-tile-value">{{ tile.value }}</div>
+			<div class="a3-staff-tile-label">{{ tile.label }}</div>
+		</div>
+		{% endfor %}
+	</section>
+	{% endif %}
+
+	<div class="a3-staff-columns">
+		<section class="a3-staff-panel">
+			<h2>{{ _("What needs you today") }}</h2>
+			{% if data.my_work %}
+			<ul class="a3-staff-list">
+				{% for row in data.my_work %}
+				<li class="{{ 'is-urgent' if row.urgent else '' }}">
+					<div class="a3-staff-list-main">
+						<span class="a3-staff-kind">{{ row.kind }}</span>
+						<span class="a3-staff-ref">{{ row.reference }}</span>
+						<div class="a3-staff-title">{{ row.title }}</div>
+					</div>
+					<div class="a3-staff-list-side">
+						<div class="a3-staff-status">{{ row.status }}</div>
+						{% if row.due %}<div class="a3-staff-due">{{ _("Due") }} {{ row.due[:16] }}</div>{% endif %}
+					</div>
+				</li>
+				{% endfor %}
+			</ul>
+			{% else %}
+			<p class="a3-staff-empty">{{ _("Your list is clear.") }}</p>
+			{% endif %}
+		</section>
+
+		<section class="a3-staff-panel">
+			<h2>{{ _("Latest at this branch") }}</h2>
+			{% if data.branch_activity %}
+			<ul class="a3-staff-list a3-staff-list-compact">
+				{% for row in data.branch_activity %}
+				<li>
+					<div class="a3-staff-list-main">
+						<span class="a3-staff-ref">{{ row.reference }}</span>
+						<div class="a3-staff-title">{{ row.title }}</div>
+					</div>
+					<div class="a3-staff-list-side">
+						<div class="a3-staff-status">{{ row.status }}</div>
+						<div class="a3-staff-due">{{ row.when[:16] }}</div>
+					</div>
+				</li>
+				{% endfor %}
+			</ul>
+			{% else %}
+			<p class="a3-staff-empty">{{ _("No activity recorded yet.") }}</p>
+			{% endif %}
+		</section>
+	</div>
+
+	<footer class="a3-staff-footer">
+		<span>{{ company }} · {{ _("Branch app") }}</span>
+		<span>{{ _("Updated") }} {{ data.as_of[:16] }}</span>
+	</footer>
+</div>
+
+<script>
+document.getElementById("a3-logout").addEventListener("click", async function () {
+	await fetch("/api/method/logout", { method: "POST" });
+	window.location.href = "/branch/login";
+});
+</script>
+{% endblock %}

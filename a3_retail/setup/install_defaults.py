@@ -40,6 +40,7 @@ def run():
 		permissions,
 		print_formats,
 		reports,
+		staff_portal,
 		tax,
 	)
 
@@ -54,6 +55,8 @@ def run():
 	print_formats.run()
 	dashboards.run()
 	reports.run()
+	staff_portal.ensure_role()
+	staff_portal.close_desk_for_branch_roles()
 	permissions.run()
 	frappe.db.commit()
 

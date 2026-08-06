@@ -40,7 +40,10 @@ A3_SCHEDULED_REPORTS = [
 # Includes
 # ---------------------------------------------------------------------------
 app_include_css = "/assets/a3_retail/css/a3_retail.css"
-web_include_css = "/assets/a3_retail/css/a3_portal.css"
+web_include_css = [
+	"/assets/a3_retail/css/a3_portal.css",
+	"/assets/a3_retail/css/a3_staff.css",
+]
 app_include_js = [
 	"/assets/a3_retail/js/a3_retail.js",
 	# POS is not a Form; the bundle patches cur_pos in place (scope 2.2).
