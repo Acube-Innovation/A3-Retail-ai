@@ -63,7 +63,21 @@ DEVICE_MODELS = [
 	("Galaxy M14", "Samsung", "Mobile", 2023, None, None),
 	("iPhone 12", "Apple", "Mobile", 2020, None, None),
 	("Vivo T3", "Vivo", "Mobile", 2024, None, None),
+	("Galaxy Tab S9 FE", "Samsung", "Tablet", 2023, None, None),
+	("Watch SE 2nd Gen", "Apple", "Smartwatch", 2022, None, None),
 ]
+
+# Which model each catalogue item actually is. The service counter needs this to
+# open a job card, and the sales counter uses the model's launch year to decide
+# what is new — an item with no model is a device nobody can service by name.
+ITEM_DEVICE_MODEL = {
+	"MOB-SAM-A55-8-128-BLU": "Samsung Galaxy A55",
+	"MOB-APL-15-128-BLK": "Apple iPhone 15",
+	"MOB-XIA-N13-6-128": "Xiaomi Redmi Note 13",
+	"MOB-VIV-T3-8-128": "Vivo Vivo T3",
+	"TAB-SAM-S9FE": "Samsung Galaxy Tab S9 FE",
+	"WEA-APL-SE2": "Apple Watch SE 2nd Gen",
+}
 
 # item, warehouse suffix, reorder level, reorder qty
 REORDER = [
@@ -84,6 +98,7 @@ def run():
 	_price_list(company)
 	_items(company)
 	_device_models()
+	_link_device_models()
 	_reorder_levels(company)
 	_artwork()
 
@@ -200,6 +215,16 @@ def _device_models():
 		doc.is_active = 1
 		doc.flags.ignore_permissions = True
 		doc.insert(ignore_permissions=True)
+
+
+def _link_device_models():
+	"""Point each handset at the model it is. Idempotent."""
+	for item_code, model in ITEM_DEVICE_MODEL.items():
+		if not frappe.db.exists("Item", item_code) or not frappe.db.exists("Device Model", model):
+			continue
+		if frappe.db.get_value("Item", item_code, "a3_device_model") == model:
+			continue
+		frappe.db.set_value("Item", item_code, "a3_device_model", model, update_modified=False)
 
 
 def _reorder_levels(company):

@@ -628,17 +628,9 @@ def _basket_gst_rate(invoice) -> int | None:
 
 
 def _stamp_cost_center(invoice, cost_center: str | None):
-	if not cost_center:
-		return
+	from a3_retail.api import stamp_cost_center
 
-	for fieldname in ("cost_center", "write_off_cost_center"):
-		if invoice.meta.has_field(fieldname) and not invoice.get(fieldname):
-			invoice.set(fieldname, cost_center)
-
-	for table in ("items", "taxes", "payments"):
-		for row in invoice.get(table) or []:
-			if row.meta.has_field("cost_center") and not row.get("cost_center"):
-				row.cost_center = cost_center
+	stamp_cost_center(invoice, cost_center)
 
 
 # The counter's six tiles, mapped to whatever this site actually calls them.

@@ -296,16 +296,37 @@ def create_sales_invoice(job_card: str) -> dict:
 	if doc.tax_template:
 		invoice.taxes_and_charges = doc.tax_template
 		invoice.set_taxes()
+	else:
+		# A repair is a taxable supply like any other. Without this the invoice
+		# went out at the pre-tax amount while the job card had already told the
+		# customer the figure with GST on it.
+		from a3_retail.api.pos import _apply_gst
+
+		_apply_gst(invoice, doc.branch)
+
+	# The role check above is the gate. The document itself is written with
+	# permissions bypassed because pricing a service invoice makes ERPNext read
+	# the income accounts and cost centers that shop-floor staff are deliberately
+	# not allowed to see (scope 11.1) — the same reason the sales counter writes
+	# its invoice this way.
+	invoice.flags.ignore_permissions = True
+	invoice.set_missing_values()
+	_stamp_service_cost_center(invoice, profile)
+	invoice.insert(ignore_permissions=True)
 
 	# Pull the advance in so the customer ledger nets to zero (scope 3.5).
-	invoice.flags.ignore_permissions = False
-	invoice.set_missing_values()
-	invoice.insert()
-
+	# Allocating it walks back into the advance's own Payment Entry, and ERPNext
+	# re-checks read permission on it document by document — a check a counter
+	# cannot pass on an entry the system raised. The gate is the role check above.
 	if flt(doc.advance_amount) > 0:
-		invoice.set_advances()
-		invoice.save()
+		frappe.flags.ignore_permissions = True
+		try:
+			invoice.set_advances()
+			invoice.save(ignore_permissions=True)
+		finally:
+			frappe.flags.ignore_permissions = False
 
+	_stamp_service_cost_center(invoice, profile)
 	invoice.submit()
 
 	doc.db_set("sales_invoice", invoice.name, update_modified=False)
@@ -317,6 +338,15 @@ def create_sales_invoice(job_card: str) -> dict:
 
 	return {"sales_invoice": invoice.name, "created": True,
 	        "outstanding": flt(invoice.outstanding_amount)}
+
+
+def _stamp_service_cost_center(invoice, profile):
+	"""The repair's postings belong to the branch's service cost center."""
+	from a3_retail.api import stamp_cost_center
+
+	stamp_cost_center(
+		invoice, (profile.service_cost_center or profile.cost_center) if profile else None
+	)
 
 
 # ---------------------------------------------------------------------------

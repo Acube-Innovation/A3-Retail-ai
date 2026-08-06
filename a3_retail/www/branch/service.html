@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="csrf-token" content="{{ csrf_token }}">
+	<meta name="robots" content="noindex">
+	<title>{{ _("Service") }} · {{ me.branch }} · {{ app_name }}</title>
+	<link rel="stylesheet" href="/assets/a3_retail/css/a3_branch.css?v={{ asset_v }}">
+	<script src="/assets/a3_retail/js/a3_branch.js?v={{ asset_v }}" defer></script>
+	<script src="/assets/a3_retail/js/a3_service.js?v={{ asset_v }}" defer></script>
+</head>
+<body class="pos-body">
+<div class="app">
+
+	{% include "a3_retail/www/branch/_sidebar.html" %}
+
+	<div class="main">
+		<header class="topbar">
+			<div class="topbar-branch">
+				<h1>{{ _("Mobile Service POS") }}</h1>
+				<div class="steps" id="steps">
+					{% for key, label in [("booking", "Service Booking"), ("invoice", "Invoice"),
+					                      ("delivery", "Delivery")] %}
+					<button class="step {{ 'is-active' if loop.first else '' }}" data-step="{{ key }}">
+						<span class="step-no">{{ loop.index }}</span>{{ _(label) }}</button>
+					{% endfor %}
+				</div>
+			</div>
+			<div class="topbar-right">
+				<span class="clock" id="clock">{{ today }}</span>
+				<a class="btn btn-quiet" href="/branch/dashboard">{{ _("Dashboard") }}</a>
+				<div class="who">
+					<div class="name">{{ me.employee_name }}</div>
+					<div class="role">{{ me.designation or "" }}</div>
+				</div>
+				<div class="avatar">{{ initials }}</div>
+				<a class="btn btn-quiet" href="/branch/logout">{{ _("Sign out") }}</a>
+			</div>
+		</header>
+
+		<div class="svc-actions">
+			<div class="pos-search-box">
+				{% set icon = "search" %}{% include "a3_retail/www/branch/_icons.html" %}
+				<input id="cust-q" autocomplete="off"
+				       placeholder="{{ _('Search customer by name, phone or email…') }}">
+				<ul class="cust-results" id="cust-results" hidden></ul>
+			</div>
+			<button class="btn btn-outline" id="new-customer">{{ _("New Customer") }}</button>
+
+			<div class="pos-search-box scan-box">
+				<input id="scan" autocomplete="off" placeholder="{{ _('Scan Device IMEI / Barcode') }}">
+				{% set icon = "barcode" %}{% include "a3_retail/www/branch/_icons.html" %}
+			</div>
+
+			<div class="seg" id="lead-source">
+				{% for value, label, icon_name in [("Walk-in", "Walk-in", "user"),
+				                                   ("Phone Call", "Phone Booking", "phone"),
+				                                   ("Website", "Online Booking", "globe")] %}
+				<button class="seg-btn {{ 'is-active' if loop.first else '' }}" data-value="{{ value }}">
+					{% set icon = icon_name %}{% include "a3_retail/www/branch/_icons.html" %}
+					{{ _(label) }}</button>
+				{% endfor %}
+			</div>
+		</div>
+
+		<main class="svc">
+			<!-- =============================================== left column -->
+			<section class="svc-left">
+
+				<!-- ------------------------------------- customer & device -->
+				<section class="svc-panel">
+					<div class="panel-head">
+						<h2>{{ _("Customer & Device") }}</h2>
+						<button class="btn btn-outline btn-sm" id="another-device">
+							{{ _("Add Another Device") }}</button>
+					</div>
+
+					<div class="svc-cd">
+						<div class="svc-customer">
+							<div class="pos-cust-phone">
+								<div class="input-icon">
+									{% set icon = "phone" %}{% include "a3_retail/www/branch/_icons.html" %}
+									<input id="mobile" inputmode="numeric" maxlength="10"
+									       placeholder="{{ _('+91 00000 00000') }}">
+								</div>
+								<button class="btn btn-find" id="find-customer">{{ _("Find") }}</button>
+							</div>
+
+							<div class="field-grid">
+								<label class="field"><span>{{ _("Customer name") }}</span>
+									<input id="customer-name"></label>
+								<label class="field"><span>{{ _("Email (optional)") }}</span>
+									<input id="customer-email" type="email"></label>
+							</div>
+							<label class="field"><span>{{ _("Address") }}</span>
+								<input id="customer-address"></label>
+							<div class="field-grid three">
+								<label class="field"><span>{{ _("City") }}</span>
+									<input id="customer-city"></label>
+								<label class="field"><span>{{ _("State") }}</span>
+									<input id="customer-state" value="{{ profile.state or '' }}"></label>
+								<label class="field"><span>{{ _("PIN") }}</span>
+									<input id="customer-pin" inputmode="numeric" maxlength="6"></label>
+							</div>
+						</div>
+
+						<div class="svc-device" id="device-card">
+							<div class="device-empty">
+								{{ _("Scan the IMEI, or type the model below.") }}
+							</div>
+						</div>
+					</div>
+				</section>
+
+				<!-- --------------------------------------- service details -->
+				<section class="svc-panel">
+					<h2>{{ _("Service Details") }}</h2>
+
+					<div class="svc-details">
+						<div class="svc-col">
+							<h3>{{ _("Select Service Type") }}</h3>
+							<div class="type-grid" id="service-types">
+								{% for key, label, category, icon_name in service_types %}
+								<button class="type {{ 'is-active' if loop.first else '' }}"
+								        data-key="{{ key }}">
+									{% set icon = icon_name %}
+									{% include "a3_retail/www/branch/_icons.html" %}
+									<span>{{ _(label) }}</span></button>
+								{% endfor %}
+							</div>
+						</div>
+
+						<div class="svc-col">
+							<h3>{{ _("Select Problem") }}</h3>
+							<select id="issue"></select>
+
+							<label class="field top"><span>{{ _("Customer Complaint / Description") }}</span>
+								<textarea id="complaint" maxlength="250" rows="5"
+								          placeholder="{{ _('What did the customer say?') }}"></textarea>
+								<span class="counter"><b id="complaint-count">0</b>/250</span>
+							</label>
+
+							{#- Wiping a device without a backup needs consent on record
+							    (scope 3.2) — the counter cannot book one in without
+							    answering this, so it is asked here. -#}
+							<div class="consent">
+								<label><input type="checkbox" id="backup-required">
+									{{ _("Data backup required") }}</label>
+								<label><input type="checkbox" id="data-consent">
+									{{ _("Customer accepts data loss") }}</label>
+							</div>
+						</div>
+
+						<div class="svc-col">
+							<h3>{{ _("Service Type & Priority") }}</h3>
+							<label class="field"><span>{{ _("Service Type") }}</span>
+								<select id="warranty-type"></select></label>
+
+							<label class="field"><span>{{ _("Priority") }}</span></label>
+							<div class="seg wide" id="priority">
+								{% for value in ["Low", "Normal", "High"] %}
+								<button class="seg-btn {{ 'is-active' if value == 'Normal' else '' }}"
+								        data-value="{{ value }}">{{ _(value) }}</button>
+								{% endfor %}
+							</div>
+
+							<label class="field"><span>{{ _("Expected Delivery Date") }}</span>
+								<input id="promised" type="date"></label>
+
+							<label class="field"><span>{{ _("Technician (Optional)") }}</span>
+								<select id="technician"></select></label>
+						</div>
+					</div>
+				</section>
+
+				<!-- ------------------------------------------------- lines -->
+				<section class="svc-panel">
+					<h2>{{ _("Items / Parts / Services") }}</h2>
+
+					<div class="line-table">
+						<div class="line-head">
+							<span>#</span><span>{{ _("Item / Service") }}</span><span>{{ _("Type") }}</span>
+							<span>{{ _("HSN") }}</span><span>{{ _("Qty") }}</span><span>{{ _("Rate (₹)") }}</span>
+							<span>{{ _("Discount (%)") }}</span><span>{{ _("Amount (₹)") }}</span>
+							<span>{{ _("Action") }}</span>
+						</div>
+						<div id="lines">
+							<div class="bill-empty">{{ _("No parts or labour on this repair yet.") }}</div>
+						</div>
+					</div>
+
+					<div class="line-foot">
+						<button class="btn btn-add" id="add-line">+ {{ _("Add Item / Part / Service") }}</button>
+						<div class="line-totals">
+							<span>{{ _("Total Items") }}: <b id="line-count">0</b></span>
+							<span class="sub">{{ _("Sub Total") }} <b id="sub-total">₹0.00</b></span>
+						</div>
+					</div>
+				</section>
+
+				<!-- ----------------------------------------- quick actions -->
+				<section class="svc-panel">
+					<h2>{{ _("Quick Actions") }}</h2>
+					<div class="photos" id="photos" hidden></div>
+					<div class="quick-row six">
+						{% for key, label, sub, icon_name in [
+							("clear", "Clear", "", "trash"),
+							("hold", "Hold Booking", "", "pause"),
+							("diagnose", "Check Device", "Diagnosis", "wrench"),
+							("estimate", "Print Estimate", "(Proforma)", "print"),
+							("advance", "Take Payment", "Advance", "cash"),
+							("photo", "Add Note / Photo", "Issue Images", "camera")] %}
+						<button class="quick" data-action="{{ key }}">
+							<span class="quick-ico">
+								{% set icon = icon_name %}{% include "a3_retail/www/branch/_icons.html" %}</span>
+							<span class="quick-text">
+								<span class="quick-label">{{ _(label) }}</span>
+								{% if sub %}<span class="quick-key">{{ _(sub) }}</span>{% endif %}
+							</span>
+						</button>
+						{% endfor %}
+					</div>
+				</section>
+			</section>
+
+			<!-- ============================================== right column -->
+			<aside class="svc-right">
+				<section class="svc-panel">
+					<h2>{{ _("Billing Summary") }}</h2>
+					<div class="bill-totals flat">
+						<div class="tr"><span>{{ _("Sub Total") }}</span><span id="r-sub">₹0.00</span></div>
+						<div class="tr tr-discount">
+							<span>{{ _("Discount") }}</span>
+							<select id="discount-type"><option value="%">%</option><option value="₹">₹</option></select>
+							<input id="discount-value" type="number" min="0" step="0.01" placeholder="0.00">
+							<span id="r-discount">- ₹0.00</span>
+						</div>
+						<div class="tr"><span>{{ _("Taxable Amount") }}</span><span id="r-taxable">₹0.00</span></div>
+						<div class="tr"><span>{{ _("GST") }} (<span id="r-gst-rate">18</span>%)</span>
+							<span id="r-gst">₹0.00</span></div>
+						<div class="tr tr-grand"><span>{{ _("Total Amount") }}</span>
+							<span id="r-total" class="blue">₹0.00</span></div>
+						{#- A covered repair is billed to the warranty, not the customer.
+						    The counter should see that before it asks for money. -#}
+						<div class="tr tr-warranty" id="warranty-row" hidden>
+							<span id="warranty-label">{{ _("Warranty bears") }}</span>
+							<span id="r-warranty">₹0.00</span></div>
+					</div>
+
+					<div class="pay-row"><label for="advance">{{ _("Advance / Received") }}</label>
+						<div class="input-rupee"><span>₹</span>
+							<input id="advance" type="number" min="0" step="1" placeholder="0.00"></div>
+					</div>
+					<div class="pay-row"><label>{{ _("Balance Due") }}</label>
+						<div class="balance" id="balance">₹0.00</div>
+					</div>
+				</section>
+
+				<section class="svc-panel">
+					<h2>{{ _("Service Status") }}</h2>
+					<ol class="track" id="track">
+						{% for label in ["Booking", "In Progress", "Ready for Delivery", "Delivered"] %}
+						<li class="{{ 'is-active' if loop.first else '' }}">
+							<span class="dot">{{ loop.index }}</span>
+							<span class="track-label">{{ _(label) }}</span></li>
+						{% endfor %}
+					</ol>
+				</section>
+
+				<section class="svc-panel">
+					<h2>{{ _("Customer Communication") }}</h2>
+					<div class="comm-row">
+						<button class="comm wa" data-channel="WhatsApp">
+							{% set icon = "whatsapp" %}{% include "a3_retail/www/branch/_icons.html" %}
+							{{ _("Send WhatsApp") }}</button>
+						<button class="comm sms" data-channel="SMS">
+							{% set icon = "chat" %}{% include "a3_retail/www/branch/_icons.html" %}
+							{{ _("Send SMS") }}</button>
+						<button class="comm mail" data-channel="Email">
+							{% set icon = "mail" %}{% include "a3_retail/www/branch/_icons.html" %}
+							{{ _("Send Email") }}</button>
+						<button class="comm" data-channel="Print">
+							{% set icon = "print" %}{% include "a3_retail/www/branch/_icons.html" %}
+							{{ _("Print Estimate") }}</button>
+					</div>
+				</section>
+
+				<section class="svc-panel">
+					<h2>{{ _("Notes (Internal)") }}</h2>
+					<label class="field"><textarea id="notes" maxlength="250" rows="4"
+						placeholder="{{ _('Add notes for internal reference…') }}"></textarea>
+						<span class="counter"><b id="notes-count">0</b>/250</span></label>
+				</section>
+
+				<button class="btn btn-block btn-save" id="save-booking">
+					{{ _("Save Booking") }} <span class="key">F5</span></button>
+				<button class="btn btn-block btn-invoice" id="generate-invoice">
+					{{ _("Generate Invoice") }} <span class="key">F6</span></button>
+				<button class="btn btn-block btn-deliver" id="mark-delivered">
+					{{ _("Mark as Delivered") }} <span class="key">F7</span></button>
+				<div class="msg" id="svc-msg"></div>
+			</aside>
+		</main>
+	</div>
+</div>
+
+<!-- ------------------------------------------------------------- dialogs -->
+<div class="modal" id="line-modal" hidden>
+	<div class="modal-card">
+		<h3>{{ _("Add item, part or service") }}</h3>
+		<p class="modal-note">{{ _("Search the spare parts, labour charges and accessories this branch sells.") }}</p>
+		<input id="line-q" placeholder="{{ _('Search…') }}" autocomplete="off">
+		<ul class="serial-list" id="line-results"></ul>
+		<div class="modal-actions"><button class="btn btn-quiet" data-close>{{ _("Close") }}</button></div>
+	</div>
+</div>
+
+<div class="modal" id="list-modal" hidden>
+	<div class="modal-card">
+		<h3 id="list-title"></h3>
+		<p class="modal-note" id="list-note"></p>
+		<ul class="simple-list" id="list-body"></ul>
+		<div class="modal-actions"><button class="btn btn-quiet" data-close>{{ _("Close") }}</button></div>
+	</div>
+</div>
+
+<div class="modal" id="sign-modal" hidden>
+	<div class="modal-card">
+		<h3>{{ _("Ask the customer to sign") }}</h3>
+		<p class="modal-note">{{ _("The signature is the customer's acknowledgement that they left the device here, in the condition written down. It goes on the job card.") }}</p>
+		<canvas id="sign-pad" class="sign-pad" width="420" height="150"></canvas>
+		<div class="modal-actions">
+			<button class="btn btn-quiet" id="sign-clear">{{ _("Clear") }}</button>
+			<button class="btn btn-quiet" data-close>{{ _("Cancel") }}</button>
+			<button class="btn btn-primary" id="sign-done">{{ _("Save booking") }}</button>
+		</div>
+	</div>
+</div>
+
+<div class="modal" id="otp-modal" hidden>
+	<div class="modal-card">
+		<h3>{{ _("Hand the device back") }}</h3>
+		<p class="modal-note">{{ _("Type the OTP the customer received. It is their signature on the hand-over.") }}</p>
+		<input id="otp" inputmode="numeric" maxlength="8" placeholder="{{ _('Delivery OTP') }}">
+		<input id="receiver" placeholder="{{ _('Who is collecting it? (optional)') }}">
+		<div class="modal-actions">
+			<button class="btn btn-quiet" id="resend-otp">{{ _("Resend OTP") }}</button>
+			<button class="btn btn-primary" id="confirm-delivery">{{ _("Confirm hand-over") }}</button>
+		</div>
+	</div>
+</div>
+
+<div class="modal" id="done-modal" hidden>
+	<div class="modal-card modal-done">
+		<div class="done-tick">✓</div>
+		<h3 id="done-title">{{ _("Booked in") }}</h3>
+		<p class="modal-note" id="done-note"></p>
+		<a class="btn btn-primary btn-block" id="done-print" target="_blank" rel="noopener">
+			{{ _("Print acknowledgement (PDF)") }}</a>
+		<button class="btn btn-quiet btn-block" data-close>{{ _("Next customer") }}</button>
+	</div>
+</div>
+
+<script>
+window.addEventListener("DOMContentLoaded", function () {
+	SVC.start({
+		branch: {{ me.branch|tojson }},
+		today: {{ frappe.utils.nowdate()|tojson }},
+	});
+});
+</script>
+</body>
+</html>

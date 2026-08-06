@@ -323,7 +323,10 @@ PERMISSION_MATRIX: dict[str, dict[str, str]] = {
 	},
 	"Payment Entry": {
 		"A3 Retail Admin": "CRUDS",
-		"Branch Manager": "R",
+		# A manager who is standing at the counter takes the advance the counter
+		# takes. Keeping this at read meant a one-desk branch could not book a
+		# repair in at all — the ledger itself stays closed to them (11.1).
+		"Branch Manager": "CRUS",
 		"Reception Executive": "CRUS",
 		"Accounts Manager": "CRUDS",
 		"Accounts Executive": "CRU",
