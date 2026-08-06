@@ -83,13 +83,14 @@ class TestPortalAccounts(FrappeTestCase):
 class TestPortalPagesExist(FrappeTestCase):
 	def test_the_www_pages_are_in_place(self):
 		folder = frappe.get_app_path("a3_retail", "www", "branch")
-		for name in ("login.html", "login.py", "dashboard.html", "dashboard.py", "index.py"):
+		for name in ("index.html", "index.py", "login.html", "login.py",
+		             "dashboard.html", "dashboard.py"):
 			self.assertTrue(os.path.exists(os.path.join(folder, name)), name)
 
 	def test_the_pages_are_standalone_documents(self):
 		"""The branch app must not pull in ERPNext's web template or bundles."""
 		folder = frappe.get_app_path("a3_retail", "www", "branch")
-		for name in ("login.html", "dashboard.html"):
+		for name in ("index.html", "login.html", "dashboard.html"):
 			markup = open(os.path.join(folder, name)).read()
 			self.assertIn("<!doctype html>", markup.lower(), name)
 			self.assertNotIn("templates/web.html", markup, name)
@@ -107,6 +108,54 @@ class TestPortalPagesExist(FrappeTestCase):
 			self.assertTrue(
 				os.path.exists(os.path.join(frappe.get_app_path("a3_retail", "public"), asset)), asset
 			)
+
+
+class TestLanding(FrappeTestCase):
+	"""/branch is the front door: public, and where signing out returns you."""
+
+	def _context(self):
+		import importlib.util
+
+		path = os.path.join(frappe.get_app_path("a3_retail", "www", "branch"), "index.py")
+		spec = importlib.util.spec_from_file_location("branch_index", path)
+		module = importlib.util.module_from_spec(spec)
+		spec.loader.exec_module(module)
+		return module.get_context(frappe._dict())
+
+	def test_a_guest_sees_the_landing_page(self):
+		frappe.set_user("Guest")
+		try:
+			context = self._context()
+			self.assertFalse(context.signed_in)
+			self.assertFalse(context.employee_name)
+		finally:
+			frappe.set_user("Administrator")
+
+	def test_signed_in_staff_are_offered_their_dashboard(self):
+		user = user_for("Arun Menon")
+		if not user:
+			self.skipTest("Arun Menon is not provisioned")
+
+		frappe.set_user(user)
+		try:
+			context = self._context()
+			self.assertTrue(context.signed_in)
+			self.assertEqual(context.employee_name, "Arun Menon")
+			self.assertEqual(context.branch, "Kochi")
+		finally:
+			frappe.set_user("Administrator")
+
+	def test_the_landing_page_counts_live_branches(self):
+		context = self._context()
+		self.assertEqual(
+			context.branch_count, frappe.db.count("Branch Profile", {"is_active": 1})
+		)
+
+	def test_signing_out_returns_to_the_landing_page(self):
+		client = open(
+			os.path.join(frappe.get_app_path("a3_retail", "public"), "js", "a3_branch.js")
+		).read()
+		self.assertIn('window.location.href = "/branch";', client)
 
 
 class TestSessionBoundary(FrappeTestCase):

@@ -66,7 +66,7 @@ window.A3 = (function () {
 
 	async function logout() {
 		await fetch("/api/method/logout", { method: "POST" });
-		window.location.href = "/branch/login";
+		window.location.href = "/branch";
 	}
 
 	function money(value) {

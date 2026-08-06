@@ -1,3 +1,97 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><title>A3 Retail</title></head>
-<body><p>{{ _("Redirecting…") }}</p></body></html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>{{ app_name }} · {{ _("Branch App") }}</title>
+	<meta name="description"
+	      content="{{ _('The shop-floor app for A3 Retail — repairs, sales and stock for your branch, on the counter phone.') }}">
+	<link rel="stylesheet" href="/assets/a3_retail/css/a3_branch.css">
+</head>
+<body class="landing">
+
+<header class="landing-head">
+	{% include "a3_retail/www/branch/_mark.html" %}
+
+	<nav class="landing-nav">
+		{% if signed_in %}
+			<span class="landing-who">{{ employee_name }} · {{ branch }}</span>
+			<a class="btn btn-primary" href="/branch/dashboard">{{ _("Open dashboard") }}</a>
+		{% else %}
+			<a class="landing-link" href="/track-service">{{ _("Track a repair") }}</a>
+			<a class="btn btn-primary" href="/branch/login">{{ _("Sign in") }}</a>
+		{% endif %}
+	</nav>
+</header>
+
+<main class="landing-main">
+	<span class="badge">{{ _("Branch app") }} · {{ branch_count }} {{ _("branches live") }}</span>
+
+	<h1>
+		{{ _("Everything your branch does,") }}
+		<span class="gradient-text">{{ _("in one screen") }}</span>
+	</h1>
+
+	<p class="landing-lede">
+		{{ _("Repairs, sales, stock and the people who handle them — running on {0}, without anyone needing the back-office system.").format(company) }}
+	</p>
+
+	<div class="landing-cta">
+		{% if signed_in %}
+			<a class="btn btn-primary btn-lg" href="/branch/dashboard">{{ _("Open my dashboard") }}</a>
+			<button class="btn btn-quiet btn-lg" id="signout" type="button">{{ _("Sign out") }}</button>
+		{% else %}
+			<a class="btn btn-primary btn-lg" href="/branch/login">{{ _("Sign in to your branch") }}</a>
+			<a class="btn btn-quiet btn-lg" href="/stores">{{ _("Find a store") }}</a>
+		{% endif %}
+	</div>
+
+	<section class="landing-cards">
+		<article class="landing-card">
+			<div class="landing-icon sky">◧</div>
+			<h3>{{ _("Your branch at a glance") }}</h3>
+			<p>{{ _("Repairs received, work in progress, devices waiting for collection, anything past its promised time, and today's takings — counted live for your branch only.") }}</p>
+		</article>
+
+		<article class="landing-card">
+			<div class="landing-icon orange">✓</div>
+			<h3>{{ _("What needs you today") }}</h3>
+			<p>{{ _("A technician sees their own jobs, reception sees devices ready to hand over, the store keeper sees transfers waiting for approval. One list, in the order it matters.") }}</p>
+		</article>
+
+		<article class="landing-card">
+			<div class="landing-icon sky">◱</div>
+			<h3>{{ _("Built for the counter") }}</h3>
+			<p>{{ _("Works on the phone in your pocket. No back-office system to learn, and nothing on the screen that belongs to another branch.") }}</p>
+		</article>
+	</section>
+
+	<section class="landing-strip">
+		<div>
+			<strong>{{ _("Customers have their own pages") }}</strong>
+			<p>{{ _("Send them a link — they track the repair, approve an estimate, pay, or leave feedback without signing in.") }}</p>
+		</div>
+		<div class="landing-strip-links">
+			<a href="/track-service">{{ _("Track a repair") }}</a>
+			<a href="/offers">{{ _("Offers") }}</a>
+			<a href="/stores">{{ _("Stores") }}</a>
+			<a href="/support">{{ _("Raise a complaint") }}</a>
+		</div>
+	</section>
+</main>
+
+<footer class="landing-foot">
+	<span>{{ company }}</span>
+	<span>{{ _("Head office and accounts use the main system.") }}</span>
+</footer>
+
+{% if signed_in %}
+<script src="/assets/a3_retail/js/a3_branch.js" defer></script>
+<script>
+window.addEventListener("DOMContentLoaded", function () {
+	document.getElementById("signout").addEventListener("click", A3.logout);
+});
+</script>
+{% endif %}
+</body>
+</html>
