@@ -1,83 +1,77 @@
-{% extends "templates/web.html" %}
-{% block title %}{{ _("Branch Sign In") }}{% endblock %}
-
-{% block page_content %}
-<div class="a3-staff a3-staff-login">
-	<div class="a3-staff-card">
-		<div class="a3-staff-brand">
-			<div class="a3-staff-logo">A3</div>
-			<div>
-				<h1>{{ company }}</h1>
-				<p>{{ _("Branch staff sign-in") }}</p>
-			</div>
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>{{ _("Sign in") }} · {{ app_name }}</title>
+	<meta name="description" content="{{ _('Branch app for A3 Retail — sign in to your shop.') }}">
+	<meta name="robots" content="noindex">
+	<link rel="stylesheet" href="/assets/a3_retail/css/a3_branch.css">
+	<script src="/assets/a3_retail/js/a3_branch.js" defer></script>
+</head>
+<body>
+<main class="login-shell">
+	<div class="login-box">
+		<div class="login-head">
+			{% include "a3_retail/www/branch/_mark.html" %}
+			<h1>{{ _("Sign in") }}</h1>
+			<p>{{ _("Welcome back to the {0} branch app").format(company) }}</p>
 		</div>
 
-		<form id="a3-login-form" autocomplete="on">
-			<label for="a3-usr">{{ _("Work email") }}</label>
-			<input id="a3-usr" name="username" type="email" autocomplete="username"
-			       placeholder="you@mobileworld.in" required>
+		<form class="card" id="login-form" autocomplete="on" novalidate>
+			<div class="field">
+				<label for="usr">{{ _("Work email") }}</label>
+				<input id="usr" name="username" type="email" inputmode="email"
+				       autocomplete="username" placeholder="you@mobileworld.in"
+				       autofocus required>
+			</div>
 
-			<label for="a3-pwd">{{ _("Password") }}</label>
-			<input id="a3-pwd" name="password" type="password" autocomplete="current-password"
-			       placeholder="••••••••" required>
+			<div class="field">
+				<label for="pwd">{{ _("Password") }}</label>
+				<input id="pwd" name="password" type="password"
+				       autocomplete="current-password" placeholder="••••••••" required>
+			</div>
 
-			<button class="a3-staff-btn" type="submit" id="a3-submit">{{ _("Sign in") }}</button>
+			<button class="btn btn-primary btn-block" type="submit" id="submit">
+				{{ _("Sign in") }}
+			</button>
+
+			<div class="msg" id="msg" role="status" aria-live="polite"></div>
 		</form>
 
-		<div id="a3-login-msg" class="a3-staff-msg" role="status"></div>
-
-		<div class="a3-staff-foot">
-			<a href="/?forgot=1" id="a3-forgot">{{ _("Forgot password?") }}</a>
-			<span>{{ _("Trouble signing in? Ask your branch manager.") }}</span>
-		</div>
+		<p class="login-foot">
+			{{ _("Trouble signing in? Ask your branch manager.") }}<br>
+			{{ _("Head office and accounts use the main system.") }}
+		</p>
 	</div>
-
-	<p class="a3-staff-note">
-		{{ _("This is the branch app. Head office and accounts use the main system.") }}
-	</p>
-</div>
+</main>
 
 <script>
-(function () {
-	const form = document.getElementById("a3-login-form");
-	const button = document.getElementById("a3-submit");
-	const message = document.getElementById("a3-login-msg");
-
-	function say(text, kind) {
-		message.textContent = text;
-		message.className = "a3-staff-msg" + (kind ? " is-" + kind : "");
-	}
+window.addEventListener("DOMContentLoaded", function () {
+	const form = document.getElementById("login-form");
+	const button = document.getElementById("submit");
+	const msg = document.getElementById("msg");
 
 	form.addEventListener("submit", async function (event) {
 		event.preventDefault();
 		button.disabled = true;
-		say("{{ _('Signing you in…') }}");
-
-		const body = new URLSearchParams({
-			usr: document.getElementById("a3-usr").value.trim(),
-			pwd: document.getElementById("a3-pwd").value,
-		});
+		msg.className = "msg";
+		msg.textContent = "{{ _('Signing you in…') }}";
 
 		try {
-			const response = await fetch("/api/method/login", {
-				method: "POST",
-				headers: { "Content-Type": "application/x-www-form-urlencoded" },
-				body,
-			});
-			const data = await response.json().catch(() => ({}));
-
-			// Frappe answers "Logged In" for desk users and "No App" for website
-			// users — both mean the session is open.
-			const ok = data.message === "Logged In" || data.message === "No App";
-			if (!response.ok || !ok) {
-				throw new Error("{{ _('Wrong email or password.') }}");
-			}
+			await A3.login(
+				document.getElementById("usr").value.trim(),
+				document.getElementById("pwd").value
+			);
 			window.location.href = "{{ home_page }}";
 		} catch (error) {
-			say(error.message || "{{ _('Wrong email or password.') }}", "error");
+			msg.className = "msg error";
+			msg.textContent = "{{ _('That email and password do not match.') }}";
 			button.disabled = false;
+			document.getElementById("pwd").select();
 		}
 	});
-})();
+});
 </script>
-{% endblock %}
+</body>
+</html>

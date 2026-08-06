@@ -1,101 +1,192 @@
-{% extends "templates/web.html" %}
-{% block title %}{{ _("Branch Dashboard") }}{% endblock %}
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="csrf-token" content="{{ csrf_token }}">
+	<meta name="robots" content="noindex">
+	<title>{{ me.branch }} · {{ app_name }}</title>
+	<link rel="stylesheet" href="/assets/a3_retail/css/a3_branch.css">
+	<script src="/assets/a3_retail/js/a3_branch.js" defer></script>
+</head>
+<body>
+<div class="app" id="top">
 
-{% block page_content %}
-{%- set context_data = data.context -%}
-<div class="a3-staff">
+	<aside class="side">
+		{% include "a3_retail/www/branch/_mark.html" %}
 
-	<header class="a3-staff-header">
-		<div>
-			<div class="a3-staff-hello">{{ greeting }}, {{ context_data.employee_name.split(" ")[0] }}</div>
-			<h1>{{ context_data.branch }}</h1>
-			<div class="a3-staff-sub">
-				{{ context_data.designation or _("Staff") }}
-				{%- if context_data.roles %} · {{ context_data.roles|join(" · ") }}{% endif %}
+		<nav class="side-nav">
+			{% for key, label, href in nav %}
+			<a href="{{ href }}" class="{{ 'is-active' if loop.first else '' }}"
+			   data-nav="{{ key }}"><span class="dot"></span>{{ _(label) }}</a>
+			{% endfor %}
+		</nav>
+
+		<div class="side-foot">
+			{{ company }}<br>
+			{{ _("Branch app") }} · {{ me.branch }}<br>
+			<span id="stamp">{{ _("Updated") }} {{ data.as_of[11:16] }}</span>
+		</div>
+	</aside>
+
+	<div class="main">
+		<header class="topbar">
+			<div class="topbar-branch">
+				<h1>{{ me.branch }}</h1>
+				<span class="chip">{{ me.designation or _("Staff") }}</span>
 			</div>
-		</div>
-		<div class="a3-staff-actions">
-			<span class="a3-staff-user">{{ context_data.user }}</span>
-			<button class="a3-staff-btn a3-staff-btn-quiet" id="a3-logout">{{ _("Sign out") }}</button>
-		</div>
-	</header>
 
-	{% if data.notices %}
-	<section class="a3-staff-notices">
-		{% for notice in data.notices %}
-			<div class="a3-staff-notice is-{{ notice.tone }}">{{ notice.text }}</div>
-		{% endfor %}
-	</section>
-	{% endif %}
+			<div class="topbar-right">
+				<button class="btn btn-quiet" id="refresh" type="button">{{ _("Refresh") }}</button>
+				<div class="who">
+					<div class="name">{{ me.employee_name }}</div>
+					<div class="role">{{ me.roles|join(" · ") if me.roles else me.user }}</div>
+				</div>
+				<div class="avatar" title="{{ me.user }}">{{ initials }}</div>
+				<button class="btn btn-quiet" id="signout" type="button">{{ _("Sign out") }}</button>
+			</div>
+		</header>
 
-	{% if data.tiles %}
-	<section class="a3-staff-tiles">
-		{% for tile in data.tiles %}
-		<div class="a3-staff-tile is-{{ tile.tone }}">
-			<div class="a3-staff-tile-value">{{ tile.value }}</div>
-			<div class="a3-staff-tile-label">{{ tile.label }}</div>
-		</div>
-		{% endfor %}
-	</section>
-	{% endif %}
+		<main class="content">
+			<div class="hello">{{ greeting }}, <strong>{{ me.employee_name.split(" ")[0] }}</strong>
+				— {{ _("here is your branch right now.") }}</div>
 
-	<div class="a3-staff-columns">
-		<section class="a3-staff-panel">
-			<h2>{{ _("What needs you today") }}</h2>
-			{% if data.my_work %}
-			<ul class="a3-staff-list">
-				{% for row in data.my_work %}
-				<li class="{{ 'is-urgent' if row.urgent else '' }}">
-					<div class="a3-staff-list-main">
-						<span class="a3-staff-kind">{{ row.kind }}</span>
-						<span class="a3-staff-ref">{{ row.reference }}</span>
-						<div class="a3-staff-title">{{ row.title }}</div>
-					</div>
-					<div class="a3-staff-list-side">
-						<div class="a3-staff-status">{{ row.status }}</div>
-						{% if row.due %}<div class="a3-staff-due">{{ _("Due") }} {{ row.due[:16] }}</div>{% endif %}
-					</div>
-				</li>
+			<section class="notices" id="notices">
+				{% for notice in data.notices %}
+				<div class="notice is-{{ notice.tone }}">{{ notice.text }}</div>
 				{% endfor %}
-			</ul>
-			{% else %}
-			<p class="a3-staff-empty">{{ _("Your list is clear.") }}</p>
-			{% endif %}
-		</section>
+			</section>
 
-		<section class="a3-staff-panel">
-			<h2>{{ _("Latest at this branch") }}</h2>
-			{% if data.branch_activity %}
-			<ul class="a3-staff-list a3-staff-list-compact">
-				{% for row in data.branch_activity %}
-				<li>
-					<div class="a3-staff-list-main">
-						<span class="a3-staff-ref">{{ row.reference }}</span>
-						<div class="a3-staff-title">{{ row.title }}</div>
-					</div>
-					<div class="a3-staff-list-side">
-						<div class="a3-staff-status">{{ row.status }}</div>
-						<div class="a3-staff-due">{{ row.when[:16] }}</div>
-					</div>
-				</li>
+			<section class="tiles" id="tiles">
+				{% for tile in data.tiles %}
+				<div class="tile is-{{ tile.tone }}">
+					<div class="value">{{ tile.value }}</div>
+					<div class="label">{{ tile.label }}</div>
+				</div>
 				{% endfor %}
-			</ul>
-			{% else %}
-			<p class="a3-staff-empty">{{ _("No activity recorded yet.") }}</p>
-			{% endif %}
-		</section>
+			</section>
+
+			<div class="panels">
+				<section class="panel" id="work">
+					<div class="panel-head">
+						<h2>{{ _("What needs you today") }}</h2>
+						<span class="chip" id="work-count">{{ data.my_work|length }}</span>
+					</div>
+					<div class="panel-body">
+						{% if data.my_work %}
+						<ul class="rows" id="work-rows">
+							{% for row in data.my_work %}
+							<li class="{{ 'is-urgent' if row.urgent else '' }}">
+								<div class="row-main">
+									<span class="chip {{ 'bad' if row.urgent else '' }}">{{ row.kind }}</span>
+									<span class="row-ref">{{ row.reference }}</span>
+									<div class="row-title">{{ row.title }}</div>
+								</div>
+								<div class="row-side">
+									<div class="row-status">{{ row.status }}</div>
+									{% if row.due %}<div class="row-due">{{ _("Due") }} {{ row.due[:16] }}</div>{% endif %}
+								</div>
+							</li>
+							{% endfor %}
+						</ul>
+						{% else %}
+						<p class="empty">{{ _("Your list is clear. Nice.") }}</p>
+						{% endif %}
+					</div>
+				</section>
+
+				<section class="panel" id="activity">
+					<div class="panel-head"><h2>{{ _("Latest at this branch") }}</h2></div>
+					<div class="panel-body">
+						{% if data.branch_activity %}
+						<ul class="rows">
+							{% for row in data.branch_activity %}
+							<li>
+								<div class="row-main">
+									<span class="row-ref">{{ row.reference }}</span>
+									<div class="row-title">{{ row.title }}</div>
+								</div>
+								<div class="row-side">
+									<div class="row-status">{{ row.status }}</div>
+									<div class="row-due">{{ row.when[5:16] }}</div>
+								</div>
+							</li>
+							{% endfor %}
+						</ul>
+						{% else %}
+						<p class="empty">{{ _("Nothing recorded here yet.") }}</p>
+						{% endif %}
+					</div>
+				</section>
+			</div>
+
+			<footer class="foot">
+				<span>{{ company }} · {{ _("Branch app") }}</span>
+				<span>{{ me.user }}</span>
+			</footer>
+		</main>
 	</div>
-
-	<footer class="a3-staff-footer">
-		<span>{{ company }} · {{ _("Branch app") }}</span>
-		<span>{{ _("Updated") }} {{ data.as_of[:16] }}</span>
-	</footer>
 </div>
 
 <script>
-document.getElementById("a3-logout").addEventListener("click", async function () {
-	await fetch("/api/method/logout", { method: "POST" });
-	window.location.href = "/branch/login";
+window.addEventListener("DOMContentLoaded", function () {
+	document.getElementById("signout").addEventListener("click", A3.logout);
+
+	const refresh = document.getElementById("refresh");
+	refresh.addEventListener("click", async function () {
+		refresh.disabled = true;
+		try {
+			const data = await A3.call("a3_retail.api.staff.dashboard");
+			paint(data);
+		} catch (error) {
+			// A dropped session is the usual cause; send them back to sign in.
+			window.location.href = "/branch/login";
+		} finally {
+			refresh.disabled = false;
+		}
+	});
+
+	// The page is refreshed on a timer as well — a counter shown at the counter
+	// has to be right without anyone remembering to reload it.
+	setInterval(() => refresh.click(), 120000);
+
+	function paint(data) {
+		document.getElementById("tiles").innerHTML = data.tiles
+			.map((tile) => `<div class="tile is-${tile.tone}">
+				<div class="value">${tile.value}</div>
+				<div class="label">${tile.label}</div></div>`)
+			.join("");
+
+		document.getElementById("notices").innerHTML = data.notices
+			.map((notice) => `<div class="notice is-${notice.tone}">${escape(notice.text)}</div>`)
+			.join("");
+
+		document.getElementById("work-count").textContent = data.my_work.length;
+		const rows = document.getElementById("work-rows");
+		if (rows) {
+			rows.innerHTML = data.my_work
+				.map((row) => `<li class="${row.urgent ? "is-urgent" : ""}">
+					<div class="row-main">
+						<span class="chip ${row.urgent ? "bad" : ""}">${escape(row.kind)}</span>
+						<span class="row-ref">${escape(row.reference)}</span>
+						<div class="row-title">${escape(row.title)}</div>
+					</div>
+					<div class="row-side">
+						<div class="row-status">${escape(row.status)}</div>
+						${row.due ? `<div class="row-due">Due ${escape(row.due.slice(0, 16))}</div>` : ""}
+					</div></li>`)
+				.join("");
+		}
+
+		document.getElementById("stamp").textContent = "Updated " + data.as_of.slice(11, 16);
+	}
+
+	function escape(value) {
+		const node = document.createElement("div");
+		node.textContent = value == null ? "" : String(value);
+		return node.innerHTML;
+	}
 });
 </script>
-{% endblock %}
+</body>
+</html>

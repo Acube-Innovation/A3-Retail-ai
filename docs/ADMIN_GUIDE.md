@@ -98,6 +98,13 @@ bench --site a3.local console
 Head-office employees are skipped automatically, and so is anyone holding
 System Manager, A3 Retail Admin, Accounts Manager, HR Manager or Auditor.
 
+The branch app is a **standalone front end**, not an ERPNext website page: the
+documents under `a3_retail/www/branch/` extend nothing, load only
+`assets/a3_retail/css/a3_branch.css` and `a3_branch.js`, and talk to ERPNext
+purely through `/api/method/a3_retail.api.staff.*`. Swapping it for a separate
+React or Next.js build later means pointing that build at the same endpoints —
+nothing else in the app has to change.
+
 **Consequence to plan for:** the desk pages built for the shop floor — Reception
 Desk, Technician Workbench, Stock Explorer, Control Tower — are desk pages, so
 branch staff can no longer open them. They are reachable by head-office accounts;

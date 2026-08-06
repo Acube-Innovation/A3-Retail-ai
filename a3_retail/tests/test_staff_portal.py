@@ -86,8 +86,27 @@ class TestPortalPagesExist(FrappeTestCase):
 		for name in ("login.html", "login.py", "dashboard.html", "dashboard.py", "index.py"):
 			self.assertTrue(os.path.exists(os.path.join(folder, name)), name)
 
-	def test_the_staff_stylesheet_is_served(self):
-		self.assertIn("a3_staff.css", str(frappe.get_hooks("web_include_css")))
+	def test_the_pages_are_standalone_documents(self):
+		"""The branch app must not pull in ERPNext's web template or bundles."""
+		folder = frappe.get_app_path("a3_retail", "www", "branch")
+		for name in ("login.html", "dashboard.html"):
+			markup = open(os.path.join(folder, name)).read()
+			self.assertIn("<!doctype html>", markup.lower(), name)
+			self.assertNotIn("templates/web.html", markup, name)
+			self.assertNotIn("{% extends", markup, name)
+			self.assertIn("/assets/a3_retail/css/a3_branch.css", markup, name)
+
+	def test_the_customer_portal_still_uses_the_web_template(self):
+		markup = open(
+			os.path.join(frappe.get_app_path("a3_retail", "templates", "pages"), "support.html")
+		).read()
+		self.assertIn("templates/web.html", markup)
+
+	def test_the_branch_assets_exist(self):
+		for asset in ("css/a3_branch.css", "js/a3_branch.js"):
+			self.assertTrue(
+				os.path.exists(os.path.join(frappe.get_app_path("a3_retail", "public"), asset)), asset
+			)
 
 
 class TestSessionBoundary(FrappeTestCase):
