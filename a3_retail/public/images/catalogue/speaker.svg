@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Speaker module">
+  <rect x="28" y="34" width="72" height="60" rx="12" fill="#3b4252"/>
+  <circle cx="64" cy="64" r="21" fill="#20242e"/>
+  <circle cx="64" cy="64" r="11" fill="#59637a"/>
+  <circle cx="64" cy="64" r="4" fill="#8b93a1"/>
+  <rect x="36" y="42" width="8" height="8" rx="2" fill="#59637a"/>
+</svg>

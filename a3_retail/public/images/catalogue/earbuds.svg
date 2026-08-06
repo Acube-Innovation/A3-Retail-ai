@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Earbuds">
+  <rect x="26" y="46" width="76" height="56" rx="16" fill="#eef1f6" stroke="#d3d9e3" stroke-width="2"/>
+  <rect x="26" y="46" width="76" height="12" rx="6" fill="#dde2ea"/>
+  <circle cx="48" cy="34" r="14" fill="#ffffff" stroke="#d3d9e3" stroke-width="2"/>
+  <circle cx="80" cy="34" r="14" fill="#ffffff" stroke="#d3d9e3" stroke-width="2"/>
+  <rect x="44" y="34" width="8" height="22" rx="4" fill="#ffffff" stroke="#d3d9e3" stroke-width="2"/>
+  <rect x="76" y="34" width="8" height="22" rx="4" fill="#ffffff" stroke="#d3d9e3" stroke-width="2"/>
+</svg>

@@ -85,6 +85,7 @@ def run():
 	_items(company)
 	_device_models()
 	_reorder_levels(company)
+	_artwork()
 
 
 def _brands():
@@ -222,3 +223,11 @@ def _reorder_levels(company):
 		item.flags.ignore_permissions = True
 		item.flags.ignore_mandatory = True
 		item.save(ignore_permissions=True)
+
+
+def _artwork():
+	"""Hang the demo catalogue pictures once the items exist."""
+	from a3_retail.demo import images
+
+	images.run(verbose=False)
+

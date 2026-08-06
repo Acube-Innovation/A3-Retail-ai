@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Power bank">
+  <rect x="34" y="14" width="60" height="100" rx="14" fill="#2b3140"/>
+  <rect x="39" y="19" width="50" height="90" rx="10" fill="#454f63"/>
+  <rect x="47" y="30" width="34" height="7" rx="3.5" fill="#8ee6b8"/>
+  <rect x="47" y="41" width="34" height="7" rx="3.5" fill="#8ee6b8"/>
+  <rect x="47" y="52" width="34" height="7" rx="3.5" fill="#8ee6b8" opacity=".4"/>
+  <rect x="52" y="86" width="24" height="10" rx="3" fill="#20242e"/>
+</svg>

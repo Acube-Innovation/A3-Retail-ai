@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Smart watch">
+  <rect x="46" y="6" width="36" height="26" rx="9" fill="#3b4252"/>
+  <rect x="46" y="96" width="36" height="26" rx="9" fill="#3b4252"/>
+  <rect x="34" y="26" width="60" height="76" rx="18" fill="#20242e"/>
+  <rect x="39" y="31" width="50" height="66" rx="14" fill="#3d4c66"/>
+  <circle cx="64" cy="64" r="17" fill="none" stroke="#7fd4b8" stroke-width="5"
+          stroke-linecap="round" stroke-dasharray="80 30" transform="rotate(-90 64 64)"/>
+  <rect x="94" y="52" width="5" height="16" rx="2.5" fill="#5b6577"/>
+</svg>

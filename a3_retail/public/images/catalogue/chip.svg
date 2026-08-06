@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Board level part">
+  <rect x="36" y="36" width="56" height="56" rx="8" fill="#2b3140"/>
+  <rect x="46" y="46" width="36" height="36" rx="5" fill="#4a5568"/>
+  <g stroke="#8b93a1" stroke-width="5" stroke-linecap="round">
+    <path d="M48 36V22M64 36V22M80 36V22M48 92v14M64 92v14M80 92v14"/>
+    <path d="M36 48H22M36 64H22M36 80H22M92 48h14M92 64h14M92 80h14"/>
+  </g>
+</svg>

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Cable">
+  <path d="M30 24c0 26 68 22 68 50s-52 20-52 34" fill="none" stroke="#3b4252" stroke-width="9"
+        stroke-linecap="round"/>
+  <rect x="20" y="12" width="20" height="20" rx="5" fill="#8b93a1"/>
+  <rect x="36" y="100" width="20" height="20" rx="5" fill="#8b93a1"/>
+</svg>

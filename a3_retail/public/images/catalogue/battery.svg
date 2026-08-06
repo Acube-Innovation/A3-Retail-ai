@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Battery">
+  <rect x="30" y="26" width="68" height="82" rx="10" fill="#2f7d5b"/>
+  <rect x="35" y="31" width="58" height="72" rx="7" fill="#43a97b"/>
+  <rect x="42" y="16" width="14" height="12" rx="3" fill="#20242e"/>
+  <rect x="72" y="16" width="14" height="12" rx="3" fill="#20242e"/>
+  <path d="m70 44-18 30h13l-5 20 20-32H67z" fill="#ffffff" opacity=".9"/>
+</svg>

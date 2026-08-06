@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Headphones">
+  <path d="M22 76V64a42 42 0 0 1 84 0v12" fill="none" stroke="#2b3140" stroke-width="11"
+        stroke-linecap="round"/>
+  <rect x="12" y="66" width="26" height="42" rx="12" fill="#3b4252"/>
+  <rect x="90" y="66" width="26" height="42" rx="12" fill="#3b4252"/>
+  <rect x="17" y="72" width="16" height="30" rx="8" fill="#59637a"/>
+  <rect x="95" y="72" width="16" height="30" rx="8" fill="#59637a"/>
+</svg>

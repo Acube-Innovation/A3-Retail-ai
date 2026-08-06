@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Tempered glass">
+  <rect x="34" y="10" width="60" height="108" rx="12" fill="#e9eef6" stroke="#cbd4e1" stroke-width="2"/>
+  <path d="M40 112 96 16" stroke="#ffffff" stroke-width="14" opacity=".85"/>
+  <path d="M52 118 108 24" stroke="#ffffff" stroke-width="7" opacity=".6"/>
+  <path d="M44 22h30" stroke="#b9c6d8" stroke-width="5" stroke-linecap="round"/>
+</svg>

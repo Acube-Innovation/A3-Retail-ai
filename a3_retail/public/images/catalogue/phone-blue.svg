@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 168" role="img" aria-label="Blue handset">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7ab6f5"/><stop offset="1" stop-color="#2f6fd0"/>
+    </linearGradient>
+    <linearGradient id="s" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity=".35"/>
+      <stop offset=".55" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect x="6" y="4" width="84" height="160" rx="15" fill="#1f4e97"/>
+  <rect x="9" y="7" width="78" height="154" rx="12.5" fill="url(#g)"/>
+  <rect x="9" y="7" width="78" height="154" rx="12.5" fill="url(#s)"/>
+  <rect x="36" y="10" width="24" height="5" rx="2.5" fill="#1f4e97" opacity=".65"/>
+  <rect x="16" y="16" width="34" height="34" rx="10" fill="#1f4e97" opacity=".55"/>
+  <circle cx="26" cy="26" r="6" fill="#11161f"/><circle cx="40" cy="26" r="6" fill="#11161f"/>
+  <circle cx="26" cy="40" r="6" fill="#11161f"/>
+  <circle cx="24.5" cy="24.5" r="1.7" fill="#5f7796"/>
+</svg>
