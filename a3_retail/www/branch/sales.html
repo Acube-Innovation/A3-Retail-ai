@@ -10,7 +10,7 @@
 	<script src="/assets/a3_retail/js/a3_branch.js" defer></script>
 	<script src="/assets/a3_retail/js/a3_pos.js" defer></script>
 </head>
-<body>
+<body class="pos-body">
 <div class="app">
 
 	{% include "a3_retail/www/branch/_sidebar.html" %}
@@ -33,91 +33,169 @@
 		</header>
 
 		<main class="pos">
+			<!-- =============================================== left column -->
+			<section class="pos-left">
 
-			<!-- ------------------------------------------------ catalogue -->
-			<section class="pos-catalogue">
 				<div class="pos-search">
-					<input id="q" type="search" autocomplete="off" autofocus
-					       placeholder="{{ _('Search a phone, accessory or plan — name, brand or code') }}">
+					<div class="pos-search-box">
+						{% set icon = "search" %}{% include "a3_retail/www/branch/_icons.html" %}
+						<input id="q" type="search" autocomplete="off" autofocus
+						       placeholder="{{ _('Search by name, IMEI, barcode or scan…') }}">
+					</div>
 					<label class="pos-toggle">
 						<input type="checkbox" id="in-stock" checked>
 						<span>{{ _("In stock here") }}</span>
 					</label>
 				</div>
 
-				<div class="pos-groups" id="groups">
-					<button class="pill is-active" data-group="">{{ _("Everything") }}</button>
-					{% for group in groups %}
-					<button class="pill" data-group="{{ group }}">{{ group }}</button>
-					{% endfor %}
+				<div class="pos-tabsrow">
+					<div class="pos-tabs" id="groups">
+						<button class="tab is-active" data-group="">{{ _("Everything") }}</button>
+						{% for group in groups[:6] %}
+						<button class="tab" data-group="{{ group }}">{{ group }}</button>
+						{% endfor %}
+						{% if groups|length > 6 %}
+						<button class="tab tab-more" id="more-groups">+ {{ _("More") }}</button>
+						{% endif %}
+					</div>
+					<div class="pos-view">
+						<button class="view is-active" data-view="grid" title="{{ _('Grid') }}">
+							{% set icon = "tiles" %}{% include "a3_retail/www/branch/_icons.html" %}</button>
+						<button class="view" data-view="list" title="{{ _('List') }}">
+							{% set icon = "list" %}{% include "a3_retail/www/branch/_icons.html" %}</button>
+					</div>
 				</div>
 
 				<div class="pos-grid" id="grid">
 					<div class="pos-loading">{{ _("Loading the catalogue…") }}</div>
 				</div>
-			</section>
 
-			<!-- ----------------------------------------------------- bill -->
-			<aside class="pos-bill">
-				<div class="pos-customer" id="customer-box">
-					<div class="pos-customer-head">
-						<h2>{{ _("Customer") }}</h2>
+				<!-- ------------------------------------------- customer -->
+				<section class="pos-panel pos-customer">
+					<h2>{{ _("Customer") }}</h2>
+
+					<div class="pos-cust-search">
+						<input id="cust-q" autocomplete="off"
+						       placeholder="{{ _('Search customer by name, phone or email…') }}">
+						<button class="btn btn-outline" id="new-customer">{{ _("New Customer") }}</button>
+						<ul class="cust-results" id="cust-results" hidden></ul>
+					</div>
+
+					<div class="pos-cust-phone">
+						<div class="input-icon">
+							{% set icon = "phone" %}{% include "a3_retail/www/branch/_icons.html" %}
+							<input id="mobile" inputmode="numeric" maxlength="10"
+							       placeholder="{{ _('Mobile number') }}">
+						</div>
+						<button class="btn btn-outline" id="find-customer">{{ _("Find") }}</button>
 						<span class="chip" id="customer-chip">{{ _("Walk-in") }}</span>
 					</div>
 
-					<div class="pos-row">
-						<input id="mobile" inputmode="numeric" maxlength="10"
-						       placeholder="{{ _('Mobile number') }}">
-						<button class="btn btn-quiet" id="find-customer">{{ _("Find") }}</button>
-					</div>
-
-					<div id="customer-detail" class="pos-customer-detail" hidden>
+					<div class="pos-cust-grid">
 						<input id="customer-name" placeholder="{{ _('Customer name') }}">
 						<input id="customer-email" type="email" placeholder="{{ _('Email (optional)') }}">
 						<input id="customer-address" placeholder="{{ _('Address') }}">
-						<div class="pos-row">
-							<input id="customer-city" placeholder="{{ _('City') }}">
-							<input id="customer-state" placeholder="{{ _('State') }}"
-							       value="{{ profile.state or '' }}">
-							<input id="customer-pin" inputmode="numeric" maxlength="6"
-							       placeholder="{{ _('PIN') }}">
+						<input id="customer-city" placeholder="{{ _('City') }}">
+						<input id="customer-state" placeholder="{{ _('State') }}"
+						       value="{{ profile.state or '' }}">
+						<input id="customer-pin" inputmode="numeric" maxlength="6" placeholder="{{ _('PIN') }}">
+					</div>
+
+					<div class="pos-cust-foot">
+						<button class="btn btn-quiet" id="save-customer">{{ _("Save customer") }}</button>
+						<div id="customer-history" class="pos-history"></div>
+					</div>
+				</section>
+
+				<!-- --------------------------------------- quick actions -->
+				<section class="pos-quick">
+					<h2>{{ _("Quick Actions") }}</h2>
+					<div class="quick-row">
+						{% for key, label, shortcut, icon_name in [
+							("recent", "Recent Bills", "F3", "clock"),
+							("hold", "Hold Bill", "F4", "pause"),
+							("clear", "Clear Cart", "F5", "eraser"),
+							("drafts", "Drafts", "F6", "draft"),
+							("loyalty", "Loyalty", "F7", "heart"),
+							("price", "Price Check", "F8", "price")] %}
+						<button class="quick" data-action="{{ key }}">
+							{% set icon = icon_name %}{% include "a3_retail/www/branch/_icons.html" %}
+							<span class="quick-label">{{ _(label) }}</span>
+							<span class="quick-key">{{ shortcut }}</span>
+						</button>
+						{% endfor %}
+					</div>
+				</section>
+			</section>
+
+			<!-- ============================================== current bill -->
+			<aside class="pos-bill">
+				<div class="bill-head">
+					<h2>{{ _("Current Bill") }}</h2>
+					<div class="bill-head-right">
+						<span class="bill-no" id="bill-no">{{ _("New") }}</span>
+						<button class="icon-btn" id="clear-cart" title="{{ _('Clear cart') }}">
+							{% set icon = "trash" %}{% include "a3_retail/www/branch/_icons.html" %}</button>
+					</div>
+				</div>
+
+				<div class="bill-table">
+					<div class="bill-thead">
+						<span>{{ _("Item") }}</span><span>{{ _("Qty") }}</span>
+						<span>{{ _("Rate") }}</span><span>{{ _("Amount") }}</span><span></span>
+					</div>
+					<div class="bill-rows" id="lines">
+						<div class="bill-empty">{{ _("Tap an item to start the bill.") }}</div>
+					</div>
+				</div>
+
+				<input id="notes" class="bill-notes" placeholder="{{ _('Notes (optional)') }}">
+
+				<div class="bill-totals">
+					<div class="tr"><span>{{ _("Items") }} (<b id="count">0</b>)</span>
+						<span id="items-total">₹0</span></div>
+					<div class="tr"><span>{{ _("Subtotal") }}</span><span id="subtotal">₹0</span></div>
+					<div class="tr tr-discount">
+						<span>{{ _("Discount") }}</span>
+						<select id="discount-type"><option value="%">%</option><option value="₹">₹</option></select>
+						<input id="discount-value" type="number" min="0" step="0.01" placeholder="0.00">
+						<span id="discount-amount">- ₹0</span>
+					</div>
+					<div class="tr"><span>{{ _("Taxable Amount") }}</span><span id="taxable">₹0</span></div>
+					<div class="tr"><span>{{ _("GST") }} (<span id="gst-rate">18</span>%)</span>
+						<span id="gst">₹0</span></div>
+					<div class="tr tr-grand"><span>{{ _("Grand Total") }}</span>
+						<span id="grand">₹0</span></div>
+				</div>
+
+				<div class="bill-pay">
+					<h3>{{ _("Payment Method") }}</h3>
+					<div class="pay-tiles" id="pay-tiles">
+						{% for tile, icon_name in [("Cash", "cash"), ("Card", "card"), ("UPI", "upi"),
+						                           ("Wallet", "wallet"), ("EMI", "emi"), ("Other", "other")] %}
+						<button class="pay {{ 'is-active' if tile == 'Cash' else '' }}" data-mode="{{ tile }}">
+							{% set icon = icon_name %}{% include "a3_retail/www/branch/_icons.html" %}
+							<span>{{ tile }}</span>
+						</button>
+						{% endfor %}
+					</div>
+
+					<div class="pay-row">
+						<label for="received">{{ _("Received Amount") }}</label>
+						<div class="input-rupee">
+							<span>₹</span><input id="received" type="number" min="0" step="1" placeholder="0">
 						</div>
-						<button class="btn btn-quiet btn-block" id="save-customer">{{ _("Save customer") }}</button>
 					</div>
-
-					<div id="customer-history" class="pos-history"></div>
-				</div>
-
-				<div class="pos-cart">
-					<div class="pos-cart-head">
-						<h2>{{ _("Bill") }}</h2>
-						<button class="pos-link" id="clear-cart">{{ _("Clear") }}</button>
+					<div class="pay-row">
+						<label>{{ _("Change") }}</label>
+						<div class="change" id="change">₹ 0.00</div>
 					</div>
-					<ul class="pos-lines" id="lines">
-						<li class="pos-empty">{{ _("Tap an item to start the bill.") }}</li>
-					</ul>
 				</div>
 
-				<div class="pos-total">
-					<div class="pos-total-row"><span>{{ _("Items") }}</span><span id="count">0</span></div>
-					<div class="pos-total-row pos-total-grand">
-						<span>{{ _("Subtotal") }}</span><span id="subtotal">₹0</span>
-					</div>
-					<div class="pos-total-note">{{ _("GST is calculated on the invoice.") }}</div>
-
-					<select id="mode">
-						{% for mode in payment_modes %}<option value="{{ mode }}">{{ mode }}</option>{% endfor %}
-					</select>
-					<button class="btn btn-primary btn-block" id="checkout" disabled>
-						{{ _("Complete sale") }}
-					</button>
-					<div class="msg" id="pos-msg"></div>
-				</div>
-
-				<div class="pos-recent">
-					<h2>{{ _("Today's bills") }}</h2>
-					<ul id="recent"><li class="pos-empty">{{ _("Nothing billed yet.") }}</li></ul>
-				</div>
+				<button class="btn btn-primary btn-block btn-complete" id="checkout" disabled>
+					{{ _("Complete Sale") }} <span class="key">F9</span>
+				</button>
+				<div class="msg" id="pos-msg"></div>
 			</aside>
 		</main>
 	</div>
@@ -130,9 +208,7 @@
 		<p class="modal-note">{{ _("Scan or tap the handset you are handing over. A device cannot be billed without it.") }}</p>
 		<input id="serial-scan" placeholder="{{ _('Scan IMEI') }}" autocomplete="off">
 		<ul class="serial-list" id="serial-list"></ul>
-		<div class="modal-actions">
-			<button class="btn btn-quiet" data-close>{{ _("Cancel") }}</button>
-		</div>
+		<div class="modal-actions"><button class="btn btn-quiet" data-close>{{ _("Cancel") }}</button></div>
 	</div>
 </div>
 
@@ -141,27 +217,36 @@
 		<h3 id="elsewhere-title">{{ _("Not in this branch") }}</h3>
 		<p class="modal-note" id="elsewhere-note"></p>
 		<ul class="branch-list" id="elsewhere-list"></ul>
-		<div class="modal-actions">
-			<button class="btn btn-quiet" data-close>{{ _("Close") }}</button>
-		</div>
+		<div class="modal-actions"><button class="btn btn-quiet" data-close>{{ _("Close") }}</button></div>
+	</div>
+</div>
+
+<div class="modal" id="list-modal" hidden>
+	<div class="modal-card">
+		<h3 id="list-title"></h3>
+		<p class="modal-note" id="list-note"></p>
+		<ul class="simple-list" id="list-body"></ul>
+		<div class="modal-actions"><button class="btn btn-quiet" data-close>{{ _("Close") }}</button></div>
 	</div>
 </div>
 
 <div class="modal" id="done-modal" hidden>
 	<div class="modal-card modal-done">
 		<div class="done-tick">✓</div>
-		<h3 id="done-title">{{ _("Sale complete") }}</h3>
+		<h3>{{ _("Sale complete") }}</h3>
 		<p class="modal-note" id="done-note"></p>
 		<a class="btn btn-primary btn-block" id="print-invoice" target="_blank" rel="noopener">
-			{{ _("Print invoice (PDF)") }}
-		</a>
+			{{ _("Print invoice (PDF)") }}</a>
 		<button class="btn btn-quiet btn-block" data-close>{{ _("Next customer") }}</button>
 	</div>
 </div>
 
 <script>
 window.addEventListener("DOMContentLoaded", function () {
-	POS.start({ branch: {{ me.branch|tojson }} });
+	POS.start({
+		branch: {{ me.branch|tojson }},
+		groups: {{ groups|tojson }},
+	});
 });
 </script>
 </body>

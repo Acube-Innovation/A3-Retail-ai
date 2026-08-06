@@ -1,18 +1,43 @@
-{#- Branch app navigation. `active` is set by each page. -#}
-<aside class="side">
-	<a href="/branch">{% include "a3_retail/www/branch/_mark.html" %}</a>
+{#- Branch app navigation. Each page sets `active`. -#}
+{%- set nav = [
+	("dashboard", "Dashboard", "/branch/dashboard", "grid"),
+	("sales", "Sales", "/branch/sales", "tag"),
+	("customers", "Customers", "", "users"),
+	("bills", "Bills", "", "file"),
+	("reports", "Reports", "", "chart"),
+	("stock", "Stock", "", "box"),
+	("services", "Services", "", "wrench"),
+	("spares", "Spare Parts", "", "chip"),
+	("accessories", "Accessories", "", "plug"),
+	("settings", "Settings", "", "gear"),
+] -%}
+
+<aside class="side" id="side">
+	<a class="side-brand" href="/branch">{% include "a3_retail/www/branch/_mark.html" %}</a>
 
 	<nav class="side-nav">
-		<a href="/branch/dashboard" class="{{ 'is-active' if active == 'dashboard' else '' }}">
-			<span class="dot"></span>{{ _("Dashboard") }}</a>
-		<a href="/branch/sales" class="{{ 'is-active' if active == 'sales' else '' }}">
-			<span class="dot"></span>{{ _("Sales") }}</a>
+		{% for key, label, href, icon in nav %}
+			{% if href %}
+			<a href="{{ href }}" class="{{ 'is-active' if active == key else '' }}">
+				{% include "a3_retail/www/branch/_icons.html" %}<span>{{ _(label) }}</span></a>
+			{% else %}
+			<span class="side-soon" title="{{ _('Coming next') }}">
+				{% include "a3_retail/www/branch/_icons.html" %}<span>{{ _(label) }}</span></span>
+			{% endif %}
+		{% endfor %}
 	</nav>
 
 	<div class="side-foot">
-		{% if me and me.is_manager %}<a href="/branch/logout?to=/login">{{ _("Head office system") }}</a><br>{% endif %}
-		{{ company }}<br>
-		{{ _("Branch app") }}{% if me %} · {{ me.branch }}{% endif %}
-		{% if stamp %}<br><span id="stamp">{{ _("Updated") }} {{ stamp }}</span>{% endif %}
+		{% if me and me.is_manager %}
+			<a href="/branch/logout?to=/login">{{ _("Head office system") }}</a>
+		{% else %}
+			<a href="/support">{{ _("Need help?") }}</a>
+		{% endif %}
+		<div class="side-org">{{ company }}</div>
+		<div class="side-org">{{ _("Branch") }}: {{ me.branch if me else "" }}</div>
+		{% if stamp %}<div class="side-org" id="stamp">{{ _("Updated") }} {{ stamp }}</div>{% endif %}
 	</div>
+
+	<button class="side-collapse" id="side-collapse" type="button"
+	        aria-label="{{ _('Collapse menu') }}">‹</button>
 </aside>

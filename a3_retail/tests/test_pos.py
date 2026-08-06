@@ -27,6 +27,19 @@ class TestSalesPage(FrappeTestCase):
 		self.assertNotIn("{% extends", markup)
 		self.assertIn("/assets/a3_retail/js/a3_pos.js", markup)
 
+	def test_the_counter_has_its_six_quick_actions(self):
+		markup = open(
+			os.path.join(frappe.get_app_path("a3_retail", "www", "branch"), "sales.html")
+		).read()
+		for action, label, shortcut in [
+			("recent", "Recent Bills", "F3"), ("hold", "Hold Bill", "F4"),
+			("clear", "Clear Cart", "F5"), ("drafts", "Drafts", "F6"),
+			("loyalty", "Loyalty", "F7"), ("price", "Price Check", "F8"),
+		]:
+			self.assertIn(f'("{action}", "{label}", "{shortcut}"', markup, action)
+		for key in ("F3", "F4", "F5", "F6", "F7", "F8", "F9"):
+			self.assertIn(key, markup, key)
+
 	def test_sales_is_in_the_sidebar_under_dashboard(self):
 		sidebar = open(
 			os.path.join(frappe.get_app_path("a3_retail", "www", "branch"), "_sidebar.html")
@@ -79,6 +92,20 @@ class TestCatalogue(FrappeTestCase):
 		codes = [row["item_code"] for row in pos.catalogue(limit=60)]
 		self.assertFalse([code for code in codes if code.startswith("FA-")])
 
+	def test_rows_carry_what_the_bill_needs_to_preview_tax(self):
+		rows = pos.catalogue(only_in_stock=1, limit=5)
+		for row in rows:
+			self.assertIn("gst_rate", row)
+			self.assertGreater(flt(row["gst_rate"]), 0)
+			self.assertIn("low_stock", row)
+			self.assertIn("is_new", row)
+
+	def test_new_is_not_everything(self):
+		"""A freshly seeded site would badge the whole catalogue on creation date."""
+		rows = pos.catalogue(limit=60)
+		flagged = [row for row in rows if row["is_new"]]
+		self.assertLess(len(flagged), len(rows))
+
 	def test_devices_are_flagged_so_the_counter_asks_for_an_imei(self):
 		rows = pos.catalogue(query="iPhone")
 		self.assertTrue(rows)
@@ -103,6 +130,60 @@ class TestCatalogue(FrappeTestCase):
 		self.assertTrue(rows)
 		mine = [row for row in rows if row["is_mine"]]
 		self.assertTrue(all(row["branch"] == "Kochi" for row in mine))
+
+
+class TestScanning(FrappeTestCase):
+	"""The search box doubles as the scanner."""
+
+	def setUp(self):
+		user = user_for("Vipin S")
+		if not user:
+			self.skipTest("Vipin S is not provisioned")
+		frappe.set_user(user)
+
+	def tearDown(self):
+		frappe.set_user("Administrator")
+
+	def test_an_imei_resolves_to_its_handset(self):
+		serial = pos.serials("MOB-APL-15-128-BLK", limit=1)
+		if not serial:
+			self.skipTest("no serial in stock")
+
+		imei = frappe.db.get_value("Serial No", serial[0]["serial_no"], "a3_imei_1")
+		found = pos.scan(imei or serial[0]["serial_no"])
+
+		self.assertEqual(found["kind"], "serial")
+		self.assertEqual(found["serial_no"], serial[0]["serial_no"])
+		self.assertEqual(found["item"]["item_code"], "MOB-APL-15-128-BLK")
+
+	def test_an_item_code_resolves_to_the_item(self):
+		found = pos.scan("ACC-TGL-A55")
+		self.assertEqual(found["kind"], "item")
+		self.assertEqual(found["item"]["item_code"], "ACC-TGL-A55")
+
+	def test_nonsense_finds_nothing(self):
+		self.assertIsNone(pos.scan("no-such-code-at-all"))
+
+	def test_an_empty_scan_is_ignored(self):
+		self.assertIsNone(pos.scan(""))
+
+
+class TestPaymentTiles(FrappeTestCase):
+	def setUp(self):
+		user = user_for("Vipin S")
+		if not user:
+			self.skipTest("Vipin S is not provisioned")
+		frappe.set_user(user)
+
+	def tearDown(self):
+		frappe.set_user("Administrator")
+
+	def test_all_six_tiles_map_to_a_real_mode_of_payment(self):
+		tiles = pos.payment_tiles()
+		self.assertEqual(len(tiles), 6)
+		for tile in tiles:
+			self.assertTrue(tile["available"], tile["tile"])
+			self.assertTrue(frappe.db.exists("Mode of Payment", tile["mode"]), tile)
 
 
 class TestCustomerAtTheCounter(FrappeTestCase):
@@ -223,6 +304,44 @@ class TestCheckout(FrappeTestCase):
 		)
 		invoice = frappe.get_doc("Sales Invoice", result["invoice"])
 		self.assertIn("Kochi", invoice.cost_center or "")
+
+	def test_a_discount_reaches_the_invoice(self):
+		result = pos.checkout(
+			{"customer": "Rahul Krishnan", "discount_percent": 10, "notes": "Counter discount",
+			 "items": [{"item_code": "ACC-TGL-A55", "qty": 10, "rate": 299, "serials": []}]}
+		)
+		invoice = frappe.get_doc("Sales Invoice", result["invoice"])
+		self.assertEqual(flt(invoice.additional_discount_percentage), 10)
+		self.assertLess(flt(invoice.base_net_total), 2990)
+		self.assertIn("Counter discount", invoice.remarks or "")
+
+	def test_cash_above_the_bill_is_recorded_as_change(self):
+		result = pos.checkout(
+			{"customer": "Rahul Krishnan", "mode_of_payment": "Cash", "received_amount": 5000,
+			 "items": [{"item_code": "ACC-TGL-A55", "qty": 1, "rate": 299, "serials": []}]}
+		)
+		invoice = frappe.get_doc("Sales Invoice", result["invoice"])
+
+		self.assertEqual(len(invoice.payments), 1, "the tender was counted twice")
+		self.assertEqual(flt(invoice.paid_amount), 5000)
+		# ERPNext rounds cash change to the rupee, which is what a drawer does.
+		self.assertAlmostEqual(
+			flt(invoice.change_amount), 5000 - flt(invoice.grand_total), delta=1
+		)
+		self.assertAlmostEqual(flt(result["change"]), flt(invoice.change_amount), places=2)
+
+	def test_a_card_is_charged_the_bill_not_the_typed_amount(self):
+		"""Only a drawer gives change. A card must not submit an over-paid invoice."""
+		result = pos.checkout(
+			{"customer": "Rahul Krishnan", "mode_of_payment": "Card", "received_amount": 5000,
+			 "items": [{"item_code": "ACC-TGL-A55", "qty": 1, "rate": 299, "serials": []}]}
+		)
+		invoice = frappe.get_doc("Sales Invoice", result["invoice"])
+
+		payable = flt(invoice.rounded_total) or flt(invoice.grand_total)
+		self.assertEqual(flt(invoice.paid_amount), payable)
+		self.assertEqual(flt(invoice.outstanding_amount), 0)
+		self.assertEqual(flt(result["change"]), 0)
 
 	def test_the_result_hands_back_a_print_link(self):
 		result = pos.checkout(

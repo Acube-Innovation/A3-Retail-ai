@@ -17,7 +17,38 @@ import frappe
 def run():
 	install_base_fixtures()
 	repair_missing_columns()
+	backfill_imei_register()
 	frappe.db.commit()
+
+
+def backfill_imei_register(verbose: bool = False) -> int:
+	"""Copy a device serial's name into its IMEI field where it is empty.
+
+	ERPNext creates serial numbers in bulk with `frappe.db.bulk_insert`, which
+	skips document hooks — so serials made by a Stock Entry or a Purchase Receipt
+	never ran `overrides.serial_no.before_insert` and reached the register with no
+	IMEI. Everything that looks a device IMEI up by field (reception, warranty,
+	the counter) needs this filled in.
+	"""
+	if not frappe.db.has_column("Serial No", "a3_imei_1"):
+		return 0
+
+	rows = frappe.db.sql(
+		"""
+		select s.name from `tabSerial No` s
+		join `tabItem` i on i.name = s.item_code
+		where ifnull(s.a3_imei_1, '') = '' and ifnull(i.a3_is_device, 0) = 1
+		  and s.name regexp '^[0-9]{15}$'
+		""",
+		pluck=True,
+	)
+
+	for name in rows:
+		frappe.db.set_value("Serial No", name, "a3_imei_1", name, update_modified=False)
+
+	if verbose and rows:
+		print(f"filled the IMEI on {len(rows)} serial numbers")
+	return len(rows)
 
 
 def install_base_fixtures():

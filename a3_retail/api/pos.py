@@ -130,7 +130,37 @@ def catalogue(query: str = "", item_group: str | None = None, only_in_stock: int
 	for row in rows:
 		row["rate"] = flt(row["rate"])
 		row["sellable"] = bool(flt(row["branch_qty"]) > 0 or not cint(row["is_stock_item"]))
+		row["gst_rate"] = _item_gst_rate(row["item_code"])
+		row["low_stock"] = bool(cint(row["is_stock_item"]) and 0 < flt(row["branch_qty"]) <= 5)
+		row["is_new"] = _is_new(row["item_code"])
 	return rows
+
+
+def _item_gst_rate(item_code: str) -> float:
+	"""The rate the line will be taxed at, so the bill can show GST as you type."""
+	template = frappe.db.get_value(
+		"Item Tax", {"parenttype": "Item", "parent": item_code}, "item_tax_template"
+	)
+	if template:
+		rate = frappe.db.get_value(
+			"Item Tax Template Detail", {"parent": template}, "tax_rate", order_by="tax_rate desc"
+		)
+		if rate:
+			return flt(rate) * 2 if flt(rate) < 15 else flt(rate)
+	return 18.0
+
+
+def _is_new(item_code: str) -> bool:
+	"""A handset launched this year is new to a customer.
+
+	Deliberately not "created recently" — on a freshly seeded site that badges the
+	whole catalogue, which tells the counter nothing.
+	"""
+	model = frappe.db.get_value("Item", item_code, "a3_device_model")
+	if not model:
+		return False
+	launch = frappe.db.get_value("Device Model", model, "launch_year")
+	return bool(launch and cint(launch) >= cint(nowdate()[:4]))
 
 
 @frappe.whitelist()
@@ -149,7 +179,8 @@ def serials(item_code: str, limit: int = 60) -> list[dict]:
 
 	return frappe.db.sql(
 		"""
-		select s.name as serial_no, s.a3_imei_1 as imei, s.warehouse,
+		select s.name as serial_no, coalesce(nullif(s.a3_imei_1, ''), s.name) as imei,
+		       s.warehouse,
 		       datediff(curdate(), date(s.creation)) as age_days
 		from `tabSerial No` s
 		join `tabWarehouse` w on w.name = s.warehouse
@@ -161,6 +192,44 @@ def serials(item_code: str, limit: int = 60) -> list[dict]:
 		{"item_code": item_code, "branch": employee.branch, "limit": cint(limit) or 60},
 		as_dict=True,
 	)
+
+
+@frappe.whitelist()
+def scan(code: str) -> dict | None:
+	"""Resolve whatever came off the scanner: an IMEI, a serial or an item code."""
+	employee = _me()
+	code = (code or "").strip()
+	if not code:
+		return None
+
+	serial = frappe.db.get_value(
+		"Serial No",
+		{"name": code, "status": "Active"},
+		["name", "item_code", "warehouse", "a3_imei_1"],
+		as_dict=True,
+	) or frappe.db.get_value(
+		"Serial No",
+		{"a3_imei_1": code, "status": "Active"},
+		["name", "item_code", "warehouse", "a3_imei_1"],
+		as_dict=True,
+	)
+
+	if serial:
+		if frappe.db.get_value("Warehouse", serial.warehouse, "custom_branch") != employee.branch:
+			frappe.throw(
+				_("That handset is in another branch."), title=_("Not in this branch")
+			)
+		rows = catalogue(query=serial.item_code, limit=1)
+		return {"kind": "serial", "serial_no": serial.name,
+		        "imei": serial.a3_imei_1 or serial.name,
+		        "item": rows[0] if rows else None}
+
+	if frappe.db.exists("Item", code):
+		rows = catalogue(query=code, limit=1)
+		return {"kind": "item", "item": rows[0] if rows else None}
+
+	rows = catalogue(query=code, limit=1)
+	return {"kind": "item", "item": rows[0]} if rows else None
 
 
 @frappe.whitelist()
@@ -264,6 +333,50 @@ def _history(customer: str) -> dict:
 			order_by="posting_date desc",
 		),
 	}
+
+
+@frappe.whitelist()
+def search_customers(query: str, limit: int = 8) -> list[dict]:
+	"""The counter search box: name, phone or email."""
+	_me()
+	require_permission("Customer", "read")
+
+	query = (query or "").strip()
+	if len(query) < 3:
+		return []
+
+	return frappe.db.sql(
+		"""
+		select name, customer_name, a3_mobile_no as mobile_no, email_id
+		from `tabCustomer`
+		where disabled = 0 and (customer_name like %(q)s or a3_mobile_no like %(q)s
+		                        or email_id like %(q)s or name like %(q)s)
+		order by modified desc
+		limit %(limit)s
+		""",
+		{"q": f"%{query}%", "limit": cint(limit) or 8},
+		as_dict=True,
+	)
+
+
+@frappe.whitelist()
+def loyalty(customer: str) -> dict:
+	"""What this customer is worth — the counter's version of a loyalty card."""
+	_me()
+	require_permission("Customer", "read")
+
+	row = frappe.db.sql(
+		"""select count(*) as bills, ifnull(sum(base_grand_total), 0) as spend,
+		          max(posting_date) as last_bill
+		   from `tabSales Invoice`
+		   where customer = %s and docstatus = 1 and is_return = 0""",
+		customer,
+		as_dict=True,
+	)[0]
+	row["repairs"] = frappe.db.count("Service Job Card", {"customer": customer, "docstatus": 1})
+	row["tier"] = ("Gold" if flt(row.spend) >= 100000 else
+	               "Silver" if flt(row.spend) >= 25000 else "New")
+	return row
 
 
 @frappe.whitelist()
@@ -394,9 +507,15 @@ def checkout(payload) -> dict:
 			line.use_serial_batch_fields = 1
 			line.serial_no = "\n".join(serial_numbers)
 
-	if flt(data.get("discount_amount")):
+	if flt(data.get("discount_percent")):
+		invoice.apply_discount_on = "Net Total"
+		invoice.additional_discount_percentage = flt(data["discount_percent"])
+	elif flt(data.get("discount_amount")):
 		invoice.apply_discount_on = "Net Total"
 		invoice.discount_amount = flt(data["discount_amount"])
+
+	if data.get("notes"):
+		invoice.remarks = str(data["notes"])[:500]
 
 	# Branch staff hold a User Permission on Cost Center, and strict user
 	# permissions reject a *blank* one just as firmly as a foreign one. Fill every
@@ -417,8 +536,24 @@ def checkout(payload) -> dict:
 	invoice.flags.ignore_permissions = True
 	invoice.insert(ignore_permissions=True)
 
-	mode = data.get("mode_of_payment") or "Cash"
-	invoice.append("payments", {"mode_of_payment": mode, "amount": invoice.grand_total})
+	mode = resolve_mode(data.get("mode_of_payment") or "Cash")
+	received = flt(data.get("received_amount")) or flt(invoice.grand_total)
+
+	# Only a cash drawer takes more than the bill and hands change back. A card or
+	# a UPI collection is charged the bill exactly, so an over-typed "received"
+	# there would submit an over-paid invoice with a negative outstanding.
+	payable = flt(invoice.rounded_total) or flt(invoice.grand_total)
+	if frappe.db.get_value("Mode of Payment", mode, "type") == "Cash":
+		tendered = max(received, payable)
+	else:
+		tendered = payable
+
+	# Replace the payment table rather than appending to it: a POS Profile puts
+	# its own default row on the invoice, and adding ours next to it counts the
+	# money twice. One row, for what the customer actually handed over — ERPNext
+	# works the change out from there.
+	invoice.set("payments", [{"mode_of_payment": mode, "amount": tendered}])
+
 	_stamp_cost_center(invoice, cost_center)
 	invoice.save(ignore_permissions=True)
 	invoice.submit()
@@ -426,6 +561,8 @@ def checkout(payload) -> dict:
 	return {
 		"invoice": invoice.name,
 		"grand_total": flt(invoice.grand_total),
+		"change": flt(invoice.get("change_amount")),
+		"mode_of_payment": mode,
 		"net_total": flt(invoice.net_total),
 		"tax": flt(invoice.total_taxes_and_charges),
 		"paid": flt(invoice.grand_total),
@@ -502,6 +639,37 @@ def _stamp_cost_center(invoice, cost_center: str | None):
 		for row in invoice.get(table) or []:
 			if row.meta.has_field("cost_center") and not row.get("cost_center"):
 				row.cost_center = cost_center
+
+
+# The counter's six tiles, mapped to whatever this site actually calls them.
+PAYMENT_TILES = {
+	"Cash": ["Cash"],
+	"Card": ["Credit Card", "Debit Card", "Card"],
+	"UPI": ["UPI", "Bharat QR", "Wallet"],
+	"Wallet": ["Wallet", "UPI"],
+	"EMI": ["EMI", "Bajaj EMI", "Credit Card"],
+	"Other": ["Bank Draft", "Cheque", "Cash"],
+}
+
+
+@frappe.whitelist()
+def payment_tiles() -> list[dict]:
+	"""Which of the six tiles this site can actually take money through."""
+	_me()
+	return [
+		{"tile": tile, "mode": resolve_mode(tile), "available": bool(resolve_mode(tile))}
+		for tile in PAYMENT_TILES
+	]
+
+
+def resolve_mode(tile: str) -> str | None:
+	"""A tile label to a Mode of Payment that exists here."""
+	if frappe.db.exists("Mode of Payment", tile):
+		return tile
+	for candidate in PAYMENT_TILES.get(tile, []):
+		if frappe.db.exists("Mode of Payment", candidate):
+			return candidate
+	return frappe.db.get_value("Mode of Payment", {"enabled": 1}, "name")
 
 
 def _sales_person(employee: str) -> str | None:

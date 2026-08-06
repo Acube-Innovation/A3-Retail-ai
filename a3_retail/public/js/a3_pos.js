@@ -4,20 +4,25 @@
  *
  * The rules the screen enforces are the shop's, not the browser's: a device
  * cannot go on the bill without its IMEI, an item with no stock here shows where
- * it *is* instead of failing, and the totals shown are provisional until the
- * server prices the invoice. The server re-checks all of it.
+ * it *is* instead of failing, and every total on screen is a preview — the
+ * server prices the invoice and re-checks all of it.
  */
 
 window.POS = (function () {
-	const state = { branch: "", group: "", cart: [], customer: null, items: [] };
+	const state = {
+		branch: "", groups: [], group: "", view: "grid",
+		items: [], cart: [], customer: null, mode: "Cash",
+	};
+	const HOLD_KEY = "a3_pos_holds";
 	const $ = (id) => document.getElementById(id);
 
-	function money(value) {
-		return "₹" + new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 })
-			.format(Math.round(value || 0));
-	}
+	const money = (value) =>
+		"₹" + new Intl.NumberFormat("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+			.format(value || 0);
+	const moneyShort = (value) =>
+		"₹" + new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(value || 0);
 
-	function escapeHtml(value) {
+	function esc(value) {
 		const node = document.createElement("div");
 		node.textContent = value == null ? "" : String(value);
 		return node.innerHTML;
@@ -32,7 +37,6 @@ window.POS = (function () {
 	// ------------------------------------------------------------ catalogue
 	let searchTimer;
 	async function loadCatalogue() {
-		$("grid").innerHTML = '<div class="pos-loading">Loading…</div>';
 		try {
 			state.items = await A3.call("a3_retail.api.pos.catalogue", {
 				query: $("q").value.trim(),
@@ -45,29 +49,53 @@ window.POS = (function () {
 		}
 	}
 
+	function thumb(item) {
+		if (item.image) return `<img src="${esc(item.image)}" alt="">`;
+		const initials = (item.item_name || "?").replace(/[^A-Za-z0-9 ]/g, "")
+			.split(" ").filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
+		return `<span class="thumb-fallback">${esc(initials || "?")}</span>`;
+	}
+
+	function badge(item) {
+		if (item.is_new) return '<span class="badge-new">NEW</span>';
+		if (item.low_stock) return '<span class="badge-low">LOW STOCK</span>';
+		return "";
+	}
+
 	function paintCatalogue() {
+		const grid = $("grid");
+		grid.className = "pos-grid" + (state.view === "list" ? " is-list" : "");
+
 		if (!state.items.length) {
-			$("grid").innerHTML = '<div class="pos-loading">Nothing matches that search.</div>';
+			grid.innerHTML = '<div class="pos-loading">Nothing matches that search.</div>';
 			return;
 		}
-		$("grid").innerHTML = state.items.map((item) => `
-			<button class="pos-item ${item.sellable ? "" : "is-out"}" data-code="${escapeHtml(item.item_code)}">
-				<div class="pos-item-top">
-					<span class="pos-item-name">${escapeHtml(item.item_name)}</span>
-					${item.is_device ? '<span class="tag">IMEI</span>' : ""}
-					${item.is_plan ? '<span class="tag plan">Plan</span>' : ""}
-				</div>
-				<div class="pos-item-meta">${escapeHtml(item.brand || item.item_group || "")}</div>
-				<div class="pos-item-foot">
-					<span class="pos-item-rate">${money(item.rate)}</span>
-					<span class="pos-item-qty ${item.sellable ? "" : "out"}">
-						${item.is_stock_item ? (item.branch_qty > 0 ? item.branch_qty + " in stock" : "Not here") : "Service"}
-					</span>
-				</div>
-			</button>`).join("");
 
-		$("grid").querySelectorAll(".pos-item").forEach((node) => {
-			node.addEventListener("click", () => pick(node.dataset.code));
+		grid.innerHTML = state.items.map((item) => `
+			<article class="card ${item.sellable ? "" : "is-out"}" data-code="${esc(item.item_code)}">
+				${badge(item)}
+				<div class="card-thumb">${thumb(item)}</div>
+				<div class="card-body">
+					<div class="card-name">${esc(item.item_name)}</div>
+					<div class="card-meta">${esc(item.brand || item.item_group || "")}
+						${item.is_device ? '<span class="imei-tag">IMEI</span>' : ""}
+						${item.is_plan ? '<span class="imei-tag plan">PLAN</span>' : ""}</div>
+				</div>
+				<div class="card-foot">
+					<span class="card-rate">${moneyShort(item.rate)}</span>
+					<span class="card-stock ${item.sellable ? "" : "out"}">${
+						item.is_stock_item
+							? (item.branch_qty > 0 ? item.branch_qty + " in stock" : "Not here")
+							: "Service"}</span>
+					<button class="card-add" data-code="${esc(item.item_code)}" aria-label="Add">+</button>
+				</div>
+			</article>`).join("");
+
+		grid.querySelectorAll(".card, .card-add").forEach((node) => {
+			node.addEventListener("click", (event) => {
+				event.stopPropagation();
+				pick(node.dataset.code);
+			});
 		});
 	}
 
@@ -79,7 +107,28 @@ window.POS = (function () {
 		addLine(item, null);
 	}
 
-	// -------------------------------------------------------------- serials
+	// --------------------------------------------------------------- scan
+	async function handleScan(code) {
+		try {
+			const found = await A3.call("a3_retail.api.pos.scan", { code });
+			if (!found || !found.item) return say("Nothing found for " + code + ".", "error");
+
+			if (found.kind === "serial") {
+				addLine(found.item, found.serial_no);
+				say("Added " + found.item.item_name + " · " + (found.imei || found.serial_no), "ok");
+			} else if (found.item.has_serial) {
+				askSerial(found.item);
+			} else {
+				addLine(found.item, null);
+			}
+			$("q").value = "";
+			loadCatalogue();
+		} catch (error) {
+			say(error.message, "error");
+		}
+	}
+
+	// ------------------------------------------------------------- serials
 	async function askSerial(item, lineIndex) {
 		const modal = $("serial-modal");
 		$("serial-title").textContent = item.item_name;
@@ -98,8 +147,8 @@ window.POS = (function () {
 		}
 
 		$("serial-list").innerHTML = free.map((row) => `
-			<li><button data-serial="${escapeHtml(row.serial_no)}">
-				<span>${escapeHtml(row.imei || row.serial_no)}</span>
+			<li><button data-serial="${esc(row.serial_no)}">
+				<span>${esc(row.imei || row.serial_no)}</span>
 				<small>${row.age_days} days in stock</small>
 			</button></li>`).join("");
 
@@ -120,7 +169,7 @@ window.POS = (function () {
 		};
 	}
 
-	// ------------------------------------------------------- cross-branch
+	// -------------------------------------------------------- cross-branch
 	async function showElsewhere(item) {
 		const modal = $("elsewhere-modal");
 		$("elsewhere-title").textContent = item.item_name;
@@ -139,8 +188,8 @@ window.POS = (function () {
 		$("elsewhere-note").textContent = "Available at:";
 		$("elsewhere-list").innerHTML = others.map((row) => `
 			<li>
-				<div><strong>${escapeHtml(row.branch)}</strong><small>${row.available} in stock</small></div>
-				<button class="btn btn-quiet" data-branch="${escapeHtml(row.branch)}">Request transfer</button>
+				<div><strong>${esc(row.branch)}</strong><small>${row.available} in stock</small></div>
+				<button class="btn btn-quiet" data-branch="${esc(row.branch)}">Request transfer</button>
 			</li>`).join("");
 
 		$("elsewhere-list").querySelectorAll("button").forEach((node) => {
@@ -174,17 +223,14 @@ window.POS = (function () {
 		if (existing && !item.has_serial) {
 			existing.qty += 1;
 		} else if (existing && serial) {
+			if (existing.serials.includes(serial)) return say("That IMEI is already on the bill.", "error");
 			existing.serials.push(serial);
 			existing.qty = existing.serials.length;
 		} else {
 			state.cart.push({
-				item_code: item.item_code,
-				item_name: item.item_name,
-				rate: item.rate,
-				min_price: item.min_price,
-				qty: 1,
-				has_serial: item.has_serial,
-				is_device: item.is_device,
+				item_code: item.item_code, item_name: item.item_name, image: item.image,
+				rate: item.rate, min_price: item.min_price, gst_rate: item.gst_rate || 18,
+				qty: 1, has_serial: item.has_serial, is_device: item.is_device,
 				serials: serial ? [serial] : [],
 			});
 		}
@@ -192,31 +238,33 @@ window.POS = (function () {
 	}
 
 	function paintCart() {
-		const lines = $("lines");
+		const rows = $("lines");
 		if (!state.cart.length) {
-			lines.innerHTML = '<li class="pos-empty">Tap an item to start the bill.</li>';
+			rows.innerHTML = '<div class="bill-empty">Tap an item to start the bill.</div>';
 		} else {
-			lines.innerHTML = state.cart.map((line, index) => `
-				<li>
-					<div class="line-main">
-						<div class="line-name">${escapeHtml(line.item_name)}</div>
-						${line.serials.length ? `<div class="line-serials">${line.serials.map(escapeHtml).join(", ")}</div>` : ""}
-						<div class="line-controls">
-							<button data-act="minus" data-i="${index}">−</button>
-							<span>${line.qty}</span>
-							<button data-act="plus" data-i="${index}">+</button>
-							<input class="line-rate" data-i="${index}" type="number" value="${line.rate}"
-							       min="0" step="1" aria-label="Rate">
+			rows.innerHTML = state.cart.map((line, index) => `
+				<div class="bill-row">
+					<div class="bill-item">
+						<div class="bill-thumb">${line.image ? `<img src="${esc(line.image)}" alt="">` : ""}</div>
+						<div>
+							<div class="bill-name">${esc(line.item_name)}</div>
+							${line.serials.length
+								? `<div class="bill-imei">IMEI: ${line.serials.map(esc).join(", ")}</div>` : ""}
 						</div>
 					</div>
-					<div class="line-side">
-						<div class="line-amount">${money(line.rate * line.qty)}</div>
-						<button class="line-remove" data-act="remove" data-i="${index}">Remove</button>
+					<div class="qty">
+						<button data-act="minus" data-i="${index}">−</button>
+						<span>${line.qty}</span>
+						<button data-act="plus" data-i="${index}">+</button>
 					</div>
-				</li>`).join("");
+					<input class="rate" data-i="${index}" type="number" min="0" step="1"
+					       value="${line.rate}" aria-label="Rate">
+					<span class="amount">${moneyShort(line.rate * line.qty)}</span>
+					<button class="row-x" data-act="remove" data-i="${index}" aria-label="Remove">×</button>
+				</div>`).join("");
 		}
 
-		lines.querySelectorAll("[data-act]").forEach((node) => {
+		rows.querySelectorAll("[data-act]").forEach((node) => {
 			node.addEventListener("click", () => {
 				const index = Number(node.dataset.i);
 				const line = state.cart[index];
@@ -229,7 +277,7 @@ window.POS = (function () {
 				if (node.dataset.act === "plus") {
 					if (line.has_serial) {
 						const item = state.items.find((row) => row.item_code === line.item_code);
-						return askSerial(item, index);
+						return askSerial(item || line, index);
 					}
 					line.qty += 1;
 				}
@@ -237,12 +285,12 @@ window.POS = (function () {
 			});
 		});
 
-		lines.querySelectorAll(".line-rate").forEach((node) => {
+		rows.querySelectorAll(".rate").forEach((node) => {
 			node.addEventListener("change", () => {
 				const line = state.cart[Number(node.dataset.i)];
 				const rate = Number(node.value);
 				if (line.min_price && rate < line.min_price) {
-					say(line.item_name + " cannot go below " + money(line.min_price)
+					say(line.item_name + " cannot go below " + moneyShort(line.min_price)
 						+ " — a manager has to approve that.", "error");
 				}
 				line.rate = rate;
@@ -250,10 +298,41 @@ window.POS = (function () {
 			});
 		});
 
-		const count = state.cart.reduce((sum, line) => sum + line.qty, 0);
+		paintTotals();
+	}
+
+	function totals() {
 		const subtotal = state.cart.reduce((sum, line) => sum + line.rate * line.qty, 0);
+		const value = Number($("discount-value").value) || 0;
+		const discount = $("discount-type").value === "%"
+			? subtotal * Math.min(value, 100) / 100
+			: Math.min(value, subtotal);
+		const taxable = subtotal - discount;
+		const rate = state.cart.length
+			? Math.max(...state.cart.map((line) => line.gst_rate || 18)) : 18;
+		const gst = taxable * rate / 100;
+		return { subtotal, discount, taxable, rate, gst, grand: taxable + gst };
+	}
+
+	function paintTotals() {
+		const sums = totals();
+		const count = state.cart.reduce((sum, line) => sum + line.qty, 0);
+
 		$("count").textContent = count;
-		$("subtotal").textContent = money(subtotal);
+		$("items-total").textContent = moneyShort(sums.subtotal);
+		$("subtotal").textContent = moneyShort(sums.subtotal);
+		$("discount-amount").textContent = "- " + moneyShort(sums.discount);
+		$("taxable").textContent = moneyShort(sums.taxable);
+		$("gst-rate").textContent = sums.rate;
+		$("gst").textContent = money(sums.gst);
+		$("grand").textContent = money(sums.grand);
+
+		// Change belongs to the drawer. A card or a UPI collection is charged the
+		// bill exactly, so showing change there would have the counter hand out
+		// money it never took.
+		const received = Number($("received").value) || 0;
+		const change = state.mode === "Cash" ? Math.max(received - sums.grand, 0) : 0;
+		$("change").textContent = money(change);
 		$("checkout").disabled = !state.cart.length || !state.customer;
 	}
 
@@ -262,34 +341,41 @@ window.POS = (function () {
 		const mobile = $("mobile").value.trim();
 		if (mobile.length !== 10) return say("Enter the ten-digit mobile number.", "error");
 
-		say("Looking…");
 		const found = await A3.call("a3_retail.api.pos.find_customer", { mobile_no: mobile });
-		$("customer-detail").hidden = false;
+		if (found) return fillCustomer(found);
 
-		if (found) {
-			state.customer = found.name;
-			$("customer-name").value = found.customer_name || "";
-			$("customer-email").value = found.email_id || "";
-			$("customer-address").value = (found.address && found.address.address_line1) || "";
-			$("customer-city").value = (found.address && found.address.city) || "";
-			if (found.address && found.address.state) $("customer-state").value = found.address.state;
-			$("customer-pin").value = (found.address && found.address.pincode) || "";
-			$("customer-chip").textContent = "Known customer";
-			$("customer-chip").className = "chip good";
-			$("customer-history").innerHTML =
-				`<span>${found.history.invoices} purchases</span>
-				 <span>${found.history.repairs} repairs</span>` +
-				(found.history.last_seen ? `<span>last seen ${escapeHtml(found.history.last_seen)}</span>` : "");
-			say("");
-		} else {
-			state.customer = null;
-			$("customer-name").value = "";
-			$("customer-chip").textContent = "New customer";
-			$("customer-chip").className = "chip warn";
-			$("customer-history").innerHTML = "";
-			say("New number — add the name and save.");
-		}
-		paintCart();
+		state.customer = null;
+		$("customer-name").value = "";
+		setChip("New customer", "warn");
+		$("customer-history").innerHTML = "";
+		say("New number — add the name and save.");
+		paintTotals();
+	}
+
+	function fillCustomer(found) {
+		state.customer = found.name;
+		$("mobile").value = found.a3_mobile_no || found.mobile_no || $("mobile").value;
+		$("customer-name").value = found.customer_name || "";
+		$("customer-email").value = found.email_id || "";
+		const address = found.address || {};
+		$("customer-address").value = address.address_line1 || "";
+		$("customer-city").value = address.city || "";
+		if (address.state) $("customer-state").value = address.state;
+		$("customer-pin").value = address.pincode || "";
+		setChip("Known customer", "good");
+
+		const history = found.history || {};
+		$("customer-history").innerHTML =
+			`<span>${history.invoices || 0} purchases</span><span>${history.repairs || 0} repairs</span>` +
+			(history.last_seen ? `<span>last seen ${esc(history.last_seen)}</span>` : "");
+		say("");
+		paintTotals();
+	}
+
+	function setChip(text, tone) {
+		const chip = $("customer-chip");
+		chip.textContent = text;
+		chip.className = "chip" + (tone ? " " + tone : "");
 	}
 
 	async function saveCustomer() {
@@ -307,22 +393,145 @@ window.POS = (function () {
 				pincode: $("customer-pin").value.trim(),
 			});
 			state.customer = saved.name;
-			$("customer-chip").textContent = "Ready to bill";
-			$("customer-chip").className = "chip good";
+			setChip("Ready to bill", "good");
 			say("Customer saved.", "ok");
-			paintCart();
+			paintTotals();
 		} catch (error) {
 			say(error.message, "error");
 		}
 	}
 
+	let custTimer;
+	async function searchCustomers() {
+		const query = $("cust-q").value.trim();
+		const box = $("cust-results");
+		if (query.length < 3) { box.hidden = true; return; }
+
+		const rows = await A3.call("a3_retail.api.pos.search_customers", { query });
+		if (!rows.length) { box.hidden = true; return; }
+
+		box.hidden = false;
+		box.innerHTML = rows.map((row) => `
+			<li><button data-mobile="${esc(row.mobile_no || "")}" data-name="${esc(row.name)}">
+				<strong>${esc(row.customer_name)}</strong>
+				<small>${esc(row.mobile_no || row.email_id || "")}</small>
+			</button></li>`).join("");
+
+		box.querySelectorAll("button").forEach((node) => {
+			node.addEventListener("click", async () => {
+				box.hidden = true;
+				$("cust-q").value = "";
+				if (node.dataset.mobile) {
+					$("mobile").value = node.dataset.mobile;
+					return findCustomer();
+				}
+				state.customer = node.dataset.name;
+				$("customer-name").value = node.textContent.trim();
+				setChip("Ready to bill", "good");
+				paintTotals();
+			});
+		});
+	}
+
+	function newCustomer() {
+		state.customer = null;
+		["mobile", "customer-name", "customer-email", "customer-address",
+		 "customer-city", "customer-pin"].forEach((id) => { $(id).value = ""; });
+		$("customer-history").innerHTML = "";
+		setChip("New customer", "warn");
+		$("mobile").focus();
+		paintTotals();
+	}
+
+	// ------------------------------------------------------- quick actions
+	function holds() {
+		try { return JSON.parse(localStorage.getItem(HOLD_KEY) || "[]"); }
+		catch (error) { return []; }
+	}
+
+	function holdBill() {
+		if (!state.cart.length) return say("Nothing to hold.", "error");
+		const list = holds();
+		list.unshift({
+			at: new Date().toISOString(), customer: state.customer,
+			mobile: $("mobile").value, cart: state.cart,
+		});
+		localStorage.setItem(HOLD_KEY, JSON.stringify(list.slice(0, 20)));
+		state.cart = [];
+		paintCart();
+		say("Bill held. Press F6 to bring it back.", "ok");
+	}
+
+	function openDrafts() {
+		const list = holds();
+		showList("Held bills", list.length ? "" : "Nothing is on hold.",
+			list.map((hold, index) => ({
+				title: (hold.cart[0] ? hold.cart[0].item_name : "Empty") +
+					(hold.cart.length > 1 ? ` +${hold.cart.length - 1} more` : ""),
+				meta: new Date(hold.at).toLocaleString("en-IN") + (hold.mobile ? " · " + hold.mobile : ""),
+				action: "Resume", index,
+			})),
+			(index) => {
+				const list2 = holds();
+				const hold = list2.splice(index, 1)[0];
+				localStorage.setItem(HOLD_KEY, JSON.stringify(list2));
+				state.cart = hold.cart;
+				if (hold.mobile) { $("mobile").value = hold.mobile; findCustomer(); }
+				paintCart();
+				$("list-modal").hidden = true;
+			});
+	}
+
+	async function recentBills() {
+		const rows = await A3.call("a3_retail.api.pos.recent_invoices", { limit: 15 });
+		showList("Today's bills", rows.length ? "" : "Nothing billed yet.",
+			rows.map((row) => ({
+				title: row.name + " · " + (row.customer_name || ""),
+				meta: moneyShort(row.grand_total), link: row.print_url, action: "PDF",
+			})));
+	}
+
+	async function showLoyalty() {
+		if (!state.customer) return say("Find the customer first.", "error");
+		const data = await A3.call("a3_retail.api.pos.loyalty", { customer: state.customer });
+		showList("Loyalty · " + state.customer, `Tier: ${data.tier}`, [
+			{ title: "Bills", meta: String(data.bills) },
+			{ title: "Lifetime spend", meta: moneyShort(data.spend) },
+			{ title: "Repairs", meta: String(data.repairs) },
+			{ title: "Last bill", meta: data.last_bill || "—" },
+		]);
+	}
+
+	function priceCheck() {
+		$("q").focus();
+		$("q").select();
+		say("Scan or type to check a price — nothing is added until you tap the item.");
+	}
+
+	function showList(title, note, rows, onPick) {
+		$("list-title").textContent = title;
+		$("list-note").textContent = note || "";
+		$("list-body").innerHTML = rows.map((row, index) => `
+			<li>
+				<div><strong>${esc(row.title)}</strong><small>${esc(row.meta || "")}</small></div>
+				${row.link ? `<a class="btn btn-quiet" href="${esc(row.link)}" target="_blank" rel="noopener">${esc(row.action)}</a>`
+					: (row.action ? `<button class="btn btn-quiet" data-i="${row.index ?? index}">${esc(row.action)}</button>` : "")}
+			</li>`).join("");
+
+		if (onPick) {
+			$("list-body").querySelectorAll("button[data-i]").forEach((node) => {
+				node.addEventListener("click", () => onPick(Number(node.dataset.i)));
+			});
+		}
+		$("list-modal").hidden = false;
+	}
+
 	// ------------------------------------------------------------ checkout
 	async function checkout() {
-		const missing = state.cart.find(
-			(line) => line.has_serial && line.serials.length !== line.qty
-		);
+		const missing = state.cart.find((line) => line.has_serial && line.serials.length !== line.qty);
 		if (missing) return say(missing.item_name + " still needs its IMEI.", "error");
 
+		const sums = totals();
 		$("checkout").disabled = true;
 		say("Billing…");
 
@@ -330,78 +539,122 @@ window.POS = (function () {
 			const result = await A3.call("a3_retail.api.pos.checkout", {
 				payload: {
 					customer: state.customer,
-					mode_of_payment: $("mode").value,
+					mode_of_payment: state.mode,
+					notes: $("notes").value.trim(),
+					received_amount: Number($("received").value) || 0,
+					discount_percent: $("discount-type").value === "%"
+						? Number($("discount-value").value) || 0 : 0,
+					discount_amount: $("discount-type").value === "₹"
+						? Number($("discount-value").value) || 0 : 0,
 					items: state.cart.map((line) => ({
 						item_code: line.item_code, qty: line.qty, rate: line.rate,
 						serials: line.serials,
 					})),
 				},
 			});
-			done(result);
+			done(result, sums);
 		} catch (error) {
 			say(error.message || "Could not complete the sale.", "error");
 			$("checkout").disabled = false;
 		}
 	}
 
-	function done(result) {
-		$("done-note").textContent =
-			`${result.invoice} · ${result.customer_name} · ${money(result.grand_total)} paid`;
+	function done(result, sums) {
+		$("done-note").textContent = `${result.invoice} · ${result.customer_name} · `
+			+ money(result.grand_total) + (result.change ? ` · change ${money(result.change)}` : "");
 		$("print-invoice").href = result.print_url;
 		$("done-modal").hidden = false;
+		$("bill-no").textContent = result.invoice;
 
 		state.cart = [];
 		state.customer = null;
-		$("mobile").value = "";
-		$("customer-detail").hidden = true;
-		$("customer-history").innerHTML = "";
-		$("customer-chip").textContent = "Walk-in";
-		$("customer-chip").className = "chip";
+		newCustomer();
+		$("notes").value = "";
+		$("received").value = "";
+		$("discount-value").value = "";
 		say("");
 		paintCart();
-		loadRecent();
-	}
-
-	async function loadRecent() {
-		const rows = await A3.call("a3_retail.api.pos.recent_invoices");
-		$("recent").innerHTML = rows.length
-			? rows.map((row) => `<li>
-				<div><strong>${escapeHtml(row.name)}</strong><small>${escapeHtml(row.customer_name || "")}</small></div>
-				<div class="recent-side">${money(row.grand_total)}
-					<a href="${row.print_url}" target="_blank" rel="noopener">PDF</a></div>
-			</li>`).join("")
-			: '<li class="pos-empty">Nothing billed yet.</li>';
 	}
 
 	// --------------------------------------------------------------- start
 	function start(options) {
 		state.branch = options.branch;
+		state.groups = options.groups || [];
 
 		$("q").addEventListener("input", () => {
 			clearTimeout(searchTimer);
 			searchTimer = setTimeout(loadCatalogue, 220);
 		});
+		$("q").addEventListener("keydown", (event) => {
+			// A scanner types fast and ends with Enter — treat that as a scan.
+			if (event.key === "Enter" && $("q").value.trim()) handleScan($("q").value.trim());
+		});
 		$("in-stock").addEventListener("change", loadCatalogue);
 
-		$("groups").querySelectorAll(".pill").forEach((node) => {
+		$("groups").addEventListener("click", (event) => {
+			const tab = event.target.closest(".tab");
+			if (!tab) return;
+			if (tab.id === "more-groups") return showAllGroups();
+			$("groups").querySelectorAll(".tab").forEach((t) => t.classList.remove("is-active"));
+			tab.classList.add("is-active");
+			state.group = tab.dataset.group || "";
+			loadCatalogue();
+		});
+
+		document.querySelectorAll(".view").forEach((node) => {
 			node.addEventListener("click", () => {
-				$("groups").querySelectorAll(".pill").forEach((p) => p.classList.remove("is-active"));
+				document.querySelectorAll(".view").forEach((v) => v.classList.remove("is-active"));
 				node.classList.add("is-active");
-				state.group = node.dataset.group;
-				loadCatalogue();
+				state.view = node.dataset.view;
+				paintCatalogue();
 			});
 		});
 
 		$("find-customer").addEventListener("click", findCustomer);
 		$("mobile").addEventListener("keydown", (e) => { if (e.key === "Enter") findCustomer(); });
 		$("save-customer").addEventListener("click", saveCustomer);
+		$("new-customer").addEventListener("click", newCustomer);
+		$("cust-q").addEventListener("input", () => {
+			clearTimeout(custTimer);
+			custTimer = setTimeout(searchCustomers, 250);
+		});
+
 		$("clear-cart").addEventListener("click", () => { state.cart = []; paintCart(); });
+		$("discount-type").addEventListener("change", paintTotals);
+		$("discount-value").addEventListener("input", paintTotals);
+		$("received").addEventListener("input", paintTotals);
 		$("checkout").addEventListener("click", checkout);
 
+		$("pay-tiles").addEventListener("click", (event) => {
+			const tile = event.target.closest(".pay");
+			if (!tile) return;
+			$("pay-tiles").querySelectorAll(".pay").forEach((t) => t.classList.remove("is-active"));
+			tile.classList.add("is-active");
+			state.mode = tile.dataset.mode;
+			paintTotals();
+		});
+
+		const actions = {
+			recent: recentBills, hold: holdBill, drafts: openDrafts,
+			loyalty: showLoyalty, price: priceCheck,
+			clear: () => { state.cart = []; paintCart(); },
+		};
+		document.querySelectorAll(".quick").forEach((node) => {
+			node.addEventListener("click", () => actions[node.dataset.action]());
+		});
+
+		document.addEventListener("keydown", (event) => {
+			const keys = { F3: "recent", F4: "hold", F5: "clear", F6: "drafts",
+			               F7: "loyalty", F8: "price" };
+			if (keys[event.key]) { event.preventDefault(); actions[keys[event.key]](); }
+			if (event.key === "F9") { event.preventDefault(); if (!$("checkout").disabled) checkout(); }
+			if (event.key === "Escape") {
+				document.querySelectorAll(".modal:not([hidden])").forEach((m) => { m.hidden = true; });
+			}
+		});
+
 		document.querySelectorAll("[data-close]").forEach((node) => {
-			node.addEventListener("click", () => {
-				node.closest(".modal").hidden = true;
-			});
+			node.addEventListener("click", () => { node.closest(".modal").hidden = true; });
 		});
 		document.querySelectorAll(".modal").forEach((modal) => {
 			modal.addEventListener("click", (event) => {
@@ -409,8 +662,27 @@ window.POS = (function () {
 			});
 		});
 
+		const collapse = document.getElementById("side-collapse");
+		if (collapse) {
+			collapse.addEventListener("click", () => {
+				document.body.classList.toggle("side-collapsed");
+				collapse.textContent = document.body.classList.contains("side-collapsed") ? "›" : "‹";
+			});
+		}
+
 		loadCatalogue();
-		loadRecent();
+		paintCart();
+	}
+
+	function showAllGroups() {
+		showList("Item groups", "", state.groups.map((group, index) => ({
+			title: group, meta: "", action: "Show", index,
+		})), (index) => {
+			state.group = state.groups[index];
+			$("list-modal").hidden = true;
+			$("groups").querySelectorAll(".tab").forEach((t) => t.classList.remove("is-active"));
+			loadCatalogue();
+		});
 	}
 
 	return { start };
