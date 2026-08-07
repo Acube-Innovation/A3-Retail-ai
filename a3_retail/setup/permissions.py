@@ -77,6 +77,38 @@ PERMISSION_MATRIX: dict[str, dict[str, str]] = {
 		"Accounts Manager": "R",
 		"Store Keeper": "R",
 	},
+	# The branch stock desk raises requests and adjusts its own shelves; buying
+	# stays with head office. Read on the purchase documents so a branch can see
+	# what is on order for it, without being able to order anything.
+	"Material Request": {
+		"A3 Retail Admin": "CRUDS",
+		"Branch Manager": "CRUS",
+		"Store Keeper": "CRUS",
+		"Service Manager": "R",
+		"Accounts Manager": "R",
+	},
+	"Stock Reconciliation": {
+		"A3 Retail Admin": "CRUDS",
+		"Branch Manager": "CRUS",
+		"Store Keeper": "CRUS",
+		"Service Manager": "R",
+		"Accounts Manager": "R",
+		"Auditor": "R",
+	},
+	"Purchase Order": {
+		"A3 Retail Admin": "CRUDS",
+		"Branch Manager": "R",
+		"Store Keeper": "R",
+		"Accounts Manager": "CRUDS",
+		"Auditor": "R",
+	},
+	"Purchase Receipt": {
+		"A3 Retail Admin": "CRUDS",
+		"Branch Manager": "R",
+		"Store Keeper": "CRUS",
+		"Accounts Manager": "R",
+		"Auditor": "R",
+	},
 	"Brand": {
 		"A3 Retail Admin": "CRUD",
 		"Branch Manager": "R",

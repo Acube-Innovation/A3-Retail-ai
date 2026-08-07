@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="csrf-token" content="{{ csrf_token }}">
+	<meta name="robots" content="noindex">
+	<title>{{ _("Stock") }} · {{ me.branch }} · {{ app_name }}</title>
+	<link rel="stylesheet" href="/assets/a3_retail/css/a3_branch.css?v={{ asset_v }}">
+	<script src="/assets/a3_retail/js/a3_branch.js?v={{ asset_v }}" defer></script>
+	<script src="/assets/a3_retail/js/a3_stock.js?v={{ asset_v }}" defer></script>
+</head>
+<body class="pos-body">
+<div class="app">
+
+	{% include "a3_retail/www/branch/_sidebar.html" %}
+
+	<div class="main">
+		<header class="topbar">
+			<div class="topbar-branch topbar-title">
+				<h1>{{ _("Branch Stock Control") }} <span class="chip">{{ me.branch }}</span></h1>
+				<p class="topbar-sub">
+					{{ _("Monitor stock, manage transfers, requests and branch inventory") }}</p>
+			</div>
+			<div class="topbar-right">
+				<span class="rep-when" id="as-of"></span>
+				<button class="btn btn-quiet btn-icon" id="refresh">
+					{% set icon = "refresh" %}{% include "a3_retail/www/branch/_icons.html" %}
+					{{ _("Refresh") }}</button>
+				<a class="btn btn-quiet" href="/branch/dashboard">{{ _("Dashboard") }}</a>
+				<div class="who">
+					<div class="name">{{ me.employee_name }}</div>
+					<div class="role">{{ me.designation or "" }}</div>
+				</div>
+				<div class="avatar">{{ initials }}</div>
+				<a class="btn btn-quiet" href="/branch/logout">{{ _("Sign out") }}</a>
+			</div>
+		</header>
+
+		<main class="stk">
+			<!-- ------------------------------------------- what you can do -->
+			<section class="stk-actions">
+				<button class="btn btn-primary" data-do="request">+ {{ _("Request Stock") }}</button>
+				<button class="btn btn-purple" data-do="procure">+ {{ _("Request Procurement") }}</button>
+				<button class="btn btn-orange" data-do="move">{{ _("Move Stock") }}</button>
+				<button class="btn btn-save" data-do="receive">{{ _("Receive Stock") }}</button>
+				<button class="btn btn-quiet" data-do="adjust">{{ _("Stock Adjustment") }}</button>
+			</section>
+
+			<section class="ctiles stk-kpis" id="kpis"></section>
+
+			<!-- ------------------------------------------------ live stock -->
+			<section class="svc-panel">
+				<div class="panel-head">
+					<h2>{{ _("Live Stock") }}</h2>
+					<span class="rep-when">{{ _("Current availability for") }} {{ me.branch }}</span>
+				</div>
+
+				<div class="filter-row stk-filters">
+					<label class="field wide"><span>{{ _("Search") }}</span>
+						<input id="q" autocomplete="off"
+						       placeholder="{{ _('Search item, SKU, brand…') }}"></label>
+					<label class="field"><span>{{ _("Item group") }}</span>
+						<select id="item-group"><option value="">{{ _("All") }}</option></select></label>
+					<label class="field"><span>{{ _("Brand") }}</span>
+						<select id="brand"><option value="">{{ _("All") }}</option></select></label>
+					<label class="field"><span>{{ _("Warehouse") }}</span>
+						<select id="warehouse"><option value="">{{ _("All") }}</option></select></label>
+					<label class="field"><span>{{ _("Status") }}</span>
+						<select id="status">
+							{% for value in ["all", "Healthy", "Low Stock", "Out of Stock", "Incoming"] %}
+							<option value="{{ value }}">{{ _("All") if value == "all" else _(value) }}</option>
+							{% endfor %}
+						</select></label>
+					<label class="field"><span>{{ _("Stock type") }}</span>
+						<select id="kind">
+							{% for value, label in [("all", "All"), ("saleable", "Saleable"),
+							                        ("parts", "Service parts"),
+							                        ("accessories", "Accessories"),
+							                        ("damaged", "Damaged")] %}
+							<option value="{{ value }}">{{ _(label) }}</option>
+							{% endfor %}
+						</select></label>
+					<button class="btn btn-quiet btn-sm" id="clear">{{ _("Clear") }}</button>
+				</div>
+
+				<div class="bill-table-wrap" id="stock-wrap"></div>
+				<div class="bill-foot"><span id="showing"></span><div class="pager" id="pager"></div></div>
+			</section>
+
+			<!-- ----------------------------------------------------- tabs -->
+			<nav class="cust-tabs" id="tabs">
+				{% for key, label in [("overview", "Overview"), ("purchases", "Purchases"),
+				                      ("requests", "Stock Requests"), ("transfers", "Transfers"),
+				                      ("receipts", "Receipts"), ("movements", "Movements"),
+				                      ("adjustments", "Adjustments"), ("reservations", "Reservations"),
+				                      ("service", "Service Stock"), ("devices", "Customer Devices")] %}
+				<button class="tab {{ 'is-active' if loop.first else '' }}"
+				        data-tab="{{ key }}">{{ _(label) }}</button>
+				{% endfor %}
+			</nav>
+			<div id="tab-body"></div>
+
+			<!-- ------------------------------------------ alerts + activity -->
+			<section class="stk-bottom">
+				<div class="svc-panel">
+					<div class="panel-head"><h2>{{ _("Stock Alerts") }}</h2></div>
+					<div id="alerts"></div>
+				</div>
+				<div class="svc-panel">
+					<div class="panel-head"><h2>{{ _("Recent Activity") }}</h2></div>
+					<div id="activity"></div>
+				</div>
+			</section>
+		</main>
+	</div>
+</div>
+
+<!-- ------------------------------------------------------------- dialogs -->
+<div class="modal" id="work-modal" hidden>
+	<div class="modal-card modal-wide">
+		<h3 id="work-title"></h3>
+		<p class="modal-note" id="work-note"></p>
+		<div id="work-body"></div>
+		<div class="msg" id="work-msg"></div>
+		<div class="modal-actions">
+			<button class="btn btn-quiet" data-close>{{ _("Cancel") }}</button>
+			<button class="btn btn-primary" id="work-go"></button>
+		</div>
+	</div>
+</div>
+
+<div class="modal" id="network-modal" hidden>
+	<div class="modal-card modal-wide">
+		<h3 id="network-title">{{ _("Stock availability across the network") }}</h3>
+		<p class="modal-note" id="network-note"></p>
+		<div id="network-body"></div>
+		<div class="modal-actions"><button class="btn btn-quiet" data-close>{{ _("Close") }}</button></div>
+	</div>
+</div>
+
+<script>
+window.addEventListener("DOMContentLoaded", function () {
+	STOCK.start({ branch: {{ me.branch|tojson }} });
+});
+</script>
+</body>
+</html>

@@ -1305,3 +1305,72 @@ body.side-collapsed .side-nav a, body.side-collapsed .side-soon { justify-conten
 	.rep-head { flex-direction: column; }
 	.rep-meta { text-align: left; }
 }
+
+/* ==========================================================================
+   Branch Stock Control (/branch/stock)
+   ========================================================================== */
+.stk { display: flex; flex-direction: column; gap: 16px; padding: 14px 20px 40px; }
+.stk-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+/* `.btn-save` and friends are full-width blocks on the service counter; in this
+   row they are ordinary buttons. */
+.stk-actions .btn { display: inline-flex; align-items: center; justify-content: center;
+	width: auto; margin: 0; padding: 10px 16px; font-weight: 700; }
+.btn-purple { background: #6d3ee0; border: 0; color: #fff; }
+.btn-purple:hover { background: #5b31c4; }
+
+.stk-kpis { grid-template-columns: repeat(9, minmax(0, 1fr)); }
+.stk-kpi { text-align: left; font-family: inherit; cursor: pointer; padding: 12px 14px; }
+.stk-kpi:hover { border-color: var(--line-strong); }
+.stk-kpi .ctile-label { font-size: 10.5px; color: var(--faint); font-weight: 600; }
+.stk-kpi .ctile-value { font-size: 17px; margin-top: 4px; }
+.amber { color: var(--brand-dark); }
+
+.stk-filters { grid-template-columns: minmax(180px, 1.6fr) repeat(5, minmax(0, 1fr)) auto;
+	margin-bottom: 12px; }
+.stk-table td small { display: block; color: var(--faint); font-size: 10px; }
+.stk-subcards { grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 14px 16px 0; }
+.stk-overview { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.stk-subtabs { margin-bottom: 12px; }
+
+.stk-inbox { border-left: 3px solid var(--brand); }
+.stk-inbox-row { display: flex; align-items: center; gap: 12px; padding: 10px 0;
+	border-bottom: 1px solid var(--line); font-size: 12.5px; }
+.stk-inbox-row:last-child { border-bottom: 0; }
+.stk-inbox-row .row-main { flex: 1; min-width: 0; }
+
+.stk-bottom { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 16px;
+	align-items: start; }
+.stk-alert { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+	padding: 9px 4px; border: 0; border-bottom: 1px solid var(--line); background: none;
+	font-family: inherit; font-size: 12.5px; color: #46536b; cursor: pointer; }
+.stk-alert:last-child { border-bottom: 0; }
+.stk-alert:hover { color: var(--sky-dark); }
+.stk-alert .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+.stk-alert .dot.warn { background: var(--brand); }
+.stk-alert .dot.bad { background: var(--danger); }
+.stk-alert .dot.sky { background: var(--sky); }
+.stk-alert .dot.good { background: #12a150; }
+
+.stk-act { display: flex; align-items: center; gap: 12px; padding: 8px 0;
+	border-bottom: 1px solid var(--line); font-size: 12.5px; }
+.stk-act:last-child { border-bottom: 0; }
+.stk-act-at { color: var(--faint); font-size: 11px; width: 44px; flex: none;
+	font-variant-numeric: tabular-nums; }
+.stk-act-main { flex: 1; min-width: 0; }
+.stk-act-main b { display: block; font-size: 12px; }
+.stk-act-main small { color: var(--faint); font-size: 11px; }
+.modal-widest .modal-card, #network-modal .modal-card { max-width: 880px; }
+.stk-reco { background: #f2f8fe; border: 1px solid #cfe6f7; border-radius: 9px; padding: 10px 14px;
+	margin-bottom: 12px; font-size: 12.5px; color: var(--sky-dark); font-weight: 600; }
+
+@media (max-width: 1400px) {
+	.stk-kpis { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+	.stk-filters { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+	.stk-overview { grid-template-columns: minmax(0, 1fr); }
+	.stk-bottom { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 1050px) {
+	.stk-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+	.stk-filters { grid-template-columns: minmax(0, 1fr); }
+	.stk-subcards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
