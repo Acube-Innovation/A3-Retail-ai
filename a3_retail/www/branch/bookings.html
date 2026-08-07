@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="csrf-token" content="{{ csrf_token }}">
+	<meta name="robots" content="noindex">
+	<title>{{ _("Service Bookings") }} · {{ me.branch }} · {{ app_name }}</title>
+	<link rel="stylesheet" href="/assets/a3_retail/css/a3_branch.css?v={{ asset_v }}">
+	<script src="/assets/a3_retail/js/a3_branch.js?v={{ asset_v }}" defer></script>
+	<script src="/assets/a3_retail/js/a3_bookings.js?v={{ asset_v }}" defer></script>
+</head>
+<body class="pos-body">
+<div class="app">
+
+	{% include "a3_retail/www/branch/_sidebar.html" %}
+
+	<div class="main">
+		<header class="topbar">
+			<div class="topbar-branch topbar-title">
+				<h1>{{ _("Service Bookings") }}</h1>
+				<p class="topbar-sub">
+					{{ _("Every device booked in at this branch — where it is, who has it, what is owed") }}</p>
+			</div>
+			<div class="topbar-right">
+				<a class="btn btn-primary btn-new" href="/branch/service">+ {{ _("New Booking") }}</a>
+				<button class="btn btn-quiet btn-icon" id="export">
+					{% set icon = "download" %}{% include "a3_retail/www/branch/_icons.html" %}
+					{{ _("Export") }}</button>
+				<button class="btn btn-quiet btn-icon" id="refresh">
+					{% set icon = "refresh" %}{% include "a3_retail/www/branch/_icons.html" %}
+					{{ _("Refresh") }}</button>
+				<a class="btn btn-quiet" href="/branch/dashboard">{{ _("Dashboard") }}</a>
+				<div class="who">
+					<div class="name">{{ me.employee_name }}</div>
+					<div class="role">{{ me.designation or "" }}</div>
+				</div>
+				<div class="avatar">{{ initials }}</div>
+				<a class="btn btn-quiet" href="/branch/logout">{{ _("Sign out") }}</a>
+			</div>
+		</header>
+
+		<main class="bills bkg">
+			<!-- --------------------------------------------- where they are -->
+			<section class="ctiles bill-tiles" id="tiles"></section>
+
+			<!-- -------------------------------------------------- filters -->
+			<section class="svc-panel bill-filters">
+				<button class="btn btn-outline btn-sm filter-toggle" id="filter-toggle">
+					{% set icon = "filter" %}{% include "a3_retail/www/branch/_icons.html" %}
+					{{ _("Filters") }}</button>
+
+				<div class="filter-row" id="filter-row">
+					<label class="field wide"><span>{{ _("Search") }}</span>
+						<input id="q" autocomplete="off"
+						       placeholder="{{ _('Booking no, customer, phone, IMEI, model, complaint…') }}"></label>
+
+					<label class="field"><span>{{ _("Booked from") }}</span>
+						<input id="from-date" type="date"></label>
+					<label class="field"><span>{{ _("Booked to") }}</span>
+						<input id="to-date" type="date"></label>
+
+					<label class="field"><span>{{ _("Where it is") }}</span>
+						<select id="status">
+							{% for value, label in [("all", "All bookings"), ("in_shop", "In the shop"),
+							                        ("waiting", "Waiting on something"),
+							                        ("ready", "Ready for delivery"),
+							                        ("delivered", "Handed over")] %}
+							<option value="{{ value }}">{{ _(label) }}</option>
+							{% endfor %}
+							<optgroup label="{{ _('Exact status') }}" id="status-list"></optgroup>
+						</select></label>
+
+					<label class="field"><span>{{ _("Money") }}</span>
+						<select id="payment">
+							{% for value, label in [("all", "Any"), ("unpaid", "Something owed"),
+							                        ("paid", "Settled"), ("warranty", "Warranty bears it")] %}
+							<option value="{{ value }}">{{ _(label) }}</option>
+							{% endfor %}
+						</select></label>
+
+					<label class="field"><span>{{ _("Technician") }}</span>
+						<select id="technician"><option value="">{{ _("Anyone") }}</option></select></label>
+
+					<label class="field"><span>{{ _("Priority") }}</span>
+						<select id="priority">
+							{% for value in ["all", "Low", "Normal", "High", "Urgent (Same Day)"] %}
+							<option value="{{ value }}">{{ _("Any") if value == "all" else _(value) }}</option>
+							{% endfor %}
+						</select></label>
+
+					<label class="field"><span>{{ _("Promise") }}</span>
+						<select id="delay">
+							{% for value, label in [("all", "Any"), ("delayed", "Running late"),
+							                        ("ontime", "On time")] %}
+							<option value="{{ value }}">{{ _(label) }}</option>
+							{% endfor %}
+						</select></label>
+
+					<label class="field"><span>{{ _("Branch") }}</span>
+						<select id="branch">
+							<option value="current">{{ me.branch }}</option>
+							<option value="all">{{ _("All branches") }}</option>
+						</select></label>
+
+					<button class="btn btn-quiet btn-sm" id="clear">{{ _("Clear filters") }}</button>
+				</div>
+			</section>
+
+			<!-- ---------------------------------------------------- table -->
+			<section class="svc-panel bill-table-panel">
+				<div class="bill-table-wrap">
+					<table class="bill-table">
+						<thead>
+							<tr>
+								{% for label in ["Booking No.", "Booked", "Customer", "Phone", "Device",
+								                 "IMEI", "Complaint", "Technician", "Promised",
+								                 "Status", "Total", "Advance", "Balance",
+								                 "Payment", "Actions"] %}
+								<th>{{ _(label) }}</th>
+								{% endfor %}
+							</tr>
+						</thead>
+						<tbody id="rows"></tbody>
+					</table>
+				</div>
+
+				<div class="bill-foot">
+					<span id="showing"></span>
+					<label class="page-size">{{ _("Per page") }}
+						<select id="page-size">
+							{% for size in [20, 50, 100] %}<option value="{{ size }}">{{ size }}</option>{% endfor %}
+						</select></label>
+					<div class="pager" id="pager"></div>
+				</div>
+			</section>
+		</main>
+	</div>
+</div>
+
+<div class="modal" id="list-modal" hidden>
+	<div class="modal-card">
+		<h3 id="list-title"></h3>
+		<p class="modal-note" id="list-note"></p>
+		<ul class="simple-list" id="list-body"></ul>
+		<div class="modal-actions"><button class="btn btn-quiet" data-close>{{ _("Close") }}</button></div>
+	</div>
+</div>
+
+<script>
+window.addEventListener("DOMContentLoaded", function () {
+	BOOKINGS.start({ branch: {{ me.branch|tojson }} });
+});
+</script>
+</body>
+</html>

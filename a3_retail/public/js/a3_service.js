@@ -30,10 +30,39 @@ window.SVC = (function () {
 		return node.innerHTML;
 	}
 
-	function say(text, kind) {
+	/**
+	 * Tell the counter something.
+	 *
+	 * A booking is refused for good reasons — a discount with no reason on it, a
+	 * device already on the bench, a promise for a day that has gone. Those used
+	 * to land as small red type under the Save button, where a busy counter
+	 * never saw them; so anything that stops a booking is also raised as an
+	 * alert in the middle of the screen, with a heading that names the problem.
+	 */
+	function say(text, kind, title) {
 		const box = $("svc-msg");
-		box.textContent = text || "";
+		const message = A3.plain ? A3.plain(text) : text || "";
+		box.textContent = message;
 		box.className = "msg" + (kind ? " " + kind : "");
+		if (kind === "error" && message) alert(message, title);
+		return message;
+	}
+
+	function alert(text, title) {
+		if (A3.toast) return A3.toast(text, "error", title || "");
+		window.console.warn(text);
+	}
+
+	/** Refuse to go on, and put the cursor where the answer goes. */
+	function stop(text, title, focusId) {
+		if (focusId && $(focusId)) {
+			$(focusId).focus();
+			if ($(focusId).scrollIntoView) {
+				$(focusId).scrollIntoView({ block: "center", behavior: "smooth" });
+			}
+		}
+		say(text, "error", title);
+		return false;
 	}
 
 	// ------------------------------------------------------------- device
@@ -48,7 +77,7 @@ window.SVC = (function () {
 			paintDevice();
 			say(found.known ? "" : "Not a handset we sold — name the make and model below.");
 		} catch (error) {
-			say(error.message, "error");
+			say(error.message, "error", error.title);
 		}
 	}
 
@@ -223,7 +252,7 @@ window.SVC = (function () {
 			fillModels(brand, created.name);
 			say(created.created ? created.name + " added." : created.name + " was already listed.", "ok");
 		} catch (error) {
-			say(error.message, "error");
+			say(error.message, "error", error.title);
 		}
 	}
 
@@ -415,6 +444,20 @@ window.SVC = (function () {
 		$("warranty-row").hidden = !sums.covered;
 		$("r-warranty").textContent = money(sums.covered ? sums.total : 0);
 		$("advance").disabled = sums.covered;
+
+		// Ask for the reason the moment a discount is typed, not after the save
+		// has been refused.
+		$("discount-reason-row").hidden = sums.discount <= 0;
+		$("discount-reason-row").classList.toggle(
+			"is-wanted", sums.discount > 0 && !$("discount-reason").value.trim());
+
+		// Money that is more than the repair is a typo far more often than it is
+		// a deposit, so the counter is told before it clicks Save.
+		const over = !sums.covered && sums.total > 0 && sums.advance > sums.total + 0.005;
+		$("advance").classList.toggle("is-off", over);
+		$("balance").textContent = over
+			? money(0) + " · " + money(sums.advance - sums.total) + " too much"
+			: money(sums.balance);
 	}
 
 	// ------------------------------------------------------------- steps
@@ -462,7 +505,7 @@ window.SVC = (function () {
 				if (!response.ok) throw new Error(payload.exception || "Upload failed");
 				state.photos.push(payload.message.file_url);
 			} catch (error) {
-				say(error.message, "error");
+				say(error.message, "error", error.title);
 			}
 		}
 		paintPhotos();
@@ -531,37 +574,54 @@ window.SVC = (function () {
 	// ------------------------------------------------------------ actions
 	async function saveBooking() {
 		if (!state.lines.length && !$("complaint").value.trim()) {
-			return say("Write down what the customer says is wrong.", "error");
+			return stop("Write down what the customer says is wrong — it is the only record "
+				+ "of why the device came in.", "The complaint is empty", "complaint");
 		}
 		if (!$("backup-required").checked && !$("data-consent").checked) {
-			return say("Tick either 'Data backup required' or 'Customer accepts data loss'.", "error");
+			return stop("A repair can wipe a phone. Tick either 'Data backup required' or "
+				+ "'Customer accepts data loss' before taking the device in.",
+				"Ask about the customer's data", "data-consent");
 		}
 
 		const device = state.device || {};
 		if (!device.imei_1 && !device.imei_unreadable) {
-			if ($("d-imei")) $("d-imei").focus();
-			return say("Scan or type the IMEI — or tick that the device cannot show one.", "error");
+			return stop("Scan or type the 15-digit IMEI — or tick 'The device cannot show its "
+				+ "IMEI' if it will not power on.", "The device has no IMEI on it", "d-imei");
 		}
 		if (device.imei_unreadable && !(device.condition || "").trim()) {
-			if ($("d-condition")) $("d-condition").focus();
-			return say("Describe the device — with no IMEI, that description is all that "
-				+ "identifies it.", "error");
+			return stop("Describe the device — colour, marks, what came with it. With no IMEI, "
+				+ "that description is all that identifies it.",
+				"Describe the device", "d-condition");
 		}
 		if (!device.device_model) {
-			if ($("d-model")) $("d-model").focus();
-			return say("Pick the make and model of the device — or scan its IMEI.", "error");
+			return stop("Pick the make and model of the device — or scan its IMEI and the shop's "
+				+ "own record will fill it in.", "No model picked", "d-model");
+		}
+
+		const sums = totals();
+		if (sums.discount > 0 && !$("discount-reason").value.trim()) {
+			$("discount-reason-row").hidden = false;
+			$("discount-reason-row").classList.add("is-wanted");
+			return stop(`Say why the ${money(sums.discount)} discount is being given. It is `
+				+ "printed on the job card and a manager reads it later.",
+				"The discount needs a reason", "discount-reason");
+		}
+		if (!sums.covered && sums.advance > sums.total + 0.005 && sums.total > 0) {
+			return stop(`The customer is handing over ${money(sums.advance)}, but this repair `
+				+ `comes to ${money(sums.total)}. Take the smaller amount, or add the rest of `
+				+ "the work first.", "More than the repair costs", "advance");
 		}
 
 		if (state.requirePhotos && state.photos.length < state.minPhotos) {
-			say(`This shop photographs a device before it takes it in — `
-				+ `${state.minPhotos} photo(s), and there ${state.photos.length === 1 ? "is" : "are"} `
-				+ `${state.photos.length}.`, "error");
+			say(`Photograph the device before taking it in — ${state.minPhotos} photo`
+				+ `${state.minPhotos === 1 ? "" : "s"} at least, and there `
+				+ `${state.photos.length === 1 ? "is 1" : "are " + state.photos.length}. `
+				+ "The camera is opening now.", "error", "A photo is needed");
 			return addPhoto();
 		}
 
 		if (!state.signed) return askSignature();
 
-		const sums = totals();
 		$("save-booking").disabled = true;
 
 		try {
@@ -594,13 +654,17 @@ window.SVC = (function () {
 					signature: $("sign-pad").toDataURL("image/png"),
 					photos: state.photos,
 					discount_amount: sums.discount,
+					discount_reason: $("discount-reason").value.trim(),
 					advance_amount: sums.advance,
 					items: state.lines,
 				},
 			});
 			done(result);
 		} catch (error) {
-			say(error.message || "Could not save the booking.", "error");
+			// The server's own titles say what went wrong — "Already on the
+			// bench", "The discount needs a reason" — so they are shown as given.
+			say(error.message || "The booking was not saved. Nothing has been charged.",
+				"error", error.title || "The booking was not saved");
 		} finally {
 			$("save-booking").disabled = false;
 		}
@@ -620,7 +684,8 @@ window.SVC = (function () {
 	}
 
 	async function generateInvoice() {
-		if (!state.jobCard) return say("Save the booking first.", "error");
+		if (!state.jobCard) return stop("Save the booking first — there is no job card to work on yet.",
+			"Nothing booked in yet", "save-booking");
 		try {
 			const result = await A3.call("a3_retail.api.service_pos.generate_invoice",
 				{ job_card: state.jobCard });
@@ -631,12 +696,13 @@ window.SVC = (function () {
 			setStep("invoice");
 			setTrack(2);
 		} catch (error) {
-			say(error.message, "error");
+			say(error.message, "error", error.title);
 		}
 	}
 
 	function askDelivery() {
-		if (!state.jobCard) return say("Save the booking first.", "error");
+		if (!state.jobCard) return stop("Save the booking first — there is no job card to work on yet.",
+			"Nothing booked in yet", "save-booking");
 		$("otp-modal").hidden = false;
 		$("otp").value = "";
 		$("otp").focus();
@@ -654,25 +720,27 @@ window.SVC = (function () {
 			setTrack(3);
 			say("Handed over. " + state.jobCard + " is closed.", "ok");
 		} catch (error) {
-			say(error.message, "error");
+			say(error.message, "error", error.title);
 		}
 	}
 
 	async function communicate(channel) {
 		if (channel === "Print") {
-			if (!state.jobCard) return say("Save the booking first.", "error");
+			if (!state.jobCard) return stop("Save the booking first — there is no job card to work on yet.",
+			"Nothing booked in yet", "save-booking");
 			return window.open("/api/method/frappe.utils.print_format.download_pdf"
 				+ "?doctype=Service%20Job%20Card&name=" + encodeURIComponent(state.jobCard)
 				+ "&format=Job%20Card%20Acknowledgement", "_blank");
 		}
-		if (!state.jobCard) return say("Save the booking first.", "error");
+		if (!state.jobCard) return stop("Save the booking first — there is no job card to work on yet.",
+			"Nothing booked in yet", "save-booking");
 		try {
 			const result = await A3.call("a3_retail.api.service_pos.notify",
 				{ job_card: state.jobCard, channel });
 			say(result.sent ? channel + " sent." : channel + " was not sent — check messaging settings.",
 				result.sent ? "ok" : "error");
 		} catch (error) {
-			say(error.message, "error");
+			say(error.message, "error", error.title);
 		}
 	}
 
@@ -727,8 +795,8 @@ window.SVC = (function () {
 		state.lines = [];
 		state.customer = null;
 		["mobile", "customer-name", "customer-email", "customer-address", "customer-city",
-		 "customer-pin", "complaint", "notes", "advance", "discount-value", "promised"]
-			.forEach((id) => { $(id).value = ""; });
+		 "customer-pin", "complaint", "notes", "advance", "discount-value", "discount-reason",
+		 "promised"].forEach((id) => { $(id).value = ""; });
 		$("backup-required").checked = false;
 		$("data-consent").checked = false;
 		state.signed = false;
@@ -814,6 +882,10 @@ window.SVC = (function () {
 		$("discount-type").addEventListener("change", paintTotals);
 		$("discount-value").addEventListener("input", paintTotals);
 		$("advance").addEventListener("input", paintTotals);
+		$("discount-reason").addEventListener("input", () => {
+			$("discount-reason-row").classList.toggle(
+				"is-wanted", !$("discount-reason").value.trim());
+		});
 
 		$("complaint").addEventListener("input", () => {
 			$("complaint-count").textContent = $("complaint").value.length;
@@ -863,7 +935,7 @@ window.SVC = (function () {
 			try {
 				await A3.call("a3_retail.api.service_pos.resend_otp", { job_card: state.jobCard });
 				say("A fresh OTP is on its way to the customer.", "ok");
-			} catch (error) { say(error.message, "error"); }
+			} catch (error) { say(error.message, "error", error.title); }
 		});
 
 		const quick = {
@@ -897,7 +969,20 @@ window.SVC = (function () {
 		paintLines();
 		paintDevice();
 		paintPhotos();
+
+		// Service Bookings hands a card back to the counter to be invoiced or
+		// handed over; the counter picks up where that page left off.
+		const params = new URLSearchParams(window.location.search);
+		if (params.get("booking")) return openBooking(params.get("booking"));
 		$("scan").focus();
+	}
+
+	async function openBooking(name) {
+		try {
+			loadBooking(await A3.call("a3_retail.api.service_pos.booking", { job_card: name }));
+		} catch (error) {
+			say(error.message, "error", error.title || "That booking would not open");
+		}
 	}
 
 	return { start, state };

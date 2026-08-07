@@ -36,6 +36,10 @@ GUARDS = {
 	# The branch portal's own gate: refuses a guest, and refuses anyone whose
 	# account is not linked to an active Employee (api/staff.py).
 	"_me",
+	# Service Bookings' gate, which is all three at once: `_me()`, read
+	# permission on the Service Job Card, and a refusal when the booking belongs
+	# to another branch (api/bookings.py).
+	"_open_booking",
 }
 
 # Guest endpoints that are safe without a document permission, with the reason.

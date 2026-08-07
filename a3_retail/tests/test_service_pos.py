@@ -94,11 +94,11 @@ class TestServicePage(FrappeTestCase):
 		self.assertIn("padding: 10px 0", rule)
 		self.assertNotIn("!important", rule)
 
-	def test_services_is_a_live_entry_in_the_sidebar(self):
+	def test_the_counter_is_named_service_pos_in_the_sidebar(self):
 		sidebar = open(
 			os.path.join(frappe.get_app_path("a3_retail", "www", "branch"), "_sidebar.html")
 		).read()
-		self.assertIn('("services", "Services", "/branch/service"', sidebar)
+		self.assertIn('("services", "Service POS", "/branch/service"', sidebar)
 
 
 class TestServiceAccess(FrappeTestCase):

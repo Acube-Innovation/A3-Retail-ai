@@ -417,6 +417,14 @@ def save_booking(payload) -> dict:
 		frappe.throw(_("Pick the model of the device before booking it in."),
 		             title=_("Model needed"))
 
+	# Everything below answers a counter's question with the answer, not with a
+	# rule number: what is wrong, and what to do about it.
+	_check_not_already_booked(data, employee.branch)
+	_check_lines(data.get("items") or [])
+	_check_discount(data)
+	_check_promise(data)
+	_check_technician(data, employee.branch)
+
 	doc = frappe.new_doc("Service Job Card")
 	doc.branch = employee.branch
 	doc.customer = customer
@@ -458,6 +466,7 @@ def save_booking(payload) -> dict:
 
 	_add_lines(doc, data.get("items") or [])
 	doc.discount_amount = flt(data.get("discount_amount"))
+	doc.discount_reason = (data.get("discount_reason") or "").strip() or None
 
 	doc.insert()
 	doc.submit()
@@ -479,6 +488,7 @@ def save_booking(payload) -> dict:
 	if advance > 0:
 		from a3_retail.api.service import take_advance
 
+		_check_advance(advance, doc)
 		taken = take_advance(doc.name, advance, data.get("advance_mode") or "Cash")
 		result["payment_entry"] = taken.get("payment_entry")
 		result["advance"] = flt(taken.get("advance_amount"))
@@ -488,6 +498,127 @@ def save_booking(payload) -> dict:
 		result["balance"] = flt(doc.customer_payable)
 
 	return result
+
+
+# ---------------------------------------------------------------------------
+# What the counter is told before a booking is written
+#
+# Each of these answers in the words the person at the desk would use, names the
+# thing that is wrong, and — where there is one — says what to do instead. A
+# counter cannot act on "ValidationError", and should never have to.
+# ---------------------------------------------------------------------------
+def _check_not_already_booked(data: dict, branch: str):
+	"""The same handset, already on the bench, booked in twice by mistake."""
+	from a3_retail.a3_retail_service.doctype.service_job_card import state as st
+
+	imei = (data.get("imei_1") or "").strip()
+	serial = (data.get("serial_no") or "").strip()
+	if not imei and not serial:
+		return
+
+	filters = {"branch": branch, "docstatus": 1, "status": ["in", list(st.OPEN_STATUSES)]}
+	filters["imei_1" if imei else "serial_no"] = imei or serial
+
+	open_card = frappe.db.get_value(
+		"Service Job Card", filters, ["name", "status", "customer_name"], as_dict=True)
+	if not open_card:
+		return
+
+	frappe.throw(
+		_("This device is already booked in on {0} ({1}, {2}), so it is not booked in "
+		  "twice. Open that job card to add to it, or hand this one back first.").format(
+			open_card.name, _(open_card.status), open_card.customer_name),
+		title=_("Already on the bench"),
+	)
+
+
+def _check_lines(items: list[dict]):
+	"""A line the counter typed that would have vanished on save."""
+	for index, line in enumerate(items, start=1):
+		item_code = (line.get("item_code") or "").strip()
+		if not item_code:
+			frappe.throw(
+				_("Line {0} has no part or service picked. Pick one from the list, or take "
+				  "the line off the repair.").format(index),
+				title=_("An empty line"),
+			)
+		if not frappe.db.exists("Item", item_code):
+			frappe.throw(
+				_("{0} is not in the catalogue any more, so line {1} cannot be charged. "
+				  "Take it off and pick a part that is still stocked.").format(item_code, index),
+				title=_("No such part"),
+			)
+		if flt(line.get("qty")) < 0 or flt(line.get("rate")) < 0:
+			frappe.throw(
+				_("Line {0} has a quantity or a rate below zero.").format(index),
+				title=_("Check that line"),
+			)
+
+
+def _check_discount(data: dict):
+	"""A discount without a reason is refused by the job card — say so here."""
+	if flt(data.get("discount_amount")) <= 0:
+		return
+	if (data.get("discount_reason") or "").strip():
+		return
+
+	frappe.throw(
+		_("Say why the {0} discount is being given — the reason is printed on the job "
+		  "card and a manager reads it later.").format(
+			frappe.utils.fmt_money(flt(data["discount_amount"]), currency="INR")),
+		title=_("The discount needs a reason"),
+	)
+
+
+def _check_promise(data: dict):
+	"""A promise the shop has already missed before the customer leaves."""
+	promised = _promised(data.get("expected_delivery"))
+	if not promised:
+		return
+	# The date is the promise; a booking taken at seven in the evening for "today"
+	# is a promise for today, not a broken one.
+	if getdate(promised) >= getdate(nowdate()):
+		return
+
+	frappe.throw(
+		_("The delivery date on this booking, {0}, has already gone by. Pick today or a "
+		  "day after it.").format(frappe.utils.format_datetime(promised, "d MMM yyyy")),
+		title=_("That date has passed"),
+	)
+
+
+def _check_technician(data: dict, branch: str):
+	"""A technician picked from another branch's bench."""
+	technician = data.get("technician")
+	if not technician:
+		return
+
+	row = frappe.db.get_value(
+		"Employee", technician, ["employee_name", "branch", "status"], as_dict=True)
+	if not row:
+		frappe.throw(_("That technician is not on the staff list any more."),
+		             title=_("No such technician"))
+	if row.branch and row.branch != branch:
+		frappe.throw(
+			_("{0} works at {1}, not here. Pick a technician from this branch, or leave it "
+			  "unassigned.").format(row.employee_name, row.branch),
+			title=_("Not this branch's technician"),
+		)
+
+
+def _check_advance(advance: float, doc):
+	"""Money taken over the counter that is more than the repair will come to."""
+	payable = flt(doc.customer_payable)
+	if payable <= 0 or advance <= payable + 0.005:
+		return
+
+	frappe.throw(
+		_("The customer is handing over {0}, but this repair only comes to {1}. Take the "
+		  "smaller amount, or add the rest of the work to the job card first.").format(
+			frappe.utils.fmt_money(advance, currency="INR"),
+			frappe.utils.fmt_money(payable, currency="INR")),
+		title=_("More than the repair costs"),
+	)
 
 
 def _add_lines(doc, items: list[dict]):

@@ -5,7 +5,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<meta name="csrf-token" content="{{ csrf_token }}">
 	<meta name="robots" content="noindex">
-	<title>{{ _("Service") }} · {{ me.branch }} · {{ app_name }}</title>
+	<title>{{ _("Service POS") }} · {{ me.branch }} · {{ app_name }}</title>
 	<link rel="stylesheet" href="/assets/a3_retail/css/a3_branch.css?v={{ asset_v }}">
 	<script src="/assets/a3_retail/js/a3_branch.js?v={{ asset_v }}" defer></script>
 	<script src="/assets/a3_retail/js/a3_service.js?v={{ asset_v }}" defer></script>
@@ -235,6 +235,15 @@
 							<select id="discount-type"><option value="%">%</option><option value="₹">₹</option></select>
 							<input id="discount-value" type="number" min="0" step="0.01" placeholder="0.00">
 							<span id="r-discount">- ₹0.00</span>
+						</div>
+						{#- The job card refuses a discount with no reason, and prints the
+						    reason for whoever reads the card later. Asking here is the
+						    difference between a counter finishing the booking and a
+						    counter being turned away at the last click. -#}
+						<div class="tr tr-reason" id="discount-reason-row" hidden>
+							<label for="discount-reason">{{ _("Why?") }}</label>
+							<input id="discount-reason" maxlength="140"
+							       placeholder="{{ _('Regular customer, goodwill, price match…') }}">
 						</div>
 						<div class="tr"><span>{{ _("Taxable Amount") }}</span><span id="r-taxable">₹0.00</span></div>
 						<div class="tr"><span>{{ _("GST") }} (<span id="r-gst-rate">18</span>%)</span>
