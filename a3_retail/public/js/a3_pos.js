@@ -759,6 +759,16 @@ window.POS = (function () {
 		// Bills hands a draft back here to be edited, and Customers hands over a
 		// person to sell to.
 		const params = new URLSearchParams(window.location.search);
+		// Parts & Accessories hands an item over to be sold; the counter still
+		// picks the customer and takes the money.
+		if (params.get("item")) {
+			$("q").value = params.get("item");
+			state.filters = state.filters || {};
+			loadCatalogue().then(() => {
+				const item = state.items.find((row) => row.item_code === params.get("item"));
+				if (item) pick(item.item_code);
+			});
+		}
 		if (params.get("invoice")) editDraft(params.get("invoice"));
 		else if (params.get("customer")) {
 			state.customer = params.get("customer");

@@ -1374,3 +1374,28 @@ body.side-collapsed .side-nav a, body.side-collapsed .side-soon { justify-conten
 	.stk-filters { grid-template-columns: minmax(0, 1fr); }
 	.stk-subcards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+/* ==========================================================================
+   Spare parts and accessories (/branch/parts)
+   ========================================================================== */
+.prt-head { display: flex; align-items: center; justify-content: space-between; gap: 14px;
+	flex-wrap: wrap; }
+.prt-actions { display: flex; gap: 10px; }
+.prt-actions .btn { display: inline-flex; align-items: center; justify-content: center;
+	width: auto; margin: 0; padding: 10px 16px; font-weight: 700; }
+.prt-kpis { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.prt-filters { grid-template-columns: minmax(220px, 2fr) minmax(0, 1fr) minmax(0, 1fr) auto;
+	margin-bottom: 12px; }
+.prt-table td small { display: block; color: var(--faint); font-size: 10px; }
+.prt-table .pill { margin-right: 3px; }
+.prt-table td .linkish { margin-left: 6px; }
+
+@media (max-width: 1400px) {
+	.prt-kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+	.prt-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 1050px) {
+	.prt-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+	.prt-filters { grid-template-columns: minmax(0, 1fr); }
+	.prt-head { flex-direction: column; align-items: stretch; }
+}

@@ -1,0 +1,38 @@
+"""Spare parts and accessories — /branch/parts.
+
+Guarded like the counters: a session, an Employee record and a branch.
+"""
+
+import frappe
+
+no_cache = 1
+
+
+def get_context(context):
+	from a3_retail.api.staff import session_context
+	from a3_retail.setup.staff_portal import current_employee
+	from a3_retail.www.branch import asset_version
+
+	context.asset_v = asset_version()
+	context.no_cache = 1
+
+	if frappe.session.user == "Guest" or not current_employee():
+		frappe.local.flags.redirect_location = "/branch/login"
+		raise frappe.Redirect
+
+	context.me = session_context()
+	context.app_name = "A3 Retail"
+	context.company = frappe.db.get_single_value("Global Defaults", "default_company") or "A3 Retail"
+	context.initials = _initials(context.me["employee_name"])
+	# One page, two shelves: the sidebar's Spare Parts and Accessories entries
+	# both land here and only differ by which shelf opens first.
+	context.kind = "accessories" if frappe.form_dict.get("kind") == "accessories" else "parts"
+	context.active = "accessories" if context.kind == "accessories" else "spares"
+	context.csrf_token = frappe.sessions.get_csrf_token()
+	frappe.db.commit()
+	return context
+
+
+def _initials(name: str) -> str:
+	parts = [part for part in (name or "").split() if part]
+	return "".join(part[0] for part in parts[:2]).upper() or "A3"

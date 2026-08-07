@@ -351,6 +351,9 @@ PERMISSION_MATRIX: dict[str, dict[str, str]] = {
 	"OEM Warranty Return": {
 		"A3 Retail Admin": "CRUDS",
 		"Service Manager": "CRUDS",
+		# The person who hands a customer a replacement part is the one who knows
+		# the old one failed, so they log it for the supplier.
+		"Branch Manager": "CRU",
 		"Store Keeper": "CRU",
 		"Accounts Manager": "R",
 	},
