@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="csrf-token" content="{{ csrf_token }}">
+	<meta name="robots" content="noindex">
+	<title>{{ _("Bills") }} · {{ me.branch }} · {{ app_name }}</title>
+	<link rel="stylesheet" href="/assets/a3_retail/css/a3_branch.css?v={{ asset_v }}">
+	<script src="/assets/a3_retail/js/a3_branch.js?v={{ asset_v }}" defer></script>
+	<script src="/assets/a3_retail/js/a3_bills.js?v={{ asset_v }}" defer></script>
+</head>
+<body class="pos-body">
+<div class="app">
+
+	{% include "a3_retail/www/branch/_sidebar.html" %}
+
+	<div class="main">
+		<header class="topbar">
+			<div class="topbar-branch topbar-title">
+				<h1>{{ _("Bills") }}</h1>
+				<p class="topbar-sub">{{ _("Manage invoices, payments and customer billing") }}</p>
+			</div>
+			<div class="topbar-right">
+				<a class="btn btn-primary btn-new" href="/branch/sales">+ {{ _("New Sale") }}</a>
+				<button class="btn btn-quiet btn-icon" id="export">
+					{% set icon = "download" %}{% include "a3_retail/www/branch/_icons.html" %}
+					{{ _("Export") }}</button>
+				<button class="btn btn-quiet btn-icon" id="refresh">
+					{% set icon = "refresh" %}{% include "a3_retail/www/branch/_icons.html" %}
+					{{ _("Refresh") }}</button>
+				<a class="btn btn-quiet" href="/branch/dashboard">{{ _("Dashboard") }}</a>
+				<div class="who">
+					<div class="name">{{ me.employee_name }}</div>
+					<div class="role">{{ me.designation or "" }}</div>
+				</div>
+				<div class="avatar">{{ initials }}</div>
+				<a class="btn btn-quiet" href="/branch/logout">{{ _("Sign out") }}</a>
+			</div>
+		</header>
+
+		<main class="bills">
+			<!-- ------------------------------------------------ the money -->
+			<section class="ctiles bill-tiles" id="tiles"></section>
+
+			<!-- -------------------------------------------------- filters -->
+			<section class="svc-panel bill-filters">
+				<button class="btn btn-outline btn-sm filter-toggle" id="filter-toggle">
+					{% set icon = "filter" %}{% include "a3_retail/www/branch/_icons.html" %}
+					{{ _("Filters") }}</button>
+
+				<div class="filter-row" id="filter-row">
+					<label class="field wide"><span>{{ _("Search") }}</span>
+						<input id="q" autocomplete="off"
+						       placeholder="{{ _('Search invoice no, customer, phone…') }}"></label>
+
+					<label class="field"><span>{{ _("Date from") }}</span>
+						<input id="from-date" type="date"></label>
+					<label class="field"><span>{{ _("Date to") }}</span>
+						<input id="to-date" type="date"></label>
+
+					<label class="field"><span>{{ _("Status") }}</span>
+						<select id="status">
+							{% for value, label in [("all", "All"), ("Draft", "Draft"),
+							                        ("Unpaid", "Unpaid"),
+							                        ("Partially Paid", "Partially Paid"),
+							                        ("Paid", "Paid"), ("Cancelled", "Cancelled")] %}
+							<option value="{{ value }}">{{ _(label) }}</option>
+							{% endfor %}
+						</select></label>
+
+					<label class="field"><span>{{ _("Payment mode") }}</span>
+						<select id="mode">
+							{% for value in ["all", "Cash", "Card", "UPI", "Wallet", "EMI", "Other"] %}
+							<option value="{{ value }}">{{ _("All") if value == "all" else value }}</option>
+							{% endfor %}
+						</select></label>
+
+					<label class="field"><span>{{ _("Branch") }}</span>
+						<select id="branch">
+							<option value="current">{{ me.branch }}</option>
+							<option value="all">{{ _("All branches") }}</option>
+						</select></label>
+
+					<label class="field"><span>{{ _("Customer") }}</span>
+						<input id="customer" autocomplete="off" list="customer-list"
+						       placeholder="{{ _('Any customer') }}">
+						<datalist id="customer-list"></datalist></label>
+
+					<button class="btn btn-quiet btn-sm" id="clear">{{ _("Clear filters") }}</button>
+				</div>
+			</section>
+
+			<!-- ---------------------------------------------------- table -->
+			<section class="svc-panel bill-table-panel">
+				<div class="bill-table-wrap">
+					<table class="bill-table">
+						<thead>
+							<tr>
+								{% for label in ["Invoice No.", "Date", "Customer", "Phone", "Items",
+								                 "Subtotal", "Discount", "GST", "Grand Total",
+								                 "Paid", "Balance", "Payment", "Status",
+								                 "Sales Person", "Actions"] %}
+								<th>{{ _(label) }}</th>
+								{% endfor %}
+							</tr>
+						</thead>
+						<tbody id="rows"></tbody>
+					</table>
+				</div>
+
+				<div class="bill-foot">
+					<span id="showing"></span>
+					<label class="page-size">{{ _("Per page") }}
+						<select id="page-size">
+							{% for size in [20, 50, 100] %}<option value="{{ size }}">{{ size }}</option>{% endfor %}
+						</select></label>
+					<div class="pager" id="pager"></div>
+				</div>
+			</section>
+		</main>
+	</div>
+</div>
+
+<div class="modal" id="payment-modal" hidden>
+	<div class="modal-card">
+		<h3>{{ _("Collect payment") }}</h3>
+		<p class="modal-note" id="payment-note"></p>
+		<div class="field-grid">
+			<label class="field"><span>{{ _("Amount") }}</span>
+				<input id="pay-amount" type="number" min="0" step="1"></label>
+			<label class="field"><span>{{ _("Mode") }}</span>
+				<select id="pay-mode">
+					{% for mode in ["Cash", "Card", "UPI", "Wallet", "Other"] %}
+					<option value="{{ mode }}">{{ mode }}</option>{% endfor %}
+				</select></label>
+		</div>
+		<label class="field"><span>{{ _("Reference (optional)") }}</span>
+			<input id="pay-reference" placeholder="{{ _('UPI reference, card slip…') }}"></label>
+		<div class="modal-actions">
+			<button class="btn btn-quiet" data-close>{{ _("Cancel") }}</button>
+			<button class="btn btn-primary" id="pay-save">{{ _("Take payment") }}</button>
+		</div>
+	</div>
+</div>
+
+<div class="modal" id="list-modal" hidden>
+	<div class="modal-card">
+		<h3 id="list-title"></h3>
+		<p class="modal-note" id="list-note"></p>
+		<ul class="simple-list" id="list-body"></ul>
+		<div class="modal-actions"><button class="btn btn-quiet" data-close>{{ _("Close") }}</button></div>
+	</div>
+</div>
+
+<script>
+window.addEventListener("DOMContentLoaded", function () {
+	BILLS.start({ branch: {{ me.branch|tojson }} });
+});
+</script>
+</body>
+</html>

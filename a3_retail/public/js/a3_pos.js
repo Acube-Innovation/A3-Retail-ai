@@ -11,7 +11,7 @@
 window.POS = (function () {
 	const state = {
 		branch: "", groups: [], group: "", view: "grid",
-		items: [], cart: [], customer: null, mode: "Cash",
+		items: [], cart: [], customer: null, mode: "Cash", editing: null,
 	};
 	const HOLD_KEY = "a3_pos_holds";
 	const $ = (id) => document.getElementById(id);
@@ -558,7 +558,7 @@ window.POS = (function () {
 	}
 
 	// ------------------------------------------------------------ checkout
-	async function checkout() {
+	async function checkout(draft) {
 		const missing = state.cart.find((line) => line.has_serial && line.serials.length !== line.qty);
 		if (missing) return say(missing.item_name + " still needs its IMEI.", "error");
 
@@ -567,8 +567,10 @@ window.POS = (function () {
 		say("Billing…");
 
 		try {
-			const result = await A3.call("a3_retail.api.pos.checkout", {
+			const result = await A3.call(
+				draft ? "a3_retail.api.pos.save_draft" : "a3_retail.api.pos.checkout", {
 				payload: {
+					invoice: state.editing,
 					customer: state.customer,
 					mode_of_payment: state.mode,
 					notes: $("notes").value.trim(),
@@ -583,6 +585,13 @@ window.POS = (function () {
 					})),
 				},
 			});
+			if (draft) {
+				state.editing = result.invoice;
+				markEditing(result.invoice);
+				say(result.invoice + " saved as a draft — it is waiting in Bills.", "ok");
+				$("checkout").disabled = false;
+				return;
+			}
 			done(result, sums);
 		} catch (error) {
 			say(error.message || "Could not complete the sale.", "error");
@@ -606,6 +615,46 @@ window.POS = (function () {
 		$("discount-value").value = "";
 		say("");
 		paintCart();
+	}
+
+	// ------------------------------------------------------- editing a draft
+	/** A draft from Bills is the counter's own cart again: same lines, same
+	 *  customer, same discount — so saving it updates that bill rather than
+	 *  writing a second one. */
+	async function editDraft(name) {
+		try {
+			const bill = await A3.call("a3_retail.api.pos.load_invoice", { invoice: name });
+			state.editing = bill.invoice;
+			state.customer = bill.customer;
+			state.cart = (bill.items || []).map((line) => ({ ...line }));
+			state.mode = bill.mode_of_payment || "Cash";
+
+			$("customer-name").value = bill.customer_name || "";
+			if (bill.mobile_no) $("mobile").value = bill.mobile_no;
+			$("notes").value = bill.notes || "";
+			if (bill.discount_percent) {
+				$("discount-type").value = "%";
+				$("discount-value").value = bill.discount_percent;
+			} else if (bill.discount_amount) {
+				$("discount-type").value = "₹";
+				$("discount-value").value = bill.discount_amount;
+			}
+			setChip("Editing " + bill.invoice, "warn");
+			markEditing(bill.invoice);
+			paintCart();
+			say("Editing " + bill.invoice + ". Saving replaces that bill.", "ok");
+		} catch (error) {
+			say(error.message, "error");
+		}
+	}
+
+	function markEditing(name) {
+		$("bill-no").textContent = name;
+		const heading = document.querySelector(".topbar-branch h1");
+		if (heading) heading.textContent = "Editing Invoice #" + name;
+		$("checkout").innerHTML = 'Update &amp; Submit <span class="key">F9</span>';
+		const hold = document.querySelector('.quick[data-action="hold"] .quick-label');
+		if (hold) hold.textContent = "Save Draft";
 	}
 
 	// --------------------------------------------------------------- start
@@ -669,7 +718,7 @@ window.POS = (function () {
 		});
 
 		const actions = {
-			recent: recentBills, hold: holdBill, drafts: openDrafts,
+			recent: recentBills, hold: () => checkout(true), drafts: openDrafts,
 			loyalty: showLoyalty, price: priceCheck,
 			clear: () => { state.cart = []; paintCart(); },
 		};
@@ -706,6 +755,17 @@ window.POS = (function () {
 
 		loadCatalogue();
 		paintCart();
+
+		// Bills hands a draft back here to be edited, and Customers hands over a
+		// person to sell to.
+		const params = new URLSearchParams(window.location.search);
+		if (params.get("invoice")) editDraft(params.get("invoice"));
+		else if (params.get("customer")) {
+			state.customer = params.get("customer");
+			$("customer-name").value = params.get("customer");
+			setChip("Ready to bill", "good");
+			paintTotals();
+		}
 	}
 
 	function showAllGroups() {

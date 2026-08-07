@@ -453,12 +453,149 @@ def checkout(payload) -> dict:
 	"""Turn the cart into a submitted invoice, and hand back a print link.
 
 	Created as the signed-in user so every selling guard — IMEI, minimum price,
-	sales person — runs exactly as it does in the desk.
+	sales person — runs exactly as it does in the desk. A payload carrying an
+	`invoice` re-fills that draft instead of writing a second one, which is what
+	the Bills page hands back when a counter edits a bill it has not taken money
+	for yet.
 	"""
 	employee = _me()
 	require_permission("Sales Invoice", "create")
 
 	data = frappe.parse_json(payload) if isinstance(payload, str) else (payload or {})
+	invoice, profile, cost_center = _build_invoice(data, employee)
+
+	invoice.flags.ignore_permissions = True
+	_save(invoice)
+
+	mode = resolve_mode(data.get("mode_of_payment") or "Cash")
+	received = flt(data.get("received_amount")) or flt(invoice.grand_total)
+
+	# Only a cash drawer takes more than the bill and hands change back. A card or
+	# a UPI collection is charged the bill exactly, so an over-typed "received"
+	# there would submit an over-paid invoice with a negative outstanding.
+	payable = flt(invoice.rounded_total) or flt(invoice.grand_total)
+	if frappe.db.get_value("Mode of Payment", mode, "type") == "Cash":
+		tendered = max(received, payable)
+	else:
+		tendered = payable
+
+	# Replace the payment table rather than appending to it: a POS Profile puts
+	# its own default row on the invoice, and adding ours next to it counts the
+	# money twice. One row, for what the customer actually handed over — ERPNext
+	# works the change out from there.
+	invoice.set("payments", [{"mode_of_payment": mode, "amount": tendered}])
+
+	_stamp_cost_center(invoice, cost_center)
+	invoice.save(ignore_permissions=True)
+	invoice.submit()
+
+	return {
+		"invoice": invoice.name,
+		"grand_total": flt(invoice.grand_total),
+		"change": flt(invoice.get("change_amount")),
+		"mode_of_payment": mode,
+		"net_total": flt(invoice.net_total),
+		"tax": flt(invoice.total_taxes_and_charges),
+		"paid": flt(invoice.grand_total),
+		"customer_name": invoice.customer_name,
+		"print_url": print_url(invoice.name),
+	}
+
+
+@frappe.whitelist()
+def save_draft(payload) -> dict:
+	"""Park the bill without taking money for it.
+
+	The same document, the same guards, one docstatus short — so a counter can
+	start a bill, walk away from it, and pick it up from Bills later.
+	"""
+	employee = _me()
+	require_permission("Sales Invoice", "create")
+
+	data = frappe.parse_json(payload) if isinstance(payload, str) else (payload or {})
+	invoice, _profile, _cost_center = _build_invoice(data, employee, draft=True)
+
+	invoice.flags.ignore_permissions = True
+	_save(invoice)
+
+	return {
+		"invoice": invoice.name,
+		"status": "Draft",
+		"grand_total": flt(invoice.grand_total),
+		"net_total": flt(invoice.net_total),
+		"tax": flt(invoice.total_taxes_and_charges),
+		"customer_name": invoice.customer_name,
+		"print_url": print_url(invoice.name),
+	}
+
+
+@frappe.whitelist()
+def load_invoice(invoice: str) -> dict:
+	"""A draft, in the shape the counter's own cart uses.
+
+	Editing a bill is the counter re-typing it, so this hands back exactly what
+	`checkout` would have been given — not a second representation of an invoice.
+	"""
+	employee = _me()
+	require_permission("Sales Invoice", "read")
+
+	doc = frappe.get_doc("Sales Invoice", invoice)
+	if doc.branch and doc.branch != employee.branch:
+		frappe.throw(_("That bill belongs to another branch."), title=_("Not this branch"))
+	if doc.docstatus != 0:
+		frappe.throw(
+			_("{0} has been submitted — a bill can only be edited while it is a draft.").format(
+				doc.name),
+			title=_("Not a draft"),
+		)
+
+	lines = []
+	for row in doc.get("items") or []:
+		serials = []
+		if row.get("serial_no"):
+			serials = [s.strip() for s in str(row.serial_no).replace(",", "\n").split("\n")
+			           if s.strip()]
+		elif row.get("serial_and_batch_bundle"):
+			serials = frappe.get_all(
+				"Serial and Batch Entry",
+				filters={"parent": row.serial_and_batch_bundle}, pluck="serial_no")
+
+		item = frappe.db.get_value(
+			"Item", row.item_code,
+			["item_name", "image", "a3_min_selling_price", "has_serial_no"], as_dict=True,
+		) or frappe._dict()
+
+		lines.append({
+			"item_code": row.item_code,
+			"item_name": row.item_name or item.item_name,
+			"image": item.image,
+			"qty": flt(row.qty),
+			"rate": flt(row.rate),
+			"min_price": flt(item.a3_min_selling_price),
+			"gst_rate": _item_gst_rate(row.item_code),
+			"has_serial": bool(item.has_serial_no),
+			"serials": serials,
+		})
+
+	payment = (doc.get("payments") or [None])[0]
+	return {
+		"invoice": doc.name,
+		"customer": doc.customer,
+		"customer_name": doc.customer_name,
+		"mobile_no": doc.contact_mobile or frappe.db.get_value(
+			"Customer", doc.customer, "a3_mobile_no"),
+		"items": lines,
+		"discount_percent": flt(doc.additional_discount_percentage),
+		"discount_amount": flt(doc.discount_amount),
+		"notes": doc.remarks,
+		"mode_of_payment": payment.mode_of_payment if payment else "Cash",
+		"received_amount": flt(payment.amount) if payment else 0,
+		"grand_total": flt(doc.grand_total),
+	}
+
+
+def _build_invoice(data: dict, employee, draft: bool = False):
+	"""Fill an invoice from a counter payload — new, or the draft being edited."""
 	items = data.get("items") or []
 	if not items:
 		frappe.throw(_("Add something to the bill first."))
@@ -468,7 +605,26 @@ def checkout(payload) -> dict:
 		frappe.throw(_("Add the customer before billing."))
 
 	profile = _profile(employee.branch)
-	invoice = frappe.new_doc("Sales Invoice")
+
+	existing = data.get("invoice")
+	if existing:
+		invoice = frappe.get_doc("Sales Invoice", existing)
+		if invoice.docstatus != 0:
+			frappe.throw(
+				_("{0} has been submitted — a bill can only be edited while it is a draft.").format(
+					invoice.name),
+				title=_("Not a draft"),
+			)
+		if invoice.branch and invoice.branch != employee.branch:
+			frappe.throw(_("That bill belongs to another branch."), title=_("Not this branch"))
+		invoice.set("items", [])
+		invoice.set("payments", [])
+		invoice.set("sales_team", [])
+		invoice.additional_discount_percentage = 0
+		invoice.discount_amount = 0
+	else:
+		invoice = frappe.new_doc("Sales Invoice")
+
 	invoice.customer = data["customer"]
 	invoice.company = frappe.db.get_single_value("Global Defaults", "default_company")
 	invoice.posting_date = nowdate()
@@ -477,8 +633,9 @@ def checkout(payload) -> dict:
 	invoice.branch = employee.branch
 	invoice.update_stock = 1
 	invoice.set_warehouse = profile.default_warehouse
-	invoice.is_pos = 1
-	if profile.pos_profile:
+	# A draft that says `is_pos` wants a payment table it does not have yet.
+	invoice.is_pos = 0 if draft else 1
+	if profile.pos_profile and not draft:
 		invoice.pos_profile = profile.pos_profile
 	if profile.default_price_list:
 		invoice.selling_price_list = profile.default_price_list
@@ -522,53 +679,63 @@ def checkout(payload) -> dict:
 	# cost-center field before the permission check runs at insert — which is also
 	# what puts the sale in the branch P&L (scope 11.1).
 	invoice.set_missing_values()
+	_keep_counter_rates(invoice, items)
 	# `set_missing_values` re-reads the tax template from the POS Profile, so the
 	# rate the basket actually carries is applied after it, not before.
 	_apply_gst(invoice, employee.branch)
 	_stamp_cost_center(invoice, cost_center)
 
-	# The role check above is the gate; the document itself is written with
-	# permissions bypassed because pricing an invoice makes ERPNext read Account
-	# and Cost Center records that shop-floor staff are deliberately not allowed
-	# to see (scope 11.1: "Branch User has no read on Account"). The invoice is
-	# still owned by the signed-in user, and every selling guard in
-	# `overrides/sales_invoice.py` still runs on validate.
-	invoice.flags.ignore_permissions = True
-	invoice.insert(ignore_permissions=True)
+	return invoice, profile, cost_center
 
-	mode = resolve_mode(data.get("mode_of_payment") or "Cash")
-	received = flt(data.get("received_amount")) or flt(invoice.grand_total)
 
-	# Only a cash drawer takes more than the bill and hands change back. A card or
-	# a UPI collection is charged the bill exactly, so an over-typed "received"
-	# there would submit an over-paid invoice with a negative outstanding.
-	payable = flt(invoice.rounded_total) or flt(invoice.grand_total)
-	if frappe.db.get_value("Mode of Payment", mode, "type") == "Cash":
-		tendered = max(received, payable)
+def _keep_counter_rates(invoice, items: list[dict]):
+	"""Put the price the counter typed back on the line.
+
+	`set_missing_values` re-prices every line from whichever selling list ERPNext
+	resolves for the customer, which quietly threw away a rate the counter had
+	just agreed with someone standing in front of them — and could bill at a
+	different figure from the one on the screen. The typed rate wins; the guards
+	in `overrides/sales_invoice.py` still decide whether it is allowed to.
+	"""
+	changed = False
+	for line, row in zip(invoice.get("items") or [], items):
+		typed = flt(row.get("rate"))
+		if not typed or abs(flt(line.rate) - typed) < 0.005:
+			continue
+		line.price_list_rate = typed
+		line.margin_type = ""
+		line.margin_rate_or_amount = 0
+		line.discount_percentage = 0
+		line.discount_amount = 0
+		line.rate = typed
+		changed = True
+
+	if not changed:
+		return
+
+	# A rate typed at the counter is a price somebody agreed with a customer who
+	# is standing there. Validate re-applies pricing rules on the way in, which
+	# moved that price again — so a hand-priced bill opts out of them rather than
+	# being re-discounted behind the counter's back.
+	invoice.ignore_pricing_rule = 1
+	invoice.calculate_taxes_and_totals()
+
+
+def _save(invoice):
+	"""Insert or update, with permissions bypassed for the same old reason.
+
+	The role check at the endpoint is the gate; the document itself is written
+	this way because pricing an invoice makes ERPNext read Account and Cost
+	Center records that shop-floor staff are deliberately not allowed to see
+	(scope 11.1). Every selling guard in `overrides/sales_invoice.py` still runs
+	on validate.
+	"""
+	if invoice.get("__islocal") is None and invoice.name and frappe.db.exists(
+		"Sales Invoice", invoice.name
+	):
+		invoice.save(ignore_permissions=True)
 	else:
-		tendered = payable
-
-	# Replace the payment table rather than appending to it: a POS Profile puts
-	# its own default row on the invoice, and adding ours next to it counts the
-	# money twice. One row, for what the customer actually handed over — ERPNext
-	# works the change out from there.
-	invoice.set("payments", [{"mode_of_payment": mode, "amount": tendered}])
-
-	_stamp_cost_center(invoice, cost_center)
-	invoice.save(ignore_permissions=True)
-	invoice.submit()
-
-	return {
-		"invoice": invoice.name,
-		"grand_total": flt(invoice.grand_total),
-		"change": flt(invoice.get("change_amount")),
-		"mode_of_payment": mode,
-		"net_total": flt(invoice.net_total),
-		"tax": flt(invoice.total_taxes_and_charges),
-		"paid": flt(invoice.grand_total),
-		"customer_name": invoice.customer_name,
-		"print_url": print_url(invoice.name),
-	}
+		invoice.insert(ignore_permissions=True)
 
 
 def _apply_gst(invoice, branch: str):
