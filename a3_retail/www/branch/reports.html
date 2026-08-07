@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="csrf-token" content="{{ csrf_token }}">
+	<meta name="robots" content="noindex">
+	<title>{{ _("Reports") }} · {{ me.branch }} · {{ app_name }}</title>
+	<link rel="stylesheet" href="/assets/a3_retail/css/a3_branch.css?v={{ asset_v }}">
+	<script src="/assets/a3_retail/js/a3_branch.js?v={{ asset_v }}" defer></script>
+	<script src="/assets/a3_retail/js/a3_reports.js?v={{ asset_v }}" defer></script>
+</head>
+<body class="pos-body">
+<div class="app">
+
+	{% include "a3_retail/www/branch/_sidebar.html" %}
+
+	<div class="main">
+		<header class="topbar">
+			<div class="topbar-branch topbar-title">
+				<h1 id="title">{{ _("Reports") }}</h1>
+				<p class="topbar-sub" id="subtitle">
+					{{ _("Business insights and operational reports") }}</p>
+			</div>
+			<div class="topbar-right">
+				<button class="btn btn-quiet btn-icon" id="back" hidden>← {{ _("Back to Reports") }}</button>
+				<button class="btn btn-primary btn-icon" id="print" hidden>
+					{% set icon = "print" %}{% include "a3_retail/www/branch/_icons.html" %}
+					{{ _("Print Report") }}</button>
+				<button class="btn btn-quiet btn-icon" id="refresh">
+					{% set icon = "refresh" %}{% include "a3_retail/www/branch/_icons.html" %}
+					{{ _("Refresh") }}</button>
+				<button class="btn btn-quiet btn-icon" id="export" hidden>
+					{% set icon = "download" %}{% include "a3_retail/www/branch/_icons.html" %}
+					{{ _("Export") }}</button>
+				<a class="btn btn-quiet" href="/branch/dashboard">{{ _("Dashboard") }}</a>
+				<div class="who">
+					<div class="name">{{ me.employee_name }}</div>
+					<div class="role">{{ me.designation or "" }}</div>
+				</div>
+				<div class="avatar">{{ initials }}</div>
+				<a class="btn btn-quiet" href="/branch/logout">{{ _("Sign out") }}</a>
+			</div>
+		</header>
+
+		<!-- ============================================== the catalogue -->
+		<main class="rep" id="catalogue">
+			<section class="ctiles rep-cats" id="cats"></section>
+
+			<section class="svc-panel rep-filters">
+				<div class="filter-row rep-filter-row">
+					<label class="field wide"><span>{{ _("Search") }}</span>
+						<input id="q" autocomplete="off" placeholder="{{ _('Search reports…') }}"></label>
+					<label class="field"><span>{{ _("Category") }}</span>
+						<select id="category"><option value="all">{{ _("All categories") }}</option></select></label>
+					<label class="field"><span>{{ _("Show") }}</span>
+						<select id="scope">
+							<option value="all">{{ _("All reports") }}</option>
+							<option value="favourites">{{ _("Favourites") }}</option>
+						</select></label>
+					<button class="btn btn-quiet btn-sm" id="clear">{{ _("Clear filters") }}</button>
+				</div>
+			</section>
+
+			<section class="rep-list" id="list"></section>
+		</main>
+
+		<!-- ================================================ one report -->
+		<main class="rep" id="viewer" hidden>
+			<section class="svc-panel rep-head" id="rep-head"></section>
+
+			<section class="svc-panel rep-filters">
+				<div class="filter-row" id="rep-filters"></div>
+				<div class="rep-filter-actions">
+					<button class="btn btn-primary btn-sm" id="apply">{{ _("Apply filters") }}</button>
+					<button class="btn btn-quiet btn-sm" id="reset">{{ _("Reset") }}</button>
+				</div>
+			</section>
+
+			<section class="ctiles rep-kpis" id="kpis"></section>
+			<section id="chart"></section>
+
+			<section class="svc-panel bill-table-panel">
+				<div class="bill-table-wrap" id="table-wrap"></div>
+				<div class="bill-foot" id="table-foot"></div>
+			</section>
+		</main>
+	</div>
+</div>
+
+<script>
+window.addEventListener("DOMContentLoaded", function () {
+	REPORTS.start({
+		branch: {{ me.branch|tojson }},
+		company: {{ company|tojson }},
+		who: {{ me.employee_name|tojson }},
+		report: {{ report|tojson }},
+	});
+});
+</script>
+</body>
+</html>

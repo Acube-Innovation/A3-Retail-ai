@@ -1236,3 +1236,72 @@ body.side-collapsed .side-nav a, body.side-collapsed .side-soon { justify-conten
 	.inv-head, .inv-parties, .inv-bottom { grid-template-columns: minmax(0, 1fr); flex-direction: column; }
 	.inv-meta { text-align: left; }
 }
+
+/* ==========================================================================
+   Reports (/branch/reports) — the catalogue and one report, on one page
+   ========================================================================== */
+.rep { display: flex; flex-direction: column; gap: 16px; padding: 14px 20px 40px; }
+.rep-cats { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.rep-cat { text-align: left; font-family: inherit; cursor: pointer; }
+.rep-cat:hover { border-color: var(--line-strong); }
+.rep-cat.is-active { border-color: var(--brand); background: #fffaf4; }
+.rep-cat .ctile-value { font-size: 18px; }
+.rep-cat-note { margin-top: 6px; font-size: 10.5px; color: var(--faint); line-height: 1.45; }
+.rep-filters { padding: 12px 14px; }
+.rep-filter-row { grid-template-columns: minmax(220px, 2fr) minmax(0, 1fr) minmax(0, 1fr) auto; }
+.rep-filter-actions { display: flex; gap: 8px; margin-top: 12px; }
+
+.rep-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.rep-card { position: relative; background: var(--card); border: 1px solid var(--line);
+	border-radius: 12px; padding: 16px 18px; display: flex; flex-direction: column; gap: 6px; }
+.rep-card:hover { border-color: var(--line-strong); box-shadow: var(--shadow-card); }
+.rep-card h3 { margin: 0; padding-right: 26px; font-size: 14.5px; font-weight: 700;
+	cursor: pointer; }
+.rep-card h3:hover { color: var(--sky-dark); }
+.rep-card p { margin: 0; font-size: 12px; color: var(--muted); line-height: 1.5; flex: 1; }
+.rep-card-foot { display: flex; align-items: center; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
+.rep-card-foot .btn { margin-left: auto; }
+.rep-when { font-size: 11px; color: var(--faint); }
+.rep-star { position: absolute; top: 12px; right: 12px; border: 0; background: none; padding: 2px;
+	color: #cfd6e0; cursor: pointer; line-height: 0; }
+.rep-star:hover { color: var(--brand); }
+.rep-star.is-on { color: var(--brand); }
+.rep-star.is-on .ico { fill: currentColor; }
+.rep-empty { padding: 42px 18px; text-align: center; color: var(--muted); }
+.rep-empty b { display: block; font-size: 14px; color: var(--ink); margin-bottom: 4px; }
+
+/* one report */
+.rep-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px;
+	flex-wrap: wrap; }
+.rep-head-main { display: flex; gap: 14px; align-items: flex-start; }
+.rep-head-main h2 { margin: 0 0 3px; font-size: 18px; font-weight: 800; letter-spacing: -.02em; }
+.rep-head-main p { margin: 0; font-size: 12.5px; color: var(--muted); }
+.rep-meta { display: grid; grid-template-columns: repeat(2, auto); gap: 6px 22px; margin: 0;
+	text-align: right; }
+.rep-meta div { display: flex; flex-direction: column; }
+.rep-meta dt { font-size: 10.5px; color: var(--faint); }
+.rep-meta dd { margin: 0; font-size: 12.5px; font-weight: 700; }
+.rep-kpis { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.rep-kpis .ctile { padding: 12px 14px; }
+.rep-kpis .ctile-label { font-size: 11px; color: var(--faint); font-weight: 600; }
+.rep-kpis .ctile-value { font-size: 17px; margin-top: 4px; }
+.rep-chart { padding: 14px 18px; }
+.rep-svg { width: 100%; height: 150px; }
+.rep-axis { display: flex; justify-content: space-between; font-size: 10.5px; color: var(--faint); }
+.rep-table tfoot td { background: #f8fafc; font-weight: 700; border-top: 2px solid var(--line-strong);
+	border-bottom: 0; position: sticky; bottom: 0; }
+.rep-total-label { text-transform: uppercase; letter-spacing: .06em; font-size: 10.5px; }
+.rep-table thead th { position: sticky; top: 0; z-index: 2; }
+#table-wrap { max-height: 62vh; overflow: auto; }
+
+@media (max-width: 1400px) {
+	.rep-cats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+	.rep-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+	.rep-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+	.rep-filter-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 1050px) {
+	.rep-cats, .rep-kpis, .rep-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+	.rep-head { flex-direction: column; }
+	.rep-meta { text-align: left; }
+}

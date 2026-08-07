@@ -66,6 +66,58 @@ PERMISSION_MATRIX: dict[str, dict[str, str]] = {
 		"Branch Manager": "R",
 		"Technician": "R",
 	},
+	# Three masters the branch app leans on everywhere. Reports filter their rows
+	# against read permission on whatever a Link column points at, so a person
+	# who cannot read Employee cannot see a technician-productivity report at
+	# all. Read only — none of these are edited from the shop floor.
+	"Employee": {
+		"A3 Retail Admin": "R",
+		"Branch Manager": "R",
+		"Service Manager": "R",
+		"Accounts Manager": "R",
+		"Store Keeper": "R",
+	},
+	"Brand": {
+		"A3 Retail Admin": "CRUD",
+		"Branch Manager": "R",
+		"Service Manager": "R",
+		"Sales Executive": "R",
+		"Reception Executive": "R",
+		"Store Keeper": "R",
+		"Technician": "R",
+	},
+	"Sales Person": {
+		"A3 Retail Admin": "R",
+		"Branch Manager": "R",
+		"Sales Executive": "R",
+		"Accounts Manager": "R",
+	},
+	"Warehouse": {
+		"A3 Retail Admin": "R",
+		"Branch Manager": "R",
+		"Service Manager": "R",
+		"Sales Executive": "R",
+		"Reception Executive": "R",
+		"Store Keeper": "R",
+		"Technician": "R",
+	},
+	# Every screen in the branch app is scoped to a branch, and a report that
+	# carries a Branch column has its rows filtered against this permission —
+	# so the people who work at a branch have to be able to read it.
+	"Branch": {
+		"A3 Retail Admin": "CRUD",
+		"Branch Manager": "R",
+		"Service Manager": "R",
+		"Sales Executive": "R",
+		"Reception Executive": "R",
+		"Technician": "R",
+		"Store Keeper": "R",
+		"Accounts Manager": "R",
+		"Accounts Executive": "R",
+		"Telecaller": "R",
+		"Helpdesk Agent": "R",
+		"Auditor": "R",
+	},
 	"Device Model": {
 		"A3 Retail Admin": "CRUD",
 		"Service Manager": "CRUD",
