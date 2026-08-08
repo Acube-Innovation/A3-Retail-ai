@@ -329,6 +329,10 @@ PERMISSION_MATRIX: dict[str, dict[str, str]] = {
 		"A3 Retail Admin": "CRUDS",
 		"Accounts Manager": "CRUDS",
 		"EMI Coordinator": "R",
+		# A branch manager is answerable for the money a financier still owes on
+		# sales their counter made, so they read the settlement — Accounts still
+		# owns keying the bank credit in and posting it.
+		"Branch Manager": "R",
 	},
 	# --------------------------------------------------------------- warranty
 	"Warranty Registration": {

@@ -31,6 +31,8 @@ FORMATS = [
 	("Extended Warranty Card", "Warranty Registration", "extended_warranty_card", "A5"),
 	("EMI Application Form", "EMI Application", "emi_application_form", "A4"),
 	("EMI Document Checklist", "EMI Application", "emi_document_checklist", "A4"),
+	("Financier Settlement Statement", "Financier Settlement",
+	 "financier_settlement_statement", "A4"),
 	("A3 Quotation", "Quotation", "quotation", "A4"),
 	("A3 Purchase Order", "Purchase Order", "purchase_order", "A4"),
 	("Stock Transfer Note", "Stock Request", "stock_transfer_note", "A4"),

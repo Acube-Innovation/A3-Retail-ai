@@ -1448,3 +1448,146 @@ body.side-collapsed .side-nav a, body.side-collapsed .side-soon { justify-conten
 	.bkg .bill-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 	.bkg .filter-row { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* ==========================================================================
+   EMI Management (/branch/emi) — financing partners, schemes, applications
+   ========================================================================== */
+.emi { display: flex; flex-direction: column; gap: 14px; padding: 14px 20px 40px; }
+.emi-kpis { grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 10px; }
+.emi-kpi { padding: 12px 14px; }
+.emi-kpi .ctile-value { font-size: 19px; }
+.emi-kpi.is-clickable { cursor: pointer; }
+.emi-kpi.is-clickable:hover { border-color: var(--line-strong); box-shadow: var(--shadow-card); }
+
+/* financier strip */
+.emi-partners { padding: 12px 14px; }
+.emi-partner-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+	gap: 10px; }
+.emi-partner { display: flex; flex-direction: column; gap: 2px; text-align: left; cursor: pointer;
+	font-family: inherit; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px;
+	background: linear-gradient(180deg, #faf9ff, #fff); }
+.emi-partner:hover { border-color: #b9aee6; box-shadow: var(--shadow-card); }
+.emi-partner-name { font-size: 12.5px; font-weight: 700; }
+.emi-partner-value { font-size: 17px; font-weight: 800; color: #5b4bb5; letter-spacing: -.02em; }
+.emi-partner-sub { font-size: 10.5px; color: var(--faint); }
+
+.emi-tabs { margin-top: 2px; }
+.emi-filters { padding: 12px 14px; }
+.emi-filters .filter-row {
+	grid-template-columns: minmax(200px, 1.8fr) repeat(4, minmax(0, 1fr)) auto; }
+.emi-inline-filters { display: flex; gap: 12px; padding: 10px 14px; align-items: end; }
+.emi-inline-filters .field { margin: 0; min-width: 210px; }
+.emi-tab-actions { display: flex; justify-content: flex-end; }
+
+/* overview */
+/* Columns rather than a grid: the six lists are different lengths, and a grid
+   row would leave a hole under every short one. */
+.emi-overview { column-count: 3; column-gap: 14px; }
+.emi-overview > section { break-inside: avoid; margin-bottom: 14px; }
+.emi-card { padding: 12px 14px; }
+.emi-card .row-line { padding: 8px 0; }
+.emi-card .row-main small { display: block; color: var(--faint); font-size: 10.5px; }
+
+/* tables */
+.emi-table td small { display: block; color: var(--faint); font-size: 10px; }
+.emi-table .faint { color: var(--faint); }
+.emi-settle-cards { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+/* the wizard */
+.modal-widest .modal-card, .emi-wizard { max-width: 1080px; width: 96vw; }
+.emi-wizard { display: flex; flex-direction: column; max-height: 92vh; }
+.emi-wizard-head { border-bottom: 1px solid var(--line); padding-bottom: 10px; }
+.emi-steps { display: flex; gap: 6px; list-style: none; margin: 10px 0 0; padding: 0;
+	flex-wrap: wrap; }
+.emi-steps li { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--muted);
+	padding: 5px 10px; border-radius: 999px; background: #f2f4f8; }
+.emi-steps li.is-active { background: #eef4ff; color: #1d4ed8; font-weight: 700; }
+.emi-steps li.is-done { background: var(--success-soft); color: var(--success); }
+.emi-step-no { display: inline-flex; align-items: center; justify-content: center; width: 17px;
+	height: 17px; border-radius: 50%; background: #fff; font-size: 10px; font-weight: 700; }
+.emi-wizard-body { flex: 1; overflow-y: auto; padding: 14px 2px; }
+.emi-wizard-foot { border-top: 1px solid var(--line); padding-top: 12px; }
+.emi-wizard-spacer { flex: 1; }
+
+.emi-hint { font-size: 11.5px; color: var(--muted); line-height: 1.55; margin: 4px 0 10px; }
+.emi-block { background: #f9fafc; border: 1px solid #eef1f6; border-radius: 10px;
+	padding: 12px 14px; margin-bottom: 12px; }
+.emi-block h4 { margin: 0 0 8px; font-size: 10.5px; font-weight: 700; letter-spacing: .06em;
+	text-transform: uppercase; color: var(--faint); }
+.emi-view-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.emi-view-grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.emi-view-lower { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 12px;
+	margin-top: 4px; }
+.emi-view-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.emi-view-head h3 { margin: 0; }
+.emi-timeline { padding-left: 14px; }
+.emi-timeline .tl-by { display: block; color: var(--faint); font-size: 11px; }
+.emi-timeline li.tl-approved .dot { background: var(--success); }
+.emi-timeline li.tl-rejected .dot { background: var(--danger); }
+.emi-timeline li.tl-settled .dot { background: #5b4bb5; }
+
+/* pickers */
+.emi-partner-picker { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+	gap: 10px; }
+.emi-pick { display: flex; flex-direction: column; gap: 3px; text-align: left; cursor: pointer;
+	font-family: inherit; padding: 14px; border: 1.5px solid var(--line); border-radius: 12px;
+	background: var(--card); }
+.emi-pick:hover { border-color: var(--line-strong); }
+.emi-pick.is-active { border-color: #5b4bb5; background: #f7f5ff; }
+.emi-pick-name { font-size: 13.5px; font-weight: 700; }
+.emi-pick-sub { font-size: 11px; color: var(--faint); }
+
+.emi-scheme-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+	gap: 12px; }
+.emi-scheme { display: flex; flex-direction: column; gap: 6px; text-align: left; cursor: pointer;
+	font-family: inherit; padding: 14px; border: 1.5px solid var(--line); border-radius: 12px;
+	background: var(--card); }
+.emi-scheme:hover { border-color: var(--line-strong); box-shadow: var(--shadow-card); }
+.emi-scheme.is-active { border-color: #5b4bb5; background: #f7f5ff;
+	box-shadow: 0 0 0 3px rgba(91, 75, 181, .12); }
+.emi-scheme-top { display: flex; align-items: center; justify-content: space-between; gap: 8px;
+	font-size: 13px; }
+.emi-scheme-emi { font-size: 22px; font-weight: 800; letter-spacing: -.02em; color: var(--ink); }
+.emi-scheme-emi small { font-size: 11px; font-weight: 600; color: var(--faint); margin-left: 4px; }
+.emi-scheme-name { font-size: 11.5px; color: var(--muted); }
+.emi-scheme-rows { display: flex; flex-direction: column; gap: 3px; margin-top: 4px;
+	border-top: 1px solid var(--line); padding-top: 8px; }
+.emi-scheme-rows span { display: flex; justify-content: space-between; font-size: 11px;
+	color: var(--muted); }
+.emi-scheme-rows b { color: var(--ink); }
+
+/* contribution + calculator */
+.emi-contribution { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+	gap: 16px; }
+.emi-summary { background: #f9fafc; border: 1px solid #eef1f6; border-radius: 12px;
+	padding: 14px 16px; }
+.emi-summary-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 20px; }
+.emi-summary-big { border-top: 1px solid var(--line); margin-top: 6px; padding-top: 10px;
+	font-size: 14px; }
+.emi-summary-big b { font-size: 16px; font-weight: 800; }
+.emi-big { font-size: 17px; font-weight: 800; }
+
+.emi-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.emi-chip { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px;
+	padding: 5px 10px; border: 1px solid var(--line); border-radius: 999px; cursor: pointer; }
+.emi-chip input { margin: 0; }
+.emi-branch-row { display: grid; grid-template-columns: 1.2fr 1fr 1fr 1fr auto; gap: 8px;
+	margin-bottom: 8px; align-items: center; }
+.emi-branch-row input, .emi-branch-row select { padding: 7px 9px; font-family: inherit;
+	font-size: 12px; border: 1px solid var(--line-strong); border-radius: 8px; width: 100%; }
+.emi-settle-actions { display: flex; gap: 10px; margin-top: 10px; }
+
+@media (max-width: 1500px) {
+	.emi-kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+	.emi-overview { column-count: 2; }
+	.emi-view-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+	.emi-view-lower { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 1050px) {
+	.emi-kpis, .emi-settle-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+	.emi-overview { column-count: 1; }
+	.emi-view-grid, .emi-view-grid.two, .emi-contribution {
+		grid-template-columns: minmax(0, 1fr); }
+	.emi-filters .filter-row { grid-template-columns: minmax(0, 1fr); }
+	.emi-branch-row { grid-template-columns: minmax(0, 1fr); }
+}

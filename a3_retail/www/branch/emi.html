@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="csrf-token" content="{{ csrf_token }}">
+	<meta name="robots" content="noindex">
+	<title>{{ _("EMI Management") }} · {{ me.branch }} · {{ app_name }}</title>
+	<link rel="stylesheet" href="/assets/a3_retail/css/a3_branch.css?v={{ asset_v }}">
+	<script src="/assets/a3_retail/js/a3_branch.js?v={{ asset_v }}" defer></script>
+	<script src="/assets/a3_retail/js/a3_emi.js?v={{ asset_v }}" defer></script>
+</head>
+<body class="pos-body">
+<div class="app">
+
+	{% include "a3_retail/www/branch/_sidebar.html" %}
+
+	<div class="main">
+		<header class="topbar">
+			<div class="topbar-branch topbar-title">
+				<h1>{{ _("EMI Management") }} <span class="chip">{{ me.branch }} {{ _("Branch") }}</span></h1>
+				<p class="topbar-sub">
+					{{ _("Manage financing partners, schemes, applications and settlements") }}</p>
+			</div>
+			<div class="topbar-right">
+				<button class="btn btn-primary btn-new" id="new-application">
+					+ {{ _("New EMI Application") }}</button>
+				<button class="btn btn-outline" id="new-partner" hidden>+ {{ _("Add EMI Partner") }}</button>
+				<button class="btn btn-outline" id="new-scheme" hidden>+ {{ _("Add EMI Scheme") }}</button>
+				<button class="btn btn-quiet" data-go-tab="settlements">{{ _("View Settlements") }}</button>
+				<button class="btn btn-quiet btn-icon" id="more">
+					{% set icon = "more" %}{% include "a3_retail/www/branch/_icons.html" %}</button>
+				<div class="who">
+					<div class="name">{{ me.employee_name }}</div>
+					<div class="role">{{ me.designation or "" }}</div>
+				</div>
+				<div class="avatar">{{ initials }}</div>
+				<a class="btn btn-quiet" href="/branch/logout">{{ _("Sign out") }}</a>
+			</div>
+		</header>
+
+		<main class="emi">
+			<!-- ------------------------------------------------ the numbers -->
+			<section class="ctiles emi-kpis" id="kpis"></section>
+
+			<!-- ------------------------------------------ financier summary -->
+			<section class="svc-panel emi-partners">
+				<div class="panel-head">
+					<h2>{{ _("Financier Performance") }}</h2>
+					<span class="rep-when" id="partner-note"></span>
+				</div>
+				<div class="emi-partner-strip" id="partner-strip"></div>
+			</section>
+
+			<!-- ------------------------------------------------------- tabs -->
+			<nav class="cust-tabs emi-tabs" id="tabs">
+				{% for key, label in [("overview", "Overview"), ("applications", "Applications"),
+				                      ("schemes", "Schemes"), ("financiers", "Financiers"),
+				                      ("sales", "EMI Sales"), ("settlements", "Settlements"),
+				                      ("documents", "Documents"), ("reconciliation", "Reconciliation")] %}
+				<button class="tab {{ 'is-active' if key == tab else '' }}"
+				        data-tab="{{ key }}">{{ _(label) }}</button>
+				{% endfor %}
+			</nav>
+
+			<!-- ---------------------------------------------------- filters -->
+			<section class="svc-panel bill-filters emi-filters" id="filter-panel">
+				<div class="filter-row" id="filter-row">
+					<label class="field wide"><span>{{ _("Search") }}</span>
+						<input id="q" autocomplete="off"
+						       placeholder="{{ _('Search customer, mobile, application no, invoice, financier…') }}"></label>
+					<label class="field"><span>{{ _("Date from") }}</span>
+						<input id="from-date" type="date"></label>
+					<label class="field"><span>{{ _("Date to") }}</span>
+						<input id="to-date" type="date"></label>
+					<label class="field"><span>{{ _("Financier") }}</span>
+						<select id="partner"><option value="">{{ _("All") }}</option></select></label>
+					<label class="field"><span>{{ _("Scheme") }}</span>
+						<select id="scheme"><option value="">{{ _("All") }}</option></select></label>
+					<label class="field"><span>{{ _("Status") }}</span>
+						<select id="status">
+							<option value="all">{{ _("All") }}</option>
+							<option value="open">{{ _("Still open") }}</option>
+							<option value="pending">{{ _("Waiting on the financier") }}</option>
+						</select></label>
+					<label class="field"><span>{{ _("Branch") }}</span>
+						<select id="branch">
+							<option value="current">{{ me.branch }}</option>
+							<option value="all">{{ _("All branches") }}</option>
+						</select></label>
+					<label class="field"><span>{{ _("Sales person") }}</span>
+						<select id="sales-person"><option value="">{{ _("Anyone") }}</option></select></label>
+					<label class="field"><span>{{ _("Product category") }}</span>
+						<select id="item-group"><option value="">{{ _("All") }}</option></select></label>
+					<button class="btn btn-quiet btn-sm" id="clear">{{ _("Clear filters") }}</button>
+				</div>
+			</section>
+
+			<div id="tab-body"><div class="pos-loading">{{ _("Loading…") }}</div></div>
+		</main>
+	</div>
+</div>
+
+<!-- ============================================================== dialogs -->
+
+{#- The application wizard. One modal, seven steps, no page ever left. -#}
+<div class="modal" id="wizard-modal" hidden>
+	<div class="modal-card modal-widest emi-wizard">
+		<div class="emi-wizard-head">
+			<h3 id="wizard-title">{{ _("New EMI Application") }}</h3>
+			<ol class="emi-steps" id="wizard-steps">
+				{% for label in ["Customer", "Purchase", "Financier", "Scheme", "Contribution",
+				                 "Documents", "Review"] %}
+				<li class="{{ 'is-active' if loop.first else '' }}" data-step="{{ loop.index0 }}">
+					<span class="emi-step-no">{{ loop.index }}</span>{{ _(label) }}</li>
+				{% endfor %}
+			</ol>
+		</div>
+		<div class="emi-wizard-body" id="wizard-body"></div>
+		<div class="msg" id="wizard-msg"></div>
+		<div class="modal-actions emi-wizard-foot">
+			<button class="btn btn-quiet" data-close>{{ _("Cancel") }}</button>
+			<span class="emi-wizard-spacer"></span>
+			<button class="btn btn-quiet" id="wizard-back">{{ _("Back") }}</button>
+			<button class="btn btn-outline" id="wizard-draft">{{ _("Save Draft") }}</button>
+			<button class="btn btn-primary" id="wizard-next">{{ _("Continue") }}</button>
+		</div>
+	</div>
+</div>
+
+{#- Everything else the desk does day to day. -#}
+<div class="modal" id="work-modal" hidden>
+	<div class="modal-card modal-wide">
+		<h3 id="work-title"></h3>
+		<p class="modal-note" id="work-note"></p>
+		<div id="work-body"></div>
+		<div class="msg" id="work-msg"></div>
+		<div class="modal-actions">
+			<button class="btn btn-quiet" data-close>{{ _("Close") }}</button>
+			<button class="btn btn-primary" id="work-go" hidden></button>
+		</div>
+	</div>
+</div>
+
+<div class="modal" id="view-modal" hidden>
+	<div class="modal-card modal-widest">
+		<div class="emi-view-head">
+			<h3 id="view-title"></h3>
+			<div id="view-badges"></div>
+		</div>
+		<div id="view-body"></div>
+		<div class="modal-actions" id="view-actions">
+			<button class="btn btn-quiet" data-close>{{ _("Close") }}</button>
+		</div>
+	</div>
+</div>
+
+<script>
+window.addEventListener("DOMContentLoaded", function () {
+	EMI.start({
+		branch: {{ me.branch|tojson }},
+		company: {{ company|tojson }},
+		tab: {{ tab|tojson }},
+		application: {{ application|tojson }},
+		invoice: {{ invoice|tojson }},
+		customer: {{ customer|tojson }},
+	});
+});
+</script>
+</body>
+</html>

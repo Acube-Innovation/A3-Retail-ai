@@ -37,8 +37,12 @@
   "loan_amount",
   "col_break_10",
   "processing_fee",
+  "documentation_fee",
+  "other_charges",
   "emi_amount",
   "first_emi_date",
+  "last_emi_date",
+  "customer_payable_today",
   "merchant_subvention_cost",
   "mdr_amount",
   "net_realisable",
@@ -66,6 +70,7 @@
   "amount_received",
   "sales_person",
   "coordinator",
+  "notes",
   "amended_from"
  ],
  "fields": [
@@ -459,6 +464,34 @@
    "read_only": 1,
    "no_copy": 1,
    "print_hide": 1
+  },
+  {
+   "fieldname": "documentation_fee",
+   "fieldtype": "Currency",
+   "label": "Documentation Fee"
+  },
+  {
+   "fieldname": "other_charges",
+   "fieldtype": "Currency",
+   "label": "Other Charges"
+  },
+  {
+   "fieldname": "last_emi_date",
+   "fieldtype": "Date",
+   "label": "Last EMI Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "customer_payable_today",
+   "fieldtype": "Currency",
+   "label": "Customer Payable Today",
+   "read_only": 1,
+   "description": "Down payment plus the fees the customer pays at the counter."
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
   }
  ],
  "index_web_pages_for_search": 1,

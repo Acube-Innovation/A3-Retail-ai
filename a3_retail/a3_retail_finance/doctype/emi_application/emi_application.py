@@ -172,22 +172,49 @@ class EMIApplication(A3BranchMixin, Document):
 		scheme = frappe.get_cached_doc("EMI Scheme", self.emi_scheme) if self.emi_scheme else None
 		tenure = cint(self.tenure_months) or (cint(scheme.tenure_months) if scheme else 0)
 
-		self.emi_amount = money(self.compute_emi(flt(self.loan_amount), tenure,
-		                                         flt(scheme.interest_rate) if scheme else 0))
+		self.emi_amount = money(self.compute_emi(
+			flt(self.loan_amount), tenure,
+			flt(scheme.interest_rate) if scheme else 0,
+			(scheme.get("interest_type") if scheme else None) or "Flat",
+		))
 
 		if not self.first_emi_date and self.application_date:
 			self.first_emi_date = add_months(getdate(self.application_date), 1)
+		if self.first_emi_date and tenure:
+			self.last_emi_date = add_months(getdate(self.first_emi_date), tenure - 1)
+
+		if scheme and not flt(self.documentation_fee):
+			self.documentation_fee = flt(scheme.get("documentation_fee"))
+
+		# What the customer actually hands over at the counter: the part of the
+		# price the loan does not cover, plus the fees the financier charges up
+		# front. The rest arrives from the financier as a settlement.
+		self.customer_payable_today = money(
+			flt(self.down_payment) + flt(self.processing_fee)
+			+ flt(self.documentation_fee) + flt(self.other_charges)
+		)
 
 		self.compute_costs(scheme)
 
 	@staticmethod
-	def compute_emi(loan_amount: float, tenure_months: int, annual_rate: float = 0) -> float:
-		"""Flat instalment. A no-cost scheme is simply loan / tenure."""
+	def compute_emi(loan_amount: float, tenure_months: int, annual_rate: float = 0,
+	                interest_type: str = "Flat") -> float:
+		"""The instalment this scheme's own arithmetic gives.
+
+		Indicative only: the financier's portal decides the real instalment, and
+		what it answers is what goes on the approved application.
+		"""
 		if not tenure_months or loan_amount <= 0:
 			return 0.0
 
 		if not annual_rate:
 			return loan_amount / tenure_months
+
+		if interest_type == "Flat":
+			# Flat rate: interest on the whole principal for the whole term, which
+			# is how most no-cost and subvented schemes are quoted here.
+			interest = loan_amount * annual_rate / 100.0 * tenure_months / 12.0
+			return (loan_amount + interest) / tenure_months
 
 		# Reducing-balance EMI: P*r*(1+r)^n / ((1+r)^n - 1)
 		monthly_rate = annual_rate / 12.0 / 100.0
@@ -210,23 +237,40 @@ class EMIApplication(A3BranchMixin, Document):
 
 	# -------------------------------------------------------------- checklist
 	def populate_checklist(self):
-		"""Merge the partner's document list, filtered by employment type (scope 4.5)."""
+		"""What this deal has to produce, filtered by employment type (scope 4.5).
+
+		The scheme is asked first: two schemes from the same financier can want
+		different paperwork, and a pre-approved offer often wants almost none.
+		Without a list of its own the scheme falls back to the partner's, and
+		without that to every document type that applies to this customer.
+		"""
 		if self.get("documents") or not self.finance_partner:
 			return
 
-		partner = frappe.get_cached_doc("Finance Partner", self.finance_partner)
-		wanted = [row.document_type for row in partner.get("required_documents") or []]
+		named = []
+		if self.emi_scheme:
+			scheme = frappe.get_cached_doc("EMI Scheme", self.emi_scheme)
+			named = [row.document_type for row in scheme.get("required_documents") or []]
 
-		if not wanted:
-			wanted = frappe.get_all(
+		if not named:
+			partner = frappe.get_cached_doc("Finance Partner", self.finance_partner)
+			named = [row.document_type for row in partner.get("required_documents") or []]
+
+		# A list somebody wrote for this scheme or this partner is deliberate, and
+		# is taken as it stands. Only the catch-all fallback — every document type
+		# on the site — is narrowed to what this customer's employment calls for.
+		if named:
+			wanted, filter_by_employment = named, False
+		else:
+			wanted, filter_by_employment = frappe.get_all(
 				"EMI Document Type",
 				filters={"applies_to": ["in", ["All", self.employment_type or "All"]]},
 				pluck="name",
-			)
+			), True
 
 		for document in wanted:
 			meta = frappe.get_cached_doc("EMI Document Type", document)
-			if meta.applies_to not in ("All", self.employment_type):
+			if filter_by_employment and meta.applies_to not in ("All", self.employment_type):
 				continue
 			self.append(
 				"documents",

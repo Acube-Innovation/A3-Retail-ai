@@ -15,11 +15,15 @@
   "interest_rate",
   "processing_fee",
   "processing_fee_type",
+  "documentation_fee",
+  "interest_type",
   "is_active",
   "terms_section",
   "down_payment_percent",
   "min_down_payment",
+  "max_down_payment",
   "subvention_percent",
+  "customer_subvention_percent",
   "col_break_5",
   "cashback_amount",
   "min_invoice_amount",
@@ -30,7 +34,12 @@
   "col_break_6",
   "valid_from",
   "valid_upto",
-  "applicable_branches"
+  "applicable_branches",
+  "documents_section",
+  "required_documents",
+  "notes_section",
+  "description",
+  "notes"
  ],
  "fields": [
   {
@@ -170,6 +179,57 @@
    "fieldtype": "Table",
    "label": "Branches",
    "options": "Offer Branch"
+  },
+  {
+   "fieldname": "documentation_fee",
+   "fieldtype": "Currency",
+   "label": "Documentation Fee"
+  },
+  {
+   "fieldname": "interest_type",
+   "fieldtype": "Select",
+   "label": "Interest Type",
+   "options": "Flat\nReducing Balance",
+   "default": "Flat",
+   "depends_on": "eval:!doc.is_no_cost_emi"
+  },
+  {
+   "fieldname": "max_down_payment",
+   "fieldtype": "Currency",
+   "label": "Maximum Down Payment",
+   "description": "Leave blank when the financier sets no ceiling."
+  },
+  {
+   "fieldname": "customer_subvention_percent",
+   "fieldtype": "Percent",
+   "label": "Customer Subvention (%)"
+  },
+  {
+   "fieldname": "documents_section",
+   "fieldtype": "Section Break",
+   "label": "Document Requirements"
+  },
+  {
+   "fieldname": "required_documents",
+   "fieldtype": "Table",
+   "options": "EMI Document Checklist",
+   "label": "Required Documents",
+   "description": "What this scheme needs. Left empty, the partner's own list applies."
+  },
+  {
+   "fieldname": "notes_section",
+   "fieldtype": "Section Break",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Internal Notes"
   }
  ],
  "index_web_pages_for_search": 1,

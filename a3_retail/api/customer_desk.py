@@ -388,6 +388,19 @@ def tab(customer: str, name: str, limit: int = 40) -> list[dict]:
 				order_by="creation desc", limit=limit)
 		]
 
+	if name == "emi":
+		# The financing desk owns this; the customer page only shows it.
+		from a3_retail.api.emi import customer_history
+
+		return [
+			{"title": row["name"],
+			 "sub": " · ".join([part for part in (row["finance_partner"], row["emi_scheme"],
+			                                     row["products"]) if part]),
+			 "date": str(row["application_date"] or ""), "amount": flt(row["loan_amount"]),
+			 "status": row["status"], "link": f"/branch/emi?application={row['name']}"}
+			for row in customer_history(customer, limit=limit)
+		]
+
 	if name == "devices":
 		return _devices(customer, limit)
 

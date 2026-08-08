@@ -657,6 +657,86 @@ window.POS = (function () {
 		if (hold) hold.textContent = "Save Draft";
 	}
 
+	// ----------------------------------------------------------------- EMI
+	/**
+	 * What this basket can be financed on.
+	 *
+	 * The schemes come from the EMI module's own service — the same one the
+	 * financing desk uses — so a counter is never offered a scheme the
+	 * application would refuse. Nothing is charged here: the sale completes only
+	 * once the financier has approved, which the invoice itself enforces.
+	 */
+	async function emiSchemes() {
+		if (!state.cart.length) {
+			return say("Put the products in the basket first — the schemes depend on what is "
+				+ "being bought and what it comes to.", "error");
+		}
+
+		const sums = totals();
+		const first = state.cart[0] || {};
+		showList("Loading the schemes…", money(sums.grand), []);
+
+		try {
+			const schemes = await A3.call("a3_retail.api.emi.eligible_schemes", {
+				invoice_total: sums.grand,
+				item_code: first.item_code || null,
+			});
+
+			if (!schemes.length) {
+				return showList("No finance for this basket", money(sums.grand), [{
+					title: "No active scheme covers this purchase",
+					meta: "Try a different basket, or ask head office to configure a scheme.",
+				}]);
+			}
+
+			showList(
+				"EMI schemes for " + money(sums.grand),
+				"Indicative — the financier decides the real instalment",
+				schemes.map((scheme) => ({
+					title: `${scheme.finance_partner} · ${scheme.tenure_months} months · ${
+						money(scheme.emi_amount)}/month`,
+					meta: `down payment ${money(scheme.suggested_down_payment)} · ${
+						scheme.scheme_name}`,
+					action: "Apply",
+				})),
+				(index) => {
+					$("list-modal").hidden = true;
+					startEmiApplication(schemes[index], sums);
+				});
+		} catch (error) {
+			showList("Could not read the schemes", "", [{ title: error.message, meta: "" }]);
+		}
+	}
+
+	async function startEmiApplication(scheme, sums) {
+		if (!state.customer) {
+			return say("Pick the customer first — a loan is made to a person, not to a basket.",
+				"error");
+		}
+
+		try {
+			const result = await A3.call("a3_retail.api.emi.save_application", {
+				payload: {
+					customer: state.customer,
+					partner: scheme.finance_partner,
+					scheme: scheme.name,
+					down_payment: scheme.suggested_down_payment,
+					invoice_total: sums.grand,
+					items: state.cart.map((row) => ({
+						item_code: row.item_code, item_name: row.item_name,
+						qty: row.qty, rate: row.rate, serial_no: (row.serials || [])[0] || null,
+					})),
+				},
+			});
+			window.location = "/branch/emi?application=" + encodeURIComponent(result.application);
+		} catch (error) {
+			// The KYC a financier needs is asked for on the financing desk, which
+			// is where the counter is sent with the basket already attached.
+			window.location = "/branch/emi?tab=applications&customer="
+				+ encodeURIComponent(state.customer);
+		}
+	}
+
 	// --------------------------------------------------------------- start
 	function start(options) {
 		state.branch = options.branch;
@@ -715,6 +795,10 @@ window.POS = (function () {
 			tile.classList.add("is-active");
 			state.mode = tile.dataset.mode;
 			paintTotals();
+			// EMI is not a way of taking money at the till — it is a loan somebody
+			// else has to approve first. Picking it opens the financing desk's own
+			// scheme list rather than pretending the sale is done.
+			if (state.mode === "EMI") emiSchemes();
 		});
 
 		const actions = {

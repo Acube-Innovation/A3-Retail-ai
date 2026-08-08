@@ -16,8 +16,10 @@ THERMAL_FORMATS = [name for name, _dt, _tpl, size in pf.FORMATS if size == "80mm
 
 
 class TestRegister(FrappeTestCase):
-	def test_twenty_four_formats_exist(self):
-		self.assertEqual(len(pf.FORMATS), 24)
+	def test_every_registered_format_exists(self):
+		# Twenty-four at scope 13.3, plus the settlement statement the financing
+		# desk prints.
+		self.assertEqual(len(pf.FORMATS), 25)
 		for name, doctype, _template, _size in pf.FORMATS:
 			self.assertTrue(frappe.db.exists("Print Format", name), name)
 			self.assertEqual(frappe.db.get_value("Print Format", name, "doc_type"), doctype, name)
@@ -217,7 +219,7 @@ class TestRendering(FrappeTestCase):
 	def test_every_format_renders(self):
 		result = pf.smoke_test(as_pdf=False, verbose=False)
 		self.assertEqual(result["failed"], [])
-		self.assertEqual(result["total"], 24)
+		self.assertEqual(result["total"], 25)
 
 	def test_a4_output_carries_the_page_counter(self):
 		doc, _real = pf.sample_doc("Service Job Card")

@@ -1,0 +1,42 @@
+{% import "a3_retail/templates/print_formats/a3_base.html" as base %}
+{{ base.styles() }}
+{{ base.title_band(doc, "Financier Settlement Statement") }}
+{{ base.party_block("Financier",
+	'<strong>' ~ (doc.finance_partner or "") ~ '</strong><br>Period: ' ~
+	frappe.format(doc.from_date, {"fieldtype": "Date"}) ~ ' to ' ~
+	frappe.format(doc.to_date, {"fieldtype": "Date"}) ~
+	'<br>Status: ' ~ (doc.status or ""),
+	"Credit",
+	'Bank reference: ' ~ (doc.utr_reference or "—") ~
+	'<br>Account: ' ~ (doc.bank_account or "—") ~
+	'<br>Journal entry: ' ~ (doc.journal_entry or "not posted")) }}
+
+<table class="a3-kv">
+	<tr><td class="a3-k">Gross financed</td><td>{{ a3_money(doc.gross_amount) }}</td>
+		<td class="a3-k">MDR</td><td>{{ a3_money(doc.mdr_amount) }}</td></tr>
+	<tr><td class="a3-k">Merchant subvention</td><td>{{ a3_money(doc.subvention_amount) }}</td>
+		<td class="a3-k">GST on MDR</td><td>{{ a3_money(doc.gst_on_mdr) }}</td></tr>
+	<tr><td class="a3-k">TDS withheld</td><td>{{ a3_money(doc.tds_amount) }}</td>
+		<td class="a3-k">Other deductions</td><td>{{ a3_money(doc.other_deductions) }}</td></tr>
+	<tr><td class="a3-k">Net expected</td><td><strong>{{ a3_money(doc.net_expected) }}</strong></td>
+		<td class="a3-k">Net received</td><td><strong>{{ a3_money(doc.net_received) }}</strong></td></tr>
+	<tr><td class="a3-k">Difference</td><td colspan="3">{{ a3_money(doc.variance) }}</td></tr>
+</table>
+
+<h4>Sales in this settlement</h4>
+{{ base.items_table(doc.applications, [
+	("Application", "emi_application", ""),
+	("Invoice", "sales_invoice", ""),
+	("Customer", "customer", ""),
+	("Financed", "loan_amount", "money"),
+	("MDR", "mdr", "money"),
+	("Subvention", "subvention", "money"),
+	("Net", "net_amount", "money")], "No applications on this settlement.") }}
+
+<div class="a3-block"><h4>Reconciliation</h4>
+	This statement reconciles what {{ doc.finance_partner }} was expected to remit against what
+	the bank actually credited. A difference is queried with the financier and stays open on the
+	settlement until it is answered; the loan receivable is cleared in full when the entry posts.
+</div>
+{{ base.signatures("Prepared by", "Accounts") }}
+{{ base.footer(doc) }}

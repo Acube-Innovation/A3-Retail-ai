@@ -40,6 +40,9 @@ GUARDS = {
 	# permission on the Service Job Card, and a refusal when the booking belongs
 	# to another branch (api/bookings.py).
 	"_open_booking",
+	# The financing desk's equivalent: `_me()`, read permission on the EMI
+	# Application, and a branch check (api/emi.py).
+	"_open_application",
 }
 
 # Guest endpoints that are safe without a document permission, with the reason.

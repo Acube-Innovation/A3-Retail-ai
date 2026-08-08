@@ -169,7 +169,8 @@ window.CUST = (function () {
 			<nav class="cust-tabs" id="tabs">
 				${[["overview", "Overview"], ["bookings", "Bookings & Services"],
 				   ["invoices", "Invoices"], ["payments", "Payments"], ["warranty", "Warranty"],
-				   ["devices", "Devices"], ["communication", "Communication"],
+				   ["devices", "Devices"], ["emi", "EMI History"],
+				   ["communication", "Communication"],
 				   ["documents", "Documents"], ["notes", "Notes"]]
 					.map(([key, label]) => `<button class="tab ${key === state.tab ? "is-active" : ""}"
 						data-tab="${key}">${label}</button>`).join("")}
@@ -250,7 +251,8 @@ window.CUST = (function () {
 		if (!rows.length) return '<div class="cust-none">Nothing here yet.</div>';
 		return `<div class="row-list">${rows.map((row) => `
 			<div class="row-line">
-				<span class="row-main"><b>${esc(row.title)}</b>
+				<span class="row-main"><b>${row.link
+					? `<a href="${esc(row.link)}">${esc(row.title)}</a>` : esc(row.title)}</b>
 					${row.sub ? `<small>${esc(row.sub)}</small>` : ""}</span>
 				<span class="row-date">${esc(day(row.date, compact) || row.date || "")}</span>
 				<span class="row-amount">${row.amount ? money(row.amount) : ""}</span>
