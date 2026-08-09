@@ -125,10 +125,49 @@ class TestCardsChartsWorkspaces(FrappeTestCase):
 		for name, *_rest in dashboards.DASHBOARD_CHARTS:
 			self.assertTrue(frappe.db.exists("Dashboard Chart", name), name)
 
-	def test_nine_workspaces(self):
-		self.assertEqual(len(dashboards.WORKSPACES), 9)
-		for label, *_rest in dashboards.WORKSPACES:
-			self.assertTrue(frappe.db.exists("Workspace", label), label)
+	def test_the_shop_has_one_workspace(self):
+		self.assertTrue(frappe.db.exists("Workspace", dashboards.WORKSPACE))
+		self.assertEqual(
+			frappe.get_all("Workspace", filters={"module": dashboards.MODULE}, pluck="name"),
+			[dashboards.WORKSPACE],
+		)
+
+	def test_the_nine_role_workspaces_are_gone(self):
+		for label in dashboards.RETIRED_WORKSPACES:
+			self.assertFalse(frappe.db.exists("Workspace", label), label)
+
+	def test_everything_the_old_pages_held_is_on_it(self):
+		"""Each retired page's shortcuts, cards and charts survived the merge."""
+		shortcuts = {row.label for row in frappe.get_all(
+			"Workspace Shortcut", filters={"parent": dashboards.WORKSPACE}, fields=["label"])}
+		for _heading, rows in dashboards.SECTIONS:
+			for _type, _target, label in rows:
+				self.assertIn(label, shortcuts, label)
+
+		cards = frappe.get_all("Workspace Number Card",
+		                       filters={"parent": dashboards.WORKSPACE}, pluck="number_card_name")
+		for card in dashboards.CARDS:
+			self.assertIn(card, cards, card)
+
+		charts = frappe.get_all("Workspace Chart",
+		                        filters={"parent": dashboards.WORKSPACE}, pluck="chart_name")
+		for chart in dashboards.CHARTS:
+			self.assertIn(chart, charts, chart)
+
+	def test_the_counters_are_reachable_from_the_desk(self):
+		urls = frappe.get_all("Workspace Shortcut",
+		                      filters={"parent": dashboards.WORKSPACE, "type": "URL"},
+		                      pluck="url")
+		for page in ("/branch/sales", "/branch/service", "/branch/emi"):
+			self.assertIn(page, urls, page)
+
+	def test_the_one_workspace_carries_no_role_gate(self):
+		"""Frappe hides the shortcuts a person cannot use; the page itself is open."""
+		self.assertEqual(
+			frappe.get_all("Has Role", filters={"parent": dashboards.WORKSPACE,
+			                                    "parenttype": "Workspace"}, pluck="role"),
+			[],
+		)
 
 	def test_cards_and_charts_belong_to_the_dashboard_module(self):
 		for doctype in ("Number Card", "Dashboard Chart"):
@@ -142,12 +181,16 @@ class TestCardsChartsWorkspaces(FrappeTestCase):
 			self.assertTrue(frappe.db.exists("DocType", doctype), f"{name} -> {doctype}")
 
 	def test_workspace_shortcuts_point_somewhere_real(self):
-		for label, *_rest in dashboards.WORKSPACES:
-			for shortcut in frappe.get_all("Workspace Shortcut", filters={"parent": label},
-			                               fields=["type", "link_to"]):
-				doctype = "Page" if shortcut.type == "Page" else "DocType"
-				self.assertTrue(frappe.db.exists(doctype, shortcut.link_to),
-				                f"{label}: {shortcut.link_to}")
+		for shortcut in frappe.get_all(
+			"Workspace Shortcut", filters={"parent": dashboards.WORKSPACE},
+			fields=["type", "link_to", "url", "label"],
+		):
+			if shortcut.type == "URL":
+				self.assertTrue(shortcut.url.startswith("/"), shortcut.label)
+				continue
+			doctype = "Page" if shortcut.type == "Page" else "DocType"
+			self.assertTrue(frappe.db.exists(doctype, shortcut.link_to),
+			                f"{shortcut.label}: {shortcut.link_to}")
 
 	def test_the_control_tower_page_is_registered(self):
 		self.assertTrue(frappe.db.exists("Page", "a3-control-tower"))

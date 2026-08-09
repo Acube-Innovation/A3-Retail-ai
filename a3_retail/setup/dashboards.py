@@ -109,93 +109,113 @@ DASHBOARD_CHARTS = [
 	 "total_cost", None, None, 0),
 ]
 
-# label, icon, roles, shortcuts [(type, link_to, label)], cards, charts
-WORKSPACES = [
-	("A3 Retail Home", "getting-started", [],
-	 [("Page", "a3-reception-desk", "Reception Desk"),
-	  ("Page", "a3-control-tower", "Control Tower"),
-	  ("Page", "a3-stock-explorer", "Stock Explorer"),
-	  ("DocType", "Service Job Card", "Job Cards"),
-	  ("DocType", "Sales Invoice", "Sales Invoices")],
-	 ["Job Cards Received Today", "Work In Progress", "Ready for Delivery", "Today's Sales"],
-	 ["Job Cards by Status"]),
+# ---------------------------------------------------------------------------
+# One workspace: A3 Retail Home
+#
+# The shop used to have nine — Home, Service, Sales, Branch Manager, Inventory,
+# Finance, HR, Customer Care and Management — one per role. Nobody works in one
+# role all day, and a person with two of them had to remember which page held
+# which shortcut. So there is one page now, in sections.
+#
+# It is not a permissions hole. Frappe's own `desktop.is_item_allowed` drops a
+# shortcut whose doctype or page the signed-in user cannot open, so a technician
+# opens this page and sees the workshop, a cashier sees the till, and the branch
+# manager sees both — off the same workspace.
+# ---------------------------------------------------------------------------
+WORKSPACE = "A3 Retail Home"
+WORKSPACE_ICON = "getting-started"
 
-	("A3 Service", "tool", ["Service Manager", "Technician"],
-	 [("Page", "a3-technician-workbench", "Technician Workbench"),
-	  ("DocType", "Service Job Card", "Job Cards"),
-	  ("DocType", "Service Estimate", "Estimates"),
-	  ("DocType", "Service Issue Type", "Issue Types"),
-	  ("DocType", "Service TAT Policy", "TAT Policies"),
-	  ("DocType", "Technician Profile", "Technicians")],
-	 ["Work In Progress", "Awaiting Parts", "Ready for Delivery", "Delayed Job Cards"],
-	 ["Job Cards by Status", "Daily Job Card Trend", "Repair Category Mix"]),
-
-	("A3 Sales", "sell", ["Sales Executive", "Branch Manager"],
-	 [("DocType", "Sales Invoice", "Sales Invoice"),
-	  ("DocType", "POS Invoice", "POS Invoice"),
-	  ("DocType", "Quotation", "Quotation"),
-	  ("DocType", "Seasonal Offer Campaign", "Offers"),
-	  ("DocType", "Device Exchange", "Exchange"),
-	  ("DocType", "EMI Application", "EMI")],
-	 ["Today's Sales", "Month to Date Sales", "Footfall Today", "Converted Visits Today"],
-	 ["Branch-wise Revenue", "Visit Outcomes"]),
-
-	("A3 Branch Manager", "organization", ["Branch Manager"],
-	 [("Page", "a3-control-tower", "Control Tower"),
-	  ("DocType", "Branch Profile", "Branch Profile"),
-	  ("DocType", "Stock Request", "Stock Requests"),
-	  ("DocType", "Branch Visit Log", "Footfall"),
-	  ("DocType", "Incentive Calculation Run", "Incentives")],
-	 ["Delayed Job Cards", "Today's Sales", "Footfall Today", "Stock Value"],
-	 ["Daily Job Card Trend", "Footfall Trend"]),
-
-	("A3 Inventory", "stock", ["Store Keeper"],
-	 [("Page", "a3-stock-explorer", "Stock Explorer"),
-	  ("DocType", "Stock Request", "Stock Requests"),
-	  ("DocType", "Purchase Receipt", "Purchase Receipt"),
-	  ("DocType", "Stock Damage Report", "Damage Reports"),
-	  ("DocType", "Demurrage Charge", "Demurrage")],
-	 ["Stock Value", "Dead Stock Items", "Awaiting Parts"],
-	 ["Stock Requests by Status"]),
-
-	("A3 Finance", "accounting", ["Accounts Manager"],
-	 [("DocType", "Sales Invoice", "Sales Invoice"),
-	  ("DocType", "Purchase Invoice", "Purchase Invoice"),
-	  ("DocType", "Payment Entry", "Payment Entry"),
-	  ("DocType", "Financier Settlement", "Financier Settlement"),
-	  ("DocType", "EMI Application", "EMI Applications")],
-	 ["Month to Date Sales", "Financier Receivable", "EMI Pending Approval"],
-	 ["Branch-wise Revenue", "EMI Funnel"]),
-
-	("A3 HR", "hr", ["HR Manager"],
-	 [("DocType", "Attendance", "Attendance"),
-	  ("DocType", "Payroll Entry", "Payroll Entry"),
-	  ("DocType", "Employee Incentive Scheme", "Incentive Schemes"),
-	  ("DocType", "Incentive Calculation Run", "Incentive Runs"),
-	  ("DocType", "Asset", "Assets")],
-	 [], []),
-
-	("A3 Customer Care", "support", ["Helpdesk Agent", "Telecaller"],
-	 [("DocType", "Issue", "Tickets"),
-	  ("DocType", "Customer Feedback", "Feedback"),
-	  ("DocType", "Call Task", "Call Tasks"),
-	  ("DocType", "Telecalling Campaign", "Campaigns")],
-	 ["Open Tickets", "SLA Breached Tickets"],
-	 ["Complaint Categories"]),
-
-	("A3 Management", "dashboard", ["A3 Retail Admin"],
-	 [("Page", "a3-control-tower", "Control Tower"),
-	  ("DocType", "Branch Profile", "Branches"),
-	  ("DocType", "Employee Incentive Scheme", "Incentive Schemes")],
-	 ["Today's Sales", "Month to Date Sales", "Delayed Job Cards", "Open Tickets"],
-	 ["Branch-wise Revenue", "Daily Job Card Trend", "Technician Productivity"]),
+# heading, [(type, link_to or url, label)]
+SECTIONS = [
+	("Every Day", [
+		("Page", "a3-reception-desk", "Reception Desk"),
+		("Page", "a3-technician-workbench", "Technician Workbench"),
+		("Page", "a3-control-tower", "Control Tower"),
+		("Page", "a3-stock-explorer", "Stock Explorer"),
+	]),
+	("The Counters", [
+		("URL", "/branch/dashboard", "Branch App"),
+		("URL", "/branch/sales", "Sales POS"),
+		("URL", "/branch/service", "Service POS"),
+		("URL", "/branch/bills", "Bills"),
+		("URL", "/branch/emi", "EMI Management"),
+		("URL", "/branch/stock", "Stock Control"),
+		("URL", "/branch/reports", "Branch Reports"),
+	]),
+	("Sales", [
+		("DocType", "Sales Invoice", "Sales Invoice"),
+		("DocType", "POS Invoice", "POS Invoice"),
+		("DocType", "Quotation", "Quotation"),
+		("DocType", "Seasonal Offer Campaign", "Offers"),
+		("DocType", "Device Exchange", "Exchange"),
+	]),
+	("Service", [
+		("DocType", "Service Job Card", "Job Cards"),
+		("DocType", "Service Estimate", "Estimates"),
+		("DocType", "Service Issue Type", "Issue Types"),
+		("DocType", "Service TAT Policy", "TAT Policies"),
+		("DocType", "Technician Profile", "Technicians"),
+	]),
+	("Finance & EMI", [
+		("DocType", "Payment Entry", "Payment Entry"),
+		("DocType", "Purchase Invoice", "Purchase Invoice"),
+		("DocType", "EMI Application", "EMI Applications"),
+		("DocType", "EMI Scheme", "EMI Schemes"),
+		("DocType", "Finance Partner", "Financiers"),
+		("DocType", "Financier Settlement", "Financier Settlement"),
+	]),
+	("Stock", [
+		("DocType", "Stock Request", "Stock Requests"),
+		("DocType", "Purchase Receipt", "Purchase Receipt"),
+		("DocType", "Stock Damage Report", "Damage Reports"),
+		("DocType", "Demurrage Charge", "Demurrage"),
+	]),
+	("Branch", [
+		("DocType", "Branch Profile", "Branch Profile"),
+		("DocType", "Branch Visit Log", "Footfall"),
+		("DocType", "Incentive Calculation Run", "Incentive Runs"),
+	]),
+	("Customer Care", [
+		("DocType", "Issue", "Tickets"),
+		("DocType", "Customer Feedback", "Feedback"),
+		("DocType", "Call Task", "Call Tasks"),
+		("DocType", "Telecalling Campaign", "Campaigns"),
+	]),
+	("People & Assets", [
+		("DocType", "Attendance", "Attendance"),
+		("DocType", "Payroll Entry", "Payroll Entry"),
+		("DocType", "Employee Incentive Scheme", "Incentive Schemes"),
+		("DocType", "Asset", "Assets"),
+	]),
 ]
+
+# Every card and chart the nine pages carried between them.
+CARDS = [
+	"Job Cards Received Today", "Work In Progress", "Awaiting Parts", "Ready for Delivery",
+	"Delayed Job Cards", "Today's Sales", "Month to Date Sales", "Footfall Today",
+	"Converted Visits Today", "EMI Pending Approval", "Financier Receivable", "Stock Value",
+	"Dead Stock Items", "Open Tickets", "SLA Breached Tickets",
+]
+
+CHARTS = [
+	"Job Cards by Status", "Daily Job Card Trend", "Branch-wise Revenue", "Repair Category Mix",
+	"EMI Funnel", "Footfall Trend", "Visit Outcomes", "Stock Requests by Status",
+	"Technician Productivity", "Complaint Categories",
+]
+
+# The pages this one replaced. Removed on migrate so an upgraded site does not
+# keep nine half-empty entries in its sidebar.
+RETIRED_WORKSPACES = (
+	"A3 Service", "A3 Sales", "A3 Branch Manager", "A3 Inventory", "A3 Finance",
+	"A3 HR", "A3 Customer Care", "A3 Management",
+)
 
 
 def run():
 	ensure_number_cards()
 	ensure_dashboard_charts()
 	ensure_workspaces()
+	retire_workspaces()
 
 
 # --------------------------------------------------------------- number cards
@@ -289,77 +309,106 @@ def ensure_dashboard_charts() -> int:
 
 # ----------------------------------------------------------------- workspaces
 def ensure_workspaces() -> int:
+	"""Upsert the one workspace, with every section on it."""
+	sections = [
+		(heading, [row for row in rows if _target_exists(row[0], row[1])])
+		for heading, rows in SECTIONS
+	]
+	sections = [(heading, rows) for heading, rows in sections if rows]
+
+	cards = [card for card in CARDS if frappe.db.exists("Number Card", card)]
+	charts = [chart for chart in CHARTS if frappe.db.exists("Dashboard Chart", chart)]
+
 	created = 0
-	for label, icon, roles, shortcuts, cards, charts in WORKSPACES:
-		shortcuts = [row for row in shortcuts if _target_exists(row[0], row[1])]
-		cards = [card for card in cards if frappe.db.exists("Number Card", card)]
-		charts = [chart for chart in charts if frappe.db.exists("Dashboard Chart", chart)]
+	if frappe.db.exists("Workspace", WORKSPACE):
+		doc = frappe.get_doc("Workspace", WORKSPACE)
+	else:
+		doc = frappe.new_doc("Workspace")
+		doc.name = WORKSPACE
+		created = 1
 
-		content = _workspace_content(label, shortcuts, cards, charts)
+	doc.title = WORKSPACE
+	doc.label = WORKSPACE
+	doc.module = MODULE
+	doc.icon = WORKSPACE_ICON
+	doc.public = 1
+	doc.is_hidden = 0
+	doc.sequence_id = 1
+	doc.content = _workspace_content(sections, cards, charts)
+	# No role list: this is the shop's front page, and Frappe already hides the
+	# shortcuts a given person cannot use.
+	doc.roles = []
 
-		if frappe.db.exists("Workspace", label):
-			doc = frappe.get_doc("Workspace", label)
-		else:
-			doc = frappe.new_doc("Workspace")
-			doc.name = label
-			created += 1
+	doc.shortcuts = []
+	for _heading, rows in sections:
+		for link_type, target, shortcut_label in rows:
+			row = {"type": link_type, "label": shortcut_label}
+			if link_type == "URL":
+				row["url"] = target
+			else:
+				row["link_to"] = target
+			doc.append("shortcuts", row)
 
-		doc.title = label
-		doc.label = label
-		doc.module = MODULE
-		doc.icon = icon
-		doc.public = 1
-		doc.is_hidden = 0
-		doc.content = content
-		doc.roles = []
-		for role in roles:
-			if frappe.db.exists("Role", role):
-				doc.append("roles", {"role": role})
+	doc.number_cards = []
+	for card in cards:
+		doc.append("number_cards", {"number_card_name": card, "label": card})
 
-		doc.shortcuts = []
-		for link_type, link_to, shortcut_label in shortcuts:
-			doc.append("shortcuts", {"type": link_type, "link_to": link_to,
-			                         "label": shortcut_label})
+	doc.charts = []
+	for chart in charts:
+		doc.append("charts", {"chart_name": chart, "label": chart})
 
-		doc.number_cards = []
-		for card in cards:
-			doc.append("number_cards", {"number_card_name": card, "label": card})
-
-		doc.charts = []
-		for chart in charts:
-			doc.append("charts", {"chart_name": chart, "label": chart})
-
-		doc.flags.ignore_permissions = True
-		doc.flags.ignore_links = True
-		doc.save(ignore_permissions=True)
+	doc.flags.ignore_permissions = True
+	doc.flags.ignore_links = True
+	doc.save(ignore_permissions=True)
 	return created
 
 
+def retire_workspaces() -> list[str]:
+	"""Delete the eight pages A3 Retail Home replaced, and their private copies."""
+	removed = []
+	for label in RETIRED_WORKSPACES:
+		for name in frappe.get_all(
+			"Workspace",
+			filters={"name": ("like", label), "module": MODULE},
+			pluck="name",
+		):
+			frappe.delete_doc("Workspace", name, force=True, ignore_permissions=True,
+			                  delete_permanently=True)
+			removed.append(name)
+
+	if removed:
+		frappe.clear_cache()
+	return removed
+
+
 def _target_exists(link_type: str, link_to: str) -> bool:
+	if link_type == "URL":
+		return True
 	doctype = "Page" if link_type == "Page" else "DocType"
 	return bool(frappe.db.exists(doctype, link_to))
 
 
-def _workspace_content(label: str, shortcuts: list, cards: list, charts: list) -> str:
-	blocks = [{"id": frappe.generate_hash(length=10), "type": "header",
-	           "data": {"text": f"<span class='h4'>{label}</span>", "col": 12}}]
+def _workspace_content(sections: list, cards: list, charts: list) -> str:
+	"""The page itself: a heading per section, then the numbers, then the charts."""
+	blocks = [_block("header", {"text": f"<span class='h4'>{WORKSPACE}</span>", "col": 12})]
 
-	if shortcuts:
-		blocks.append({"id": frappe.generate_hash(length=10), "type": "header",
-		               "data": {"text": "<span class='h4'>Shortcuts</span>", "col": 12}})
-		for _type, _link, shortcut_label in shortcuts:
-			blocks.append({"id": frappe.generate_hash(length=10), "type": "shortcut",
-			               "data": {"shortcut_name": shortcut_label, "col": 3}})
+	for heading, rows in sections:
+		blocks.append(_block("header", {"text": f"<span class='h4'>{heading}</span>", "col": 12}))
+		for _type, _target, shortcut_label in rows:
+			blocks.append(_block("shortcut", {"shortcut_name": shortcut_label, "col": 3}))
 
 	if cards:
-		blocks.append({"id": frappe.generate_hash(length=10), "type": "header",
-		               "data": {"text": "<span class='h4'>Your Numbers</span>", "col": 12}})
+		blocks.append(_block("header", {"text": "<span class='h4'>Your Numbers</span>", "col": 12}))
 		for card in cards:
-			blocks.append({"id": frappe.generate_hash(length=10), "type": "number_card",
-			               "data": {"number_card_name": card, "col": 3}})
+			blocks.append(_block("number_card", {"number_card_name": card, "col": 3}))
 
-	for chart in charts:
-		blocks.append({"id": frappe.generate_hash(length=10), "type": "chart",
-		               "data": {"chart_name": chart, "col": 12}})
+	if charts:
+		blocks.append(_block("header", {"text": "<span class='h4'>Trends</span>", "col": 12}))
+		for chart in charts:
+			blocks.append(_block("chart", {"chart_name": chart, "col": 12}))
 
 	return json.dumps(blocks)
+
+
+def _block(kind: str, data: dict) -> dict:
+	return {"id": frappe.generate_hash(length=10), "type": kind, "data": data}

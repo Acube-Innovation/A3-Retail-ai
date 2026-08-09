@@ -269,10 +269,11 @@ def _dashboard_charts():
 	return count, count >= 15
 
 
-@check("Workspaces", "9")
+@check("Workspaces", "1")
 def _workspaces():
+	# One workspace now: A3 Retail Home carries what the nine role pages held.
 	count = frappe.db.count("Workspace", {"module": "A3 Retail Dashboard"})
-	return count, count >= 9
+	return count, count == 1
 
 
 @check("Reports", "42")
