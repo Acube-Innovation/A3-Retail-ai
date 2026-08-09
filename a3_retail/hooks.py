@@ -1,5 +1,3 @@
-from a3_retail.install import A3_ROLES
-
 app_name = "a3_retail"
 app_title = "A3 Retail"
 app_publisher = "Acube Innovations Pvt Ltd"
@@ -7,9 +5,21 @@ app_description = "Mobile retail and service chain management for ERPNext"
 app_email = "saaspurchases@acube.co"
 app_license = "mit"
 
-required_apps = ["frappe/erpnext"]
+# What this app cannot run without.
+#
+# erpnext: Customer, Item, Sales Invoice, Employee, Branch, Warehouse — the
+#   ledgers this whole app is a layer over.
+# india_compliance: GST accounts, HSN on Item, state codes, RCM. A shop billing
+#   in Kerala is not optional about GST.
+# hrms: Attendance, Employee Checkin, Shift Type, Payroll — the attendance
+#   geofence (scope 10.1) and the incentive payouts.
+#
+# The setup modules still skip whatever is missing rather than throwing, so an
+# app removed after installation degrades instead of breaking migrate.
+required_apps = ["frappe/erpnext", "resilient-tech/india-compliance", "frappe/hrms"]
 
-# Modules owned by this app — used to scope every fixture export.
+# Modules owned by this app. `modules.txt` is the list Frappe reads; this one is
+# for code that needs to scope a query to what the app owns.
 A3_MODULES = [
 	"A3 Retail Service",
 	"A3 Retail Sales",
@@ -18,22 +28,6 @@ A3_MODULES = [
 	"A3 Retail Communication",
 	"A3 Retail Operations",
 	"A3 Retail Dashboard",
-]
-
-A3_ROLE_NAMES = [role["role_name"] for role in A3_ROLES]
-
-# The ten scheduled deliveries in scope 12.6 (created disabled by setup.reports).
-A3_SCHEDULED_REPORTS = [
-	"Daily Service Register",
-	"Branch Sales Register",
-	"Delivery Delay Report",
-	"Awaiting Parts Register",
-	"Expiring Warranty Upsell List",
-	"Stock Ageing and Dead Stock",
-	"Footfall Conversion Analysis",
-	"Branch Profitability Statement",
-	"Incentive Payout Register",
-	"RCM Liability and ITC Register",
 ]
 
 # ---------------------------------------------------------------------------
@@ -58,24 +52,21 @@ after_migrate = "a3_retail.install.after_migrate"
 before_tests = "a3_retail.install.before_tests"
 
 # ---------------------------------------------------------------------------
-# Fixtures — every customisation ships as data so migrations are reproducible.
-# Workflow and Role have no `module` field, so those are filtered by name.
+# Fixtures — deliberately none.
+#
+# Every customisation this app owns is *built* by a `setup/` module on install
+# and again on every migrate: custom fields by `setup.custom_fields`, print
+# formats, styles and letter heads by `setup.print_formats`, cards, charts and
+# the workspace by `setup.dashboards`, scheduled reports by `setup.reports`,
+# roles by `install.create_roles`, permissions by `setup.permissions`.
+#
+# Exporting the same records as fixtures would give every one of them two
+# sources that drift apart, and two of them are tenant-shaped: the letter heads
+# are generated per Branch Profile and the Auto Email Reports carry a site's own
+# recipients, so a fixture export from a developer's site would ship one shop's
+# branches to another shop. If a future customisation genuinely cannot be built
+# in code, add it here with a comment saying why.
 # ---------------------------------------------------------------------------
-fixtures = [
-	{"dt": "Custom Field", "filters": [["module", "in", A3_MODULES]]},
-	{"dt": "Property Setter", "filters": [["module", "in", A3_MODULES]]},
-	{"dt": "Client Script", "filters": [["module", "in", A3_MODULES]]},
-	{"dt": "Print Format", "filters": [["module", "in", A3_MODULES]]},
-	{"dt": "Number Card", "filters": [["module", "in", A3_MODULES]]},
-	{"dt": "Dashboard Chart", "filters": [["module", "in", A3_MODULES]]},
-	{"dt": "Workspace", "filters": [["module", "in", A3_MODULES]]},
-	{"dt": "Role", "filters": [["name", "in", A3_ROLE_NAMES]]},
-	{"dt": "Workflow", "filters": [["name", "like", "A3 %"]]},
-	{"dt": "Print Style", "filters": [["name", "like", "A3 Retail%"]]},
-	{"dt": "Letter Head", "filters": [["name", "like", "%Letter Head"]]},
-	# Auto Email Report carries no module, so it is scoped by report name.
-	{"dt": "Auto Email Report", "filters": [["report", "in", A3_SCHEDULED_REPORTS]]},
-]
 
 # ---------------------------------------------------------------------------
 # Permissions — branch isolation on list views and reports.

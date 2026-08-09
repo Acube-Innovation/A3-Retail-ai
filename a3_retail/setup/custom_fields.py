@@ -497,11 +497,26 @@ ALL_FIELD_GROUPS = (
 
 
 def run():
-	"""Create every custom field this app owns. Idempotent."""
+	"""Create every custom field this app owns. Idempotent.
+
+	Fields are skipped when their doctype is not installed. Attendance, Employee
+	Checkin and the rest of the HR group belong to `hrms`; `create_custom_fields`
+	raises LinkValidationError on a doctype it cannot find even with
+	`ignore_validate`, which would fail the whole install on a site that does not
+	carry that app.
+	"""
 	for group in ALL_FIELD_GROUPS:
-		create_custom_fields(group, ignore_validate=True, update=True)
+		create_custom_fields(_installed_only(group), ignore_validate=True, update=True)
 	_tag_module()
 	_add_indexes()
+
+
+def _installed_only(group: dict) -> dict:
+	"""The part of a field group whose doctypes exist on this site."""
+	return {
+		doctype: fields for doctype, fields in group.items()
+		if frappe.db.exists("DocType", doctype)
+	}
 
 
 def _add_indexes():
