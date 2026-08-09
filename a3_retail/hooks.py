@@ -16,7 +16,11 @@ app_license = "mit"
 #
 # The setup modules still skip whatever is missing rather than throwing, so an
 # app removed after installation degrades instead of breaking migrate.
-required_apps = ["frappe/erpnext", "resilient-tech/india-compliance", "frappe/hrms"]
+# Named by app, not by repository: `frappe.installer.parse_app_name` turns
+# "resilient-tech/india-compliance" into the repo name "india-compliance", and
+# the app it installs is called "india_compliance". A bare app name is matched
+# directly and is what actually works.
+required_apps = ["frappe/erpnext", "india_compliance", "frappe/hrms"]
 
 # Modules owned by this app. `modules.txt` is the list Frappe reads; this one is
 # for code that needs to scope a query to what the app owns.

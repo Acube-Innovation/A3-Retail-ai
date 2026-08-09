@@ -19,11 +19,24 @@ from a3_retail.setup import custom_fields, install_defaults
 
 class TestRequiredApps(FrappeTestCase):
 	def test_the_app_declares_what_it_cannot_run_without(self):
-		"""erpnext for the ledgers, india-compliance for GST, hrms for attendance."""
+		"""erpnext for the ledgers, india_compliance for GST, hrms for attendance."""
 		self.assertEqual(
 			hooks.required_apps,
-			["frappe/erpnext", "resilient-tech/india-compliance", "frappe/hrms"],
+			["frappe/erpnext", "india_compliance", "frappe/hrms"],
 		)
+
+	def test_required_apps_name_apps_not_repositories(self):
+		"""The trap: `parse_app_name` resolves a *repo* name, and two differ.
+
+		india-compliance's repository is "india-compliance" but its app is
+		"india_compliance"; frappe/health's app is "healthcare". An entry that
+		resolves to a repo name makes `install_app` chase a module that is not
+		there, and the install dies on a fresh site.
+		"""
+		from frappe.installer import parse_app_name
+
+		for entry in hooks.required_apps:
+			self.assertIn(parse_app_name(entry), frappe.get_all_apps(), entry)
 
 	def test_those_apps_are_installed_here(self):
 		installed = set(frappe.get_installed_apps())
