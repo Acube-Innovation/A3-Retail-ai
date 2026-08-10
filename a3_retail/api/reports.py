@@ -1,6 +1,6 @@
 # Copyright (c) 2026, Acube Innovations Pvt Ltd and contributors
 # For license information, please see license.txt
-"""Reports for the branch app (`/branch/reports`).
+"""Reports for the branch app (`/retail/reports`).
 
 The reports themselves are the 42 that already live in the ERP — real Query and
 Script Reports with their own SQL, their own roles and their own filters. This

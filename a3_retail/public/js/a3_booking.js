@@ -72,7 +72,7 @@ window.BOOKING = (function () {
 			$("body").innerHTML = `<section class="svc-panel inv-error">
 				<h2>Could not open ${esc(state.name)}</h2>
 				<p>${esc(error.message)}</p>
-				<a class="btn btn-outline" href="/branch/bookings">← Back to Bookings</a></section>`;
+				<a class="btn btn-outline" href="/retail/bookings">← Back to Bookings</a></section>`;
 		}
 	}
 
@@ -89,7 +89,7 @@ window.BOOKING = (function () {
 
 		$("top-actions").insertAdjacentHTML("afterbegin", `
 			<button class="btn btn-primary btn-icon" id="print-top">${icon("print")} Print</button>
-			<a class="btn btn-outline btn-icon" href="/branch/service?booking=${
+			<a class="btn btn-outline btn-icon" href="/retail/service?booking=${
 				encodeURIComponent(data.name)}">${icon("wrench")} Open at the counter</a>`);
 		$("print-top").addEventListener("click", print);
 
@@ -208,16 +208,16 @@ window.BOOKING = (function () {
 			</section>
 
 			<section class="inv-actions">
-				<a class="btn btn-quiet btn-icon" href="/branch/bookings">${icon("back")} Back to Bookings</a>
+				<a class="btn btn-quiet btn-icon" href="/retail/bookings">${icon("back")} Back to Bookings</a>
 				<button class="btn btn-primary btn-icon" id="print-bottom">${
 					icon("print")} Print Acknowledgement</button>
-				<a class="btn btn-outline btn-icon" href="/branch/service?booking=${
+				<a class="btn btn-outline btn-icon" href="/retail/service?booking=${
 					encodeURIComponent(data.name)}">${icon("wrench")} Open at the counter</a>
 				${data.can.take_money && totals.balance > 0
 					? `<button class="btn btn-orange btn-icon" id="collect">${
 						icon("cash")} Take Payment</button>` : ""}
 				${data.sales_invoice
-					? `<a class="btn btn-quiet btn-icon" href="/branch/invoice?name=${
+					? `<a class="btn btn-quiet btn-icon" href="/retail/invoice?name=${
 						encodeURIComponent(data.sales_invoice)}">${icon("file")} ${
 						esc(data.sales_invoice)}</a>` : ""}
 				${data.delivery.otp_pending
@@ -460,7 +460,7 @@ window.BOOKING = (function () {
 		state.company = options.company;
 
 		if (!state.name) {
-			window.location = "/branch/bookings";
+			window.location = "/retail/bookings";
 			return;
 		}
 

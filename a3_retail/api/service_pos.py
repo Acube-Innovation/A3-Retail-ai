@@ -1,6 +1,6 @@
 # Copyright (c) 2026, Acube Innovations Pvt Ltd and contributors
 # For license information, please see license.txt
-"""The service counter (`/branch/service`).
+"""The service counter (`/retail/service`).
 
 Intake, estimate and hand-over for a device left in for repair, scoped the same
 way as the sales counter: `_me()` is the gate, the signed-in employee's branch

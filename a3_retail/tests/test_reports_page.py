@@ -1,6 +1,6 @@
 # Copyright (c) 2026, Acube Innovations Pvt Ltd and contributors
 # See license.txt
-"""Reports in the branch app (`/branch/reports`)."""
+"""Reports in the branch app (`/retail/reports`)."""
 
 import os
 
@@ -18,7 +18,7 @@ def user_for(employee_name: str) -> str | None:
 
 class TestReportsPage(FrappeTestCase):
 	def test_the_page_is_one_standalone_document(self):
-		folder = frappe.get_app_path("a3_retail", "www", "branch")
+		folder = frappe.get_app_path("a3_retail", "www", "retail")
 		for name in ("reports.html", "reports.py"):
 			self.assertTrue(os.path.exists(os.path.join(folder, name)), name)
 
@@ -31,7 +31,7 @@ class TestReportsPage(FrappeTestCase):
 	def test_the_catalogue_and_the_report_share_the_page(self):
 		"""One page, two states — not two pages."""
 		markup = open(
-			os.path.join(frappe.get_app_path("a3_retail", "www", "branch"), "reports.html")
+			os.path.join(frappe.get_app_path("a3_retail", "www", "retail"), "reports.html")
 		).read()
 		self.assertIn('id="catalogue"', markup)
 		self.assertIn('id="viewer"', markup)
@@ -40,9 +40,9 @@ class TestReportsPage(FrappeTestCase):
 
 	def test_reports_is_a_live_entry_in_the_sidebar(self):
 		sidebar = open(
-			os.path.join(frappe.get_app_path("a3_retail", "www", "branch"), "_sidebar.html")
+			os.path.join(frappe.get_app_path("a3_retail", "www", "retail"), "_sidebar.html")
 		).read()
-		self.assertIn('("reports", "Reports", "/branch/reports"', sidebar)
+		self.assertIn('("reports", "Reports", "/retail/reports"', sidebar)
 
 	def test_there_is_one_print_routine_for_every_report(self):
 		body = open(frappe.get_app_path("a3_retail", "public", "js", "a3_reports.js")).read()

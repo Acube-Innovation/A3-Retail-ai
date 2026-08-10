@@ -1,4 +1,4 @@
-"""Branch app landing page — /branch.
+"""Branch app landing page — /retail.
 
 The front door of the branch application: what it is, who it is for, and one way
 in. Public, because a member of staff has to be able to reach it before they have
@@ -11,7 +11,7 @@ no_cache = 1
 
 
 def get_context(context):
-	from a3_retail.www.branch import asset_version
+	from a3_retail.www.retail import asset_version
 
 	context.asset_v = asset_version()
 	from a3_retail.setup.staff_portal import current_employee

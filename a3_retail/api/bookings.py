@@ -1,6 +1,6 @@
 # Copyright (c) 2026, Acube Innovations Pvt Ltd and contributors
 # For license information, please see license.txt
-"""Service Bookings — the repairs the counter booked in (`/branch/bookings`).
+"""Service Bookings — the repairs the counter booked in (`/retail/bookings`).
 
 Reads the Service Job Cards the Mobile Service POS writes. It owns no lifecycle
 of its own: the job card decides status, warranty, TAT, parts and money, the
@@ -355,7 +355,7 @@ def booking(name: str) -> dict:
 		"can": _can(doc),
 		"print_url": print_url(doc.name),
 		"invoice_url": _invoice_url(doc.sales_invoice) if doc.sales_invoice else None,
-		"counter_url": f"/branch/service?booking={frappe.utils.quoted(doc.name)}",
+		"counter_url": f"/retail/service?booking={frappe.utils.quoted(doc.name)}",
 	}
 
 

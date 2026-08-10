@@ -13,7 +13,7 @@
 <body class="pos-body">
 <div class="app">
 
-	{% include "a3_retail/www/branch/_sidebar.html" %}
+	{% include "a3_retail/www/retail/_sidebar.html" %}
 
 	<div class="main">
 		<header class="topbar">
@@ -25,21 +25,21 @@
 			<div class="topbar-right">
 				<button class="btn btn-quiet btn-icon" id="back" hidden>← {{ _("Back to Reports") }}</button>
 				<button class="btn btn-primary btn-icon" id="print" hidden>
-					{% set icon = "print" %}{% include "a3_retail/www/branch/_icons.html" %}
+					{% set icon = "print" %}{% include "a3_retail/www/retail/_icons.html" %}
 					{{ _("Print Report") }}</button>
 				<button class="btn btn-quiet btn-icon" id="refresh">
-					{% set icon = "refresh" %}{% include "a3_retail/www/branch/_icons.html" %}
+					{% set icon = "refresh" %}{% include "a3_retail/www/retail/_icons.html" %}
 					{{ _("Refresh") }}</button>
 				<button class="btn btn-quiet btn-icon" id="export" hidden>
-					{% set icon = "download" %}{% include "a3_retail/www/branch/_icons.html" %}
+					{% set icon = "download" %}{% include "a3_retail/www/retail/_icons.html" %}
 					{{ _("Export") }}</button>
-				<a class="btn btn-quiet" href="/branch/dashboard">{{ _("Dashboard") }}</a>
+				<a class="btn btn-quiet" href="/retail/dashboard">{{ _("Dashboard") }}</a>
 				<div class="who">
 					<div class="name">{{ me.employee_name }}</div>
 					<div class="role">{{ me.designation or "" }}</div>
 				</div>
 				<div class="avatar">{{ initials }}</div>
-				<a class="btn btn-quiet" href="/branch/logout">{{ _("Sign out") }}</a>
+				<a class="btn btn-quiet" href="/retail/logout">{{ _("Sign out") }}</a>
 			</div>
 		</header>
 

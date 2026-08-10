@@ -149,7 +149,7 @@ window.BOOKINGS = (function () {
 		} else {
 			$("rows").innerHTML = data.rows.map((row) => `
 				<tr data-name="${esc(row.name)}" class="${row.overdue ? "is-late" : ""}">
-					<td><a class="bill-no" href="/branch/booking?name=${encodeURIComponent(row.name)}">${
+					<td><a class="bill-no" href="/retail/booking?name=${encodeURIComponent(row.name)}">${
 						esc(row.name)}</a>${row.priority === "Urgent (Same Day)" || row.priority === "High"
 							? `<small class="row-flag">${esc(row.priority)}</small>` : ""}</td>
 					<td class="nowrap">${esc(stamp(row.received_on))}</td>
@@ -168,11 +168,11 @@ window.BOOKINGS = (function () {
 					<td><span class="pill ${payTone(row)}">${payLabel(row)}</span></td>
 					<td class="bill-actions">
 						<a class="icon-btn plain" title="Open this booking"
-						   href="/branch/booking?name=${encodeURIComponent(row.name)}">${icon("eye")}</a>
+						   href="/retail/booking?name=${encodeURIComponent(row.name)}">${icon("eye")}</a>
 						<button class="icon-btn plain" data-act="print"
 						        title="Print the acknowledgement">${icon("print")}</button>
 						<a class="icon-btn plain" title="Open at the service counter"
-						   href="/branch/service?booking=${encodeURIComponent(row.name)}">${icon("wrench")}</a>
+						   href="/retail/service?booking=${encodeURIComponent(row.name)}">${icon("wrench")}</a>
 						<button class="icon-btn plain" data-act="more" title="More">${icon("more")}</button>
 					</td>
 				</tr>`).join("");
@@ -233,16 +233,16 @@ window.BOOKINGS = (function () {
 		$("list-note").textContent = `${row.customer_name} · ${row.device || ""} · ${
 			money2(row.balance)} owed`;
 		const options = [
-			["Open the booking", () => { window.location = "/branch/booking?name="
+			["Open the booking", () => { window.location = "/retail/booking?name="
 				+ encodeURIComponent(row.name); }],
-			["Open at the service counter", () => { window.location = "/branch/service?booking="
+			["Open at the service counter", () => { window.location = "/retail/service?booking="
 				+ encodeURIComponent(row.name); }],
 			["Print the acknowledgement", () => print(row.name)],
 			["Send the customer an update", () => notify(row.name, "WhatsApp")],
 			["Email the customer an update", () => notify(row.name, "Email")],
 		];
 		if (row.sales_invoice) {
-			options.push(["Open the invoice", () => { window.location = "/branch/invoice?name="
+			options.push(["Open the invoice", () => { window.location = "/retail/invoice?name="
 				+ encodeURIComponent(row.sales_invoice); }]);
 		}
 

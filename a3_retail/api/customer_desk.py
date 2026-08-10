@@ -1,6 +1,6 @@
 # Copyright (c) 2026, Acube Innovations Pvt Ltd and contributors
 # For license information, please see license.txt
-"""Customer management for the branch app (`/branch/customers`).
+"""Customer management for the branch app (`/retail/customers`).
 
 One person, everything about them: what they bought, what they left for repair,
 what they owe, what is still under warranty, and every message the shop sent.
@@ -397,7 +397,7 @@ def tab(customer: str, name: str, limit: int = 40) -> list[dict]:
 			 "sub": " · ".join([part for part in (row["finance_partner"], row["emi_scheme"],
 			                                     row["products"]) if part]),
 			 "date": str(row["application_date"] or ""), "amount": flt(row["loan_amount"]),
-			 "status": row["status"], "link": f"/branch/emi?application={row['name']}"}
+			 "status": row["status"], "link": f"/retail/emi?application={row['name']}"}
 			for row in customer_history(customer, limit=limit)
 		]
 

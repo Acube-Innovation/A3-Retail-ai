@@ -11,7 +11,7 @@
 <main class="login-shell">
 	<div class="login-box">
 		<div class="login-head">
-			<a href="/branch">{% include "a3_retail/www/branch/_mark.html" %}</a>
+			<a href="/retail">{% include "a3_retail/www/retail/_mark.html" %}</a>
 			<h1>{{ _("Sign in") }}</h1>
 			<p>{{ _("Welcome back to the {0} branch app").format(company) }}</p>
 		</div>
@@ -19,11 +19,11 @@
 		{% if other_session %}
 		<div class="notice is-warn" style="margin-bottom:14px">
 			{{ _("You are signed in as {0}.").format(other_session) }}
-			<a href="/branch/logout">{{ _("Sign out") }}</a> {{ _("to use the branch app.") }}
+			<a href="/retail/logout">{{ _("Sign out") }}</a> {{ _("to use the branch app.") }}
 		</div>
 		{% endif %}
 
-		<form class="card" method="post" action="/branch/login" autocomplete="on">
+		<form class="card" method="post" action="/retail/login" autocomplete="on">
 			<div class="field">
 				<label for="usr">{{ _("Work email") }}</label>
 				<input id="usr" name="usr" type="email" inputmode="email" autocomplete="username"
@@ -43,7 +43,7 @@
 
 		<p class="login-foot">
 			{{ _("Trouble signing in? Ask your branch manager.") }}<br>
-			<a href="/branch/logout?to=/login">{{ _("Head office and accounts sign in here") }}</a>
+			<a href="/retail/logout?to=/login">{{ _("Head office and accounts sign in here") }}</a>
 		</p>
 	</div>
 </main>

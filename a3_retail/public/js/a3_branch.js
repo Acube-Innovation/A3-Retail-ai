@@ -120,7 +120,7 @@ window.A3 = (function () {
 
 	async function logout() {
 		await fetch("/api/method/logout", { method: "POST" });
-		window.location.href = "/branch";
+		window.location.href = "/retail";
 	}
 
 	function money(value) {

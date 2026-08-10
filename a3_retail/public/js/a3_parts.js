@@ -212,7 +212,7 @@ window.PARTS = (function () {
 		$("tab-body").querySelectorAll("[data-chase]").forEach((node) => {
 			node.addEventListener("click", () => {
 				const row = rows[Number(node.dataset.chase)];
-				window.location = "/branch/stock?item=" + encodeURIComponent(row.item_code);
+				window.location = "/retail/stock?item=" + encodeURIComponent(row.item_code);
 			});
 		});
 	}
@@ -348,7 +348,7 @@ window.PARTS = (function () {
 				$("kinds").querySelectorAll("[data-kind]").forEach((other) =>
 					other.classList.toggle("is-active", other === node));
 				history.replaceState({}, "", state.kind === "accessories"
-					? "/branch/parts?kind=accessories" : "/branch/parts");
+					? "/retail/parts?kind=accessories" : "/retail/parts");
 				loadAll();
 			});
 		});
@@ -389,7 +389,7 @@ window.PARTS = (function () {
 			node.addEventListener("click", () => {
 				if (node.dataset.do === "assign") return openAssign(null);
 				if (node.dataset.do === "replace") return openReplace(null);
-				if (node.dataset.do === "request") window.location = "/branch/stock";
+				if (node.dataset.do === "request") window.location = "/retail/stock";
 			});
 		});
 

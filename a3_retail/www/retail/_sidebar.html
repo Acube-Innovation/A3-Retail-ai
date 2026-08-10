@@ -1,30 +1,30 @@
 {#- Branch app navigation. Each page sets `active`. -#}
 {%- set nav = [
-	("dashboard", "Dashboard", "/branch/dashboard", "grid"),
-	("sales", "Sales POS", "/branch/sales", "tag"),
-	("customers", "Customers", "/branch/customers", "users"),
-	("bills", "Bills", "/branch/bills", "file"),
-	("reports", "Reports", "/branch/reports", "chart"),
-	("stock", "Stock", "/branch/stock", "box"),
-	("services", "Service POS", "/branch/service", "wrench"),
-	("bookings", "Service Bookings", "/branch/bookings", "clipboard"),
-	("emi", "EMI", "/branch/emi", "percent"),
-	("spares", "Spare Parts", "/branch/parts", "chip"),
-	("accessories", "Accessories", "/branch/parts?kind=accessories", "plug"),
+	("dashboard", "Dashboard", "/retail/dashboard", "grid"),
+	("sales", "Sales POS", "/retail/sales", "tag"),
+	("customers", "Customers", "/retail/customers", "users"),
+	("bills", "Bills", "/retail/bills", "file"),
+	("reports", "Reports", "/retail/reports", "chart"),
+	("stock", "Stock", "/retail/stock", "box"),
+	("services", "Service POS", "/retail/service", "wrench"),
+	("bookings", "Service Bookings", "/retail/bookings", "clipboard"),
+	("emi", "EMI", "/retail/emi", "percent"),
+	("spares", "Spare Parts", "/retail/parts", "chip"),
+	("accessories", "Accessories", "/retail/parts?kind=accessories", "plug"),
 	("settings", "Settings", "", "gear"),
 ] -%}
 
 <aside class="side" id="side">
-	<a class="side-brand" href="/branch">{% include "a3_retail/www/branch/_mark.html" %}</a>
+	<a class="side-brand" href="/retail">{% include "a3_retail/www/retail/_mark.html" %}</a>
 
 	<nav class="side-nav">
 		{% for key, label, href, icon in nav %}
 			{% if href %}
 			<a href="{{ href }}" class="{{ 'is-active' if active == key else '' }}">
-				{% include "a3_retail/www/branch/_icons.html" %}<span>{{ _(label) }}</span></a>
+				{% include "a3_retail/www/retail/_icons.html" %}<span>{{ _(label) }}</span></a>
 			{% else %}
 			<span class="side-soon" title="{{ _('Coming next') }}">
-				{% include "a3_retail/www/branch/_icons.html" %}<span>{{ _(label) }}</span></span>
+				{% include "a3_retail/www/retail/_icons.html" %}<span>{{ _(label) }}</span></span>
 			{% endif %}
 		{% endfor %}
 	</nav>
@@ -32,7 +32,7 @@
 	<div class="side-foot">
 		<a href="/support">{{ _("Need help?") }}</a>
 		{% if me and me.is_manager %}
-		<a href="/branch/logout?to=/login">{{ _("Head office system") }}</a>
+		<a href="/retail/logout?to=/login">{{ _("Head office system") }}</a>
 		{% endif %}
 		<div class="side-org">{{ company }}</div>
 		<div class="side-org">{{ _("Branch") }}: {{ me.branch if me else "" }}</div>

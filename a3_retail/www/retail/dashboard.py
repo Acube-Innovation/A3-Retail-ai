@@ -1,4 +1,4 @@
-"""Branch app dashboard — /branch/dashboard.
+"""Branch app dashboard — /retail/dashboard.
 
 Standalone document, server-rendered for the first paint and refreshed from
 `a3_retail.api.staff.dashboard` afterwards. Nothing about the ERPNext desk is
@@ -10,7 +10,7 @@ import frappe
 no_cache = 1
 
 def get_context(context):
-	from a3_retail.www.branch import asset_version
+	from a3_retail.www.retail import asset_version
 
 	context.asset_v = asset_version()
 	from a3_retail.api.staff import dashboard as dashboard_data
@@ -19,7 +19,7 @@ def get_context(context):
 	context.no_cache = 1
 
 	if frappe.session.user == "Guest" or not current_employee():
-		frappe.local.flags.redirect_location = "/branch/login"
+		frappe.local.flags.redirect_location = "/retail/login"
 		raise frappe.Redirect
 
 	data = dashboard_data()

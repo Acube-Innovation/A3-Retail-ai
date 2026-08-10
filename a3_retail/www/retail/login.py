@@ -1,4 +1,4 @@
-"""Branch app sign-in — /branch/login.
+"""Branch app sign-in — /retail/login.
 
 The form posts to this page and the session is opened server-side, so signing in
 never depends on JavaScript, a fetch polyfill or a CSRF header. A shop-floor app
@@ -16,7 +16,7 @@ ATTEMPT_WINDOW_SECONDS = 900
 
 
 def get_context(context):
-	from a3_retail.www.branch import asset_version
+	from a3_retail.www.retail import asset_version
 
 	context.asset_v = asset_version()
 	from a3_retail.setup.staff_portal import HOME_PAGE, current_employee
@@ -81,7 +81,7 @@ def _destination() -> str:
 		return HOME_PAGE
 	if frappe.db.get_value("User", frappe.session.user, "user_type") == "System User":
 		return "/app"
-	return "/branch"
+	return "/retail"
 
 
 def _attempt_key() -> str:

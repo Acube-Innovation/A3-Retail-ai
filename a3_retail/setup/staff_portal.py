@@ -1,6 +1,6 @@
 # Copyright (c) 2026, Acube Innovations Pvt Ltd and contributors
 # For license information, please see license.txt
-"""Branch staff portal accounts (`/branch`).
+"""Branch staff portal accounts (`/retail`).
 
 Shop-floor staff work in a small web app of their own, not in the ERPNext desk.
 That separation is enforced by Frappe's own user type: a **Website User** is
@@ -18,7 +18,7 @@ import frappe
 from frappe.utils import cint
 
 PORTAL_ROLE = "A3 Branch Staff"
-HOME_PAGE = "/branch/dashboard"
+HOME_PAGE = "/retail/dashboard"
 
 # Roles whose work is in the desk; these users are left as System Users.
 DESK_ROLES = {"System Manager", "A3 Retail Admin", "Accounts Manager", "HR Manager", "Auditor"}

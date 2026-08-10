@@ -107,7 +107,7 @@ window.BILLS = (function () {
 		} else {
 			$("rows").innerHTML = data.rows.map((row) => `
 				<tr data-name="${esc(row.name)}" class="${row.status === "Cancelled" ? "is-cancelled" : ""}">
-					<td><a class="bill-no" href="/branch/invoice?name=${encodeURIComponent(row.name)}">${
+					<td><a class="bill-no" href="/retail/invoice?name=${encodeURIComponent(row.name)}">${
 						esc(row.name)}</a></td>
 					<td class="nowrap">${esc(day(row.posting_date))}</td>
 					<td>${esc(row.customer_name || row.customer)}</td>
@@ -124,10 +124,10 @@ window.BILLS = (function () {
 					<td class="nowrap">${esc(row.sales_person || "—")}</td>
 					<td class="bill-actions">
 						<a class="icon-btn plain" title="View"
-						   href="/branch/invoice?name=${encodeURIComponent(row.name)}">${icon("eye")}</a>
+						   href="/retail/invoice?name=${encodeURIComponent(row.name)}">${icon("eye")}</a>
 						${row.editable
 							? `<a class="icon-btn plain" title="Edit this draft"
-							     href="/branch/sales?invoice=${encodeURIComponent(row.name)}">${icon("pencil")}</a>`
+							     href="/retail/sales?invoice=${encodeURIComponent(row.name)}">${icon("pencil")}</a>`
 							: '<span class="icon-btn plain is-off" title="Only a draft can be edited">'
 							  + icon("pencil") + "</span>"}
 						<button class="icon-btn plain" data-act="print" title="Print">${icon("print")}</button>
@@ -207,7 +207,7 @@ window.BILLS = (function () {
 		$("list-title").textContent = row.name;
 		$("list-note").textContent = `${row.customer_name} · ${money2(row.payable)}`;
 		const options = [
-			["Open the invoice", () => { window.location = "/branch/invoice?name="
+			["Open the invoice", () => { window.location = "/retail/invoice?name="
 				+ encodeURIComponent(row.name); }],
 			["Print", () => print(row.name)],
 			["Send on WhatsApp", () => send(row.name, "WhatsApp")],
@@ -215,7 +215,7 @@ window.BILLS = (function () {
 		];
 		if (row.editable) {
 			options.splice(1, 0, ["Edit this draft at the counter", () => {
-				window.location = "/branch/sales?invoice=" + encodeURIComponent(row.name);
+				window.location = "/retail/sales?invoice=" + encodeURIComponent(row.name);
 			}]);
 		}
 

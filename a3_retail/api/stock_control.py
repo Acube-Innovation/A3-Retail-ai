@@ -1,6 +1,6 @@
 # Copyright (c) 2026, Acube Innovations Pvt Ltd and contributors
 # For license information, please see license.txt
-"""Branch Stock Control (`/branch/stock`).
+"""Branch Stock Control (`/retail/stock`).
 
 An operational layer over ERPNext, not a second stock engine. Every quantity on
 this page is read from `tabBin` and the stock ledger; every action creates the

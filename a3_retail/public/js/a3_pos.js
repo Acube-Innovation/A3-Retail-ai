@@ -728,11 +728,11 @@ window.POS = (function () {
 					})),
 				},
 			});
-			window.location = "/branch/emi?application=" + encodeURIComponent(result.application);
+			window.location = "/retail/emi?application=" + encodeURIComponent(result.application);
 		} catch (error) {
 			// The KYC a financier needs is asked for on the financing desk, which
 			// is where the counter is sent with the basket already attached.
-			window.location = "/branch/emi?tab=applications&customer="
+			window.location = "/retail/emi?tab=applications&customer="
 				+ encodeURIComponent(state.customer);
 		}
 	}

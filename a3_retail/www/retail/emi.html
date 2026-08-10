@@ -13,7 +13,7 @@
 <body class="pos-body">
 <div class="app">
 
-	{% include "a3_retail/www/branch/_sidebar.html" %}
+	{% include "a3_retail/www/retail/_sidebar.html" %}
 
 	<div class="main">
 		<header class="topbar">
@@ -29,13 +29,13 @@
 				<button class="btn btn-outline" id="new-scheme" hidden>+ {{ _("Add EMI Scheme") }}</button>
 				<button class="btn btn-quiet" data-go-tab="settlements">{{ _("View Settlements") }}</button>
 				<button class="btn btn-quiet btn-icon" id="more">
-					{% set icon = "more" %}{% include "a3_retail/www/branch/_icons.html" %}</button>
+					{% set icon = "more" %}{% include "a3_retail/www/retail/_icons.html" %}</button>
 				<div class="who">
 					<div class="name">{{ me.employee_name }}</div>
 					<div class="role">{{ me.designation or "" }}</div>
 				</div>
 				<div class="avatar">{{ initials }}</div>
-				<a class="btn btn-quiet" href="/branch/logout">{{ _("Sign out") }}</a>
+				<a class="btn btn-quiet" href="/retail/logout">{{ _("Sign out") }}</a>
 			</div>
 		</header>
 

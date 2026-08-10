@@ -1,6 +1,6 @@
 # Copyright (c) 2026, Acube Innovations Pvt Ltd and contributors
 # See license.txt
-"""Customer management in the branch app (`/branch/customers`)."""
+"""Customer management in the branch app (`/retail/customers`)."""
 
 import os
 
@@ -18,7 +18,7 @@ def user_for(employee_name: str) -> str | None:
 
 class TestCustomersPage(FrappeTestCase):
 	def test_the_page_is_a_standalone_document(self):
-		folder = frappe.get_app_path("a3_retail", "www", "branch")
+		folder = frappe.get_app_path("a3_retail", "www", "retail")
 		for name in ("customers.html", "customers.py"):
 			self.assertTrue(os.path.exists(os.path.join(folder, name)), name)
 
@@ -30,7 +30,7 @@ class TestCustomersPage(FrappeTestCase):
 
 	def test_the_screen_has_the_pieces_the_shop_asked_for(self):
 		markup = open(
-			os.path.join(frappe.get_app_path("a3_retail", "www", "branch"), "customers.html")
+			os.path.join(frappe.get_app_path("a3_retail", "www", "retail"), "customers.html")
 		).read()
 		for piece in ("Customer Management", "New Customer", "Import", "Export",
 		              "Search by name, phone or email"):
@@ -38,9 +38,9 @@ class TestCustomersPage(FrappeTestCase):
 
 	def test_customers_is_a_live_entry_in_the_sidebar(self):
 		sidebar = open(
-			os.path.join(frappe.get_app_path("a3_retail", "www", "branch"), "_sidebar.html")
+			os.path.join(frappe.get_app_path("a3_retail", "www", "retail"), "_sidebar.html")
 		).read()
-		self.assertIn('("customers", "Customers", "/branch/customers"', sidebar)
+		self.assertIn('("customers", "Customers", "/retail/customers"', sidebar)
 
 
 class TestCustomerDeskAccess(FrappeTestCase):

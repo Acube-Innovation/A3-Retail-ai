@@ -13,7 +13,7 @@
 <body class="pos-body">
 <div class="app">
 
-	{% include "a3_retail/www/branch/_sidebar.html" %}
+	{% include "a3_retail/www/retail/_sidebar.html" %}
 
 	<div class="main">
 		<header class="topbar">
@@ -25,18 +25,18 @@
 				<button class="btn btn-primary btn-new" id="new-customer">
 					+ {{ _("New Customer") }}</button>
 				<button class="btn btn-quiet btn-icon" id="import">
-					{% set icon = "upload" %}{% include "a3_retail/www/branch/_icons.html" %}
+					{% set icon = "upload" %}{% include "a3_retail/www/retail/_icons.html" %}
 					{{ _("Import") }}</button>
 				<button class="btn btn-quiet btn-icon" id="export">
-					{% set icon = "download" %}{% include "a3_retail/www/branch/_icons.html" %}
+					{% set icon = "download" %}{% include "a3_retail/www/retail/_icons.html" %}
 					{{ _("Export") }}</button>
-				<a class="btn btn-quiet" href="/branch/dashboard">{{ _("Dashboard") }}</a>
+				<a class="btn btn-quiet" href="/retail/dashboard">{{ _("Dashboard") }}</a>
 				<div class="who">
 					<div class="name">{{ me.employee_name }}</div>
 					<div class="role">{{ me.designation or "" }}</div>
 				</div>
 				<div class="avatar">{{ initials }}</div>
-				<a class="btn btn-quiet" href="/branch/logout">{{ _("Sign out") }}</a>
+				<a class="btn btn-quiet" href="/retail/logout">{{ _("Sign out") }}</a>
 			</div>
 		</header>
 
@@ -50,7 +50,7 @@
 						       placeholder="{{ _('Search by name, phone or email…') }}">
 					</div>
 					<button class="icon-btn plain" id="scope" title="{{ _('Every branch') }}">
-						{% set icon = "filter" %}{% include "a3_retail/www/branch/_icons.html" %}
+						{% set icon = "filter" %}{% include "a3_retail/www/retail/_icons.html" %}
 					</button>
 				</div>
 

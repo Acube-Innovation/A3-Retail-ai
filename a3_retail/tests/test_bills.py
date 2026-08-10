@@ -18,7 +18,7 @@ def user_for(employee_name: str) -> str | None:
 
 class TestBillsPages(FrappeTestCase):
 	def test_both_pages_are_standalone_documents(self):
-		folder = frappe.get_app_path("a3_retail", "www", "branch")
+		folder = frappe.get_app_path("a3_retail", "www", "retail")
 		for name in ("bills.html", "bills.py", "invoice.html", "invoice.py"):
 			self.assertTrue(os.path.exists(os.path.join(folder, name)), name)
 
@@ -31,7 +31,7 @@ class TestBillsPages(FrappeTestCase):
 
 	def test_the_list_has_the_filter_bar_the_shop_asked_for(self):
 		markup = open(
-			os.path.join(frappe.get_app_path("a3_retail", "www", "branch"), "bills.html")
+			os.path.join(frappe.get_app_path("a3_retail", "www", "retail"), "bills.html")
 		).read()
 		for piece in ("Manage invoices, payments and customer billing", "New Sale", "Export",
 		              "Refresh", "Search invoice no, customer, phone", "Clear filters",
@@ -40,15 +40,15 @@ class TestBillsPages(FrappeTestCase):
 
 	def test_new_sale_goes_to_the_counter_that_already_exists(self):
 		markup = open(
-			os.path.join(frappe.get_app_path("a3_retail", "www", "branch"), "bills.html")
+			os.path.join(frappe.get_app_path("a3_retail", "www", "retail"), "bills.html")
 		).read()
-		self.assertIn('href="/branch/sales"', markup)
+		self.assertIn('href="/retail/sales"', markup)
 
 	def test_bills_is_a_live_entry_in_the_sidebar(self):
 		sidebar = open(
-			os.path.join(frappe.get_app_path("a3_retail", "www", "branch"), "_sidebar.html")
+			os.path.join(frappe.get_app_path("a3_retail", "www", "retail"), "_sidebar.html")
 		).read()
-		self.assertIn('("bills", "Bills", "/branch/bills"', sidebar)
+		self.assertIn('("bills", "Bills", "/retail/bills"', sidebar)
 
 	def test_there_is_one_print_implementation(self):
 		"""Bills, the invoice page and the counter all print the same document."""

@@ -385,7 +385,7 @@ window.EMI = (function () {
 				`${esc(row.customer_name || row.customer)}<small>${esc(row.customer_mobile || "")}</small>` },
 			{ label: "Product", cell: (row) => esc((row.products || "—").slice(0, 42)) },
 			{ label: "Invoice", cell: (row) => row.sales_invoice
-				? `<a href="/branch/invoice?name=${encodeURIComponent(row.sales_invoice)}">${
+				? `<a href="/retail/invoice?name=${encodeURIComponent(row.sales_invoice)}">${
 					esc(row.sales_invoice)}</a>` : "—" },
 			{ label: "Financier", cell: (row) => esc(row.finance_partner || "—") },
 			{ label: "Scheme", cell: (row) => esc(row.emi_scheme || "—") },
@@ -516,7 +516,7 @@ window.EMI = (function () {
 	PAINT.sales = function (data) {
 		const columns = [
 			{ label: "Invoice", cell: (row) => row.sales_invoice
-				? `<a class="bill-no" href="/branch/invoice?name=${
+				? `<a class="bill-no" href="/retail/invoice?name=${
 					encodeURIComponent(row.sales_invoice)}">${esc(row.sales_invoice)}</a>`
 				: '<span class="faint">not linked</span>' },
 			{ label: "Date", cell: (row) => esc(day(row.disbursement_date || row.posting_date)) },
@@ -653,7 +653,7 @@ window.EMI = (function () {
 	PAINT.reconciliation = function (data) {
 		const columns = [
 			{ label: "Invoice", cell: (row) => row.sales_invoice
-				? `<a href="/branch/invoice?name=${encodeURIComponent(row.sales_invoice)}">${
+				? `<a href="/retail/invoice?name=${encodeURIComponent(row.sales_invoice)}">${
 					esc(row.sales_invoice)}</a>` : '<span class="faint">not linked</span>' },
 			{ label: "Application", cell: (row) =>
 				`<a href="#" data-open="${esc(row.name)}">${esc(row.name)}</a>` },
@@ -755,7 +755,7 @@ window.EMI = (function () {
 				])}
 				${block("Purchase", [
 					["Invoice", data.purchase.invoice
-						? `<a href="/branch/invoice?name=${encodeURIComponent(data.purchase.invoice)}">${
+						? `<a href="/retail/invoice?name=${encodeURIComponent(data.purchase.invoice)}">${
 							esc(data.purchase.invoice)}</a>` : "not raised yet"],
 					["Products", esc(data.items.map((row) => row.item_name).join(", ") || "—")],
 					["IMEI", esc(data.items.map((row) => row.serial_no).filter(Boolean).join(", ") || "—")],
@@ -2201,7 +2201,7 @@ window.EMI = (function () {
 			openWork("More", "", `<ul class="simple-list">
 				<li><button class="linkish" data-do="calc">EMI calculator</button></li>
 				<li><button class="linkish" data-do="export">Export this list</button></li>
-				<li><a class="linkish" href="/branch/reports?category=Finance%20%26%20EMI">
+				<li><a class="linkish" href="/retail/reports?category=Finance%20%26%20EMI">
 					EMI reports</a></li>
 			</ul>`);
 			$("work-body").querySelectorAll("[data-do]").forEach((node) => {

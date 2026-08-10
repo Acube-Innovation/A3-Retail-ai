@@ -1,6 +1,6 @@
 # Copyright (c) 2026, Acube Innovations Pvt Ltd and contributors
 # For license information, please see license.txt
-"""Spare parts and accessories (`/branch/parts`).
+"""Spare parts and accessories (`/retail/parts`).
 
 The counter's view of the two shelves it touches most: what a part fits, where
 it is, what it is worth, and the four things anyone ever does with one — put it
@@ -539,4 +539,4 @@ def return_to_store(job_card: str) -> dict:
 def sell_url(item_code: str) -> str:
 	"""Selling one is the counter's job — this hands the item to it."""
 	_me()
-	return f"/branch/sales?item={frappe.utils.quoted(item_code)}"
+	return f"/retail/sales?item={frappe.utils.quoted(item_code)}"

@@ -1,6 +1,6 @@
 # Copyright (c) 2026, Acube Innovations Pvt Ltd and contributors
 # See license.txt
-"""Service Bookings (`/branch/bookings`) and the messages the counter is given."""
+"""Service Bookings (`/retail/bookings`) and the messages the counter is given."""
 
 import os
 
@@ -35,7 +35,7 @@ def luhn(prefix: str) -> str:
 
 class TestBookingPages(FrappeTestCase):
 	def test_both_pages_are_standalone_documents(self):
-		folder = frappe.get_app_path("a3_retail", "www", "branch")
+		folder = frappe.get_app_path("a3_retail", "www", "retail")
 		for name in ("bookings.html", "bookings.py", "booking.html", "booking.py"):
 			self.assertTrue(os.path.exists(os.path.join(folder, name)), name)
 
@@ -48,7 +48,7 @@ class TestBookingPages(FrappeTestCase):
 
 	def test_the_list_carries_the_filters_a_service_desk_works_by(self):
 		markup = open(
-			os.path.join(frappe.get_app_path("a3_retail", "www", "branch"), "bookings.html")
+			os.path.join(frappe.get_app_path("a3_retail", "www", "retail"), "bookings.html")
 		).read()
 		for piece in ("Service Bookings", "New Booking", "Export", "Refresh",
 		              "Booking no, customer, phone, IMEI", "Where it is", "In the shop",
@@ -57,15 +57,15 @@ class TestBookingPages(FrappeTestCase):
 
 	def test_service_bookings_is_a_live_entry_in_the_sidebar(self):
 		sidebar = open(
-			os.path.join(frappe.get_app_path("a3_retail", "www", "branch"), "_sidebar.html")
+			os.path.join(frappe.get_app_path("a3_retail", "www", "retail"), "_sidebar.html")
 		).read()
-		self.assertIn('("bookings", "Service Bookings", "/branch/bookings"', sidebar)
+		self.assertIn('("bookings", "Service Bookings", "/retail/bookings"', sidebar)
 
 	def test_the_counter_is_named_service_pos(self):
 		sidebar = open(
-			os.path.join(frappe.get_app_path("a3_retail", "www", "branch"), "_sidebar.html")
+			os.path.join(frappe.get_app_path("a3_retail", "www", "retail"), "_sidebar.html")
 		).read()
-		self.assertIn('("services", "Service POS", "/branch/service"', sidebar)
+		self.assertIn('("services", "Service POS", "/retail/service"', sidebar)
 		self.assertNotIn('"Services"', sidebar)
 
 	def test_there_is_one_print_implementation(self):
@@ -190,7 +190,7 @@ class TestOneBooking(FrappeTestCase):
 		            "delivery", "activity", "can", "print_url", "counter_url"):
 			self.assertIn(key, card, key)
 		self.assertEqual(card["branch"], "Kochi")
-		self.assertTrue(card["counter_url"].startswith("/branch/service?booking="))
+		self.assertTrue(card["counter_url"].startswith("/retail/service?booking="))
 
 	def test_the_totals_are_the_job_card_s_own(self):
 		card = bookings.booking(self.name)
@@ -367,7 +367,7 @@ class TestTheAlertsAreVisible(FrappeTestCase):
 
 	def test_the_counter_asks_for_the_discount_reason_on_the_screen(self):
 		markup = open(
-			os.path.join(frappe.get_app_path("a3_retail", "www", "branch"), "service.html")
+			os.path.join(frappe.get_app_path("a3_retail", "www", "retail"), "service.html")
 		).read()
 		self.assertIn('id="discount-reason"', markup)
 		self.assertIn('id="discount-reason-row"', markup)

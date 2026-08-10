@@ -158,7 +158,7 @@ class TestCardsChartsWorkspaces(FrappeTestCase):
 		urls = frappe.get_all("Workspace Shortcut",
 		                      filters={"parent": dashboards.WORKSPACE, "type": "URL"},
 		                      pluck="url")
-		for page in ("/branch/sales", "/branch/service", "/branch/emi"):
+		for page in ("/retail/sales", "/retail/service", "/retail/emi"):
 			self.assertIn(page, urls, page)
 
 	def test_the_one_workspace_carries_no_role_gate(self):

@@ -1,6 +1,6 @@
 # Copyright (c) 2026, Acube Innovations Pvt Ltd and contributors
 # See license.txt
-"""Counter billing in the branch app (`/branch/sales`)."""
+"""Counter billing in the branch app (`/retail/sales`)."""
 
 import os
 
@@ -18,7 +18,7 @@ def user_for(employee_name: str) -> str | None:
 
 class TestSalesPage(FrappeTestCase):
 	def test_the_page_is_a_standalone_document(self):
-		folder = frappe.get_app_path("a3_retail", "www", "branch")
+		folder = frappe.get_app_path("a3_retail", "www", "retail")
 		for name in ("sales.html", "sales.py"):
 			self.assertTrue(os.path.exists(os.path.join(folder, name)), name)
 
@@ -29,7 +29,7 @@ class TestSalesPage(FrappeTestCase):
 
 	def test_the_counter_has_its_six_quick_actions(self):
 		markup = open(
-			os.path.join(frappe.get_app_path("a3_retail", "www", "branch"), "sales.html")
+			os.path.join(frappe.get_app_path("a3_retail", "www", "retail"), "sales.html")
 		).read()
 		for action, label, shortcut in [
 			("recent", "Recent Bills", "F3"), ("hold", "Hold Bill", "F4"),
@@ -42,9 +42,9 @@ class TestSalesPage(FrappeTestCase):
 
 	def test_sales_is_in_the_sidebar_under_dashboard(self):
 		sidebar = open(
-			os.path.join(frappe.get_app_path("a3_retail", "www", "branch"), "_sidebar.html")
+			os.path.join(frappe.get_app_path("a3_retail", "www", "retail"), "_sidebar.html")
 		).read()
-		self.assertLess(sidebar.index("/branch/dashboard"), sidebar.index("/branch/sales"))
+		self.assertLess(sidebar.index("/retail/dashboard"), sidebar.index("/retail/sales"))
 
 
 class TestCounterAccess(FrappeTestCase):

@@ -1,6 +1,6 @@
 # Copyright (c) 2026, Acube Innovations Pvt Ltd and contributors
 # For license information, please see license.txt
-"""Counter billing for the branch app (`/branch/sales`).
+"""Counter billing for the branch app (`/retail/sales`).
 
 Everything here answers for the signed-in employee's own branch: `_me()` returns
 the employee, `_branch()` the branch, and no endpoint accepts a branch from the

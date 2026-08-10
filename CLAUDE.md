@@ -11,7 +11,7 @@ Read `docs/ARCHITECTURE.md` before adding anything structural, and
 
 1. **A `www/` page is a shell.** Guard the session, build a context, render HTML
    — no queries, no business logic. Every one of the 17 is ~35 lines; copy
-   `www/branch/emi.py`.
+   `www/retail/emi.py`.
 2. **The browser only calls `api/*`.** Every whitelisted endpoint opens with
    `_me()` or `require_permission`. `setup/audit.py` reads the source at test
    time and fails the build otherwise.
@@ -45,7 +45,7 @@ Read `docs/ARCHITECTURE.md` before adding anything structural, and
 
 ```
 a3_retail_*/        seven ERP modules — doctype/, report/, page/
-www/branch/         the branch app (/branch/*)
+www/retail/         the branch app (/retail/*)
 api/                whitelisted endpoints, one module per screen
 setup/              installers, re-run on every migrate
 templates/          print formats and portal pages

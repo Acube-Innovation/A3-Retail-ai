@@ -1,6 +1,6 @@
 # Copyright (c) 2026, Acube Innovations Pvt Ltd and contributors
 # See license.txt
-"""EMI Management — the financing workspace at `/branch/emi`."""
+"""EMI Management — the financing workspace at `/retail/emi`."""
 
 import os
 
@@ -21,7 +21,7 @@ def user_for(employee_name: str) -> str | None:
 
 class TestEMIPage(FrappeTestCase):
 	def test_the_page_is_one_standalone_document(self):
-		folder = frappe.get_app_path("a3_retail", "www", "branch")
+		folder = frappe.get_app_path("a3_retail", "www", "retail")
 		for name in ("emi.html", "emi.py"):
 			self.assertTrue(os.path.exists(os.path.join(folder, name)), name)
 
@@ -33,21 +33,21 @@ class TestEMIPage(FrappeTestCase):
 
 	def test_the_page_says_what_it_is_for(self):
 		markup = open(
-			os.path.join(frappe.get_app_path("a3_retail", "www", "branch"), "emi.html")).read()
+			os.path.join(frappe.get_app_path("a3_retail", "www", "retail"), "emi.html")).read()
 		self.assertIn("EMI Management", markup)
 		self.assertIn("Manage financing partners, schemes, applications and settlements", markup)
 		self.assertIn("New EMI Application", markup)
 
 	def test_every_tab_the_spec_asked_for_is_on_the_page(self):
 		markup = open(
-			os.path.join(frappe.get_app_path("a3_retail", "www", "branch"), "emi.html")).read()
+			os.path.join(frappe.get_app_path("a3_retail", "www", "retail"), "emi.html")).read()
 		for tab in TABS:
 			self.assertIn(f'("{tab}"', markup, tab)
 
 	def test_emi_is_a_live_entry_in_the_sidebar(self):
 		sidebar = open(
-			os.path.join(frappe.get_app_path("a3_retail", "www", "branch"), "_sidebar.html")).read()
-		self.assertIn('("emi", "EMI", "/branch/emi"', sidebar)
+			os.path.join(frappe.get_app_path("a3_retail", "www", "retail"), "_sidebar.html")).read()
+		self.assertIn('("emi", "EMI", "/retail/emi"', sidebar)
 
 	def test_no_second_sales_or_accounting_system(self):
 		"""Every write goes through a document ERPNext or the app already owns."""
@@ -62,7 +62,7 @@ class TestEMIPage(FrappeTestCase):
 		"""Partner names live in the master, never in the code or the markup."""
 		for path in (frappe.get_app_path("a3_retail", "api", "emi.py"),
 		             frappe.get_app_path("a3_retail", "public", "js", "a3_emi.js"),
-		             os.path.join(frappe.get_app_path("a3_retail", "www", "branch"), "emi.html")):
+		             os.path.join(frappe.get_app_path("a3_retail", "www", "retail"), "emi.html")):
 			body = open(path).read()
 			for partner in ("Bajaj", "Home Credit", "TVS Credit", "IDFC", "HDFC", "ZestMoney"):
 				self.assertNotIn(partner, body, f"{partner} named in {os.path.basename(path)}")
@@ -412,7 +412,7 @@ class TestElsewhereInTheApp(FrappeTestCase):
 
 		rows = customer_desk.tab(customer, "emi")
 		self.assertTrue(rows)
-		self.assertTrue(rows[0]["link"].startswith("/branch/emi?application="))
+		self.assertTrue(rows[0]["link"].startswith("/retail/emi?application="))
 
 	def test_the_customer_page_lists_the_tab(self):
 		body = open(frappe.get_app_path("a3_retail", "public", "js", "a3_customers.js")).read()

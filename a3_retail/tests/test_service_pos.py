@@ -1,6 +1,6 @@
 # Copyright (c) 2026, Acube Innovations Pvt Ltd and contributors
 # See license.txt
-"""The service counter in the branch app (`/branch/service`)."""
+"""The service counter in the branch app (`/retail/service`)."""
 
 import os
 
@@ -34,7 +34,7 @@ def luhn(base14: str) -> str:
 
 class TestServicePage(FrappeTestCase):
 	def test_the_page_is_a_standalone_document(self):
-		folder = frappe.get_app_path("a3_retail", "www", "branch")
+		folder = frappe.get_app_path("a3_retail", "www", "retail")
 		for name in ("service.html", "service.py"):
 			self.assertTrue(os.path.exists(os.path.join(folder, name)), name)
 
@@ -45,7 +45,7 @@ class TestServicePage(FrappeTestCase):
 
 	def test_the_three_steps_are_on_the_screen(self):
 		markup = open(
-			os.path.join(frappe.get_app_path("a3_retail", "www", "branch"), "service.html")
+			os.path.join(frappe.get_app_path("a3_retail", "www", "retail"), "service.html")
 		).read()
 		for step in ("Service Booking", "Invoice", "Delivery"):
 			self.assertIn(step, markup, step)
@@ -58,7 +58,7 @@ class TestServicePage(FrappeTestCase):
 	def test_the_page_carries_its_assets_with_a_version(self):
 		"""A counter must not be left looking at a stale stylesheet."""
 		markup = open(
-			os.path.join(frappe.get_app_path("a3_retail", "www", "branch"), "service.html")
+			os.path.join(frappe.get_app_path("a3_retail", "www", "retail"), "service.html")
 		).read()
 		self.assertIn("a3_branch.css?v={{ asset_v }}", markup)
 
@@ -96,9 +96,9 @@ class TestServicePage(FrappeTestCase):
 
 	def test_the_counter_is_named_service_pos_in_the_sidebar(self):
 		sidebar = open(
-			os.path.join(frappe.get_app_path("a3_retail", "www", "branch"), "_sidebar.html")
+			os.path.join(frappe.get_app_path("a3_retail", "www", "retail"), "_sidebar.html")
 		).read()
-		self.assertIn('("services", "Service POS", "/branch/service"', sidebar)
+		self.assertIn('("services", "Service POS", "/retail/service"', sidebar)
 
 
 class TestServiceAccess(FrappeTestCase):

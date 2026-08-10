@@ -11,7 +11,7 @@ import frappe
 
 # Roles from scope 13.2. "System Manager" ships with Frappe and is not recreated.
 # `desk_access` decides where a role's holders work. Shop-floor roles are 0 so
-# their accounts become Website Users and the branch app at /branch is the only
+# their accounts become Website Users and the branch app at /retail is the only
 # way in; head-office roles keep the desk (scope 13.2, branch portal).
 A3_ROLES = [
 	{"role_name": "A3 Retail Admin", "desk_access": 1},

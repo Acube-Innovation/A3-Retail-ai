@@ -83,7 +83,7 @@ window.INVOICE = (function () {
 			$("body").innerHTML = `<section class="svc-panel inv-error">
 				<h2>Could not open ${esc(state.name)}</h2>
 				<p>${esc(error.message)}</p>
-				<a class="btn btn-outline" href="/branch/bills">← Back to Bills</a></section>`;
+				<a class="btn btn-outline" href="/retail/bills">← Back to Bills</a></section>`;
 		}
 	}
 
@@ -98,7 +98,7 @@ window.INVOICE = (function () {
 		$("top-actions").insertAdjacentHTML("afterbegin", `
 			<button class="btn btn-primary btn-icon" id="print-top">${icon("print")} Print Invoice</button>
 			${data.editable
-				? `<a class="btn btn-outline btn-icon" href="/branch/sales?invoice=${
+				? `<a class="btn btn-outline btn-icon" href="/retail/sales?invoice=${
 					encodeURIComponent(data.name)}">${icon("pencil")} Edit</a>` : ""}`);
 		$("print-top").addEventListener("click", print);
 
@@ -206,10 +206,10 @@ window.INVOICE = (function () {
 			</section>
 
 			<section class="inv-actions">
-				<a class="btn btn-quiet btn-icon" href="/branch/bills">${icon("back")} Back to Bills</a>
+				<a class="btn btn-quiet btn-icon" href="/retail/bills">${icon("back")} Back to Bills</a>
 				<button class="btn btn-primary btn-icon" id="print-bottom">${icon("print")} Print Invoice</button>
 				${data.editable
-					? `<a class="btn btn-outline btn-icon" href="/branch/sales?invoice=${
+					? `<a class="btn btn-outline btn-icon" href="/retail/sales?invoice=${
 						encodeURIComponent(data.name)}">${icon("pencil")} Edit Invoice</a>` : ""}
 				${totals.balance > 0 && data.status === "Submitted"
 					? `<button class="btn btn-orange btn-icon" id="collect">${icon("cash")} Collect Payment</button>`
@@ -338,7 +338,7 @@ window.INVOICE = (function () {
 		state.company = options.company;
 
 		if (!state.name) {
-			window.location = "/branch/bills";
+			window.location = "/retail/bills";
 			return;
 		}
 

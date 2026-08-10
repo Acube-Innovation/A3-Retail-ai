@@ -13,7 +13,7 @@
 <body class="pos-body">
 <div class="app">
 
-	{% include "a3_retail/www/branch/_sidebar.html" %}
+	{% include "a3_retail/www/retail/_sidebar.html" %}
 
 	<div class="main">
 		<header class="topbar">
@@ -29,19 +29,19 @@
 			</div>
 			<div class="topbar-right">
 				<span class="clock" id="clock">{{ today }}</span>
-				<a class="btn btn-quiet" href="/branch/dashboard">{{ _("Dashboard") }}</a>
+				<a class="btn btn-quiet" href="/retail/dashboard">{{ _("Dashboard") }}</a>
 				<div class="who">
 					<div class="name">{{ me.employee_name }}</div>
 					<div class="role">{{ me.designation or "" }}</div>
 				</div>
 				<div class="avatar">{{ initials }}</div>
-				<a class="btn btn-quiet" href="/branch/logout">{{ _("Sign out") }}</a>
+				<a class="btn btn-quiet" href="/retail/logout">{{ _("Sign out") }}</a>
 			</div>
 		</header>
 
 		<div class="svc-actions">
 			<div class="pos-search-box">
-				{% set icon = "search" %}{% include "a3_retail/www/branch/_icons.html" %}
+				{% set icon = "search" %}{% include "a3_retail/www/retail/_icons.html" %}
 				<input id="cust-q" autocomplete="off"
 				       placeholder="{{ _('Search customer by name, phone or email…') }}">
 				<ul class="cust-results" id="cust-results" hidden></ul>
@@ -50,7 +50,7 @@
 
 			<div class="pos-search-box scan-box">
 				<input id="scan" autocomplete="off" placeholder="{{ _('Scan Device IMEI / Barcode') }}">
-				{% set icon = "barcode" %}{% include "a3_retail/www/branch/_icons.html" %}
+				{% set icon = "barcode" %}{% include "a3_retail/www/retail/_icons.html" %}
 			</div>
 
 			<div class="seg" id="lead-source">
@@ -58,7 +58,7 @@
 				                                   ("Phone Call", "Phone Booking", "phone"),
 				                                   ("Website", "Online Booking", "globe")] %}
 				<button class="seg-btn {{ 'is-active' if loop.first else '' }}" data-value="{{ value }}">
-					{% set icon = icon_name %}{% include "a3_retail/www/branch/_icons.html" %}
+					{% set icon = icon_name %}{% include "a3_retail/www/retail/_icons.html" %}
 					{{ _(label) }}</button>
 				{% endfor %}
 			</div>
@@ -80,7 +80,7 @@
 						<div class="svc-customer">
 							<div class="pos-cust-phone">
 								<div class="input-icon">
-									{% set icon = "phone" %}{% include "a3_retail/www/branch/_icons.html" %}
+									{% set icon = "phone" %}{% include "a3_retail/www/retail/_icons.html" %}
 									<input id="mobile" inputmode="numeric" maxlength="10"
 									       placeholder="{{ _('+91 00000 00000') }}">
 								</div>
@@ -125,7 +125,7 @@
 								<button class="type {{ 'is-active' if loop.first else '' }}"
 								        data-key="{{ key }}">
 									{% set icon = icon_name %}
-									{% include "a3_retail/www/branch/_icons.html" %}
+									{% include "a3_retail/www/retail/_icons.html" %}
 									<span>{{ _(label) }}</span></button>
 								{% endfor %}
 							</div>
@@ -213,7 +213,7 @@
 							("photo", "Add Note / Photo", "Issue Images", "camera")] %}
 						<button class="quick" data-action="{{ key }}">
 							<span class="quick-ico">
-								{% set icon = icon_name %}{% include "a3_retail/www/branch/_icons.html" %}</span>
+								{% set icon = icon_name %}{% include "a3_retail/www/retail/_icons.html" %}</span>
 							<span class="quick-text">
 								<span class="quick-label">{{ _(label) }}</span>
 								{% if sub %}<span class="quick-key">{{ _(sub) }}</span>{% endif %}
@@ -281,16 +281,16 @@
 					<h2>{{ _("Customer Communication") }}</h2>
 					<div class="comm-row">
 						<button class="comm wa" data-channel="WhatsApp">
-							{% set icon = "whatsapp" %}{% include "a3_retail/www/branch/_icons.html" %}
+							{% set icon = "whatsapp" %}{% include "a3_retail/www/retail/_icons.html" %}
 							{{ _("Send WhatsApp") }}</button>
 						<button class="comm sms" data-channel="SMS">
-							{% set icon = "chat" %}{% include "a3_retail/www/branch/_icons.html" %}
+							{% set icon = "chat" %}{% include "a3_retail/www/retail/_icons.html" %}
 							{{ _("Send SMS") }}</button>
 						<button class="comm mail" data-channel="Email">
-							{% set icon = "mail" %}{% include "a3_retail/www/branch/_icons.html" %}
+							{% set icon = "mail" %}{% include "a3_retail/www/retail/_icons.html" %}
 							{{ _("Send Email") }}</button>
 						<button class="comm" data-channel="Print">
-							{% set icon = "print" %}{% include "a3_retail/www/branch/_icons.html" %}
+							{% set icon = "print" %}{% include "a3_retail/www/retail/_icons.html" %}
 							{{ _("Print Estimate") }}</button>
 					</div>
 				</section>

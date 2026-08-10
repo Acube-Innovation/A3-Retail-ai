@@ -1,6 +1,6 @@
 # Copyright (c) 2026, Acube Innovations Pvt Ltd and contributors
 # For license information, please see license.txt
-"""Bills — invoice management for the branch app (`/branch/bills`).
+"""Bills — invoice management for the branch app (`/retail/bills`).
 
 Reads the invoices the counters wrote. It creates nothing of its own: the sales
 counter owns the Sales Invoice, the service counter owns the repair, and the

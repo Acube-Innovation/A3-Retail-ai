@@ -1,6 +1,6 @@
 # Copyright (c) 2026, Acube Innovations Pvt Ltd and contributors
 # See license.txt
-"""Branch Stock Control (`/branch/stock`)."""
+"""Branch Stock Control (`/retail/stock`)."""
 
 import os
 
@@ -18,7 +18,7 @@ def user_for(employee_name: str) -> str | None:
 
 class TestStockPage(FrappeTestCase):
 	def test_the_page_is_one_standalone_document(self):
-		folder = frappe.get_app_path("a3_retail", "www", "branch")
+		folder = frappe.get_app_path("a3_retail", "www", "retail")
 		for name in ("stock.html", "stock.py"):
 			self.assertTrue(os.path.exists(os.path.join(folder, name)), name)
 
@@ -30,7 +30,7 @@ class TestStockPage(FrappeTestCase):
 
 	def test_every_operation_is_on_the_one_screen(self):
 		markup = open(
-			os.path.join(frappe.get_app_path("a3_retail", "www", "branch"), "stock.html")
+			os.path.join(frappe.get_app_path("a3_retail", "www", "retail"), "stock.html")
 		).read()
 		for piece in ("Request Stock", "Request Procurement", "Move Stock", "Receive Stock",
 		              "Stock Adjustment", "Live Stock", "Stock Alerts", "Recent Activity"):
@@ -41,9 +41,9 @@ class TestStockPage(FrappeTestCase):
 
 	def test_stock_is_a_live_entry_in_the_sidebar(self):
 		sidebar = open(
-			os.path.join(frappe.get_app_path("a3_retail", "www", "branch"), "_sidebar.html")
+			os.path.join(frappe.get_app_path("a3_retail", "www", "retail"), "_sidebar.html")
 		).read()
-		self.assertIn('("stock", "Stock", "/branch/stock"', sidebar)
+		self.assertIn('("stock", "Stock", "/retail/stock"', sidebar)
 
 	def test_the_page_prints_through_the_application(self):
 		"""No browser-only print layout for stock documents."""

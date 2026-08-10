@@ -1,6 +1,6 @@
 # Copyright (c) 2026, Acube Innovations Pvt Ltd and contributors
 # See license.txt
-"""Spare parts and accessories (`/branch/parts`)."""
+"""Spare parts and accessories (`/retail/parts`)."""
 
 import os
 
@@ -18,7 +18,7 @@ def user_for(employee_name: str) -> str | None:
 
 class TestPartsPage(FrappeTestCase):
 	def test_the_page_is_one_standalone_document(self):
-		folder = frappe.get_app_path("a3_retail", "www", "branch")
+		folder = frappe.get_app_path("a3_retail", "www", "retail")
 		for name in ("parts.html", "parts.py"):
 			self.assertTrue(os.path.exists(os.path.join(folder, name)), name)
 
@@ -30,7 +30,7 @@ class TestPartsPage(FrappeTestCase):
 
 	def test_both_shelves_share_the_one_page(self):
 		markup = open(
-			os.path.join(frappe.get_app_path("a3_retail", "www", "branch"), "parts.html")
+			os.path.join(frappe.get_app_path("a3_retail", "www", "retail"), "parts.html")
 		).read()
 		self.assertIn('data-kind="parts"', markup)
 		self.assertIn('data-kind="accessories"', markup)
@@ -39,10 +39,10 @@ class TestPartsPage(FrappeTestCase):
 
 	def test_both_sidebar_entries_land_here(self):
 		sidebar = open(
-			os.path.join(frappe.get_app_path("a3_retail", "www", "branch"), "_sidebar.html")
+			os.path.join(frappe.get_app_path("a3_retail", "www", "retail"), "_sidebar.html")
 		).read()
-		self.assertIn('("spares", "Spare Parts", "/branch/parts"', sidebar)
-		self.assertIn('("accessories", "Accessories", "/branch/parts?kind=accessories"', sidebar)
+		self.assertIn('("spares", "Spare Parts", "/retail/parts"', sidebar)
+		self.assertIn('("accessories", "Accessories", "/retail/parts?kind=accessories"', sidebar)
 
 
 class TestPartsAccess(FrappeTestCase):
@@ -201,7 +201,7 @@ class TestPartsActions(FrappeTestCase):
 
 	def test_selling_one_hands_it_to_the_counter(self):
 		url = parts.sell_url("ACC-TGL-A55")
-		self.assertTrue(url.startswith("/branch/sales?item="))
+		self.assertTrue(url.startswith("/retail/sales?item="))
 
 	def test_the_counter_picks_an_item_up_from_that_link(self):
 		body = open(frappe.get_app_path("a3_retail", "public", "js", "a3_pos.js")).read()

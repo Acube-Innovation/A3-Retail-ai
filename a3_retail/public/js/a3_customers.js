@@ -377,10 +377,10 @@ window.CUST = (function () {
 	function act(action) {
 		const person = state.profile;
 		if (action === "booking") {
-			return window.open("/branch/service?customer=" + encodeURIComponent(person.name), "_self");
+			return window.open("/retail/service?customer=" + encodeURIComponent(person.name), "_self");
 		}
 		if (action === "invoice") {
-			return window.open("/branch/sales?customer=" + encodeURIComponent(person.name), "_self");
+			return window.open("/retail/sales?customer=" + encodeURIComponent(person.name), "_self");
 		}
 		if (action === "payment") {
 			return toast("Take the payment on the bill it belongs to — open the invoice from the "

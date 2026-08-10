@@ -1,4 +1,4 @@
-"""Sign out of the branch app — /branch/logout.
+"""Sign out of the branch app — /retail/logout.
 
 A plain link, not a fetch: the shop floor should be able to sign out even if
 JavaScript never loaded.
@@ -12,7 +12,7 @@ import frappe
 
 no_cache = 1
 
-DEFAULT_DESTINATION = "/branch?bye=1"
+DEFAULT_DESTINATION = "/retail?bye=1"
 
 
 def get_context(context):

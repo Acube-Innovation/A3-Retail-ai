@@ -13,7 +13,7 @@
 <body class="pos-body">
 <div class="app">
 
-	{% include "a3_retail/www/branch/_sidebar.html" %}
+	{% include "a3_retail/www/retail/_sidebar.html" %}
 
 	<div class="main">
 		<header class="topbar">
@@ -22,13 +22,13 @@
 				<span class="chip">{{ me.branch }}</span>
 			</div>
 			<div class="topbar-right">
-				<a class="btn btn-quiet" href="/branch/dashboard">{{ _("Dashboard") }}</a>
+				<a class="btn btn-quiet" href="/retail/dashboard">{{ _("Dashboard") }}</a>
 				<div class="who">
 					<div class="name">{{ me.employee_name }}</div>
 					<div class="role">{{ me.designation or "" }}</div>
 				</div>
 				<div class="avatar">{{ initials }}</div>
-				<a class="btn btn-quiet" href="/branch/logout">{{ _("Sign out") }}</a>
+				<a class="btn btn-quiet" href="/retail/logout">{{ _("Sign out") }}</a>
 			</div>
 		</header>
 
@@ -38,7 +38,7 @@
 
 				<div class="pos-search">
 					<div class="pos-search-box">
-						{% set icon = "search" %}{% include "a3_retail/www/branch/_icons.html" %}
+						{% set icon = "search" %}{% include "a3_retail/www/retail/_icons.html" %}
 						<input id="q" type="search" autocomplete="off" autofocus
 						       placeholder="{{ _('Search by name, IMEI, barcode or scan…') }}">
 					</div>
@@ -62,9 +62,9 @@
 					{% endif %}
 					<div class="pos-view">
 						<button class="view is-active" data-view="grid" title="{{ _('Grid') }}">
-							{% set icon = "tiles" %}{% include "a3_retail/www/branch/_icons.html" %}</button>
+							{% set icon = "tiles" %}{% include "a3_retail/www/retail/_icons.html" %}</button>
 						<button class="view" data-view="list" title="{{ _('List') }}">
-							{% set icon = "list" %}{% include "a3_retail/www/branch/_icons.html" %}</button>
+							{% set icon = "list" %}{% include "a3_retail/www/retail/_icons.html" %}</button>
 					</div>
 				</div>
 
@@ -85,7 +85,7 @@
 
 					<div class="pos-cust-phone">
 						<div class="input-icon">
-							{% set icon = "phone" %}{% include "a3_retail/www/branch/_icons.html" %}
+							{% set icon = "phone" %}{% include "a3_retail/www/retail/_icons.html" %}
 							<input id="mobile" inputmode="numeric" maxlength="10"
 							       placeholder="{{ _('+91 00000 00000') }}">
 						</div>
@@ -122,7 +122,7 @@
 							("price", "Price Check", "F8", "price")] %}
 						<button class="quick" data-action="{{ key }}">
 							<span class="quick-ico">
-								{% set icon = icon_name %}{% include "a3_retail/www/branch/_icons.html" %}</span>
+								{% set icon = icon_name %}{% include "a3_retail/www/retail/_icons.html" %}</span>
 							<span class="quick-text">
 								<span class="quick-label">{{ _(label) }}</span>
 								<span class="quick-key">{{ shortcut }}</span>
@@ -140,7 +140,7 @@
 					<div class="bill-head-right">
 						<span class="bill-no" id="bill-no">{{ _("New") }}</span>
 						<button class="icon-btn" id="clear-cart" title="{{ _('Clear cart') }}">
-							{% set icon = "trash" %}{% include "a3_retail/www/branch/_icons.html" %}</button>
+							{% set icon = "trash" %}{% include "a3_retail/www/retail/_icons.html" %}</button>
 					</div>
 				</div>
 
@@ -179,7 +179,7 @@
 						{% for tile, icon_name in [("Cash", "cash"), ("Card", "card"), ("UPI", "upi"),
 						                           ("Wallet", "wallet"), ("EMI", "emi"), ("Other", "other")] %}
 						<button class="pay {{ 'is-active' if tile == 'Cash' else '' }}" data-mode="{{ tile }}">
-							{% set icon = icon_name %}{% include "a3_retail/www/branch/_icons.html" %}
+							{% set icon = icon_name %}{% include "a3_retail/www/retail/_icons.html" %}
 							<span>{{ tile }}</span>
 						</button>
 						{% endfor %}

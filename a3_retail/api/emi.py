@@ -1,6 +1,6 @@
 # Copyright (c) 2026, Acube Innovations Pvt Ltd and contributors
 # For license information, please see license.txt
-"""EMI Management — the branch's financing desk (`/branch/emi`).
+"""EMI Management — the branch's financing desk (`/retail/emi`).
 
 One workspace over machinery that already exists. The EMI Application, EMI
 Scheme, Finance Partner and Financier Settlement doctypes own the rules, the
@@ -931,7 +931,7 @@ def application(name: str) -> dict:
 		"can": _can(doc),
 		"print_url": print_url(doc.name),
 		"checklist_url": print_url(doc.name, "EMI Document Checklist"),
-		"invoice_url": f"/branch/invoice?name={frappe.utils.quoted(doc.sales_invoice)}"
+		"invoice_url": f"/retail/invoice?name={frappe.utils.quoted(doc.sales_invoice)}"
 		if doc.sales_invoice else None,
 	}
 

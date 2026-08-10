@@ -1,6 +1,6 @@
 # Copyright (c) 2026, Acube Innovations Pvt Ltd and contributors
 # For license information, please see license.txt
-"""Branch staff portal API (`/branch`).
+"""Branch staff portal API (`/retail`).
 
 Everything here answers for exactly one person: the employee behind the logged-in
 Website User, and only for their own branch. `_me()` is the gate — it refuses a

@@ -14,7 +14,7 @@
 
 	<!-- ---------------------------------------------------------- top bar -->
 	<header class="lp-top">
-		<a class="lp-brand" href="/branch">{% include "a3_retail/www/branch/_mark.html" %}</a>
+		<a class="lp-brand" href="/retail">{% include "a3_retail/www/retail/_mark.html" %}</a>
 
 		<form class="lp-search" method="get" action="/track-service">
 			<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
@@ -26,11 +26,11 @@
 		<div class="lp-account">
 			{% if signed_in %}
 				<span class="lp-user">{{ employee_name }}<small>{{ branch }}</small></span>
-				<a class="btn btn-primary" href="/branch/dashboard">{{ _("Open dashboard") }}</a>
-				<a class="lp-quiet" href="/branch/logout">{{ _("Sign out") }}</a>
+				<a class="btn btn-primary" href="/retail/dashboard">{{ _("Open dashboard") }}</a>
+				<a class="lp-quiet" href="/retail/logout">{{ _("Sign out") }}</a>
 			{% else %}
 				<a class="lp-quiet" href="/stores">{{ _("Stores") }}</a>
-				<a class="btn btn-primary" href="/branch/login">{{ _("Sign in") }}</a>
+				<a class="btn btn-primary" href="/retail/login">{{ _("Sign in") }}</a>
 			{% endif %}
 		</div>
 	</header>
@@ -38,7 +38,7 @@
 	<!-- ------------------------------------------------------- nav ribbon -->
 	<nav class="lp-nav">
 		<div class="lp-nav-links">
-			<a class="is-active" href="/branch">{{ _("Home") }}</a>
+			<a class="is-active" href="/retail">{{ _("Home") }}</a>
 			<a href="#what">{{ _("What it does") }}</a>
 			<a href="#roles">{{ _("For your team") }}</a>
 			<a href="#customers">{{ _("For customers") }}</a>
@@ -58,9 +58,9 @@
 			<p>{{ _("Repairs, sales, stock and the people who handle them — running on {0}, without anyone needing the back-office system.").format(company) }}</p>
 			<div class="lp-hero-cta">
 				{% if signed_in %}
-					<a class="btn btn-primary btn-lg" href="/branch/dashboard">{{ _("Open my dashboard") }}</a>
+					<a class="btn btn-primary btn-lg" href="/retail/dashboard">{{ _("Open my dashboard") }}</a>
 				{% else %}
-					<a class="btn btn-primary btn-lg" href="/branch/login">{{ _("Sign in") }}</a>
+					<a class="btn btn-primary btn-lg" href="/retail/login">{{ _("Sign in") }}</a>
 				{% endif %}
 				<a class="btn btn-quiet btn-lg" href="#what">{{ _("See what it does") }}</a>
 			</div>
@@ -92,7 +92,7 @@
 	<section class="lp-section" id="what">
 		<div class="lp-section-head">
 			<h2>{{ _("What the branch app does") }}</h2>
-			<a href="/branch/login">{{ _("Sign in to use it") }} →</a>
+			<a href="/retail/login">{{ _("Sign in to use it") }} →</a>
 		</div>
 
 		<div class="lp-cards">
@@ -116,7 +116,7 @@
 				<span class="lp-card-label">{{ _("Counter ready") }}</span>
 				<h3>{{ _("Works on the shop phone") }}</h3>
 				<p>{{ _("One column, big targets, nothing on screen that belongs to another branch.") }}</p>
-				<a class="lp-card-link" href="/branch/login">{{ _("Sign in") }}</a>
+				<a class="lp-card-link" href="/retail/login">{{ _("Sign in") }}</a>
 				<div class="lp-card-art"><span class="phone"></span></div>
 			</article>
 		</div>
@@ -170,7 +170,7 @@
 
 	<footer class="lp-foot">
 		<span>{{ company }} · {{ _("Branch app") }}</span>
-		<span><a href="/branch/logout?to=/login">{{ _("Head office system") }}</a></span>
+		<span><a href="/retail/logout?to=/login">{{ _("Head office system") }}</a></span>
 	</footer>
 </div>
 </body>

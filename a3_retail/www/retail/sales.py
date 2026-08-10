@@ -1,4 +1,4 @@
-"""Counter billing — /branch/sales.
+"""Counter billing — /retail/sales.
 
 The shell is server-rendered; everything after that is the POS API. Guarded the
 same way as the dashboard: a session, an Employee record and a branch.
@@ -10,7 +10,7 @@ no_cache = 1
 
 
 def get_context(context):
-	from a3_retail.www.branch import asset_version
+	from a3_retail.www.retail import asset_version
 
 	context.asset_v = asset_version()
 	from a3_retail.api.pos import _profile, item_groups
@@ -20,7 +20,7 @@ def get_context(context):
 	context.no_cache = 1
 
 	if frappe.session.user == "Guest" or not current_employee():
-		frappe.local.flags.redirect_location = "/branch/login"
+		frappe.local.flags.redirect_location = "/retail/login"
 		raise frappe.Redirect
 
 	context.me = session_context()

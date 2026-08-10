@@ -39,7 +39,7 @@ A3_MODULES = [
 # ---------------------------------------------------------------------------
 app_include_css = "/assets/a3_retail/css/a3_retail.css"
 # Only the customer portal pages extend ERPNext's web template. The branch app
-# under /branch is a standalone document and loads its own assets.
+# under /retail is a standalone document and loads its own assets.
 web_include_css = "/assets/a3_retail/css/a3_portal.css"
 app_include_js = [
 	"/assets/a3_retail/js/a3_retail.js",

@@ -172,7 +172,7 @@ window.REPORTS = (function () {
 		$("export").hidden = false;
 		$("title").textContent = name;
 		$("subtitle").textContent = state.definition.description || "";
-		history.replaceState({}, "", "/branch/reports?report=" + encodeURIComponent(name));
+		history.replaceState({}, "", "/retail/reports?report=" + encodeURIComponent(name));
 
 		paintFilters();
 		runReport();
@@ -187,7 +187,7 @@ window.REPORTS = (function () {
 		$("export").hidden = true;
 		$("title").textContent = "Reports";
 		$("subtitle").textContent = "Business insights and operational reports";
-		history.replaceState({}, "", "/branch/reports");
+		history.replaceState({}, "", "/retail/reports");
 		paintList();
 	}
 
