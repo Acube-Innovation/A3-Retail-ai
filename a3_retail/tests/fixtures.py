@@ -8,7 +8,7 @@ the records it needs here instead of pulling in ERPNext's `_Test *` records
 """
 
 import frappe
-from frappe.utils import flt
+from frappe.utils import flt, getdate
 
 from a3_retail.setup.accounts import ensure_branch_cost_centers
 from a3_retail.setup.company import COMPANY_NAME
@@ -230,7 +230,10 @@ def ensure_salary_structure(employee: str, base: float = 25000) -> str:
 		doc.employee = employee
 		doc.salary_structure = name
 		doc.company = company
-		doc.from_date = "2024-01-01"
+		# Never before the person joined — ERPNext refuses that, and whichever
+		# employee this fixture is handed may have started at any date.
+		joined = frappe.db.get_value("Employee", employee, "date_of_joining")
+		doc.from_date = max(getdate(joined or "2024-01-01"), getdate("2024-01-01"))
 		doc.base = base
 		doc.flags.ignore_permissions = True
 		doc.flags.ignore_mandatory = True
