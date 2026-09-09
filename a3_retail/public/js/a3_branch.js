@@ -156,5 +156,62 @@ window.A3 = (function () {
 		return box;
 	}
 
-	return { call, login, logout, money, shortTime, csrfToken, plain, toast };
+	/**
+	 * Branch picker.
+	 *
+	 * Shop-floor staff work at one counter and see no picker at all. Head-office
+	 * roles are branch-agnostic, so for them the topbar branch name becomes a
+	 * selector. Injected here rather than into each of the ten page templates,
+	 * which all render the same `.topbar-branch` block.
+	 */
+	async function mountBranchPicker() {
+		const host = document.querySelector(".topbar-branch");
+		if (!host || host.querySelector(".branch-picker")) return;
+
+		let ctx;
+		try {
+			ctx = await call("a3_retail.api.staff.session_context");
+		} catch (error) {
+			return; // the page already renders a branch name; leave it alone
+		}
+		if (!ctx || !ctx.can_switch_branch || !Array.isArray(ctx.branches)) return;
+
+		const heading = host.querySelector("h1");
+		const select = document.createElement("select");
+		select.className = "branch-picker";
+		select.setAttribute("aria-label", "Switch branch");
+		ctx.branches.forEach(function (name) {
+			const option = document.createElement("option");
+			option.value = name;
+			option.textContent = name;
+			if (name === ctx.branch) option.selected = true;
+			select.appendChild(option);
+		});
+
+		select.addEventListener("change", async function () {
+			const target = select.value;
+			select.disabled = true;
+			try {
+				await call("a3_retail.api.staff.switch_branch", { branch: target });
+				window.location.reload();
+			} catch (error) {
+				select.disabled = false;
+				select.value = ctx.branch;
+				toast(error.message || "Could not switch branch", "error", error.title);
+			}
+		});
+
+		if (heading) {
+			heading.replaceWith(select);
+		} else {
+			host.prepend(select);
+		}
+	}
+
+	document.addEventListener("DOMContentLoaded", mountBranchPicker);
+
+	return {
+		call, login, logout, money, shortTime, csrfToken, plain, toast,
+		mountBranchPicker,
+	};
 })();

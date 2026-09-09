@@ -159,6 +159,19 @@ a:hover { text-decoration: underline; }
 .topbar-branch { display: flex; align-items: center; gap: 10px; }
 .topbar-branch h1 { font-size: 17px; font-weight: 700; margin: 0; letter-spacing: -.01em; }
 .topbar-branch .chip { font-size: 11px; }
+/* Replaces the branch heading for staff who may work at more than one counter,
+   so it has to carry the same weight as the h1 it stands in for. */
+.topbar-branch .branch-picker {
+	font: inherit; font-size: 17px; font-weight: 700; letter-spacing: -.01em;
+	color: inherit; background: transparent; border: 1px solid transparent;
+	border-radius: 8px; padding: 2px 26px 2px 8px; margin-left: -8px;
+	cursor: pointer; appearance: none;
+	background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+	background-repeat: no-repeat; background-position: right 6px center;
+}
+.topbar-branch .branch-picker:hover { border-color: var(--line, #e5e7eb); background-color: rgba(0,0,0,.03); }
+.topbar-branch .branch-picker:focus-visible { outline: 2px solid var(--brand, #f59e0b); outline-offset: 2px; }
+.topbar-branch .branch-picker:disabled { opacity: .55; cursor: progress; }
 .topbar-right { display: flex; align-items: center; gap: 12px; }
 .who { text-align: right; line-height: 1.25; }
 .who .name { font-size: 13.5px; font-weight: 600; }

@@ -6,6 +6,7 @@ has to work on whatever browser is on the counter.
 """
 
 import frappe
+import frappe.sessions
 from frappe import _
 from frappe.utils import cint
 
@@ -27,6 +28,15 @@ def get_context(context):
 	context.home_page = HOME_PAGE
 	context.error = None
 	context.username = ""
+
+	# Frappe enforces CSRF on POST for any session that already holds a token —
+	# which is every browser with /app open. Guests have no token and are exempt,
+	# so without this the form works logged out and 400s logged in.
+	# Frappe rejects any POST that does not echo the session's CSRF token, and a
+	# browser with /app open always has one — which is why this form worked when
+	# signed out and returned 400 when signed in. `get_csrf_token()` is the same
+	# accessor the desk uses, and mints one when the session has none yet.
+	context.csrf_token = frappe.sessions.get_csrf_token()
 
 	# Already signed in as branch staff? Go straight in.
 	if frappe.session.user != "Guest" and current_employee():
