@@ -45,6 +45,10 @@
 				<button class="btn btn-orange" data-do="move">{{ _("Move Stock") }}</button>
 				<button class="btn btn-save" data-do="receive">{{ _("Receive Stock") }}</button>
 				<button class="btn btn-quiet" data-do="adjust">{{ _("Stock Adjustment") }}</button>
+				<!-- Shown only to roles that hold Create on Item; the item master is
+				     shared by every branch. -->
+				<button class="btn btn-quiet" data-do="new-item" id="btn-new-item" hidden>
+					+ {{ _("New Item") }}</button>
 			</section>
 
 			<section class="ctiles stk-kpis" id="kpis"></section>

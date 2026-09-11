@@ -12,7 +12,14 @@ window.POS = (function () {
 	const state = {
 		branch: "", groups: [], group: "", view: "grid",
 		items: [], cart: [], customer: null, mode: "Cash", editing: null,
+		// Split tender: the customer settles one bill in more than one form.
+		// `splits` is only read while `split` is on, so the ordinary one-tile
+		// path is untouched.
+		split: false, splits: [],
 	};
+	// The tiles a counter can split across. EMI is absent on purpose — it is a
+	// loan somebody else approves, not money taken at the till.
+	const SPLIT_MODES = ["Cash", "UPI", "Card", "Wallet", "Other"];
 	const HOLD_KEY = "a3_pos_holds";
 	const $ = (id) => document.getElementById(id);
 
@@ -360,7 +367,130 @@ window.POS = (function () {
 		const received = Number($("received").value) || 0;
 		const change = state.mode === "Cash" ? Math.max(received - sums.grand, 0) : 0;
 		$("change").textContent = money(change);
-		$("checkout").disabled = !state.cart.length || !state.customer;
+
+		const shortOnSplit = state.split ? paintSplit(sums.grand) : false;
+		$("checkout").disabled = !state.cart.length || !state.customer || shortOnSplit;
+	}
+
+	// --------------------------------------------------------------- split
+	/** Draw the split lines and the running tally. Returns true while short. */
+	function paintSplit(payable) {
+		const host = $("split-lines");
+		if (host.childElementCount !== state.splits.length) {
+			host.textContent = "";
+			state.splits.forEach((line, index) => host.appendChild(splitRow(line, index)));
+		}
+
+		const entered = state.splits.reduce((sum, line) => sum + (Number(line.amount) || 0), 0);
+		const gap = payable - entered;
+		const cash = state.splits
+			.filter((line) => line.mode === "Cash")
+			.reduce((sum, line) => sum + (Number(line.amount) || 0), 0);
+
+		$("split-entered").textContent = money(entered);
+
+		// Over-tendering is only real money if a cash line covers it; anything
+		// else is a typing error, so it is named as one rather than as change.
+		let label = "Still to pay";
+		let value = Math.max(gap, 0);
+		let tone = "";
+		if (gap <= 0.5) {
+			const over = -gap;
+			if (over <= 0.5) {
+				label = "Balanced"; value = 0; tone = "is-ok";
+			} else if (over <= cash + 0.5) {
+				label = "Change from cash"; value = over; tone = "is-ok";
+			} else {
+				label = "Over the bill"; value = over; tone = "is-bad";
+			}
+		}
+		$("split-gap-label").textContent = label;
+		$("split-gap").textContent = money(value);
+		$("split-tally").className = "split-tally " + tone;
+
+		return gap > 0.5 || (-gap > cash + 0.5);
+	}
+
+	function splitRow(line, index) {
+		const row = document.createElement("div");
+		row.className = "split-line";
+
+		const select = document.createElement("select");
+		select.setAttribute("aria-label", "Payment type");
+		SPLIT_MODES.forEach((name) => {
+			const option = document.createElement("option");
+			option.value = name;
+			option.textContent = name;
+			if (name === line.mode) option.selected = true;
+			select.appendChild(option);
+		});
+		select.addEventListener("change", () => {
+			state.splits[index].mode = select.value;
+			paintTotals();
+		});
+
+		const wrap = document.createElement("div");
+		wrap.className = "input-rupee";
+		const rupee = document.createElement("span");
+		rupee.textContent = "₹";
+		const amount = document.createElement("input");
+		amount.type = "number";
+		amount.min = "0";
+		amount.step = "1";
+		amount.placeholder = "0";
+		amount.value = line.amount || "";
+		amount.setAttribute("aria-label", "Amount paid by " + line.mode);
+		amount.addEventListener("input", () => {
+			state.splits[index].amount = Number(amount.value) || 0;
+			paintTotals();
+		});
+		wrap.append(rupee, amount);
+
+		const remove = document.createElement("button");
+		remove.type = "button";
+		remove.className = "split-drop";
+		remove.textContent = "×";
+		remove.title = "Remove this payment";
+		remove.setAttribute("aria-label", "Remove this payment");
+		remove.disabled = state.splits.length <= 1;
+		remove.addEventListener("click", () => {
+			state.splits.splice(index, 1);
+			$("split-lines").textContent = "";
+			paintTotals();
+		});
+
+		row.append(select, wrap, remove);
+		return row;
+	}
+
+	/** Seed the split with the balance still owing on the next unused mode. */
+	function addSplitLine() {
+		const used = state.splits.map((line) => line.mode);
+		const next = SPLIT_MODES.find((name) => !used.includes(name)) || "Cash";
+		const payable = totals().grand;
+		const entered = state.splits.reduce((sum, line) => sum + (Number(line.amount) || 0), 0);
+		state.splits.push({ mode: next, amount: Math.max(payable - entered, 0) || 0 });
+		$("split-lines").textContent = "";
+		paintTotals();
+	}
+
+	function setSplit(on) {
+		state.split = on;
+		$("split-toggle").setAttribute("aria-pressed", String(on));
+		$("split-toggle").classList.toggle("is-active", on);
+		$("pay-single").hidden = on;
+		$("pay-split").hidden = !on;
+		$("pay-tiles").classList.toggle("is-muted", on);
+
+		if (on && !state.splits.length) {
+			// Open with the amount already on the bill against the selected tile,
+			// so the usual case is one keystroke: change it, and add the balance.
+			const payable = totals().grand;
+			const first = state.mode === "EMI" ? "Cash" : (state.mode || "Cash");
+			state.splits = [{ mode: first, amount: payable }];
+		}
+		$("split-lines").textContent = "";
+		paintTotals();
 	}
 
 	// ------------------------------------------------------------ customer
@@ -575,6 +705,13 @@ window.POS = (function () {
 					mode_of_payment: state.mode,
 					notes: $("notes").value.trim(),
 					received_amount: Number($("received").value) || 0,
+					// Only sent when the counter is actually splitting; the server
+					// falls back to the single tile otherwise.
+					payments: (!draft && state.split)
+						? state.splits
+							.filter((line) => (Number(line.amount) || 0) > 0)
+							.map((line) => ({ mode_of_payment: line.mode, amount: Number(line.amount) }))
+						: null,
 					discount_percent: $("discount-type").value === "%"
 						? Number($("discount-value").value) || 0 : 0,
 					discount_amount: $("discount-type").value === "₹"
@@ -600,8 +737,15 @@ window.POS = (function () {
 	}
 
 	function done(result, sums) {
+		// A split bill is worth spelling out on the confirmation — the counter has
+		// just taken money in two forms and may need to reconcile the drawer.
+		const tender = (result.payments && result.payments.length > 1)
+			? " · " + result.payments
+				.map((p) => `${p.mode_of_payment} ${money(p.amount)}`).join(" + ")
+			: "";
 		$("done-note").textContent = `${result.invoice} · ${result.customer_name} · `
-			+ money(result.grand_total) + (result.change ? ` · change ${money(result.change)}` : "");
+			+ money(result.grand_total) + tender
+			+ (result.change ? ` · change ${money(result.change)}` : "");
 		$("print-invoice").href = result.print_url;
 		$("done-modal").hidden = false;
 		$("bill-no").textContent = result.invoice;
@@ -613,6 +757,8 @@ window.POS = (function () {
 		$("notes").value = "";
 		$("received").value = "";
 		$("discount-value").value = "";
+		state.splits = [];
+		setSplit(false);
 		say("");
 		paintCart();
 	}
@@ -628,6 +774,18 @@ window.POS = (function () {
 			state.customer = bill.customer;
 			state.cart = (bill.items || []).map((line) => ({ ...line }));
 			state.mode = bill.mode_of_payment || "Cash";
+
+			// A bill that was split stays split when it is reopened, or the counter
+			// would silently re-tender the whole amount in one form.
+			if (bill.is_split && (bill.payments || []).length > 1) {
+				state.splits = bill.payments.map((p) => ({
+					mode: p.mode_of_payment, amount: p.amount,
+				}));
+				setSplit(true);
+			} else {
+				state.splits = [];
+				setSplit(false);
+			}
 
 			$("customer-name").value = bill.customer_name || "";
 			if (bill.mobile_no) $("mobile").value = bill.mobile_no;
@@ -787,6 +945,9 @@ window.POS = (function () {
 		$("discount-value").addEventListener("input", paintTotals);
 		$("received").addEventListener("input", paintTotals);
 		$("checkout").addEventListener("click", checkout);
+
+		$("split-toggle").addEventListener("click", () => setSplit(!state.split));
+		$("split-add").addEventListener("click", addSplitLine);
 
 		$("pay-tiles").addEventListener("click", (event) => {
 			const tile = event.target.closest(".pay");

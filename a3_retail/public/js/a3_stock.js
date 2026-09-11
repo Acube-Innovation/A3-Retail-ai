@@ -652,6 +652,89 @@ window.STOCK = (function () {
 			});
 	}
 
+	/** Add something new to the catalogue, and optionally what is already on the shelf. */
+	function openNewItem() {
+		const groups = (state.boot.item_groups || []).map((group) =>
+			`<option value="${esc(group)}">${esc(group)}</option>`).join("");
+		const brands = `<option value="">—</option>` + (state.boot.brands || []).map((brand) =>
+			`<option value="${esc(brand)}">${esc(brand)}</option>`).join("");
+		const uoms = (state.boot.uoms || ["Nos"]).map((uom) =>
+			`<option value="${esc(uom)}"${uom === "Nos" ? " selected" : ""}>${esc(uom)}</option>`)
+			.join("");
+		const warehouses = (state.boot.warehouses || []).map((warehouse) =>
+			`<option value="${esc(warehouse)}">${esc(warehouse)}</option>`).join("");
+
+		openWork("New item",
+			"Adds to the catalogue for every branch, so check it is not already there. "
+			+ "Leave the opening quantity at zero if the stock has not arrived yet.",
+			`<div class="field-grid">
+				<label class="field"><span>Item name</span>
+					<input id="w-name" placeholder="What it is called on the shelf"></label>
+				<label class="field"><span>Item code</span>
+					<input id="w-code" placeholder="Left blank, the name is used"></label>
+			</div>
+			<div class="field-grid three">
+				<label class="field"><span>Item group</span>
+					<select id="w-group">${groups}</select></label>
+				<label class="field"><span>Brand</span>
+					<select id="w-brand">${brands}</select></label>
+				<label class="field"><span>Unit</span>
+					<select id="w-uom">${uoms}</select></label>
+			</div>
+			<div class="field-grid three">
+				<label class="field"><span>HSN code</span>
+					<input id="w-hsn" placeholder="Ask accounts"></label>
+				<label class="field"><span>Selling price</span>
+					<input id="w-sell" type="number" min="0" step="1" placeholder="0"></label>
+				<label class="field"><span>Cost per piece</span>
+					<input id="w-cost" type="number" min="0" step="1" placeholder="0"></label>
+			</div>
+			<div class="field-grid three">
+				<label class="field"><span>Opening quantity</span>
+					<input id="w-qty" type="number" min="0" step="1" value="0"></label>
+				<label class="field"><span>Into warehouse</span>
+					<select id="w-warehouse">${warehouses}</select></label>
+				<label class="field"><span>Barcode</span>
+					<input id="w-barcode" placeholder="Optional"></label>
+			</div>
+			<label class="field check">
+				<input id="w-serial" type="checkbox">
+				<span>Track each piece by IMEI or serial number</span></label>`,
+			"Add item",
+			async () => {
+				const name = $("w-name").value.trim();
+				if (!name) throw new Error("Give the item a name.");
+				const qty = Number($("w-qty").value) || 0;
+				const cost = Number($("w-cost").value) || 0;
+				const sell = Number($("w-sell").value) || 0;
+				if (qty > 0 && !cost && !sell) {
+					throw new Error("Opening stock needs a cost per piece, so the stock has a value.");
+				}
+
+				const result = await A3.call("a3_retail.api.stock_control.create_item", {
+					payload: {
+						item_name: name,
+						item_code: $("w-code").value.trim(),
+						item_group: $("w-group").value,
+						brand: $("w-brand").value,
+						uom: $("w-uom").value,
+						hsn_code: $("w-hsn").value.trim(),
+						selling_rate: sell,
+						purchase_rate: cost,
+						opening_qty: qty,
+						warehouse: $("w-warehouse").value,
+						barcode: $("w-barcode").value.trim(),
+						has_serial: $("w-serial").checked ? 1 : 0,
+					},
+				});
+				toast(result.opening_qty
+					? `${result.item_code} added with ${result.opening_qty} in stock.`
+					: `${result.item_code} added to the catalogue.`, "ok");
+				loadStock();
+				loadKpis();
+			});
+	}
+
 	async function openReceive(request) {
 		const data = await A3.call("a3_retail.api.stock_control.tab", { name: "receipts" });
 		const row = (data.rows || []).find((entry) => entry.name === request);
@@ -759,6 +842,10 @@ window.STOCK = (function () {
 		$("warehouse").innerHTML += state.boot.warehouses.map((warehouse) =>
 			`<option value="${esc(warehouse)}">${esc(warehouse)}</option>`).join("");
 
+		// Adding to the shared item master is not every counter's job, so the
+		// button only appears for whoever the permission matrix allows.
+		$("btn-new-item").hidden = !(state.boot.can && state.boot.can.create_item);
+
 		$("q").addEventListener("input", () => {
 			clearTimeout(searchTimer);
 			searchTimer = setTimeout(() => {
@@ -799,6 +886,7 @@ window.STOCK = (function () {
 				if (what === "procure") return openProcure(null);
 				if (what === "move") return openMove();
 				if (what === "adjust") return openAdjust();
+				if (what === "new-item") return openNewItem();
 				if (what === "receive") {
 					state.tab = "receipts";
 					$("tabs").querySelectorAll(".tab").forEach((t) =>
