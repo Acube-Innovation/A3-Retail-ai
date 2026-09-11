@@ -15,7 +15,7 @@ the bill (scope 2.5, step 12 P1–P9).
 
 import frappe
 from frappe import _
-from frappe.utils import cint, flt, nowdate
+from frappe.utils import cint, flt, fmt_money, nowdate
 
 from a3_retail.api import require_permission
 from a3_retail.api.customer import normalize_mobile
@@ -467,23 +467,33 @@ def checkout(payload) -> dict:
 	invoice.flags.ignore_permissions = True
 	_save(invoice)
 
-	mode = resolve_mode(data.get("mode_of_payment") or "Cash")
-	received = flt(data.get("received_amount")) or flt(invoice.grand_total)
-
-	# Only a cash drawer takes more than the bill and hands change back. A card or
-	# a UPI collection is charged the bill exactly, so an over-typed "received"
-	# there would submit an over-paid invoice with a negative outstanding.
 	payable = flt(invoice.rounded_total) or flt(invoice.grand_total)
-	if frappe.db.get_value("Mode of Payment", mode, "type") == "Cash":
-		tendered = max(received, payable)
+
+	# A customer may settle one bill in more than one form — part UPI, the rest in
+	# cash. When the counter sends a split, it decides the rows; otherwise the
+	# single selected tile does, exactly as before.
+	if data.get("payments"):
+		rows = split_payment_rows(data["payments"], payable)
+		mode = rows[0]["mode_of_payment"] if len(rows) == 1 else None
 	else:
-		tendered = payable
+		mode = resolve_mode(data.get("mode_of_payment") or "Cash")
+		received = flt(data.get("received_amount")) or flt(invoice.grand_total)
+
+		# Only a cash drawer takes more than the bill and hands change back. A card
+		# or a UPI collection is charged the bill exactly, so an over-typed
+		# "received" there would submit an over-paid invoice with a negative
+		# outstanding.
+		if frappe.db.get_value("Mode of Payment", mode, "type") == "Cash":
+			tendered = max(received, payable)
+		else:
+			tendered = payable
+		rows = [{"mode_of_payment": mode, "amount": tendered}]
 
 	# Replace the payment table rather than appending to it: a POS Profile puts
 	# its own default row on the invoice, and adding ours next to it counts the
-	# money twice. One row, for what the customer actually handed over — ERPNext
+	# money twice. These rows are what the customer actually handed over — ERPNext
 	# works the change out from there.
-	invoice.set("payments", [{"mode_of_payment": mode, "amount": tendered}])
+	invoice.set("payments", rows)
 
 	_stamp_cost_center(invoice, cost_center)
 	invoice.save(ignore_permissions=True)
@@ -493,7 +503,9 @@ def checkout(payload) -> dict:
 		"invoice": invoice.name,
 		"grand_total": flt(invoice.grand_total),
 		"change": flt(invoice.get("change_amount")),
-		"mode_of_payment": mode,
+		"mode_of_payment": mode or _("Split"),
+		"payments": [{"mode_of_payment": r["mode_of_payment"], "amount": flt(r["amount"])}
+		             for r in rows],
 		"net_total": flt(invoice.net_total),
 		"tax": flt(invoice.total_taxes_and_charges),
 		"paid": flt(invoice.grand_total),
@@ -577,8 +589,14 @@ def load_invoice(invoice: str) -> dict:
 			"serials": serials,
 		})
 
+	# Hand back every payment row, not just the first — reopening a split bill
+	# with only one of its lines would quietly lose the rest.
+	paid = [{"mode_of_payment": row.mode_of_payment, "amount": flt(row.amount)}
+	        for row in (doc.get("payments") or []) if flt(row.amount) > 0]
 	payment = (doc.get("payments") or [None])[0]
 	return {
+		"payments": paid,
+		"is_split": len(paid) > 1,
 		"invoice": doc.name,
 		"customer": doc.customer,
 		"customer_name": doc.customer_name,
@@ -819,6 +837,85 @@ def payment_tiles() -> list[dict]:
 		{"tile": tile, "mode": resolve_mode(tile), "available": bool(resolve_mode(tile))}
 		for tile in PAYMENT_TILES
 	]
+
+
+# Rounding tolerance for a split. Anything under a rupee is the counter typing
+# round figures against a bill that carries paise, not a mistake worth blocking.
+SPLIT_TOLERANCE = 1.0
+
+
+def _strict_mode(label: str) -> str:
+	"""Resolve a split line's payment type, or refuse it.
+
+	`resolve_mode` ends by falling back to any enabled Mode of Payment, which is
+	safe for the six fixed tiles but not here: a split carries whatever label the
+	caller sent, and that fallback would book the money against an unrelated mode
+	rather than rejecting it.
+	"""
+	if frappe.db.exists("Mode of Payment", label):
+		return label
+	for candidate in PAYMENT_TILES.get(label, []):
+		if frappe.db.exists("Mode of Payment", candidate):
+			return candidate
+	frappe.throw(
+		_("This counter cannot take money as {0}.").format(label),
+		title=_("Payment type unavailable"),
+	)
+
+
+def split_payment_rows(splits, payable: float) -> list[dict]:
+	"""Turn split-tender lines from the counter into invoice payment rows.
+
+	The counter types what the customer actually handed over in each form. Two
+	rules decide whether that is acceptable, and both exist because ERPNext will
+	otherwise submit a bill nobody can settle later:
+
+	* it must cover the bill — a short split leaves an outstanding balance on a
+	  sale the customer has already walked away from;
+	* only a cash drawer can take more than the bill, because change comes out of
+	  it. An over-tendered card or UPI line posts a negative outstanding instead.
+	"""
+	totals: dict[str, float] = {}
+	for entry in splits or []:
+		label = (entry.get("mode_of_payment") or entry.get("mode") or "").strip()
+		amount = flt(entry.get("amount"))
+		if not label or amount <= 0:
+			continue
+		mode = _strict_mode(label)
+		totals[mode] = totals.get(mode, 0) + amount
+
+	if not totals:
+		frappe.throw(
+			_("Enter how much the customer paid in each form."),
+			title=_("Nothing entered"),
+		)
+
+	collected = sum(totals.values())
+
+	short = payable - collected
+	if short > SPLIT_TOLERANCE:
+		frappe.throw(
+			_("The amounts add up to {0}, which is {1} less than the bill. "
+			  "Add the rest before completing the sale.").format(
+				fmt_money(collected, currency="INR"), fmt_money(short, currency="INR")),
+			title=_("Not enough to cover the bill"),
+		)
+
+	excess = collected - payable
+	if excess > SPLIT_TOLERANCE:
+		cash = sum(
+			amount for mode, amount in totals.items()
+			if frappe.db.get_value("Mode of Payment", mode, "type") == "Cash"
+		)
+		if excess > cash + SPLIT_TOLERANCE:
+			frappe.throw(
+				_("The amounts add up to {0}, which is {1} more than the bill. "
+				  "Only cash can be over-tendered — reduce the other amounts.").format(
+					fmt_money(collected, currency="INR"), fmt_money(excess, currency="INR")),
+				title=_("More than the bill"),
+			)
+
+	return [{"mode_of_payment": mode, "amount": amount} for mode, amount in totals.items()]
 
 
 def resolve_mode(tile: str) -> str | None:

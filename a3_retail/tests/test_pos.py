@@ -388,3 +388,64 @@ class TestCounterPermissions(FrappeTestCase):
 	def test_the_ledger_stays_closed(self):
 		self.assertFalse(frappe.has_permission("GL Entry", "read"))
 		self.assertFalse(frappe.has_permission("Journal Entry", "read"))
+
+
+class TestSplitPayment(FrappeTestCase):
+	"""Part in one form, the rest in another.
+
+	The rules exist because ERPNext will otherwise submit a bill nobody can
+	settle: a short split leaves an outstanding balance on a sale the customer
+	has walked away from, and an over-tendered card posts a negative one.
+	"""
+
+	PAYABLE = 1000.0
+
+	def _rows(self, *pairs):
+		return pos.split_payment_rows(
+			[{"mode_of_payment": mode, "amount": amount} for mode, amount in pairs],
+			self.PAYABLE,
+		)
+
+	def test_two_modes_that_cover_the_bill_are_accepted(self):
+		rows = self._rows(("UPI", 600), ("Cash", 400))
+		self.assertEqual(len(rows), 2)
+		self.assertEqual(sum(flt(r["amount"]) for r in rows), self.PAYABLE)
+
+	def test_the_same_mode_twice_is_merged_into_one_row(self):
+		"""ERPNext takes one row per mode; two would double-count the tender."""
+		rows = self._rows(("UPI", 500), ("UPI", 500))
+		self.assertEqual(len(rows), 1)
+		self.assertEqual(flt(rows[0]["amount"]), self.PAYABLE)
+
+	def test_zero_lines_are_dropped(self):
+		rows = self._rows(("Cash", 1000), ("UPI", 0))
+		self.assertEqual([r["mode_of_payment"] for r in rows], ["Cash"])
+
+	def test_a_short_split_is_refused(self):
+		with self.assertRaises(frappe.ValidationError):
+			self._rows(("UPI", 600), ("Cash", 300))
+
+	def test_cash_may_be_over_tendered_because_change_comes_from_it(self):
+		rows = self._rows(("UPI", 600), ("Cash", 500))
+		self.assertEqual(sum(flt(r["amount"]) for r in rows), 1100)
+
+	def test_a_card_may_not_be_over_tendered(self):
+		"""There is no drawer to give change from, so this would post a credit."""
+		with self.assertRaises(frappe.ValidationError):
+			self._rows(("Card", 500), ("UPI", 700))
+
+	def test_nothing_entered_is_refused(self):
+		with self.assertRaises(frappe.ValidationError):
+			pos.split_payment_rows([], self.PAYABLE)
+
+	def test_an_unknown_mode_is_refused_rather_than_substituted(self):
+		"""`resolve_mode` falls back to any enabled mode; a split must not.
+
+		Otherwise a stray label books real money against an unrelated account.
+		"""
+		with self.assertRaises(frappe.ValidationError):
+			self._rows(("Dogecoin", 1000))
+
+	def test_rounding_under_a_rupee_is_tolerated(self):
+		rows = self._rows(("UPI", 999.60))
+		self.assertEqual(len(rows), 1)

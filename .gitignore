@@ -3,3 +3,7 @@ __pycache__/
 node_modules/
 .venv/
 *.egg-info/
+
+# Tenant migration scripts: hold client credentials and staff personal data.
+_mbb_*.py
+_t_*.py

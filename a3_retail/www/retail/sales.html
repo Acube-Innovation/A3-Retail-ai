@@ -185,15 +185,35 @@
 						{% endfor %}
 					</div>
 
-					<div class="pay-row">
-						<label for="received">{{ _("Received Amount") }}</label>
-						<div class="input-rupee">
-							<span>₹</span><input id="received" type="number" min="0" step="1" placeholder="0">
+					<button class="split-toggle" id="split-toggle" type="button" aria-pressed="false">
+						{{ _("Split payment") }}
+					</button>
+
+					<!-- Single tender: one tile, one amount. -->
+					<div id="pay-single">
+						<div class="pay-row">
+							<label for="received">{{ _("Received Amount") }}</label>
+							<div class="input-rupee">
+								<span>₹</span><input id="received" type="number" min="0" step="1" placeholder="0">
+							</div>
+						</div>
+						<div class="pay-row">
+							<label>{{ _("Change") }}</label>
+							<div class="change" id="change">₹ 0.00</div>
 						</div>
 					</div>
-					<div class="pay-row">
-						<label>{{ _("Change") }}</label>
-						<div class="change" id="change">₹ 0.00</div>
+
+					<!-- Split tender: part in one form, the rest in another. -->
+					<div id="pay-split" hidden>
+						<div class="split-lines" id="split-lines"></div>
+						<button class="btn btn-quiet btn-block" id="split-add" type="button">
+							+ {{ _("Add another payment") }}
+						</button>
+						<div class="split-tally" id="split-tally">
+							<div><span>{{ _("Entered") }}</span><b id="split-entered">₹ 0.00</b></div>
+							<div><span id="split-gap-label">{{ _("Still to pay") }}</span>
+							     <b id="split-gap">₹ 0.00</b></div>
+						</div>
 					</div>
 				</div>
 

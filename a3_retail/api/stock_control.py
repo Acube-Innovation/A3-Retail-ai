@@ -83,7 +83,12 @@ def bootstrap() -> dict:
 			"transfer": bool(frappe.has_permission("Stock Entry", "create")),
 			"adjust": bool(frappe.has_permission("Stock Reconciliation", "create")),
 			"procure": bool(frappe.has_permission("Material Request", "create")),
+			# The item master is shared across branches, so only the roles holding
+			# Create on Item see the button at all.
+			"create_item": bool(frappe.has_permission("Item", "create")),
 		},
+		"uoms": frappe.get_all("UOM", filters={"enabled": 1}, pluck="name",
+		                       order_by="name", limit_page_length=0),
 		"as_of": frappe.utils.now_datetime().strftime("%H:%M"),
 	}
 
@@ -985,6 +990,153 @@ def adjust_stock(payload) -> dict:
 
 	return {"adjustment": doc.name, "difference": flt(doc.difference_amount),
 	        "print_url": print_url("Stock Reconciliation", doc.name)}
+
+
+@frappe.whitelist()
+def create_item(payload) -> dict:
+	"""Add a new item to the catalogue, optionally with what is already on the shelf.
+
+	The item master is shared by every branch, so this is deliberately not open to
+	every counter — `require_permission` defers to the matrix in
+	`setup/permissions.py`, where only A3 Retail Admin holds Create on Item. A
+	branch that could mint its own items would end up with the same charger under
+	four names and its stock split across all of them.
+	"""
+	employee = _me()
+	require_permission("Item", "create")
+
+	data = frappe.parse_json(payload) if isinstance(payload, str) else (payload or {})
+
+	item_name = (data.get("item_name") or "").strip()
+	if not item_name:
+		frappe.throw(_("Give the item a name."))
+
+	item_group = (data.get("item_group") or "").strip()
+	if not item_group or not frappe.db.exists("Item Group", item_group):
+		frappe.throw(_("Pick an item group that exists."))
+
+	# india_compliance refuses to save a sales item without an HSN code, and its
+	# own message names a settings page a counter cannot open. Say it plainly and
+	# early instead of letting the save fail.
+	hsn = (data.get("hsn_code") or "").strip()
+	if not hsn and frappe.db.get_single_value("GST Settings", "validate_hsn_code"):
+		frappe.throw(
+			_("This item needs an HSN code before it can be sold. Ask accounts for the "
+			  "code that applies to it."),
+			title=_("HSN code missing"),
+		)
+	if hsn and not frappe.db.exists("GST HSN Code", hsn):
+		frappe.throw(_("{0} is not a known HSN code.").format(hsn), title=_("Check the HSN"))
+
+	item_code = (data.get("item_code") or "").strip() or item_name.upper()[:120]
+	if frappe.db.exists("Item", item_code):
+		frappe.throw(
+			_("{0} already exists. Search for it rather than adding it twice.").format(item_code),
+			title=_("Already in the catalogue"),
+		)
+
+	brand = (data.get("brand") or "").strip()
+	if brand and not frappe.db.exists("Brand", brand):
+		brand = ""
+
+	# The item, its price and its opening stock are one action to the person at
+	# the counter, so they succeed or fail together. Without this, a rejected
+	# opening entry would leave the item behind with no stock and no price, and
+	# the next attempt would be refused as a duplicate.
+	frappe.db.savepoint("a3_new_item")
+	try:
+		return _create_item(data, employee, item_code, item_name, item_group, hsn, brand)
+	except Exception:
+		frappe.db.rollback(save_point="a3_new_item")
+		raise
+
+
+def _create_item(data, employee, item_code, item_name, item_group, hsn, brand) -> dict:
+	doc = frappe.new_doc("Item")
+	doc.item_code = item_code
+	doc.item_name = item_name[:140]
+	doc.item_group = item_group
+	doc.stock_uom = (data.get("uom") or "Nos").strip() or "Nos"
+	doc.is_stock_item = 1
+	doc.is_sales_item = 1
+	doc.is_purchase_item = 1
+	doc.include_item_in_manufacturing = 0
+	if brand:
+		doc.brand = brand
+	if hsn:
+		doc.gst_hsn_code = hsn
+	if cint(data.get("has_serial")):
+		doc.has_serial_no = 1
+	if flt(data.get("reorder_level")):
+		doc.safety_stock = flt(data["reorder_level"])
+	barcode = (data.get("barcode") or "").strip()
+	if barcode and not frappe.db.exists("Item Barcode", {"barcode": barcode}):
+		doc.append("barcodes", {"barcode": barcode})
+	doc.insert()
+
+	selling = flt(data.get("selling_rate"))
+	if selling > 0:
+		price = frappe.new_doc("Item Price")
+		price.item_code = doc.name
+		price.price_list = _selling_price_list(employee.branch)
+		price.price_list_rate = selling
+		price.insert(ignore_permissions=True)
+
+	# Opening stock is optional: the counter may be cataloguing something it has
+	# not received yet.
+	opening = flt(data.get("opening_qty"))
+	reconciliation = None
+	if opening > 0:
+		warehouse = data.get("warehouse")
+		if warehouse not in set(_warehouses(employee.branch)):
+			frappe.throw(_("That warehouse does not belong to {0}.").format(employee.branch))
+
+		rate = flt(data.get("purchase_rate")) or selling
+		if rate <= 0:
+			frappe.throw(
+				_("Opening stock needs a cost per piece, so the stock has a value."),
+				title=_("Cost missing"),
+			)
+
+		company = frappe.db.get_single_value("Global Defaults", "default_company")
+		abbr = frappe.get_cached_value("Company", company, "abbr")
+
+		# An opening entry books the other side against an asset/liability account,
+		# not an expense — ERPNext refuses the document otherwise.
+		difference = f"Temporary Opening - {abbr}"
+		if not frappe.db.exists("Account", difference):
+			difference = f"Stock Adjustment - {abbr}"
+
+		reco = frappe.new_doc("Stock Reconciliation")
+		reco.company = company
+		reco.posting_date = getdate(nowdate())
+		reco.set_posting_time = 1
+		reco.purpose = "Opening Stock"
+		reco.expense_account = difference
+		reco.set_warehouse = warehouse
+		if reco.meta.has_field("branch"):
+			reco.branch = employee.branch
+		reco.remarks = _("Opening stock for a newly added item")
+		reco.append("items", {"item_code": doc.name, "warehouse": warehouse,
+		                      "qty": opening, "valuation_rate": rate})
+		reco.flags.ignore_permissions = True
+		reco.insert(ignore_permissions=True)
+		reco.submit()
+		reconciliation = reco.name
+
+	return {
+		"item_code": doc.name,
+		"item_name": doc.item_name,
+		"item_group": doc.item_group,
+		"opening_qty": opening,
+		"reconciliation": reconciliation,
+	}
+
+
+def _selling_price_list(branch: str) -> str:
+	"""The price list this branch sells from."""
+	return frappe.db.get_value("Branch Profile", {"branch": branch}, "default_price_list") \
+		or "Standard Selling"
 
 
 @frappe.whitelist()

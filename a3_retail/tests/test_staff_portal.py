@@ -306,3 +306,82 @@ class TestDashboard(FrappeTestCase):
 		for key in ("marked", "present", "absent", "percent"):
 			self.assertIn(key, summary)
 		self.assertLessEqual(summary["present"], summary["marked"])
+
+
+class TestBranchSwitching(FrappeTestCase):
+	"""Head office moves between counters; shop-floor staff cannot.
+
+	`_me()` is the only place a branch is decided, so these tests exercise the
+	switch through it rather than through each of the endpoints that use it.
+	"""
+
+	def setUp(self):
+		ensure_branch()
+		frappe.cache().hdel(staff.ACTIVE_BRANCH_KEY, frappe.session.user)
+		self.addCleanup(frappe.set_user, "Administrator")
+
+	def _staff_user(self):
+		"""A portal account with exactly one branch, or None on a bare site."""
+		for name in ("Arun Menon", "Vishnu P", "Reshma K", "Vipin S"):
+			user = user_for(name)
+			if user and frappe.db.get_value("Employee", {"user_id": user}, "branch"):
+				return user
+		return None
+
+	def test_shop_floor_sees_only_its_own_branch(self):
+		user = self._staff_user()
+		if not user:
+			self.skipTest("no branch employee on this site")
+		frappe.set_user(user)
+		employee = staff.current_employee()
+		self.assertEqual(staff.permitted_branches(employee), [employee.branch])
+
+	def test_shop_floor_cannot_switch_branch(self):
+		user = self._staff_user()
+		if not user:
+			self.skipTest("no branch employee on this site")
+		other = frappe.db.get_value(
+			"Branch Profile",
+			{"branch": ["!=", frappe.db.get_value("Employee", {"user_id": user}, "branch")]},
+			"branch",
+		)
+		if not other:
+			self.skipTest("only one branch on this site")
+		frappe.set_user(user)
+		with self.assertRaises(frappe.PermissionError):
+			staff.switch_branch(other)
+
+	def test_a_stored_branch_that_is_not_permitted_is_ignored(self):
+		"""A cached choice must never widen access on its own."""
+		user = self._staff_user()
+		if not user:
+			self.skipTest("no branch employee on this site")
+		frappe.set_user(user)
+		employee = staff.current_employee()
+		own = employee.branch
+		frappe.cache().hset(staff.ACTIVE_BRANCH_KEY, user, "Nowhere Branch")
+		self.addCleanup(frappe.cache().hdel, staff.ACTIVE_BRANCH_KEY, user)
+		self.assertEqual(staff._me().branch, own)
+
+	def test_unrestricted_user_may_switch_and_me_follows(self):
+		admin_employee = frappe.db.get_value(
+			"Employee", {"status": "Active", "branch": ["is", "set"], "user_id": ["is", "set"]},
+			["name", "user_id", "branch"], as_dict=True,
+		)
+		if not admin_employee:
+			self.skipTest("no employee with a branch on this site")
+
+		user = admin_employee.user_id
+		if "A3 Retail Admin" not in frappe.get_roles(user):
+			self.skipTest("no unrestricted portal user on this site")
+
+		frappe.set_user(user)
+		branches = staff.permitted_branches(staff.current_employee())
+		target = next((b for b in branches if b != admin_employee.branch), None)
+		if not target:
+			self.skipTest("only one branch on this site")
+
+		staff.switch_branch(target)
+		self.addCleanup(frappe.cache().hdel, staff.ACTIVE_BRANCH_KEY, user)
+		self.assertEqual(staff._me().branch, target)
+		self.assertEqual(staff.session_context()["branch"], target)

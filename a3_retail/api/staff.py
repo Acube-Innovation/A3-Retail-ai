@@ -15,6 +15,46 @@ from frappe.utils import cint, flt, now_datetime, nowdate
 from a3_retail.setup.staff_portal import PORTAL_ROLE, current_employee
 
 
+ACTIVE_BRANCH_KEY = "a3_active_branch"
+
+
+def permitted_branches(employee: dict | None = None) -> list[str]:
+	"""Branches this user may work in.
+
+	Shop-floor staff get exactly their own, which is what keeps one counter from
+	seeing another's work. Head-office roles are branch-agnostic by design
+	(`overrides.employee.GLOBAL_ROLES`), so an owner or admin gets the whole
+	chain and can move between counters.
+	"""
+	from a3_retail.utils.permissions import user_is_unrestricted
+
+	if not user_is_unrestricted():
+		return [employee["branch"]] if employee and employee.get("branch") else []
+
+	return frappe.get_all(
+		"Branch Profile",
+		filters={"is_active": 1},
+		pluck="branch",
+		order_by="branch",
+	)
+
+
+def _active_branch(employee: dict) -> str:
+	"""The branch the user is currently working in.
+
+	Their own unless they may switch and have chosen another. A stored choice
+	that is no longer permitted is ignored rather than obeyed.
+	"""
+	allowed = permitted_branches(employee)
+	if len(allowed) <= 1:
+		return employee.get("branch")
+
+	chosen = frappe.cache().hget(ACTIVE_BRANCH_KEY, frappe.session.user)
+	if chosen and chosen in allowed:
+		return chosen
+	return employee.get("branch")
+
+
 def _me() -> dict:
 	"""The employee making the request. Throws unless they are portal staff."""
 	if frappe.session.user == "Guest":
@@ -28,7 +68,25 @@ def _me() -> dict:
 	if not employee.branch:
 		frappe.throw(_("Your employee record has no branch."), frappe.PermissionError)
 
+	# Every endpoint scopes itself to `employee.branch`, so switching counters is
+	# a single substitution here rather than a change in each of them. The
+	# employee's own branch is kept so the UI can show which one is home.
+	employee.home_branch = employee.branch
+	employee.branch = _active_branch(employee)
 	return employee
+
+
+@frappe.whitelist()
+def switch_branch(branch: str) -> dict:
+	"""Move the session to another branch the user is allowed to work in."""
+	employee = _me()
+	allowed = permitted_branches(employee)
+	if branch not in allowed:
+		frappe.throw(_("You do not have access to branch {0}").format(branch),
+		             frappe.PermissionError)
+
+	frappe.cache().hset(ACTIVE_BRANCH_KEY, frappe.session.user, branch)
+	return {"branch": branch}
 
 
 @frappe.whitelist()
@@ -36,6 +94,7 @@ def session_context() -> dict:
 	"""Who is signed in, and what the portal should show them."""
 	employee = _me()
 	roles = [role for role in frappe.get_roles() if role not in ("All", "Guest", PORTAL_ROLE)]
+	branches = permitted_branches(employee)
 
 	return {
 		"user": frappe.session.user,
@@ -44,6 +103,9 @@ def session_context() -> dict:
 		"designation": employee.designation,
 		"department": employee.department,
 		"branch": employee.branch,
+		"home_branch": employee.get("home_branch") or employee.branch,
+		"branches": branches,
+		"can_switch_branch": len(branches) > 1,
 		"roles": roles,
 		"is_manager": bool({"Branch Manager", "Service Manager"} & set(roles)),
 	}
