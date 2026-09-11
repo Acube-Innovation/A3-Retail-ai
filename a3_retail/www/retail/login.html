@@ -24,6 +24,10 @@
 		{% endif %}
 
 		<form class="card" method="post" action="/retail/login" autocomplete="on">
+			{# A browser already signed in to Frappe carries a session CSRF token, and
+			   Frappe rejects any POST that does not echo it. Without this the counter
+			   PC that has /app open cannot sign anyone in to the branch app. #}
+			<input type="hidden" name="csrf_token" value="{{ csrf_token }}">
 			<div class="field">
 				<label for="usr">{{ _("Work email") }}</label>
 				<input id="usr" name="usr" type="email" inputmode="email" autocomplete="username"
