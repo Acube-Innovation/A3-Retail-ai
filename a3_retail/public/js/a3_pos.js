@@ -21,6 +21,9 @@ window.POS = (function () {
 		// Whether the price list already carries GST — set from the branch's tax
 		// template so the running total matches the invoice that gets posted.
 		pricesIncludeTax: false,
+		// Set once the cashier types their own tendered figure, so the bill stops
+		// overwriting it as the cart changes.
+		receivedTyped: false,
 	};
 	// The tiles a counter can split across. EMI is absent on purpose — it is a
 	// loan somebody else approves, not money taken at the till.
@@ -388,6 +391,15 @@ window.POS = (function () {
 		$("gst").textContent = money(sums.gst);
 		$("grand").textContent = money(sums.grand);
 
+		// The amount due is the normal case — a card or UPI is charged exactly, and
+		// most cash customers hand over the round figure. Filling it in means the
+		// payment is recorded without anyone retyping the total; the moment the
+		// cashier types something else, that is left alone.
+		const due = Math.round(sums.grand);
+		if (!state.receivedTyped && !state.split) {
+			$("received").value = state.cart.length ? due : "";
+		}
+
 		// Change belongs to the drawer. A card or a UPI collection is charged the
 		// bill exactly, so showing change there would have the counter hand out
 		// money it never took.
@@ -720,6 +732,10 @@ window.POS = (function () {
 
 	// ------------------------------------------------------------ checkout
 	async function checkout(draft) {
+		// Guard against being wired straight to addEventListener: the click event
+		// would arrive here as `draft` and, being truthy, would quietly turn every
+		// completed sale into a saved draft.
+		draft = draft === true;
 		const missing = state.cart.find((line) => line.has_serial && line.serials.length !== line.qty);
 		if (missing) return say(missing.item_name + " still needs its IMEI.", "error");
 
@@ -789,6 +805,7 @@ window.POS = (function () {
 		setChip("");
 		$("notes").value = "";
 		$("received").value = "";
+		state.receivedTyped = false;
 		$("discount-value").value = "";
 		state.splits = [];
 		setSplit(false);
@@ -1026,8 +1043,11 @@ window.POS = (function () {
 		$("discount-type").addEventListener("change", paintTotals);
 		$("discount-value").addEventListener("input", paintTotals);
 		$("discount-on").addEventListener("change", paintTotals);
-		$("received").addEventListener("input", paintTotals);
-		$("checkout").addEventListener("click", checkout);
+		$("received").addEventListener("input", () => {
+			state.receivedTyped = true;
+			paintTotals();
+		});
+		$("checkout").addEventListener("click", () => checkout(false));
 
 		$("split-toggle").addEventListener("click", () => setSplit(!state.split));
 		$("split-add").addEventListener("click", addSplitLine);
