@@ -96,6 +96,13 @@ def session_context() -> dict:
 	roles = [role for role in frappe.get_roles() if role not in ("All", "Guest", PORTAL_ROLE)]
 	branches = permitted_branches(employee)
 
+	# A shop that does not repair phones has no use for a technician's screens,
+	# and one that only repairs them has no retail counter. The menu follows the
+	# branch rather than showing everyone everything.
+	branch_type = frappe.db.get_value(
+		"Branch Profile", {"branch": employee.branch}, "branch_type"
+	) or "Sales & Service"
+
 	return {
 		"user": frappe.session.user,
 		"employee": employee.name,
@@ -103,6 +110,9 @@ def session_context() -> dict:
 		"designation": employee.designation,
 		"department": employee.department,
 		"branch": employee.branch,
+		"branch_type": branch_type,
+		"does_sales": branch_type in ("Sales Only", "Sales & Service"),
+		"does_service": branch_type in ("Service Only", "Sales & Service"),
 		"home_branch": employee.get("home_branch") or employee.branch,
 		"branches": branches,
 		"can_switch_branch": len(branches) > 1,

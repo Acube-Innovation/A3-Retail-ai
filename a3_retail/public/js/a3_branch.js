@@ -208,7 +208,85 @@ window.A3 = (function () {
 		}
 	}
 
-	document.addEventListener("DOMContentLoaded", mountBranchPicker);
+	/**
+	 * Phone navigation.
+	 *
+	 * The sidebar is twelve destinations in a column — right on a desk, wrong in
+	 * a hand. On a phone the four most-used become a fixed bottom bar, thumb
+	 * height, and everything else lives behind More. Built from the sidebar that
+	 * is already on the page, so no template has to know about it.
+	 */
+	const PRIMARY = ["/retail/dashboard", "/retail/sales", "/retail/bills", "/retail/stock"];
+
+	function mountMobileNav() {
+		if (document.querySelector(".tabbar")) return;
+		const side = document.querySelector(".side .side-nav");
+		if (!side) return;
+
+		const links = [...side.querySelectorAll("a")];
+		if (!links.length) return;
+
+		const bar = document.createElement("nav");
+		bar.className = "tabbar";
+		bar.setAttribute("aria-label", "Main");
+
+		const pick = (href) => links.find((a) => (a.getAttribute("href") || "") === href);
+		const chosen = PRIMARY.map(pick).filter(Boolean);
+		// Fall back to the first four if this build renames its routes.
+		const tabs = chosen.length ? chosen : links.slice(0, 4);
+
+		tabs.forEach((link) => {
+			const a = document.createElement("a");
+			a.href = link.getAttribute("href");
+			a.innerHTML = link.innerHTML;
+			if (link.classList.contains("is-active")) a.classList.add("is-active");
+			bar.appendChild(a);
+		});
+
+		const more = document.createElement("button");
+		more.type = "button";
+		more.className = "tabbar-more";
+		more.setAttribute("aria-expanded", "false");
+		more.innerHTML =
+			'<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor"'
+			+ ' stroke-width="2" stroke-linecap="round"><circle cx="5" cy="12" r="1"/>'
+			+ '<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg><span>More</span>';
+		bar.appendChild(more);
+
+		const sheet = document.createElement("div");
+		sheet.className = "navsheet";
+		sheet.hidden = true;
+		const card = document.createElement("div");
+		card.className = "navsheet-card";
+		card.innerHTML = '<div class="navsheet-grip"></div>';
+		// Clone the sidebar's own blocks, wrappers and all. Copying the links
+		// alone would drop the `.side-nav` container the sheet is styled through.
+		const aside = side.closest(".side") || side.parentElement;
+		[...aside.children].forEach((node) => card.appendChild(node.cloneNode(true)));
+		sheet.appendChild(card);
+
+		const close = () => {
+			sheet.hidden = true;
+			more.setAttribute("aria-expanded", "false");
+			document.body.classList.remove("navsheet-open");
+		};
+		more.addEventListener("click", () => {
+			const open = sheet.hidden;
+			sheet.hidden = !open;
+			more.setAttribute("aria-expanded", String(open));
+			document.body.classList.toggle("navsheet-open", open);
+		});
+		sheet.addEventListener("click", (event) => { if (event.target === sheet) close(); });
+		document.addEventListener("keydown", (e) => { if (e.key === "Escape") close(); });
+
+		document.body.append(bar, sheet);
+		document.body.classList.add("has-tabbar");
+	}
+
+	document.addEventListener("DOMContentLoaded", () => {
+		mountBranchPicker();
+		mountMobileNav();
+	});
 
 	return {
 		call, login, logout, money, shortTime, csrfToken, plain, toast,

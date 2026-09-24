@@ -101,8 +101,12 @@ def _stock_conditions(data: dict, branch: str) -> tuple[str, dict]:
 	values = {"branch": branch, "floor": LOW_STOCK_FLOOR}
 
 	if data.get("query"):
+		# Searching stock by the handset it fits, the same as the counter does.
+		from a3_retail.utils.compatibility import search_clause
+
 		conditions.append("(i.name like %(like)s or i.item_name like %(like)s "
-		                  "or i.brand like %(like)s)")
+		                  "or i.brand like %(like)s or "
+		                  + search_clause("i").replace("%(query)s", "%(like)s") + ")")
 		values["like"] = f"%{data['query']}%"
 	if data.get("item_group"):
 		conditions.append("i.item_group = %(item_group)s")

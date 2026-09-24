@@ -1,4 +1,4 @@
-"""Service Bookings — /retail/bookings.
+"""Expenses — /retail/expenses.
 
 Guarded like the counters: a session, an Employee record and a branch.
 """
@@ -11,7 +11,7 @@ no_cache = 1
 def get_context(context):
 	from a3_retail.api.staff import session_context
 	from a3_retail.setup.staff_portal import current_employee
-	from a3_retail.www.retail import asset_version, require_branch_kind
+	from a3_retail.www.retail import asset_version
 
 	context.asset_v = asset_version()
 	context.no_cache = 1
@@ -21,11 +21,10 @@ def get_context(context):
 		raise frappe.Redirect
 
 	context.me = session_context()
-	require_branch_kind(context, "service")
 	context.app_name = "A3 Retail"
 	context.company = frappe.db.get_single_value("Global Defaults", "default_company") or "A3 Retail"
 	context.initials = _initials(context.me["employee_name"])
-	context.active = "bookings"
+	context.active = "expenses"
 	context.csrf_token = frappe.sessions.get_csrf_token()
 	frappe.db.commit()
 	return context

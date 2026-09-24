@@ -357,6 +357,9 @@ def ensure_sales_tax_templates(company: str):
 	output_sgst = gst_account(company, "Output Tax SGST") or gst_account(company, "SGST")
 	output_igst = gst_account(company, "Output Tax IGST") or gst_account(company, "IGST")
 
+	# The shop quotes an all-in price — the label on the box and the price list
+	# both already carry GST — so the tax is backed out of the rate rather than
+	# added to it. Without this a bill reads 18% over what the customer was told.
 	for rate in (5, 12, 18, 28):
 		half = rate / 2
 		_sales_template(
@@ -364,16 +367,16 @@ def ensure_sales_tax_templates(company: str):
 			f"Output GST In-state {rate}%",
 			[
 				{"charge_type": "On Net Total", "account_head": output_cgst, "rate": half,
-				 "description": f"CGST {half}%"},
+				 "description": f"CGST {half}%", "included_in_print_rate": 1},
 				{"charge_type": "On Net Total", "account_head": output_sgst, "rate": half,
-				 "description": f"SGST {half}%"},
+				 "description": f"SGST {half}%", "included_in_print_rate": 1},
 			],
 		)
 		_sales_template(
 			company,
 			f"Output GST Out-state {rate}%",
 			[{"charge_type": "On Net Total", "account_head": output_igst, "rate": rate,
-			  "description": f"IGST {rate}%"}],
+			  "description": f"IGST {rate}%", "included_in_print_rate": 1}],
 		)
 
 	_sales_template(

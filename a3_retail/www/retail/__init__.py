@@ -29,6 +29,22 @@ def asset_version() -> str:
 	return frappe.local.a3_asset_version
 
 
+def require_branch_kind(context, kind: str) -> None:
+	"""Turn away a screen this branch has no use for.
+
+	Hiding the menu entry is not enough — the address still works if somebody
+	types it, and a repair screen at a shop with no technician would show empty
+	panels and refuse every action. Send them back to the dashboard instead.
+
+	`kind` is "sales" or "service", matching the Branch Profile's branch type.
+	"""
+	allowed = context.me.get("does_sales") if kind == "sales" else context.me.get("does_service")
+	if allowed:
+		return
+	frappe.local.flags.redirect_location = "/retail/dashboard"
+	raise frappe.Redirect
+
+
 def _stamp() -> str:
 	newest = 0.0
 	for folder, name in ASSETS:

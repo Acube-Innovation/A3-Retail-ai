@@ -667,6 +667,10 @@ body.side-collapsed .side-nav a, body.side-collapsed .side-soon { justify-conten
 .tr-discount select, .tr-discount input { padding: 6px 8px; font-family: inherit; font-size: 12px;
 	border: 1px solid var(--line-strong); border-radius: 7px; background: var(--card); }
 .tr-discount span:last-child { text-align: right; }
+.tr-discount-on { display: grid; grid-template-columns: 1fr 172px; align-items: center; }
+.tr-discount-on select { padding: 6px 8px; font-family: inherit; font-size: 12px;
+	border: 1px solid var(--line); border-radius: 6px; background: var(--card);
+	color: inherit; width: 100%; }
 .tr-reason { display: grid; grid-template-columns: 52px 1fr; gap: 8px; align-items: center; }
 .tr-reason label { font-size: 11.5px; color: var(--muted); }
 .tr-reason input { padding: 6px 8px; font-family: inherit; font-size: 12px;
@@ -676,6 +680,16 @@ body.side-collapsed .side-nav a, body.side-collapsed .side-soon { justify-conten
 .tr-grand { border-top: 1px solid var(--line); margin-top: 8px; padding-top: 12px;
 	font-size: 17px; font-weight: 800; color: var(--ink); }
 .tr-grand span:last-child { font-size: 21px; font-weight: 800; letter-spacing: -.02em; }
+
+/* Who is serving, on a shared till. Sits above payment because it is answered
+   once at the start of a shift, not per bill. */
+.bill-seller { display: flex; align-items: center; gap: 10px; padding: 0 0 12px;
+	margin-bottom: 12px; border-bottom: 1px solid #eef1f6; }
+.bill-seller label { font-size: 13.5px; font-weight: 700; white-space: nowrap; }
+.bill-seller select { flex: 1; padding: 9px 11px; font-family: inherit; font-size: 14px;
+	color: var(--ink); background: var(--card);
+	border: 1px solid var(--line-strong); border-radius: 9px; cursor: pointer; }
+.bill-seller select:focus { outline: 2px solid var(--brand); outline-offset: 1px; }
 
 .bill-pay h3 { margin: 2px 0 12px; font-size: 13.5px; font-weight: 700; }
 .pay-tiles { display: grid; grid-template-columns: repeat(6, 1fr); gap: 7px;
@@ -1638,4 +1652,179 @@ body.side-collapsed .side-nav a, body.side-collapsed .side-soon { justify-conten
 		grid-template-columns: minmax(0, 1fr); }
 	.emi-filters .filter-row { grid-template-columns: minmax(0, 1fr); }
 	.emi-branch-row { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ==========================================================================
+   Phones — the branch app as an app
+   --------------------------------------------------------------------------
+   Not the desk layout squeezed narrow. On a handset the twelve-item sidebar
+   becomes a fixed bottom bar of four, everything else sits behind More, and
+   the page above it is a single column of full-width cards.
+
+   The bar is built in a3_branch.js from the sidebar already on the page, so no
+   template knows about it. `body.has-tabbar` only appears once that has run,
+   which is what keeps the desktop layout untouched.
+   ========================================================================== */
+@media (max-width: 640px) {
+	/* ---- shell: one column, no sidebar ---- */
+	.app { grid-template-columns: 1fr; }
+	.side { display: none; }
+	body.has-tabbar .main { padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)); }
+
+	/* ---- header: one line, sticky, title and actions only ---- */
+	.topbar {
+		padding: 10px 14px; gap: 10px; flex-wrap: nowrap;
+		box-shadow: 0 1px 0 rgba(16, 27, 46, .04);
+	}
+	.topbar-branch { min-width: 0; flex: 1 1 auto; overflow: hidden; gap: 8px; }
+	/* Collides with the page title once the header is one line. */
+	.topbar .rep-when, .topbar #as-of { display: none; }
+	.topbar-branch h1 {
+		font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+	}
+	.topbar-branch .branch-picker { font-size: 16px; max-width: 100%; }
+	.topbar-sub { display: none; }
+	.topbar-branch .chip { display: none; }
+	/* Some headers carry four action buttons. Rather than hide them, let the
+	   row scroll — the page must never be the thing that moves sideways. */
+	.topbar-right { gap: 6px; flex: 1 1 auto; min-width: 0;
+		justify-content: flex-end; overflow-x: auto; scrollbar-width: none; }
+	.topbar-right::-webkit-scrollbar { display: none; }
+	.topbar-right > * { flex: 0 0 auto; }
+	.who { display: none; }
+	/* Sign out and Dashboard already live in the More sheet. */
+	.topbar-right > a[href*="logout"], .topbar-right > a[href*="dashboard"] { display: none; }
+	.topbar-right .btn { padding: 8px 10px; font-size: 12px; }
+	/* An icon button loses its label; one without an icon must keep it,
+	   or it renders as an empty box. */
+	.topbar-right .btn:has(.ico) { font-size: 0; }
+	.topbar-right .btn .ico { margin: 0; }
+	.avatar { width: 32px; height: 32px; font-size: 12px; }
+
+	/* ---- content: a single column of full-width cards ---- */
+	.content, .pos, .svc, .stk { padding: 12px 12px 18px; gap: 12px; }
+	.panels, .pos, .svc, .cust-grid, .cust-grid.two { grid-template-columns: 1fr; }
+	.svc-panel { border-radius: 12px; padding: 14px; }
+	.svc-panel .panel-head { flex-direction: column; align-items: flex-start; gap: 6px; }
+
+	/* ---- counter billing ---- */
+	.pos-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+	/* 134px of card for one line of text leaves a hole; let content size it. */
+	.pos-grid .card { min-height: 0; justify-content: flex-start; gap: 8px; padding: 10px; }
+	.pos-grid .card-foot { margin-top: auto; }
+	/* Out of the corner and into the flow — absolutely positioned it lands on
+	   top of the item name as soon as the card is narrow. */
+	.pos-grid .badge-new, .pos-grid .badge-low {
+		position: static; align-self: flex-start; order: -1; margin: 0;
+	}
+	.pos-search { flex-wrap: wrap; gap: 10px; }
+	.pos-search-box { flex: 1 1 100%; min-width: 0; }
+	/* The service desk puts its scanner beside a button in a plain row. */
+	.scan-box { flex: 1 1 100%; min-width: 0; }
+	.scan-box input { min-width: 0; }
+	.pos-toggle { font-size: 12.5px; }
+	.pos-cust-grid, .pos-cust-search { grid-template-columns: 1fr; }
+	.pos-cust-search .cust-results { right: 0; }
+	.quick-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+	.pay-tiles { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+	.pay { padding: 9px 2px; font-size: 10.5px; }
+	.bill-thead, .bill-row { grid-template-columns: 1fr 46px 56px 52px 14px; font-size: 12.5px; }
+	.tr-discount { grid-template-columns: 1fr 52px 78px 62px; }
+	.tr-discount-on { grid-template-columns: 1fr 132px; }
+	/* 188px plus a label does not fit a 360px screen. */
+	.input-rupee, .change { width: auto; flex: 1 1 auto; min-width: 0; }
+	.pay-row { gap: 8px; }
+	.bill-seller { flex-wrap: wrap; gap: 6px; }
+	.bill-seller select { width: 100%; flex: 1 1 100%; }
+	.split-line select { flex: 0 0 84px; }
+	.btn-complete { margin: 12px 0 4px; width: 100%; }
+
+	/* ---- tiles, filters, tabs ---- */
+	.ctiles, .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+	.rep-cats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+	.filter-row, .rep-filter-row, .stk-filters { grid-template-columns: 1fr; gap: 8px; }
+	.seg { margin-left: 0; }
+	.seg.wide { grid-template-columns: 1fr; }
+	.stk-actions { flex-wrap: wrap; gap: 6px; }
+	.stk-actions .btn { flex: 1 1 calc(50% - 3px); }
+	/* Tab strips scroll rather than wrap, the way an app's do. */
+	.cust-tabs, .pos-tabsrow, .tabs, #tabs, .seg, .svc-tabs {
+		overflow-x: auto; scrollbar-width: none; flex-wrap: nowrap; }
+	.cust-tabs > *, .pos-tabsrow > *, .tabs > *, #tabs > *, .seg > * { flex: 0 0 auto; }
+	.cust-tabs::-webkit-scrollbar, .pos-tabsrow::-webkit-scrollbar { display: none; }
+
+	/* ---- forms and dialogs: sheets from the bottom ---- */
+	.field-grid, .field-grid.three { grid-template-columns: 1fr; }
+	.modal { padding: 0; align-items: flex-end; }
+	.modal-card {
+		max-width: none; width: 100%; max-height: 90vh; overflow-y: auto;
+		border-radius: 16px 16px 0 0;
+		padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+	}
+	.modal-actions { flex-wrap: wrap; gap: 8px; }
+	.modal-actions .btn { flex: 1 1 auto; }
+
+	/* ---- a finger, not a mouse ---- */
+	.btn, .seg-btn, .tab, .pay { min-height: 44px; }
+	input, select, textarea { font-size: 16px; }   /* stops iOS zooming on focus */
+
+	/* ---- nothing pushes the page sideways ---- */
+	.line-table, .bill-table-wrap, .inv-items-wrap { max-width: 100%; overflow-x: auto; }
+	table { min-width: max-content; }
+}
+
+/* ---- the bottom bar itself ---- */
+.tabbar { display: none; }
+.navsheet { display: none; }
+
+@media (max-width: 640px) {
+	.tabbar {
+		display: grid; grid-auto-flow: column; grid-auto-columns: 1fr;
+		position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
+		background: var(--card); border-top: 1px solid var(--line);
+		padding-bottom: env(safe-area-inset-bottom, 0px);
+		box-shadow: 0 -1px 12px rgba(16, 27, 46, .06);
+	}
+	.tabbar a, .tabbar-more {
+		display: flex; flex-direction: column; align-items: center; justify-content: center;
+		gap: 3px; padding: 8px 2px 7px; min-height: 56px;
+		background: none; border: 0; font-family: inherit; cursor: pointer;
+		color: var(--muted); font-size: 10.5px; font-weight: 600; text-decoration: none;
+	}
+	.tabbar a .ico, .tabbar-more .ico { width: 21px; height: 21px; flex: none; }
+	.tabbar a span, .tabbar-more span {
+		font-size: 10.5px; line-height: 1; white-space: nowrap;
+		overflow: hidden; text-overflow: ellipsis; max-width: 100%;
+	}
+	.tabbar a.is-active { color: var(--brand); }
+	.tabbar a:hover { text-decoration: none; }
+
+	/* More: the rest of the sidebar, as a sheet */
+	.navsheet {
+		display: block; position: fixed; inset: 0; z-index: 50;
+		background: rgba(16, 27, 46, .5);
+	}
+	.navsheet-card {
+		position: absolute; left: 0; right: 0; bottom: 0;
+		max-height: 82vh; overflow-y: auto;
+		background: var(--card); border-radius: 18px 18px 0 0;
+		padding: 8px 14px calc(18px + env(safe-area-inset-bottom, 0px));
+	}
+	.navsheet-grip {
+		width: 38px; height: 4px; border-radius: 99px; background: var(--line-strong);
+		margin: 6px auto 12px;
+	}
+	.navsheet .side-nav { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+	.navsheet .side-nav a, .navsheet .side-soon { padding: 13px 12px; font-size: 14px; }
+	.navsheet .side-brand, .navsheet .side-collapse-row { display: none; }
+	.navsheet .side-foot { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+	body.navsheet-open { overflow: hidden; }
+}
+
+@media (max-width: 360px) {
+	.quick-row { grid-template-columns: 1fr; }
+	.pay-tiles { grid-template-columns: repeat(2, 1fr); }
+	.bill-thead, .bill-row { grid-template-columns: 1fr 40px 50px 46px 12px; font-size: 12px; }
+	.tabbar a span, .tabbar-more span { font-size: 9.5px; }
+	.navsheet .side-nav { grid-template-columns: 1fr; }
 }

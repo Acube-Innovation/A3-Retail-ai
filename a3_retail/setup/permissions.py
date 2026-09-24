@@ -410,7 +410,13 @@ PERMISSION_MATRIX: dict[str, dict[str, str]] = {
 	# --------------------------------------------------------------- accounts
 	"Journal Entry": {
 		"A3 Retail Admin": "CRUDS",
-		"Branch Manager": "R",
+		# Petty cash is recorded at the counter — around sixty entries a month in
+		# a shop this size. The branch app is the only route these roles have:
+		# they are Website Users, so ERPNext's own journal screen stays shut, and
+		# `api.expenses` is the one endpoint that posts on their behalf.
+		"Branch Manager": "CRS",
+		"Sales Executive": "CRS",
+		"Store Keeper": "CRS",
 		"Accounts Manager": "CRUDS",
 		"Accounts Executive": "CRU",
 		"Auditor": "R",

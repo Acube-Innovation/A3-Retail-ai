@@ -429,6 +429,11 @@ def assign_to_service(job_card: str, item_code: str, qty: float = 1,
 	profile = _profile(employee.branch)
 	on_shelf = _available(item_code, profile.default_warehouse)
 
+	# The part may not be listed as fitting this handset. That is worth asking
+	# about rather than assuming either way: it is how the shop learns a genuine
+	# fit, and how a wrong part gets caught before it is fitted.
+	unlisted = _unlisted_fit(doc, item_code)
+
 	row = doc.append("parts", {
 		"item_code": item_code,
 		"qty": qty,
@@ -442,7 +447,7 @@ def assign_to_service(job_card: str, item_code: str, qty: float = 1,
 	doc.reload()
 
 	result = {"job_card": job_card, "item_code": item_code, "qty": qty,
-	          "on_shelf": on_shelf, "row": row.name}
+	          "on_shelf": on_shelf, "row": row.name, "unlisted_fit": unlisted}
 
 	if on_shelf >= qty:
 		from a3_retail.a3_retail_service.parts import issue_parts
@@ -524,6 +529,66 @@ def _log_defective(branch: str, job_card: str, item_code: str, qty: float, defec
 	doc.flags.ignore_permissions = True
 	doc.save(ignore_permissions=True)
 	return doc.name
+
+
+def _job_card_device(doc) -> str | None:
+	"""The handset a repair is for, however the job card records it."""
+	for field in ("device_model", "a3_device_model", "model"):
+		if doc.meta.has_field(field) and doc.get(field):
+			return doc.get(field)
+	return None
+
+
+def _unlisted_fit(doc, item_code: str) -> dict | None:
+	"""Describe a part-to-handset pairing the item does not claim yet.
+
+	Returns None when there is nothing to ask about — the fit is already listed,
+	the item is not phone-specific, or the job card does not name a model.
+	"""
+	from a3_retail.utils.compatibility import fits
+
+	device = _job_card_device(doc)
+	if not device or fits(item_code, device):
+		return None
+
+	return {
+		"item_code": item_code,
+		"item_name": frappe.db.get_value("Item", item_code, "item_name"),
+		"device_model": device,
+		"question": _("{0} is not listed as fitting {1}. Add it?").format(
+			frappe.db.get_value("Item", item_code, "item_name") or item_code, device),
+	}
+
+
+@frappe.whitelist()
+def confirm_fit(job_card: str, item_code: str) -> dict:
+	"""The technician says this part does fit this handset — record it.
+
+	Only reachable from a repair in the technician's own branch, and only for the
+	handset that repair is actually for, so a confirmation cannot be used to
+	write arbitrary compatibility.
+	"""
+	employee = _me()
+	require_permission("Service Job Card", "write")
+
+	doc = frappe.get_doc("Service Job Card", job_card)
+	if doc.branch != employee.branch:
+		frappe.throw(_("That repair belongs to another branch."), title=_("Not this branch"))
+
+	device = _job_card_device(doc)
+	if not device:
+		frappe.throw(_("This repair does not say which handset it is for."))
+
+	from a3_retail.utils.compatibility import add_compatible
+
+	added = add_compatible(item_code, device, source=job_card)
+	return {
+		"added": added,
+		"item_code": item_code,
+		"device_model": device,
+		"message": (_("{0} now lists {1}.") if added else _("{0} already listed {1}.")).format(
+			frappe.db.get_value("Item", item_code, "item_name") or item_code, device),
+	}
 
 
 @frappe.whitelist()
