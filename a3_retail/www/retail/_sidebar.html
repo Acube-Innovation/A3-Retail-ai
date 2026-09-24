@@ -1,25 +1,37 @@
-{#- Branch app navigation. Each page sets `active`. -#}
+{#- Branch app navigation. Each page sets `active`.
+
+    The fifth item in each row says which kind of branch the screen belongs to:
+    "sales" for a retail counter, "service" for a repair bench, "" for the
+    screens every branch needs. A Sales Only shop has no technician, so the
+    repair screens are not shown to it, and a Service Only bench has no retail
+    counter. `me.does_sales` / `me.does_service` come from the Branch Profile.
+-#}
 {%- set nav = [
-	("dashboard", "Dashboard", "/retail/dashboard", "grid"),
-	("sales", "Sales POS", "/retail/sales", "tag"),
-	("customers", "Customers", "/retail/customers", "users"),
-	("bills", "Bills", "/retail/bills", "file"),
-	("reports", "Reports", "/retail/reports", "chart"),
-	("stock", "Stock", "/retail/stock", "box"),
-	("services", "Service POS", "/retail/service", "wrench"),
-	("bookings", "Service Bookings", "/retail/bookings", "clipboard"),
-	("emi", "EMI", "/retail/emi", "percent"),
-	("spares", "Spare Parts", "/retail/parts", "chip"),
-	("accessories", "Accessories", "/retail/parts?kind=accessories", "plug"),
-	("settings", "Settings", "", "gear"),
+	("dashboard", "Dashboard", "/retail/dashboard", "grid", ""),
+	("sales", "Sales POS", "/retail/sales", "tag", "sales"),
+	("customers", "Customers", "/retail/customers", "users", ""),
+	("bills", "Bills", "/retail/bills", "file", ""),
+	("expenses", "Expenses", "/retail/expenses", "cash", ""),
+	("reports", "Reports", "/retail/reports", "chart", ""),
+	("stock", "Stock", "/retail/stock", "box", ""),
+	("services", "Service POS", "/retail/service", "wrench", "service"),
+	("bookings", "Service Bookings", "/retail/bookings", "clipboard", "service"),
+	("emi", "EMI", "/retail/emi", "percent", "sales"),
+	("spares", "Spare Parts", "/retail/parts", "chip", "service"),
+	("accessories", "Accessories", "/retail/parts?kind=accessories", "plug", "sales"),
+	("settings", "Settings", "", "gear", ""),
 ] -%}
+{%- set does_sales = me.does_sales if me is defined and me and me.does_sales is defined else true -%}
+{%- set does_service = me.does_service if me is defined and me and me.does_service is defined else true -%}
 
 <aside class="side" id="side">
 	<a class="side-brand" href="/retail">{% include "a3_retail/www/retail/_mark.html" %}</a>
 
 	<nav class="side-nav">
-		{% for key, label, href, icon in nav %}
-			{% if href %}
+		{% for key, label, href, icon, needs in nav %}
+			{% if (needs == "sales" and not does_sales) or (needs == "service" and not does_service) %}
+			{# not this kind of branch #}
+			{% elif href %}
 			<a href="{{ href }}" class="{{ 'is-active' if active == key else '' }}">
 				{% include "a3_retail/www/retail/_icons.html" %}<span>{{ _(label) }}</span></a>
 			{% else %}

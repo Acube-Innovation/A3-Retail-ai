@@ -37,7 +37,32 @@ def _profile(branch: str) -> dict:
 		as_dict=True,
 	) or frappe._dict()
 	profile.default_price_list = _price_list(profile)
+	profile.prices_include_tax = prices_include_tax(
+		frappe.db.get_single_value("Global Defaults", "default_company"))
 	return profile
+
+
+def prices_include_tax(company: str) -> bool:
+	"""Does the selling price already carry GST?
+
+	The shop quotes an all-in price, so the outward GST templates back the tax out
+	of the rate rather than adding it on. The counter's running total has to do the
+	same arithmetic as the invoice, or the screen and the printed bill disagree —
+	so this is read from the template rather than assumed on either side.
+	"""
+	if not company:
+		return False
+	name = frappe.db.get_value(
+		"Sales Taxes and Charges Template",
+		{"title": "Output GST In-state 18%", "company": company}, "name",
+	)
+	if not name:
+		return False
+	return bool(frappe.db.get_value(
+		"Sales Taxes and Charges",
+		{"parent": name, "parenttype": "Sales Taxes and Charges Template"},
+		"included_in_print_rate",
+	))
 
 
 def _price_list(profile) -> str | None:
@@ -90,8 +115,13 @@ def catalogue(query: str = "", item_group: str | None = None, only_in_stock: int
 	          "price_list": profile.default_price_list or "Standard Selling"}
 
 	if query:
+		# A customer names their handset, not the part number: "A50", not
+		# "SPR-DSP-A50". So the search also looks at the phones an item fits.
+		from a3_retail.utils.compatibility import search_clause
+
 		conditions.append(
-			"(i.name like %(query)s or i.item_name like %(query)s or i.brand like %(query)s)"
+			"(i.name like %(query)s or i.item_name like %(query)s or i.brand like %(query)s"
+			f" or {search_clause('i')})"
 		)
 		values["query"] = f"%{query}%"
 	if item_group:
@@ -605,6 +635,7 @@ def load_invoice(invoice: str) -> dict:
 		"items": lines,
 		"discount_percent": flt(doc.additional_discount_percentage),
 		"discount_amount": flt(doc.discount_amount),
+		"discount_on": doc.apply_discount_on or "Grand Total",
 		"notes": doc.remarks,
 		"mode_of_payment": payment.mode_of_payment if payment else "Cash",
 		"received_amount": flt(payment.amount) if payment else 0,
@@ -660,7 +691,10 @@ def _build_invoice(data: dict, employee, draft: bool = False):
 
 	cost_center = profile.sales_cost_center or profile.cost_center
 
-	sales_person = _sales_person(employee.name)
+	# A counter is usually a shared till: several people serve customers from the
+	# same signed-in session, so the bill is credited to whoever actually made the
+	# sale rather than to the account that happens to be logged in.
+	sales_person = _sales_person(_sold_by(data, employee))
 	if sales_person:
 		invoice.append("sales_team", {"sales_person": sales_person, "allocated_percentage": 100})
 
@@ -682,11 +716,19 @@ def _build_invoice(data: dict, employee, draft: bool = False):
 			line.use_serial_batch_fields = 1
 			line.serial_no = "\n".join(serial_numbers)
 
+	# A shop that quotes an all-in price discounts off the all-in price: take 500
+	# off and the customer pays 500 less. Discounting the net instead moves the
+	# bill by 500 plus the tax on it, which is not what was agreed at the counter.
+	discount_on = str(data.get("discount_on") or "Grand Total")
+	if discount_on not in ("Net Total", "Grand Total"):
+		frappe.throw(_("Choose whether the discount comes off the grand total or the amount before tax."),
+		             title=_("Discount"))
+
 	if flt(data.get("discount_percent")):
-		invoice.apply_discount_on = "Net Total"
+		invoice.apply_discount_on = discount_on
 		invoice.additional_discount_percentage = flt(data["discount_percent"])
 	elif flt(data.get("discount_amount")):
-		invoice.apply_discount_on = "Net Total"
+		invoice.apply_discount_on = discount_on
 		invoice.discount_amount = flt(data["discount_amount"])
 
 	if data.get("notes"):
@@ -930,6 +972,70 @@ def resolve_mode(tile: str) -> str | None:
 
 def _sales_person(employee: str) -> str | None:
 	return frappe.db.get_value("Sales Person", {"employee": employee}, "name")
+
+
+def _sold_by(data: dict, employee: dict) -> str:
+	"""Which employee gets the credit for this bill.
+
+	A branch till is shared, so the counter names the person who served the
+	customer. The choice is checked against this branch rather than trusted: a
+	till must not be able to credit a sale to another shop's staff.
+	"""
+	chosen = (data.get("sold_by") or "").strip()
+	if not chosen:
+		return employee.name
+
+	row = frappe.db.get_value(
+		"Employee", chosen, ["name", "branch", "status", "employee_name"], as_dict=True
+	)
+	if not row or row.status != "Active":
+		frappe.throw(_("Pick who made this sale."), title=_("Salesman"))
+	if row.branch != employee.branch:
+		frappe.throw(
+			_("{0} does not work at {1}.").format(row.employee_name, employee.branch),
+			title=_("Not this branch"),
+		)
+	return row.name
+
+
+@frappe.whitelist()
+def branch_staff() -> list[dict]:
+	"""Who can be credited with a sale at this counter.
+
+	Only people this branch actually employs, and only those with a Sales Person
+	record — without one the invoice is refused at submit, so offering them here
+	would just move the failure later.
+
+	`_me()` is the whole guard on purpose. Read on Employee would hand a counter
+	the HR record — pay, identity documents, contacts — when all it needs is the
+	names of the colleagues standing beside it, which this returns and nothing
+	more.
+	"""
+	employee = _me()
+
+	rows = frappe.get_all(
+		"Employee",
+		filters={"branch": employee.branch, "status": "Active"},
+		fields=["name", "employee_name", "designation"],
+		order_by="employee_name",
+	)
+	out = []
+	for row in rows:
+		person = frappe.db.get_value(
+			"Sales Person", {"employee": row.name}, ["name", "enabled"], as_dict=True
+		)
+		if not person or not person.enabled:
+			continue
+		# The till's own service account is not a person who sells.
+		if frappe.db.get_value("Employee", row.name, "a3_is_counter_terminal"):
+			continue
+		out.append({
+			"employee": row.name,
+			"employee_name": row.employee_name,
+			"designation": row.designation or "",
+			"sales_person": person.name,
+		})
+	return out
 
 
 def print_url(invoice: str, print_format: str = "Retail Tax Invoice") -> str:

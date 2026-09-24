@@ -166,11 +166,28 @@
 						<input id="discount-value" type="number" min="0" step="0.01" placeholder="0.00">
 						<span id="discount-amount">- ₹0</span>
 					</div>
+					{#- Off the price before tax, or off the amount the customer pays.
+					    A shop quoting an all-in price wants the second: knock 500 off
+					    and the bill drops by exactly 500. -#}
+					<div class="tr tr-discount-on">
+						<span>{{ _("Discount on") }}</span>
+						<select id="discount-on">
+							<option value="Grand Total">{{ _("Grand Total") }}</option>
+							<option value="Net Total">{{ _("Net Total (before tax)") }}</option>
+						</select>
+					</div>
 					<div class="tr"><span>{{ _("Taxable Amount") }}</span><span id="taxable">₹0</span></div>
 					<div class="tr"><span>{{ _("GST") }} (<span id="gst-rate">18</span>%)</span>
 						<span id="gst">₹0</span></div>
 					<div class="tr tr-grand"><span>{{ _("Grand Total") }}</span>
 						<span id="grand">₹0</span></div>
+				</div>
+
+				<!-- A branch till is shared, so the bill records who actually served
+				     the customer rather than whoever is signed in. -->
+				<div class="bill-seller" id="seller-row" hidden>
+					<label for="sold-by">{{ _("Sold by") }}</label>
+					<select id="sold-by"></select>
 				</div>
 
 				<div class="bill-pay">
@@ -271,6 +288,7 @@ window.addEventListener("DOMContentLoaded", function () {
 	POS.start({
 		branch: {{ me.branch|tojson }},
 		groups: {{ groups|tojson }},
+		pricesIncludeTax: {{ (profile.prices_include_tax or False)|tojson }},
 	});
 });
 </script>

@@ -315,6 +315,36 @@ class TestCheckout(FrappeTestCase):
 		self.assertLess(flt(invoice.base_net_total), 2990)
 		self.assertIn("Counter discount", invoice.remarks or "")
 
+	def test_a_discount_comes_off_the_grand_total_by_default(self):
+		"""Knock 500 off and the customer pays 500 less, tax included.
+
+		The shop quotes an all-in price, so a discount agreed at the counter is a
+		discount on what is handed over — not on the pre-tax figure, which would
+		move the bill by 500 plus the tax on it.
+		"""
+		result = pos.checkout(
+			{"customer": "Rahul Krishnan", "discount_amount": 500,
+			 "items": [{"item_code": "ACC-TGL-A55", "qty": 10, "rate": 299, "serials": []}]}
+		)
+		invoice = frappe.get_doc("Sales Invoice", result["invoice"])
+		self.assertEqual(invoice.apply_discount_on, "Grand Total")
+
+	def test_a_discount_can_be_taken_before_tax_instead(self):
+		result = pos.checkout(
+			{"customer": "Rahul Krishnan", "discount_amount": 500, "discount_on": "Net Total",
+			 "items": [{"item_code": "ACC-TGL-A55", "qty": 10, "rate": 299, "serials": []}]}
+		)
+		invoice = frappe.get_doc("Sales Invoice", result["invoice"])
+		self.assertEqual(invoice.apply_discount_on, "Net Total")
+
+	def test_an_unknown_discount_basis_is_refused(self):
+		with self.assertRaises(frappe.ValidationError):
+			pos.checkout(
+				{"customer": "Rahul Krishnan", "discount_amount": 500,
+				 "discount_on": "Whatever",
+				 "items": [{"item_code": "ACC-TGL-A55", "qty": 1, "rate": 299, "serials": []}]}
+			)
+
 	def test_cash_above_the_bill_is_recorded_as_change(self):
 		result = pos.checkout(
 			{"customer": "Rahul Krishnan", "mode_of_payment": "Cash", "received_amount": 5000,

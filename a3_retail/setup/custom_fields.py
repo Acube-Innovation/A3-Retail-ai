@@ -79,6 +79,16 @@ MASTER_FIELDS = {
 		_field("a3_storage", "Storage", "Data", SALES_MODULE, insert_after="a3_ram",
 			depends_on="eval:doc.a3_is_device"),
 		_field("a3_colour", "Colour", "Data", SALES_MODULE, insert_after="a3_storage"),
+		# Which handsets this item fits. A pouch or a spare part is one thing on
+		# the shelf with one stock count however many phones it suits, so the
+		# handsets are a list against the item rather than an item per phone.
+		# `a3_device_model` above is the opposite relationship: the phone this
+		# item *is*, for handsets being sold.
+		_field("a3_compat_section", "Fits These Phones", "Section Break", SALES_MODULE,
+			insert_after="a3_colour", collapsible=1),
+		_field("a3_compatible_devices", "Compatible Devices", "Table", SALES_MODULE,
+			options="Item Compatible Device", insert_after="a3_compat_section",
+			description="Leave empty for an item that is not phone-specific."),
 		_field("a3_device_col_break", "", "Column Break", SALES_MODULE, insert_after="a3_colour"),
 		_field("a3_brand_warranty_months", "Brand Warranty (Months)", "Int", SALES_MODULE,
 			insert_after="a3_device_col_break", default="12"),
@@ -257,6 +267,13 @@ SERVICE_LINK_FIELDS = {
 		_field("a3_service_job_card", "Service Job Card", "Link", SERVICE_MODULE,
 			options="Service Job Card", insert_after="party_name", no_copy=1),
 	],
+	"Journal Entry": [
+		# Petty cash raised at a counter, so the branch expense screen can find
+		# its own entries without sweeping every journal the company posts.
+		_field("a3_is_branch_expense", "Branch Expense", "Check", OPS_MODULE,
+			insert_after="voucher_type", read_only=1, no_copy=1,
+			description="Recorded from the branch app, not the desk."),
+	],
 }
 
 
@@ -403,6 +420,12 @@ HR_FIELDS = {
 			insert_after="a3_staff_category"),
 		_field("a3_is_incentive_eligible", "Eligible for Incentive", "Check", HR_MODULE,
 			default="1", insert_after="a3_shift_pattern"),
+		# A shared branch till signs in as its own account, and that account needs
+		# an Employee because `_me()` reads the branch from one. It is not a person
+		# who sells, so it is kept out of the salesman list and off incentives.
+		_field("a3_is_counter_terminal", "Counter Terminal Account", "Check", HR_MODULE,
+			insert_after="a3_is_incentive_eligible",
+			description="A shared branch login, not a member of staff."),
 		_field("a3_hr_col_break", "", "Column Break", HR_MODULE,
 			insert_after="a3_is_incentive_eligible"),
 		_field("a3_technician_grade", "Technician Grade", "Select", HR_MODULE,

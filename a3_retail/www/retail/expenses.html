@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="csrf-token" content="{{ csrf_token }}">
+	<meta name="robots" content="noindex">
+	<title>{{ _("Expenses") }} · {{ me.branch }} · {{ app_name }}</title>
+	<link rel="stylesheet" href="/assets/a3_retail/css/a3_branch.css?v={{ asset_v }}">
+	<script src="/assets/a3_retail/js/a3_branch.js?v={{ asset_v }}" defer></script>
+	<script src="/assets/a3_retail/js/a3_expenses.js?v={{ asset_v }}" defer></script>
+</head>
+<body class="pos-body">
+<div class="app">
+
+	{% include "a3_retail/www/retail/_sidebar.html" %}
+
+	<div class="main">
+		<header class="topbar">
+			<div class="topbar-branch topbar-title">
+				<h1>{{ _("Expenses") }} <span class="chip">{{ me.branch }}</span></h1>
+				<p class="topbar-sub">{{ _("What this branch spent, and on what") }}</p>
+			</div>
+			<div class="topbar-right">
+				<button class="btn btn-primary" id="new-expense">+ {{ _("Record Expense") }}</button>
+				<a class="btn btn-quiet" href="/retail/dashboard">{{ _("Dashboard") }}</a>
+				<div class="who">
+					<div class="name">{{ me.employee_name }}</div>
+					<div class="role">{{ me.designation or "" }}</div>
+				</div>
+				<div class="avatar">{{ initials }}</div>
+				<a class="btn btn-quiet" href="/retail/logout">{{ _("Sign out") }}</a>
+			</div>
+		</header>
+
+		<main class="content">
+			<section class="ctiles" id="kpis"></section>
+
+			<section class="svc-panel">
+				<div class="panel-head">
+					<h2>{{ _("Recent expenses") }}</h2>
+					<span class="rep-when">{{ _("Newest first, this branch only") }}</span>
+				</div>
+				<div class="line-table">
+					<table class="bill-table" id="rows-table">
+						<thead>
+							<tr>
+								<th>{{ _("Date") }}</th>
+								<th>{{ _("Category") }}</th>
+								<th>{{ _("Note") }}</th>
+								<th class="num">{{ _("Amount") }}</th>
+								<th>{{ _("Entry") }}</th>
+							</tr>
+						</thead>
+						<tbody id="rows"><tr><td colspan="5">{{ _("Loading…") }}</td></tr></tbody>
+					</table>
+				</div>
+			</section>
+		</main>
+	</div>
+</div>
+
+<div class="modal" id="work-modal" hidden>
+	<div class="modal-card">
+		<h3 id="work-title">{{ _("Record an expense") }}</h3>
+		<p class="modal-note" id="work-note">
+			{{ _("Goes straight into this branch's books, against this branch's cost centre.") }}</p>
+		<div id="work-body"></div>
+		<div class="msg" id="work-msg"></div>
+		<div class="modal-actions">
+			<button class="btn btn-quiet" data-close>{{ _("Cancel") }}</button>
+			<button class="btn btn-primary" id="work-go">{{ _("Save expense") }}</button>
+		</div>
+	</div>
+</div>
+
+</body>
+</html>

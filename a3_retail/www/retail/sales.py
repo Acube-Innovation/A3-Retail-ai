@@ -10,7 +10,7 @@ no_cache = 1
 
 
 def get_context(context):
-	from a3_retail.www.retail import asset_version
+	from a3_retail.www.retail import asset_version, require_branch_kind
 
 	context.asset_v = asset_version()
 	from a3_retail.api.pos import _profile, item_groups
@@ -24,6 +24,7 @@ def get_context(context):
 		raise frappe.Redirect
 
 	context.me = session_context()
+	require_branch_kind(context, "sales")
 	context.app_name = "A3 Retail"
 	context.company = frappe.db.get_single_value("Global Defaults", "default_company") or "A3 Retail"
 	context.initials = _initials(context.me["employee_name"])

@@ -16,6 +16,11 @@ window.POS = (function () {
 		// `splits` is only read while `split` is on, so the ordinary one-tile
 		// path is untouched.
 		split: false, splits: [],
+		// The assistant serving this customer at a shared till.
+		soldBy: "",
+		// Whether the price list already carries GST — set from the branch's tax
+		// template so the running total matches the invoice that gets posted.
+		pricesIncludeTax: false,
 	};
 	// The tiles a counter can split across. EMI is absent on purpose — it is a
 	// loan somebody else approves, not money taken at the till.
@@ -338,12 +343,34 @@ window.POS = (function () {
 	function totals() {
 		const subtotal = state.cart.reduce((sum, line) => sum + line.rate * line.qty, 0);
 		const value = Number($("discount-value").value) || 0;
-		const discount = $("discount-type").value === "%"
-			? subtotal * Math.min(value, 100) / 100
-			: Math.min(value, subtotal);
-		const taxable = subtotal - discount;
+		const percent = $("discount-type").value === "%";
 		const rate = state.cart.length
 			? Math.max(...state.cart.map((line) => line.gst_rate || 18)) : 18;
+		const factor = 1 + rate / 100;
+
+		// Where the price list is an all-in price, the GST is already inside the
+		// rate and has to be backed out; where it is not, it is added on top. Which
+		// one applies comes from the branch's own tax template, so this screen and
+		// the posted invoice always agree.
+		const gross = state.pricesIncludeTax ? subtotal : subtotal * factor;
+
+		// "Grand Total" takes the discount off what the customer actually hands
+		// over; "Net Total" takes it off the pre-tax figure, so the bill moves by
+		// the discount plus the tax on it.
+		if ($("discount-on").value === "Grand Total") {
+			const discount = percent
+				? gross * Math.min(value, 100) / 100
+				: Math.min(value, gross);
+			const grand = gross - discount;
+			const taxable = grand / factor;
+			return { subtotal, discount, taxable, rate, gst: grand - taxable, grand };
+		}
+
+		const net = gross / factor;
+		const discount = percent
+			? net * Math.min(value, 100) / 100
+			: Math.min(value, net);
+		const taxable = net - discount;
 		const gst = taxable * rate / 100;
 		return { subtotal, discount, taxable, rate, gst, grand: taxable + gst };
 	}
@@ -369,7 +396,11 @@ window.POS = (function () {
 		$("change").textContent = money(change);
 
 		const shortOnSplit = state.split ? paintSplit(sums.grand) : false;
-		$("checkout").disabled = !state.cart.length || !state.customer || shortOnSplit;
+		// Once the till offers a list of assistants, the bill needs one chosen —
+		// an unattributed sale pays nobody their incentive.
+		const needSeller = !$("seller-row").hidden && !state.soldBy;
+		$("checkout").disabled = !state.cart.length || !state.customer
+			|| shortOnSplit || needSeller;
 	}
 
 	// --------------------------------------------------------------- split
@@ -703,6 +734,7 @@ window.POS = (function () {
 					invoice: state.editing,
 					customer: state.customer,
 					mode_of_payment: state.mode,
+					sold_by: state.soldBy || "",
 					notes: $("notes").value.trim(),
 					received_amount: Number($("received").value) || 0,
 					// Only sent when the counter is actually splitting; the server
@@ -716,6 +748,7 @@ window.POS = (function () {
 						? Number($("discount-value").value) || 0 : 0,
 					discount_amount: $("discount-type").value === "₹"
 						? Number($("discount-value").value) || 0 : 0,
+					discount_on: $("discount-on").value,
 					items: state.cart.map((line) => ({
 						item_code: line.item_code, qty: line.qty, rate: line.rate,
 						serials: line.serials,
@@ -796,6 +829,9 @@ window.POS = (function () {
 			} else if (bill.discount_amount) {
 				$("discount-type").value = "₹";
 				$("discount-value").value = bill.discount_amount;
+			}
+			if (bill.discount_on) {
+				$("discount-on").value = bill.discount_on;
 			}
 			setChip("Editing " + bill.invoice, "warn");
 			markEditing(bill.invoice);
@@ -896,9 +932,55 @@ window.POS = (function () {
 	}
 
 	// --------------------------------------------------------------- start
+	/**
+	 * Who is serving this customer.
+	 *
+	 * The till is shared, so the bill has to record the person, not the login.
+	 * The choice sticks for the session because one assistant usually works a
+	 * run of sales — re-picking on every bill would be a keystroke nobody makes.
+	 */
+	const SELLER_KEY = "a3_pos_sold_by";
+
+	async function loadSellers() {
+		let staff = [];
+		try {
+			staff = await A3.call("a3_retail.api.pos.branch_staff");
+		} catch (error) {
+			return;   // not permitted to list staff: leave the field hidden
+		}
+		if (!staff.length) return;
+
+		let remembered = "";
+		try {
+			remembered = localStorage.getItem(SELLER_KEY) || "";
+		} catch (error) {
+			remembered = "";
+		}
+		if (!staff.some((row) => row.employee === remembered)) remembered = "";
+
+		const select = $("sold-by");
+		select.innerHTML = `<option value="">${staff.length > 1 ? "Who is serving?" : ""}</option>`
+			+ staff.map((row) => `<option value="${esc(row.employee)}"${
+				row.employee === remembered ? " selected" : ""}>${esc(row.employee_name)}${
+				row.designation ? " · " + esc(row.designation) : ""}</option>`).join("");
+
+		state.soldBy = remembered;
+		select.addEventListener("change", () => {
+			state.soldBy = select.value;
+			try {
+				localStorage.setItem(SELLER_KEY, select.value);
+			} catch (error) { /* a private window is not a reason to block a sale */ }
+			paintTotals();
+		});
+		$("seller-row").hidden = false;
+		paintTotals();
+	}
+
 	function start(options) {
 		state.branch = options.branch;
 		state.groups = options.groups || [];
+		state.pricesIncludeTax = Boolean(options.pricesIncludeTax);
+		loadSellers();
 
 		$("q").addEventListener("input", () => {
 			clearTimeout(searchTimer);
@@ -943,6 +1025,7 @@ window.POS = (function () {
 		$("clear-cart").addEventListener("click", () => { state.cart = []; paintCart(); });
 		$("discount-type").addEventListener("change", paintTotals);
 		$("discount-value").addEventListener("input", paintTotals);
+		$("discount-on").addEventListener("change", paintTotals);
 		$("received").addEventListener("input", paintTotals);
 		$("checkout").addEventListener("click", checkout);
 

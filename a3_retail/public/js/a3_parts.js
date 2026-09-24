@@ -51,6 +51,28 @@ window.PARTS = (function () {
 	}
 
 	// ------------------------------------------------------------- loading
+	/**
+	 * A part fitted to a handset it is not listed for.
+	 *
+	 * Asked, not assumed. A genuine fit is worth recording for the next
+	 * technician; a part picked by mistake must not quietly teach the shop that
+	 * it belongs on that phone.
+	 */
+	async function offerFit(result) {
+		const ask = result && result.unlisted_fit;
+		if (!ask) return;
+		if (!window.confirm(ask.question)) return;
+		try {
+			const done = await A3.call("a3_retail.api.parts_desk.confirm_fit", {
+				job_card: result.job_card,
+				item_code: ask.item_code,
+			});
+			toast(done.message, "ok");
+		} catch (error) {
+			toast(error.message || "Could not record that fit.", "error");
+		}
+	}
+
 	async function loadAll() {
 		$("title").innerHTML = `${state.kind === "parts" ? "Spare Parts" : "Accessories"}
 			<span class="chip">${esc(state.branch)}</span>`;
@@ -301,6 +323,7 @@ window.PARTS = (function () {
 					? `On ${result.job_card}. ${result.message || "It is already on the bench."}`
 					: `Added to ${result.job_card}. ${result.message || "Being chased."}`;
 				toast(said, "ok");
+				await offerFit(result);
 				loadAll();
 			});
 	}
