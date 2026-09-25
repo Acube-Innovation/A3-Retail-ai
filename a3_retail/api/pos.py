@@ -15,7 +15,7 @@ the bill (scope 2.5, step 12 P1–P9).
 
 import frappe
 from frappe import _
-from frappe.utils import cint, flt, fmt_money, nowdate
+from frappe.utils import cint, flt, fmt_money, getdate, nowdate
 
 from a3_retail.api import require_permission
 from a3_retail.api.customer import normalize_mobile
@@ -567,7 +567,8 @@ def save_draft(payload) -> dict:
 		"net_total": flt(invoice.net_total),
 		"tax": flt(invoice.total_taxes_and_charges),
 		"customer_name": invoice.customer_name,
-		"print_url": print_url(invoice.name),
+		# A bill on hold has no print address — it is not a bill yet.
+		"print_url": None,
 	}
 
 
@@ -636,6 +637,9 @@ def load_invoice(invoice: str) -> dict:
 		"discount_percent": flt(doc.additional_discount_percentage),
 		"discount_amount": flt(doc.discount_amount),
 		"discount_on": doc.apply_discount_on or "Grand Total",
+		# So a bill held yesterday and finished today shows the date it will post
+		# under, rather than leaving the counter to assume it is today's.
+		"posting_date": str(doc.posting_date),
 		"notes": doc.remarks,
 		"mode_of_payment": payment.mode_of_payment if payment else "Cash",
 		"received_amount": flt(payment.amount) if payment else 0,
@@ -676,9 +680,16 @@ def _build_invoice(data: dict, employee, draft: bool = False):
 
 	invoice.customer = data["customer"]
 	invoice.company = frappe.db.get_single_value("Global Defaults", "default_company")
-	invoice.posting_date = nowdate()
+	# A bill that was put on hold yesterday and completed today is still
+	# yesterday's sale, so an existing date is kept rather than stamped over. A
+	# date sent from the counter wins, which is how a bill gets back-dated at all.
+	posting = data.get("posting_date") or invoice.get("posting_date") or nowdate()
+	posting = getdate(posting)
+	if posting > getdate(nowdate()):
+		frappe.throw(_("A bill cannot be dated in the future."), title=_("Date"))
+	invoice.posting_date = posting
 	invoice.set_posting_time = 1
-	invoice.due_date = nowdate()
+	invoice.due_date = posting
 	invoice.branch = employee.branch
 	invoice.update_stock = 1
 	invoice.set_warehouse = profile.default_warehouse
@@ -1040,6 +1051,15 @@ def branch_staff() -> list[dict]:
 
 def print_url(invoice: str, print_format: str = "Retail Tax Invoice") -> str:
 	from urllib.parse import urlencode
+
+	# Held bills are drafts. Hiding the button is not enough — the address would
+	# still work if somebody kept it — so the refusal lives here too.
+	if frappe.db.exists("Sales Invoice", invoice) and \
+			cint(frappe.db.get_value("Sales Invoice", invoice, "docstatus")) == 0:
+		frappe.throw(
+			_("{0} is on hold. Complete the sale before printing it.").format(invoice),
+			title=_("Not a bill yet"),
+		)
 
 	query = urlencode(
 		{

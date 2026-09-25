@@ -36,42 +36,6 @@
 			<!-- =============================================== left column -->
 			<section class="pos-left">
 
-				<div class="pos-search">
-					<div class="pos-search-box">
-						{% set icon = "search" %}{% include "a3_retail/www/retail/_icons.html" %}
-						<input id="q" type="search" autocomplete="off" autofocus
-						       placeholder="{{ _('Search by name, IMEI, barcode or scan…') }}">
-					</div>
-					<label class="pos-toggle">
-						<input type="checkbox" id="in-stock" checked>
-						<span>{{ _("In stock here") }}</span>
-					</label>
-				</div>
-
-				<div class="pos-tabsrow">
-					<div class="pos-tabs" id="groups">
-						<button class="tab is-active" data-group="">{{ _("Everything") }}</button>
-						{% for group in groups[:6] %}
-						<button class="tab" data-group="{{ group }}">{{ group }}</button>
-						{% endfor %}
-					</div>
-					{% if groups|length > 6 %}
-					{#- Outside the scrolling strip, so the groups that did not fit stay
-					    reachable however narrow the screen gets. -#}
-					<button class="tab tab-more" id="more-groups">+ {{ groups|length - 6 }} {{ _("More") }}</button>
-					{% endif %}
-					<div class="pos-view">
-						<button class="view is-active" data-view="grid" title="{{ _('Grid') }}">
-							{% set icon = "tiles" %}{% include "a3_retail/www/retail/_icons.html" %}</button>
-						<button class="view" data-view="list" title="{{ _('List') }}">
-							{% set icon = "list" %}{% include "a3_retail/www/retail/_icons.html" %}</button>
-					</div>
-				</div>
-
-				<div class="pos-grid" id="grid">
-					<div class="pos-loading">{{ _("Loading the catalogue…") }}</div>
-				</div>
-
 				<!-- ------------------------------------------- customer -->
 				<section class="pos-panel pos-customer">
 					<h2>{{ _("Customer") }}</h2>
@@ -108,6 +72,42 @@
 						<div id="customer-history" class="pos-history"></div>
 					</div>
 				</section>
+
+				<div class="pos-search">
+					<div class="pos-search-box">
+						{% set icon = "search" %}{% include "a3_retail/www/retail/_icons.html" %}
+						<input id="q" type="search" autocomplete="off" autofocus
+						       placeholder="{{ _('Search by name, IMEI, barcode or scan…') }}">
+					</div>
+					<label class="pos-toggle">
+						<input type="checkbox" id="in-stock" checked>
+						<span>{{ _("In stock here") }}</span>
+					</label>
+				</div>
+
+				<div class="pos-tabsrow">
+					<div class="pos-tabs" id="groups">
+						<button class="tab is-active" data-group="">{{ _("Everything") }}</button>
+						{% for group in groups[:6] %}
+						<button class="tab" data-group="{{ group }}">{{ group }}</button>
+						{% endfor %}
+					</div>
+					{% if groups|length > 6 %}
+					{#- Outside the scrolling strip, so the groups that did not fit stay
+					    reachable however narrow the screen gets. -#}
+					<button class="tab tab-more" id="more-groups">+ {{ groups|length - 6 }} {{ _("More") }}</button>
+					{% endif %}
+					<div class="pos-view">
+						<button class="view is-active" data-view="grid" title="{{ _('Grid') }}">
+							{% set icon = "tiles" %}{% include "a3_retail/www/retail/_icons.html" %}</button>
+						<button class="view" data-view="list" title="{{ _('List') }}">
+							{% set icon = "list" %}{% include "a3_retail/www/retail/_icons.html" %}</button>
+					</div>
+				</div>
+
+				<div class="pos-grid" id="grid">
+					<div class="pos-loading">{{ _("Loading the catalogue…") }}</div>
+				</div>
 
 				<!-- --------------------------------------- quick actions -->
 				<section class="pos-quick">
@@ -160,10 +160,21 @@
 					<div class="tr"><span>{{ _("Items") }} (<b id="count">0</b>)</span>
 						<span id="items-total">₹0</span></div>
 					<div class="tr"><span>{{ _("Subtotal") }}</span><span id="subtotal">₹0</span></div>
+					{#- Two boxes, not a toggle: a counter is told either "give him ten
+					    percent" or "take five hundred off", and should not have to
+					    convert one into the other. Typing in either box fills the
+					    other, so whichever way the deal was struck, both are on
+					    screen and the bill is the same. -#}
 					<div class="tr tr-discount">
 						<span>{{ _("Discount") }}</span>
-						<select id="discount-type"><option value="%">%</option><option value="₹">₹</option></select>
-						<input id="discount-value" type="number" min="0" step="0.01" placeholder="0.00">
+						<span class="disc-pair">
+							<input id="discount-pct" type="number" min="0" max="100" step="0.01"
+							       placeholder="0" aria-label="{{ _('Discount percent') }}">
+							<i class="disc-unit">%</i>
+							<input id="discount-amt" type="number" min="0" step="0.01"
+							       placeholder="0.00" aria-label="{{ _('Discount amount') }}">
+							<i class="disc-unit">₹</i>
+						</span>
 						<span id="discount-amount">- ₹0</span>
 					</div>
 					{#- Off the price before tax, or off the amount the customer pays.
@@ -234,9 +245,17 @@
 					</div>
 				</div>
 
-				<button class="btn btn-primary btn-block btn-complete" id="checkout" disabled>
-					{{ _("Complete Sale") }} <span class="key">F9</span>
-				</button>
+				{#- Hold puts the bill down without taking money: the customer has gone
+				    to the ATM, or wants to think about it. It saves a draft, which
+				    cannot be printed, and comes back through Drafts to be completed. -#}
+				<div class="pos-actions">
+					<button class="btn btn-quiet btn-hold" id="hold" disabled>
+						{{ _("Hold") }} <span class="key">F4</span>
+					</button>
+					<button class="btn btn-primary btn-complete" id="checkout" disabled>
+						{{ _("Complete Sale") }} <span class="key">F9</span>
+					</button>
+				</div>
 				<div class="msg" id="pos-msg"></div>
 			</aside>
 		</main>

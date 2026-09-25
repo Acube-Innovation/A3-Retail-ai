@@ -345,6 +345,37 @@ class TestCheckout(FrappeTestCase):
 				 "items": [{"item_code": "ACC-TGL-A55", "qty": 1, "rate": 299, "serials": []}]}
 			)
 
+	def test_a_held_bill_cannot_be_printed(self):
+		"""Nothing has been taken and no stock has moved — there is no bill yet."""
+		result = pos.save_draft(
+			{"customer": "Rahul Krishnan",
+			 "items": [{"item_code": "ACC-TGL-A55", "qty": 1, "rate": 299, "serials": []}]}
+		)
+		self.assertEqual(frappe.db.get_value("Sales Invoice", result["invoice"], "docstatus"), 0)
+		with self.assertRaises(frappe.ValidationError):
+			pos.print_url(result["invoice"])
+
+	def test_a_completed_bill_can_be_printed(self):
+		result = pos.checkout(
+			{"customer": "Rahul Krishnan", "mode_of_payment": "Cash",
+			 "items": [{"item_code": "ACC-TGL-A55", "qty": 1, "rate": 299, "serials": []}]}
+		)
+		self.assertIn("download_pdf", pos.print_url(result["invoice"]))
+
+	def test_the_counter_has_a_hold_button_beside_complete(self):
+		markup = open(os.path.join(
+			frappe.get_app_path("a3_retail", "www", "retail"), "sales.html")).read()
+		self.assertIn('id="hold"', markup)
+		self.assertIn('class="pos-actions"', markup)
+
+	def test_the_discount_has_a_percent_box_and_a_rupee_box(self):
+		markup = open(os.path.join(
+			frappe.get_app_path("a3_retail", "www", "retail"), "sales.html")).read()
+		self.assertIn('id="discount-pct"', markup)
+		self.assertIn('id="discount-amt"', markup)
+		# the old single-field toggle is gone
+		self.assertNotIn('id="discount-type"', markup)
+
 	def test_cash_above_the_bill_is_recorded_as_change(self):
 		result = pos.checkout(
 			{"customer": "Rahul Krishnan", "mode_of_payment": "Cash", "received_amount": 5000,

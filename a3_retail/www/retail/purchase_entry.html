@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="csrf-token" content="{{ csrf_token }}">
+	<meta name="robots" content="noindex">
+	<title>{{ _("Record Purchase") }} · {{ me.branch }} · {{ app_name }}</title>
+	<link rel="stylesheet" href="/assets/a3_retail/css/a3_branch.css?v={{ asset_v }}">
+	<script src="/assets/a3_retail/js/a3_branch.js?v={{ asset_v }}" defer></script>
+	<script src="/assets/a3_retail/js/a3_purchase_entry.js?v={{ asset_v }}" defer></script>
+</head>
+<body class="pos-body">
+<div class="app">
+
+	{% include "a3_retail/www/retail/_sidebar.html" %}
+
+	<div class="main">
+		<header class="topbar">
+			<div class="topbar-branch topbar-title">
+				<h1>{{ _("Record Purchase") }} <span class="chip">{{ me.branch }}</span></h1>
+				<p class="topbar-sub">{{ _("The distributor's bill — what came in and what is owed") }}</p>
+			</div>
+			<div class="topbar-right">
+				<a class="btn btn-quiet" href="/retail/purchases">{{ _("All purchases") }}</a>
+				<div class="who">
+					<div class="name">{{ me.employee_name }}</div>
+					<div class="role">{{ me.designation or "" }}</div>
+				</div>
+				<div class="avatar">{{ initials }}</div>
+				<a class="btn btn-quiet" href="/retail/logout">{{ _("Sign out") }}</a>
+			</div>
+		</header>
+
+		<main class="content pe-grid">
+
+			<!-- ------------------------------------------------- left: the bill -->
+			<div class="pe-main">
+
+				<section class="svc-panel">
+					<div class="panel-head"><h2>{{ _("Supplier") }}</h2>
+						<button class="btn btn-quiet" id="toggle-supplier">+ {{ _("New supplier") }}</button>
+					</div>
+					<div class="field">
+						<input id="supplier-q" type="search" autocomplete="off"
+						       placeholder="{{ _('Search the distributor by name or phone…') }}">
+						<div id="supplier-hits" class="pick-list"></div>
+						<p class="muted" id="supplier-picked"></p>
+					</div>
+
+					<div id="supplier-new" hidden>
+						<div class="field-row">
+							<div class="field">
+								<label for="s-gstin">{{ _("GST number") }}</label>
+								<input id="s-gstin" type="text" maxlength="15"
+								       placeholder="{{ _('15 characters — we fill the rest') }}">
+							</div>
+							<div class="field field-btn">
+								<button class="btn btn-quiet" id="s-fetch">{{ _("Fetch details") }}</button>
+							</div>
+						</div>
+						<p class="muted" id="s-gstin-note"></p>
+						<div class="field-row">
+							<div class="field"><label for="s-name">{{ _("Supplier name") }}</label>
+								<input id="s-name" type="text"></div>
+							<div class="field"><label for="s-phone">{{ _("Phone") }}</label>
+								<input id="s-phone" type="tel"></div>
+						</div>
+						<div class="field-row">
+							<div class="field"><label for="s-addr">{{ _("Address") }}</label>
+								<input id="s-addr" type="text"></div>
+							<div class="field"><label for="s-city">{{ _("City") }}</label>
+								<input id="s-city" type="text"></div>
+						</div>
+						<div class="field-row">
+							<div class="field"><label for="s-state">{{ _("State") }}</label>
+								<input id="s-state" type="text"></div>
+							<div class="field"><label for="s-pin">{{ _("PIN") }}</label>
+								<input id="s-pin" type="text" maxlength="6"></div>
+						</div>
+						<div class="modal-actions">
+							<button class="btn btn-quiet" id="s-cancel">{{ _("Cancel") }}</button>
+							<button class="btn btn-primary" id="s-save">{{ _("Save supplier") }}</button>
+						</div>
+					</div>
+				</section>
+
+				<section class="svc-panel">
+					<div class="panel-head"><h2>{{ _("What came in") }}</h2>
+						<button class="btn btn-quiet" id="toggle-item">+ {{ _("New item") }}</button>
+					</div>
+					<div class="field">
+						<input id="item-q" type="search" autocomplete="off"
+						       placeholder="{{ _('Search the catalogue…') }}">
+						<div id="item-hits" class="pick-list"></div>
+					</div>
+
+					<div id="item-new" hidden>
+						<p class="muted">{{ _("Only add an item the search above could not find.") }}</p>
+						<div class="field-row">
+							<div class="field"><label for="i-name">{{ _("Item name") }}</label>
+								<input id="i-name" type="text"></div>
+							<div class="field"><label for="i-group">{{ _("Group") }}</label>
+								<select id="i-group"></select></div>
+						</div>
+						<div class="field-row">
+							<div class="field"><label for="i-hsn">{{ _("HSN code") }}</label>
+								<input id="i-hsn" type="text" placeholder="85171300"></div>
+							<div class="field"><label for="i-uom">{{ _("Unit") }}</label>
+								<select id="i-uom"></select></div>
+						</div>
+						<div class="field-row">
+							<div class="field"><label for="i-price">{{ _("Selling price") }}</label>
+								<input id="i-price" type="number" min="0" step="0.01"></div>
+							<div class="field check">
+								<label><input id="i-serial" type="checkbox"> {{ _("Has IMEI / serial") }}</label>
+							</div>
+						</div>
+						<div class="modal-actions">
+							<button class="btn btn-quiet" id="i-cancel">{{ _("Cancel") }}</button>
+							<button class="btn btn-primary" id="i-save">{{ _("Save item") }}</button>
+						</div>
+					</div>
+
+					<table class="bill-table" id="lines">
+						<thead><tr>
+							<th>{{ _("Item") }}</th><th>{{ _("Qty") }}</th>
+							<th>{{ _("Cost rate") }}</th><th>{{ _("Amount") }}</th><th></th>
+						</tr></thead>
+						<tbody></tbody>
+					</table>
+					<p class="muted" id="empty-note">{{ _("Nothing added yet.") }}</p>
+				</section>
+			</div>
+
+			<!-- --------------------------------------------- right: the totals -->
+			<aside class="pe-side">
+				<section class="svc-panel">
+					<h2>{{ _("Bill") }}</h2>
+
+					<div class="field-row">
+						<div class="field"><label for="bill-no">{{ _("Supplier bill no.") }}</label>
+							<input id="bill-no" type="text"></div>
+						<div class="field"><label for="p-date">{{ _("Date") }}</label>
+							<input id="p-date" type="date"></div>
+					</div>
+
+					<div class="bill-totals">
+						<div class="tr"><span>{{ _("Lines") }}</span><span id="p-lines">0</span></div>
+						<div class="tr tr-grand"><span>{{ _("Bill total") }}</span>
+							<span id="p-total">₹0.00</span></div>
+					</div>
+
+					<div class="field"><label for="paid">{{ _("Paid now") }}</label>
+						<input id="paid" type="number" min="0" step="0.01" placeholder="0.00"></div>
+					<div class="field"><label for="p-mode">{{ _("Paid by") }}</label>
+						<select id="p-mode"></select></div>
+					<p class="muted">{{ _("Leave Paid now empty to put it on the supplier's account.") }}</p>
+
+					<div class="field"><label for="p-notes">{{ _("Note (optional)") }}</label>
+						<input id="p-notes" type="text" maxlength="200"></div>
+
+					<button class="btn btn-primary btn-wide" id="p-save">{{ _("Save Purchase") }}</button>
+					<p class="msg" id="work-msg"></p>
+				</section>
+			</aside>
+		</main>
+	</div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script>
+window.addEventListener("DOMContentLoaded", function () {
+	PURCHASE_ENTRY.start({ branch: {{ me.branch|tojson }} });
+});
+</script>
+</body>
+</html>
