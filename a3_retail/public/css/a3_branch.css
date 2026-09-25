@@ -663,10 +663,23 @@ body.side-collapsed .side-nav a, body.side-collapsed .side-soon { justify-conten
 .tr { display: flex; align-items: center; justify-content: space-between; gap: 8px;
 	padding: 6px 0; font-size: 13px; color: #46536b; }
 .tr span:last-child { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
-.tr-discount { display: grid; grid-template-columns: 1fr 62px 96px 74px; }
+.tr-discount { display: grid; grid-template-columns: 1fr auto 74px; align-items: center; }
 .tr-discount select, .tr-discount input { padding: 6px 8px; font-family: inherit; font-size: 12px;
 	border: 1px solid var(--line-strong); border-radius: 7px; background: var(--card); }
 .tr-discount span:last-child { text-align: right; }
+/* percent and rupees sit side by side — the counter is told one or the other,
+   never both, and should not have to convert between them. */
+.disc-pair { display: flex; align-items: center; gap: 4px; }
+.disc-pair input { width: 62px; text-align: right; }
+.disc-unit { font-style: normal; font-size: 11.5px; color: var(--muted); width: 10px; }
+
+/* Hold sits beside Complete, not above it: one is putting the bill down, the
+   other is taking money, and a cashier should not reach past one for the other.
+   Named for the counter, not the bill — `.bill-actions` already belongs to the
+   Bills page's icon row. */
+.pos-actions { display: grid; grid-template-columns: 96px 1fr; gap: 8px; }
+.pos-actions .btn { justify-content: center; }
+.btn-hold[disabled] { opacity: .45; }
 .tr-discount-on { display: grid; grid-template-columns: 1fr 172px; align-items: center; }
 .tr-discount-on select { padding: 6px 8px; font-family: inherit; font-size: 12px;
 	border: 1px solid var(--line); border-radius: 6px; background: var(--card);
@@ -1729,7 +1742,8 @@ body.side-collapsed .side-nav a, body.side-collapsed .side-soon { justify-conten
 	.pay-tiles { grid-template-columns: repeat(3, 1fr); gap: 6px; }
 	.pay { padding: 9px 2px; font-size: 10.5px; }
 	.bill-thead, .bill-row { grid-template-columns: 1fr 46px 56px 52px 14px; font-size: 12.5px; }
-	.tr-discount { grid-template-columns: 1fr 52px 78px 62px; }
+	.tr-discount { grid-template-columns: 1fr auto 62px; }
+	.disc-pair input { width: 52px; }
 	.tr-discount-on { grid-template-columns: 1fr 132px; }
 	/* 188px plus a label does not fit a 360px screen. */
 	.input-rupee, .change { width: auto; flex: 1 1 auto; min-width: 0; }
@@ -1828,3 +1842,36 @@ body.side-collapsed .side-nav a, body.side-collapsed .side-soon { justify-conten
 	.tabbar a span, .tabbar-more span { font-size: 9.5px; }
 	.navsheet .side-nav { grid-template-columns: 1fr; }
 }
+
+/* ---------------------------------------------------- purchase entry screen
+   The bill on the left, what is owed on the right — the same split as the
+   counter, so a cashier who knows Sales POS already knows this one. */
+.pe-grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px;
+	align-items: start; }
+.pe-main { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.pe-side { position: sticky; top: 16px; }
+.pe-side .svc-panel { display: flex; flex-direction: column; gap: 12px; }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.field-btn { display: flex; align-items: flex-end; }
+.field-btn .btn { width: 100%; }
+.btn-wide { width: 100%; justify-content: center; }
+.pick-list { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
+.pick-list:empty { display: none; }
+.pick { text-align: left; padding: 8px 10px; border: 1px solid var(--line);
+	border-radius: 6px; background: var(--card); color: inherit; font: inherit;
+	cursor: pointer; }
+.pick:hover { background: var(--hover, rgba(0, 0, 0, .04)); }
+
+@media (max-width: 960px) {
+	.pe-grid { grid-template-columns: 1fr; }
+	.pe-side { position: static; }
+}
+@media (max-width: 640px) {
+	.field-row { grid-template-columns: 1fr; }
+}
+
+
+/* A bill on hold still has paperwork to settle — date, salesman, note — so the
+   form sits above the sheet rather than replacing it. */
+.inv-draft-edit { border-left: 3px solid var(--warn, #e9a23b); }
+.inv-draft-edit .panel-head { align-items: center; }

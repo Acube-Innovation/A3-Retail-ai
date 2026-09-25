@@ -70,6 +70,77 @@ window.INVOICE = (function () {
 	}
 
 	/** One print path for the whole application: the counter's own link. */
+	/** While a bill is on hold the header is still open to change.
+	 *
+	 *  The cart itself belongs to the counter screen — that is where stock and
+	 *  prices are worked out — so what is editable here is the paperwork around
+	 *  it: the date it should be billed on, who served the customer, and the note.
+	 */
+	function draftHeaderForm(data) {
+		return `
+			<section class="svc-panel inv-draft-edit">
+				<div class="panel-head">
+					<h2>On hold — details can still be changed</h2>
+					<button class="btn btn-primary" id="draft-save">Save details</button>
+				</div>
+				<div class="field-row">
+					<div class="field">
+						<label for="d-posting">Invoice date</label>
+						<input id="d-posting" type="date" value="${esc(data.posting_date || "")}">
+					</div>
+					<div class="field">
+						<label for="d-seller">Sold by</label>
+						<select id="d-seller"><option value="">Unchanged</option></select>
+					</div>
+				</div>
+				<div class="field">
+					<label for="d-note">Note</label>
+					<input id="d-note" type="text" maxlength="200" value="${esc(data.notes || "")}">
+				</div>
+				<p class="msg" id="draft-msg"></p>
+			</section>`;
+	}
+
+	async function fillSellers(current) {
+		try {
+			const staff = await A3.call("a3_retail.api.pos.branch_staff");
+			const select = $("d-seller");
+			if (!select) return;
+			select.innerHTML = '<option value="">Unchanged</option>'
+				+ (staff || []).map((p) =>
+					`<option value="${esc(p.employee)}"${
+						p.employee_name === current ? " selected" : ""}>${
+						esc(p.employee_name)}</option>`).join("");
+		} catch (error) {
+			/* the picker is a convenience; the rest of the form still works */
+		}
+	}
+
+	async function saveDraftHeader(name) {
+		const msg = $("draft-msg");
+		$("draft-save").disabled = true;
+		msg.textContent = "Saving…";
+		msg.className = "msg";
+		try {
+			await A3.call("a3_retail.api.bills.update_draft", {
+				name,
+				payload: {
+					posting_date: $("d-posting").value,
+					notes: $("d-note").value.trim(),
+					sold_by: $("d-seller").value || null,
+				},
+			});
+			msg.textContent = "Saved.";
+			msg.className = "msg ok";
+			load();
+		} catch (error) {
+			msg.textContent = error.message || "Could not save it.";
+			msg.className = "msg error";
+		} finally {
+			$("draft-save").disabled = false;
+		}
+	}
+
 	function print() {
 		window.open(state.data.print_url, "_blank");
 	}
@@ -96,13 +167,16 @@ window.INVOICE = (function () {
 			<span class="pill ${payTone(data.payment_status)}">${esc(data.payment_status)}</span>`;
 
 		$("top-actions").insertAdjacentHTML("afterbegin", `
-			<button class="btn btn-primary btn-icon" id="print-top">${icon("print")} Print Invoice</button>
+			${data.printable
+				? `<button class="btn btn-primary btn-icon" id="print-top">${
+					icon("print")} Print Invoice</button>` : ""}
 			${data.editable
 				? `<a class="btn btn-outline btn-icon" href="/retail/sales?invoice=${
 					encodeURIComponent(data.name)}">${icon("pencil")} Edit</a>` : ""}`);
-		$("print-top").addEventListener("click", print);
+		if ($("print-top")) $("print-top").addEventListener("click", print);
 
 		$("body").innerHTML = `
+			${data.editable ? draftHeaderForm(data) : ""}
 			<section class="svc-panel inv-sheet">
 				<header class="inv-head">
 					<div class="inv-brand">
@@ -207,7 +281,10 @@ window.INVOICE = (function () {
 
 			<section class="inv-actions">
 				<a class="btn btn-quiet btn-icon" href="/retail/bills">${icon("back")} Back to Bills</a>
-				<button class="btn btn-primary btn-icon" id="print-bottom">${icon("print")} Print Invoice</button>
+				${data.printable
+					? `<button class="btn btn-primary btn-icon" id="print-bottom">${
+						icon("print")} Print Invoice</button>`
+					: `<span class="muted">On hold — complete the sale to print it.</span>`}
 				${data.editable
 					? `<a class="btn btn-outline btn-icon" href="/retail/sales?invoice=${
 						encodeURIComponent(data.name)}">${icon("pencil")} Edit Invoice</a>` : ""}
@@ -218,8 +295,12 @@ window.INVOICE = (function () {
 				<button class="btn btn-quiet btn-icon" data-send="Email">${icon("mail")} Send Email</button>
 			</section>`;
 
-		$("print-bottom").addEventListener("click", print);
+		if ($("print-bottom")) $("print-bottom").addEventListener("click", print);
 		if ($("collect")) $("collect").addEventListener("click", askPayment);
+		if ($("draft-save")) {
+			$("draft-save").addEventListener("click", () => saveDraftHeader(data.name));
+			fillSellers(data.sales_person);
+		}
 		document.querySelectorAll("[data-send]").forEach((node) => {
 			node.addEventListener("click", () => send(node.dataset.send));
 		});

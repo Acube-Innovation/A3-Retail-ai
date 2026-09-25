@@ -232,6 +232,7 @@ def invoice(name: str) -> dict:
 	payable = flt(doc.rounded_total) or flt(doc.grand_total)
 	paid = max(payable - flt(doc.outstanding_amount), 0)
 	status = _doc_status(doc.docstatus)
+	printable = status != "Draft"
 
 	return {
 		"name": doc.name,
@@ -241,6 +242,10 @@ def invoice(name: str) -> dict:
 			"grand_total": doc.grand_total, "rounded_total": doc.rounded_total,
 		}),
 		"editable": status == "Draft",
+		# A held bill is not a bill yet: nothing has been taken, no stock has
+		# moved and the number can still change. Printing one would put a
+		# document in a customer's hand that the ledger does not back.
+		"printable": printable,
 		"posting_date": str(doc.posting_date),
 		"posting_time": str(doc.posting_time or "")[:5],
 		"branch": doc.branch,
@@ -271,9 +276,12 @@ def invoice(name: str) -> dict:
 		"notes": None if (doc.remarks or "").strip() in ("", "No Remarks") else doc.remarks,
 		"terms": doc.terms,
 		"payment_terms": doc.payment_terms_template,
-		"print_url": print_url(doc.name),
+		# A held bill has no print address at all, rather than one that refuses
+		# when followed — the page hides the button on the same flag.
+		"print_url": print_url(doc.name) if printable else None,
 		"receipt_url": print_url(doc.name, "POS Receipt")
-		if frappe.db.exists("Print Format", {"name": "POS Receipt", "doc_type": "Sales Invoice"})
+		if printable and frappe.db.exists(
+			"Print Format", {"name": "POS Receipt", "doc_type": "Sales Invoice"})
 		else None,
 	}
 
@@ -588,3 +596,57 @@ def send(name: str, channel: str = "WhatsApp") -> dict:
 	sent = engine.notify("sale_invoice", doc=frappe.get_doc("Sales Invoice", name),
 	                     to_number=customer["mobile_no"], stream="Sales")
 	return {"sent": bool(sent), "channel": channel}
+
+
+@frappe.whitelist()
+def update_draft(name: str, payload=None) -> dict:
+	"""Change the header of a bill that is still on hold.
+
+	Only a draft, only this branch, and only the parts that are not the cart:
+	the date it should be billed on, who served the customer, and the note. Items
+	and rates stay with the counter screen, which is where the stock and the
+	prices are worked out.
+	"""
+	employee = _me()
+	require_permission("Sales Invoice", "write")
+
+	data = frappe.parse_json(payload) if isinstance(payload, str) else (payload or {})
+	doc = frappe.get_doc("Sales Invoice", name)
+
+	if doc.docstatus != 0:
+		frappe.throw(
+			_("{0} has been completed — a bill can only be changed while it is on hold.")
+			.format(doc.name), title=_("Not on hold"))
+	if doc.branch and doc.branch != employee.branch:
+		frappe.throw(_("That bill belongs to another branch."), title=_("Not this branch"))
+
+	if data.get("posting_date"):
+		posting = getdate(data["posting_date"])
+		if posting > getdate(nowdate()):
+			frappe.throw(_("A bill cannot be dated in the future."), title=_("Date"))
+		doc.posting_date = posting
+		doc.set_posting_time = 1
+		doc.due_date = posting
+
+	if "notes" in data:
+		doc.remarks = (data.get("notes") or "").strip()[:500] or None
+
+	if data.get("sold_by"):
+		# `_sold_by` checks the person works at this branch; `_sales_person` turns
+		# that Employee into the Sales Person the invoice actually credits.
+		from a3_retail.api.pos import _sales_person, _sold_by
+
+		person = _sales_person(_sold_by({"sold_by": data["sold_by"]}, employee))
+		if person:
+			doc.set("sales_team", [])
+			doc.append("sales_team", {"sales_person": person, "allocated_percentage": 100})
+
+	doc.flags.ignore_permissions = True
+	doc.save(ignore_permissions=True)
+	frappe.db.commit()
+
+	return {
+		"invoice": doc.name,
+		"posting_date": str(doc.posting_date),
+		"notes": doc.remarks,
+	}

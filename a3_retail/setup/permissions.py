@@ -190,14 +190,19 @@ PERMISSION_MATRIX: dict[str, dict[str, str]] = {
 		"Telecaller": "RU",
 		"Helpdesk Agent": "RU",
 	},
+	# Create is open to the counter because stock arrives before the catalogue
+	# knows about it — a distributor drops off a phone launched last week and the
+	# purchase cannot be recorded without an Item. The screens only offer "add
+	# new" after a search has come back empty, which is the guard against the same
+	# charger appearing under four names.
 	"Item": {
 		"A3 Retail Admin": "CRUD",
-		"Branch Manager": "R",
-		"Service Manager": "R",
-		"Sales Executive": "R",
+		"Branch Manager": "CR",
+		"Service Manager": "CR",
+		"Sales Executive": "CR",
 		"Reception Executive": "R",
 		"Technician": "R",
-		"Store Keeper": "RU",
+		"Store Keeper": "CRU",
 		"Accounts Manager": "R",
 	},
 	# Scope 11.1 keeps the chart of accounts away from the shop floor — but
@@ -421,6 +426,30 @@ PERMISSION_MATRIX: dict[str, dict[str, str]] = {
 		"Accounts Executive": "CRU",
 		"Auditor": "R",
 	},
+	# A distributor's rep walks into the branch with stock and a bill, so the
+	# purchase is recorded where the goods arrive. The branches run on shared till
+	# logins, so the counter role needs it too — the same reasoning as petty cash
+	# above. `api.purchases` is the only route: these are Website Users, so
+	# ERPNext's own purchase screens stay shut, and nothing here can amend or
+	# delete a bill once it is in.
+	"Purchase Invoice": {
+		"A3 Retail Admin": "CRUDS",
+		"Branch Manager": "CRS",
+		"Store Keeper": "CRS",
+		"Sales Executive": "CRS",
+		"Accounts Manager": "CRUDS",
+		"Accounts Executive": "CRU",
+		"Auditor": "R",
+	},
+	"Supplier": {
+		"A3 Retail Admin": "CRUD",
+		"Branch Manager": "CR",
+		"Store Keeper": "CR",
+		"Sales Executive": "CR",
+		"Accounts Manager": "CRUD",
+		"Accounts Executive": "CRU",
+		"Auditor": "R",
+	},
 	"Payment Entry": {
 		"A3 Retail Admin": "CRUDS",
 		# A manager who is standing at the counter takes the advance the counter
@@ -428,6 +457,9 @@ PERMISSION_MATRIX: dict[str, dict[str, str]] = {
 		# repair in at all — the ledger itself stays closed to them (11.1).
 		"Branch Manager": "CRUS",
 		"Reception Executive": "CRUS",
+		# Paying the rep on the spot is part of recording the purchase.
+		"Store Keeper": "CRS",
+		"Sales Executive": "CRS",
 		"Accounts Manager": "CRUDS",
 		"Accounts Executive": "CRU",
 		"Auditor": "R",

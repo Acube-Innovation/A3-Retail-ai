@@ -10,6 +10,9 @@ ASSETS = (
 	("css", "a3_branch.css"),
 	("js", "a3_branch.js"),
 	("js", "a3_pos.js"),
+	("js", "a3_purchases.js"),
+	("js", "a3_purchase_entry.js"),
+	("js", "a3_cashbank.js"),
 )
 
 

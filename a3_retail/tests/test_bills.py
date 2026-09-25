@@ -323,3 +323,58 @@ class TestCollectingPayment(FrappeTestCase):
 		self.assertEqual(result["payment_status"], "Paid")
 		self.assertIn(result["payment_entry"],
 		              [p["name"] for p in bills.invoice(row.name)["payments"]])
+
+
+class TestEditingAHeldBill(FrappeTestCase):
+	"""A bill on hold is still paperwork in progress — the header can change."""
+
+	@classmethod
+	def setUpClass(cls):
+		super().setUpClass()
+		ensure_branch("Kochi", "KCH")
+		frappe.db.commit()
+
+	def setUp(self):
+		user = frappe.db.get_value("Employee", {"employee_name": "Vipin S"}, "user_id")
+		if not user:
+			self.skipTest("Vipin S is not provisioned")
+		frappe.set_user(user)
+		self.held = pos.save_draft(
+			{"customer": "Rahul Krishnan",
+			 "items": [{"item_code": "ACC-TGL-A55", "qty": 1, "rate": 299, "serials": []}]}
+		)["invoice"]
+
+	def tearDown(self):
+		frappe.set_user("Administrator")
+
+	def test_the_date_can_be_moved_back(self):
+		bills.update_draft(self.held, {"posting_date": "2026-09-20"})
+		self.assertEqual(
+			str(frappe.db.get_value("Sales Invoice", self.held, "posting_date")), "2026-09-20")
+
+	def test_a_future_date_is_refused(self):
+		with self.assertRaises(frappe.ValidationError):
+			bills.update_draft(self.held, {
+				"posting_date": frappe.utils.add_days(frappe.utils.nowdate(), 5)})
+
+	def test_the_note_can_be_changed(self):
+		bills.update_draft(self.held, {"notes": "Customer gone to the ATM"})
+		self.assertIn("ATM", frappe.db.get_value("Sales Invoice", self.held, "remarks") or "")
+
+	def test_a_completed_bill_is_closed_to_this(self):
+		done = pos.checkout(
+			{"customer": "Rahul Krishnan", "mode_of_payment": "Cash",
+			 "items": [{"item_code": "ACC-TGL-A55", "qty": 1, "rate": 299, "serials": []}]}
+		)["invoice"]
+		with self.assertRaises(frappe.ValidationError):
+			bills.update_draft(done, {"notes": "too late"})
+
+	def test_a_back_dated_bill_keeps_its_date_when_completed(self):
+		"""The whole point: hold it yesterday, finish it today, bill it yesterday."""
+		bills.update_draft(self.held, {"posting_date": "2026-09-20"})
+		pos.checkout(
+			{"invoice": self.held, "customer": "Rahul Krishnan", "mode_of_payment": "Cash",
+			 "items": [{"item_code": "ACC-TGL-A55", "qty": 1, "rate": 299, "serials": []}]}
+		)
+		self.assertEqual(
+			str(frappe.db.get_value("Sales Invoice", self.held, "posting_date")), "2026-09-20")

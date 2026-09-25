@@ -24,6 +24,8 @@ window.POS = (function () {
 		// Set once the cashier types their own tendered figure, so the bill stops
 		// overwriting it as the cart changes.
 		receivedTyped: false,
+		// Which discount box was typed in last; the other one follows it.
+		discountBy: "amt",
 	};
 	// The tiles a counter can split across. EMI is absent on purpose — it is a
 	// loan somebody else approves, not money taken at the till.
@@ -345,8 +347,6 @@ window.POS = (function () {
 
 	function totals() {
 		const subtotal = state.cart.reduce((sum, line) => sum + line.rate * line.qty, 0);
-		const value = Number($("discount-value").value) || 0;
-		const percent = $("discount-type").value === "%";
 		const rate = state.cart.length
 			? Math.max(...state.cart.map((line) => line.gst_rate || 18)) : 18;
 		const factor = 1 + rate / 100;
@@ -359,23 +359,42 @@ window.POS = (function () {
 
 		// "Grand Total" takes the discount off what the customer actually hands
 		// over; "Net Total" takes it off the pre-tax figure, so the bill moves by
-		// the discount plus the tax on it.
-		if ($("discount-on").value === "Grand Total") {
-			const discount = percent
-				? gross * Math.min(value, 100) / 100
-				: Math.min(value, gross);
+		// the discount plus the tax on it. Either way the base the percentage
+		// applies to is the same figure the rupee box is measured against.
+		const onGrand = $("discount-on").value === "Grand Total";
+		const base = onGrand ? gross : gross / factor;
+		const discount = Math.min(discountAmount(base), base);
+
+		if (onGrand) {
 			const grand = gross - discount;
 			const taxable = grand / factor;
 			return { subtotal, discount, taxable, rate, gst: grand - taxable, grand };
 		}
 
 		const net = gross / factor;
-		const discount = percent
-			? net * Math.min(value, 100) / 100
-			: Math.min(value, net);
 		const taxable = net - discount;
 		const gst = taxable * rate / 100;
 		return { subtotal, discount, taxable, rate, gst, grand: taxable + gst };
+	}
+
+	/** What the discount comes to in rupees, from whichever box was typed in. */
+	function discountAmount(base) {
+		if (state.discountBy === "pct") {
+			const pct = Math.min(Number($("discount-pct").value) || 0, 100);
+			return base * pct / 100;
+		}
+		return Number($("discount-amt").value) || 0;
+	}
+
+	/** Fill the box the cashier did not type in, so both read the same deal. */
+	function mirrorDiscount(base) {
+		if (state.discountBy === "pct") {
+			const pct = Math.min(Number($("discount-pct").value) || 0, 100);
+			$("discount-amt").value = pct ? (base * pct / 100).toFixed(2) : "";
+		} else {
+			const amt = Number($("discount-amt").value) || 0;
+			$("discount-pct").value = amt && base ? (amt / base * 100).toFixed(2) : "";
+		}
 	}
 
 	function paintTotals() {
@@ -386,6 +405,9 @@ window.POS = (function () {
 		$("items-total").textContent = moneyShort(sums.subtotal);
 		$("subtotal").textContent = moneyShort(sums.subtotal);
 		$("discount-amount").textContent = "- " + moneyShort(sums.discount);
+		mirrorDiscount($("discount-on").value === "Grand Total"
+			? sums.subtotal * (state.pricesIncludeTax ? 1 : 1 + sums.rate / 100)
+			: sums.subtotal * (state.pricesIncludeTax ? 1 : 1 + sums.rate / 100) / (1 + sums.rate / 100));
 		$("taxable").textContent = moneyShort(sums.taxable);
 		$("gst-rate").textContent = sums.rate;
 		$("gst").textContent = money(sums.gst);
@@ -413,6 +435,9 @@ window.POS = (function () {
 		const needSeller = !$("seller-row").hidden && !state.soldBy;
 		$("checkout").disabled = !state.cart.length || !state.customer
 			|| shortOnSplit || needSeller;
+		// A bill can be put down before the customer is known — that is often why
+		// it is being put down — so Hold only asks for something in the cart.
+		$("hold").disabled = !state.cart.length;
 	}
 
 	// --------------------------------------------------------------- split
@@ -741,7 +766,8 @@ window.POS = (function () {
 
 		const sums = totals();
 		$("checkout").disabled = true;
-		say("Billing…");
+		$("hold").disabled = true;
+		say(draft ? "Holding…" : "Billing…");
 
 		try {
 			const result = await A3.call(
@@ -760,10 +786,10 @@ window.POS = (function () {
 							.filter((line) => (Number(line.amount) || 0) > 0)
 							.map((line) => ({ mode_of_payment: line.mode, amount: Number(line.amount) }))
 						: null,
-					discount_percent: $("discount-type").value === "%"
-						? Number($("discount-value").value) || 0 : 0,
-					discount_amount: $("discount-type").value === "₹"
-						? Number($("discount-value").value) || 0 : 0,
+					discount_percent: state.discountBy === "pct"
+						? Number($("discount-pct").value) || 0 : 0,
+					discount_amount: state.discountBy === "amt"
+						? Number($("discount-amt").value) || 0 : 0,
 					discount_on: $("discount-on").value,
 					items: state.cart.map((line) => ({
 						item_code: line.item_code, qty: line.qty, rate: line.rate,
@@ -774,14 +800,18 @@ window.POS = (function () {
 			if (draft) {
 				state.editing = result.invoice;
 				markEditing(result.invoice);
-				say(result.invoice + " saved as a draft — it is waiting in Bills.", "ok");
+				say(result.invoice + " is on hold — pick it up from Drafts (F6). "
+					+ "It cannot be printed until it is completed.", "ok");
 				$("checkout").disabled = false;
+				$("hold").disabled = false;
 				return;
 			}
 			done(result, sums);
 		} catch (error) {
-			say(error.message || "Could not complete the sale.", "error");
+			say(error.message || (draft ? "Could not hold the bill."
+				: "Could not complete the sale."), "error");
 			$("checkout").disabled = false;
+			$("hold").disabled = false;
 		}
 	}
 
@@ -806,7 +836,9 @@ window.POS = (function () {
 		$("notes").value = "";
 		$("received").value = "";
 		state.receivedTyped = false;
-		$("discount-value").value = "";
+		$("discount-pct").value = "";
+		$("discount-amt").value = "";
+		state.discountBy = "amt";
 		state.splits = [];
 		setSplit(false);
 		say("");
@@ -841,11 +873,11 @@ window.POS = (function () {
 			if (bill.mobile_no) $("mobile").value = bill.mobile_no;
 			$("notes").value = bill.notes || "";
 			if (bill.discount_percent) {
-				$("discount-type").value = "%";
-				$("discount-value").value = bill.discount_percent;
+				state.discountBy = "pct";
+				$("discount-pct").value = bill.discount_percent;
 			} else if (bill.discount_amount) {
-				$("discount-type").value = "₹";
-				$("discount-value").value = bill.discount_amount;
+				state.discountBy = "amt";
+				$("discount-amt").value = bill.discount_amount;
 			}
 			if (bill.discount_on) {
 				$("discount-on").value = bill.discount_on;
@@ -1040,14 +1072,19 @@ window.POS = (function () {
 		});
 
 		$("clear-cart").addEventListener("click", () => { state.cart = []; paintCart(); });
-		$("discount-type").addEventListener("change", paintTotals);
-		$("discount-value").addEventListener("input", paintTotals);
+		$("discount-pct").addEventListener("input", () => {
+			state.discountBy = "pct"; paintTotals();
+		});
+		$("discount-amt").addEventListener("input", () => {
+			state.discountBy = "amt"; paintTotals();
+		});
 		$("discount-on").addEventListener("change", paintTotals);
 		$("received").addEventListener("input", () => {
 			state.receivedTyped = true;
 			paintTotals();
 		});
 		$("checkout").addEventListener("click", () => checkout(false));
+		$("hold").addEventListener("click", () => checkout(true));
 
 		$("split-toggle").addEventListener("click", () => setSplit(!state.split));
 		$("split-add").addEventListener("click", addSplitLine);
