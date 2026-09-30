@@ -324,8 +324,21 @@ class EMIApplication(A3BranchMixin, Document):
 # Sales Invoice integration (scope 4.5)
 # ---------------------------------------------------------------------------
 def validate_emi_payment(doc, method=None):
-	"""An EMI payment line needs a matching approved application."""
+	"""An EMI bill has to say which bank is settling it.
+
+	The counter's part in a financed sale is one answer — which financier — and
+	that is what the bill records. The application, its KYC and the scheme belong
+	to the financing desk when the shop runs one; a branch that simply sells on a
+	bank's approval is not asked for paperwork it never sees.
+
+	What is still refused is an EMI tender naming no bank at all, because the
+	money lands in a settlement receivable and somebody has to owe it.
+	"""
 	if doc.get("is_return"):
+		return
+
+	# The bank is named on the bill: that is the counterparty, and enough.
+	if doc.get("a3_finance_partner"):
 		return
 
 	# A POS Profile lists every mode it accepts, so an EMI row with no amount on
@@ -344,11 +357,16 @@ def validate_emi_payment(doc, method=None):
 
 	application = _find_application(doc, emi_modes)
 	if not application:
+		# Fall back to the partner the mode itself points at, so a counter that
+		# tendered on a bank's mode still records who owes the money.
+		partner = frappe.db.get_value(
+			"Finance Partner", {"mode_of_payment": ["in", emi_modes]}, "name")
+		if partner and doc.meta.has_field("a3_finance_partner"):
+			doc.a3_finance_partner = partner
+			return
 		frappe.throw(
-			_("This invoice is paid by {0} but has no approved EMI Application.").format(
-				", ".join(emi_modes)
-			),
-			title=_("EMI Application Required"),
+			_("Choose which bank approved this purchase before completing the sale."),
+			title=_("Which bank?"),
 		)
 
 	doc.a3_emi_application = application

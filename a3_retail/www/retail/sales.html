@@ -213,6 +213,15 @@
 						{% endfor %}
 					</div>
 
+					{#- Card, UPI and transfers land in a real bank account, and the shop
+					    has eleven. Asking which one keeps the deposit answerable to the
+					    right balance instead of all of it piling into one default. -#}
+					<div class="pay-row" id="bank-row" hidden>
+						<label>{{ _("Into which account") }}</label>
+						<button class="btn btn-quiet bank-pick" id="bank-pick" type="button">
+							{{ _("Choose account") }}</button>
+					</div>
+
 					<button class="split-toggle" id="split-toggle" type="button" aria-pressed="false">
 						{{ _("Split payment") }}
 					</button>

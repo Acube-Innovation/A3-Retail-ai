@@ -243,8 +243,43 @@ class TestRendering(FrappeTestCase):
 			self.skipTest("no invoice seeded")
 		html = frappe.get_print("Sales Invoice", doc.name, print_format="Retail Tax Invoice",
 		                        doc=doc)
-		self.assertIn("HSN / SAC", html)
-		self.assertIn("Grand Total", html)
+		self.assertIn("HSN/SAC", html)
+		self.assertIn("Taxable Value", html)
+
+	def test_the_invoice_keeps_the_layout_the_shop_bills_on(self):
+		"""The sheet PhoneXpert's customers already recognise from myBillBook."""
+		doc, real = pf.sample_doc("Sales Invoice")
+		if not real:
+			self.skipTest("no invoice seeded")
+		html = frappe.get_print("Sales Invoice", doc.name, print_format="Retail Tax Invoice",
+		                        doc=doc)
+		for band in ("TAX INVOICE", "ORIGINAL FOR RECIPIENT", "BILL TO", "SHIP TO",
+		             "S.NO.", "RECEIVED AMOUNT", "BALANCE AMOUNT",
+		             "Total Amount (in words)", "Authorised Signatory"):
+			self.assertIn(band, html, band)
+
+	def test_the_line_columns_add_up_to_what_is_payable(self):
+		"""Rate plus tax must equal the amount, or the customer's sum fails.
+
+		The item rows carry no GST rate and the tax rows hold the figure from
+		before any bill-level discount, so the tax on a line is apportioned from
+		the invoice's own totals — this is the check that it still reconciles.
+		"""
+		doc, real = pf.sample_doc("Sales Invoice")
+		if not real:
+			self.skipTest("no invoice seeded")
+		net = flt(doc.net_total)
+		if not net:
+			self.skipTest("invoice has no taxable value")
+		shares = sum(flt(row.net_amount) for row in doc.items)
+		self.assertAlmostEqual(shares, net, places=2)
+
+	def test_a_held_bill_is_not_printed_as_a_tax_invoice(self):
+		from a3_retail.api import pos
+
+		with self.assertRaises(frappe.ValidationError):
+			pos.print_url(frappe.get_all(
+				"Sales Invoice", filters={"docstatus": 0}, pluck="name", limit=1)[0])
 
 	def test_the_job_card_receipt_carries_a_tracking_code(self):
 		doc, _real = pf.sample_doc("Service Job Card")

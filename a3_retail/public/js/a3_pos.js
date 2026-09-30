@@ -18,6 +18,12 @@ window.POS = (function () {
 		split: false, splits: [],
 		// The assistant serving this customer at a shared till.
 		soldBy: "",
+		// Which bank approved the purchase, when the bill is financed.
+		financier: "",
+		// The accounts a non-cash collection can be banked into, and the one the
+		// counter picked for this bill.
+		bankAccounts: [],
+		bankAccount: "",
 		// Whether the price list already carries GST — set from the branch's tax
 		// template so the running total matches the invoice that gets posted.
 		pricesIncludeTax: false,
@@ -397,6 +403,40 @@ window.POS = (function () {
 		}
 	}
 
+	/** Which of the shop's accounts this collection reached. */
+	function askBankAccount() {
+		if (!state.bankAccounts.length) {
+			return say("No bank account is set up for this company.", "error");
+		}
+		showList(
+			"Into which account?",
+			state.mode + " collection",
+			state.bankAccounts.map((a) => ({
+				title: a.label,
+				meta: a.kind === "Cash" ? "cash in hand" : "bank account",
+				action: "Select",
+			})),
+			(index) => {
+				$("list-modal").hidden = true;
+				const picked = state.bankAccounts[index];
+				state.bankAccount = picked.account;
+				$("bank-pick").textContent = picked.label;
+				paintTotals();
+			});
+	}
+
+	/** A card or UPI collection has to say which bank it reached. */
+	function paintBankRow() {
+		const row = $("bank-row");
+		if (!row) return;
+		// EMI settles through the financier's own receivable, and cash goes in the
+		// drawer — neither needs an account chosen.
+		const wants = state.bankAccounts.length && !state.split
+			&& state.mode !== "Cash" && state.mode !== "EMI"
+			&& !String(state.mode || "").startsWith("EMI");
+		row.hidden = !wants;
+	}
+
 	function paintTotals() {
 		const sums = totals();
 		const count = state.cart.reduce((sum, line) => sum + line.qty, 0);
@@ -429,6 +469,7 @@ window.POS = (function () {
 		const change = state.mode === "Cash" ? Math.max(received - sums.grand, 0) : 0;
 		$("change").textContent = money(change);
 
+		paintBankRow();
 		const shortOnSplit = state.split ? paintSplit(sums.grand) : false;
 		// Once the till offers a list of assistants, the bill needs one chosen —
 		// an unattributed sale pays nobody their incentive.
@@ -777,8 +818,14 @@ window.POS = (function () {
 					customer: state.customer,
 					mode_of_payment: state.mode,
 					sold_by: state.soldBy || "",
+					financier: state.financier || "",
 					notes: $("notes").value.trim(),
-					received_amount: Number($("received").value) || 0,
+					// An empty box and a typed zero mean different things: the first
+					// is "the whole bill", the second is "nothing handed over". Sent
+					// as null and 0 so the server can tell them apart.
+					received_amount: $("received").value.trim() === ""
+						? null : Number($("received").value) || 0,
+					bank_account: $("bank-row").hidden ? "" : state.bankAccount,
 					// Only sent when the counter is actually splitting; the server
 					// falls back to the single tile otherwise.
 					payments: (!draft && state.split)
@@ -840,6 +887,9 @@ window.POS = (function () {
 		$("discount-amt").value = "";
 		state.discountBy = "amt";
 		state.splits = [];
+		state.financier = "";
+		state.bankAccount = "";
+		if ($("bank-pick")) $("bank-pick").textContent = "Choose account";
 		setSplit(false);
 		say("");
 		paintCart();
@@ -902,82 +952,50 @@ window.POS = (function () {
 
 	// ----------------------------------------------------------------- EMI
 	/**
-	 * What this basket can be financed on.
+	 * Which bank approved this purchase.
 	 *
-	 * The schemes come from the EMI module's own service — the same one the
-	 * financing desk uses — so a counter is never offered a scheme the
-	 * application would refuse. Nothing is charged here: the sale completes only
-	 * once the financier has approved, which the invoice itself enforces.
+	 * The counter's part in an EMI sale is one answer: which financier. Tenure,
+	 * interest and the instalment are decided on the bank's own machine before
+	 * the customer reaches the till, so asking for them here would only be asking
+	 * the cashier to copy numbers across.
 	 */
-	async function emiSchemes() {
+	async function emiPartners() {
 		if (!state.cart.length) {
-			return say("Put the products in the basket first — the schemes depend on what is "
-				+ "being bought and what it comes to.", "error");
+			return say("Put the products in the basket first.", "error");
 		}
-
 		const sums = totals();
-		const first = state.cart[0] || {};
-		showList("Loading the schemes…", money(sums.grand), []);
+		showList("Loading the banks…", money(sums.grand), []);
 
 		try {
-			const schemes = await A3.call("a3_retail.api.emi.eligible_schemes", {
-				invoice_total: sums.grand,
-				item_code: first.item_code || null,
-			});
-
-			if (!schemes.length) {
-				return showList("No finance for this basket", money(sums.grand), [{
-					title: "No active scheme covers this purchase",
-					meta: "Try a different basket, or ask head office to configure a scheme.",
+			const partners = await A3.call("a3_retail.api.pos.finance_partners");
+			if (!partners.length) {
+				return showList("No bank set up", money(sums.grand), [{
+					title: "No finance partner is configured",
+					meta: "Ask head office to add the banks this shop sells through.",
 				}]);
 			}
-
 			showList(
-				"EMI schemes for " + money(sums.grand),
-				"Indicative — the financier decides the real instalment",
-				schemes.map((scheme) => ({
-					title: `${scheme.finance_partner} · ${scheme.tenure_months} months · ${
-						money(scheme.emi_amount)}/month`,
-					meta: `down payment ${money(scheme.suggested_down_payment)} · ${
-						scheme.scheme_name}`,
-					action: "Apply",
-				})),
+				"Which bank approved it?",
+				money(sums.grand),
+				partners.map((p) => ({ title: p.label, meta: p.mode_of_payment || "", action: "Select" })),
 				(index) => {
 					$("list-modal").hidden = true;
-					startEmiApplication(schemes[index], sums);
+					pickFinancier(partners[index]);
 				});
 		} catch (error) {
-			showList("Could not read the schemes", "", [{ title: error.message, meta: "" }]);
+			showList("Could not read the banks", "", [{ title: error.message, meta: "" }]);
 		}
 	}
 
-	async function startEmiApplication(scheme, sums) {
-		if (!state.customer) {
-			return say("Pick the customer first — a loan is made to a person, not to a basket.",
-				"error");
+	function pickFinancier(partner) {
+		state.financier = partner.partner;
+		// The bill is settled by the bank, so the tender is that bank's own mode —
+		// which points at its settlement account, keeping what it owes visible.
+		if (partner.mode_of_payment) {
+			state.mode = partner.mode_of_payment;
 		}
-
-		try {
-			const result = await A3.call("a3_retail.api.emi.save_application", {
-				payload: {
-					customer: state.customer,
-					partner: scheme.finance_partner,
-					scheme: scheme.name,
-					down_payment: scheme.suggested_down_payment,
-					invoice_total: sums.grand,
-					items: state.cart.map((row) => ({
-						item_code: row.item_code, item_name: row.item_name,
-						qty: row.qty, rate: row.rate, serial_no: (row.serials || [])[0] || null,
-					})),
-				},
-			});
-			window.location = "/retail/emi?application=" + encodeURIComponent(result.application);
-		} catch (error) {
-			// The KYC a financier needs is asked for on the financing desk, which
-			// is where the counter is sent with the basket already attached.
-			window.location = "/retail/emi?tab=applications&customer="
-				+ encodeURIComponent(state.customer);
-		}
+		say("Financed by " + partner.label + ".", "ok");
+		paintTotals();
 	}
 
 	// --------------------------------------------------------------- start
@@ -1083,6 +1101,13 @@ window.POS = (function () {
 			state.receivedTyped = true;
 			paintTotals();
 		});
+		A3.call("a3_retail.api.pos.bank_accounts").then((rows) => {
+			state.bankAccounts = rows || [];
+			paintBankRow();
+		}).catch(() => { /* the tiles still work without it */ });
+
+		$("bank-pick").addEventListener("click", askBankAccount);
+
 		$("checkout").addEventListener("click", () => checkout(false));
 		$("hold").addEventListener("click", () => checkout(true));
 
@@ -1099,7 +1124,8 @@ window.POS = (function () {
 			// EMI is not a way of taking money at the till — it is a loan somebody
 			// else has to approve first. Picking it opens the financing desk's own
 			// scheme list rather than pretending the sale is done.
-			if (state.mode === "EMI") emiSchemes();
+			if (state.mode === "EMI") emiPartners();
+			else if (!$("bank-row").hidden && !state.bankAccount) askBankAccount();
 		});
 
 		const actions = {

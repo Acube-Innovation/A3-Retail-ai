@@ -246,6 +246,10 @@ def invoice(name: str) -> dict:
 		# moved and the number can still change. Printing one would put a
 		# document in a customer's hand that the ledger does not back.
 		"printable": printable,
+		"financier": frappe.db.get_value(
+			"Finance Partner", doc.get("a3_finance_partner"), "partner_name")
+			if doc.get("a3_finance_partner") else None,
+		"approved_amount": flt(doc.get("a3_approved_amount")),
 		"posting_date": str(doc.posting_date),
 		"posting_time": str(doc.posting_time or "")[:5],
 		"branch": doc.branch,
@@ -649,4 +653,54 @@ def update_draft(name: str, payload=None) -> dict:
 		"invoice": doc.name,
 		"posting_date": str(doc.posting_date),
 		"notes": doc.remarks,
+	}
+
+
+@frappe.whitelist()
+def set_approved_amount(name: str, amount, print_format: str = "Financier Copy") -> dict:
+	"""Record what the bank approved, and hand back the copy to print for them.
+
+	The financier releases money against a document from the shop, and the amount
+	they sanction is often not the bill total — the customer has paid a down
+	payment, or the bank has capped what it will fund. Both figures go on the
+	copy: what the goods were sold for, and what the bank approved. The tax
+	invoice itself is untouched, because the sale was the sale.
+	"""
+	employee = _me()
+	require_permission("Sales Invoice", "write")
+
+	doc = frappe.get_doc("Sales Invoice", name)
+	if doc.branch and doc.branch != employee.branch:
+		frappe.throw(_("That bill belongs to another branch."), title=_("Not this branch"))
+	if doc.docstatus != 1:
+		frappe.throw(_("Complete the sale before raising a copy for the bank."),
+		             title=_("Not a bill yet"))
+	if not doc.get("a3_finance_partner"):
+		frappe.throw(_("This bill was not financed, so there is no bank to raise a copy for."),
+		             title=_("Not financed"))
+
+	approved = flt(amount)
+	if approved <= 0:
+		frappe.throw(_("Enter the amount the bank approved."), title=_("Approved amount"))
+
+	payable = flt(doc.rounded_total) or flt(doc.grand_total)
+	if approved > payable + 0.5:
+		frappe.throw(
+			_("The bank cannot fund more than the bill of {0}.").format(
+				frappe.format_value(payable, {"fieldtype": "Currency"})),
+			title=_("More than the bill"),
+		)
+
+	frappe.db.set_value("Sales Invoice", name, "a3_approved_amount", approved)
+	frappe.db.commit()
+
+	from a3_retail.api.pos import print_url
+
+	return {
+		"invoice": name,
+		"approved": approved,
+		"bill_total": payable,
+		"financier": frappe.db.get_value(
+			"Finance Partner", doc.a3_finance_partner, "partner_name") or doc.a3_finance_partner,
+		"print_url": print_url(name, print_format),
 	}

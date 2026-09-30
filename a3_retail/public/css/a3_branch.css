@@ -1875,3 +1875,7 @@ body.side-collapsed .side-nav a, body.side-collapsed .side-soon { justify-conten
    form sits above the sheet rather than replacing it. */
 .inv-draft-edit { border-left: 3px solid var(--warn, #e9a23b); }
 .inv-draft-edit .panel-head { align-items: center; }
+
+/* The account a card or UPI collection reached. Reads as the chosen bank once
+   picked, so the counter can see it without opening the dialog again. */
+.bank-pick { width: 100%; justify-content: center; font-size: 12px; padding: 7px 8px; }

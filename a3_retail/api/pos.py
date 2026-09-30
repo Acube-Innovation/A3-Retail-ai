@@ -505,29 +505,69 @@ def checkout(payload) -> dict:
 	if data.get("payments"):
 		rows = split_payment_rows(data["payments"], payable)
 		mode = rows[0]["mode_of_payment"] if len(rows) == 1 else None
+		received = sum(flt(r["amount"]) for r in rows)
 	else:
 		mode = resolve_mode(data.get("mode_of_payment") or "Cash")
-		received = flt(data.get("received_amount")) or flt(invoice.grand_total)
+		raw = data.get("received_amount")
+
+		# An empty box means "the whole bill" — the ordinary case, and what the
+		# counter screen fills in by itself. A typed zero means nothing was handed
+		# over, which is a credit sale and must not be read as full payment.
+		blank = raw is None or (isinstance(raw, str) and not raw.strip())
+		received = payable if blank else flt(raw)
+		if received < 0:
+			frappe.throw(_("Received amount cannot be less than nothing."), title=_("Payment"))
 
 		# Only a cash drawer takes more than the bill and hands change back. A card
-		# or a UPI collection is charged the bill exactly, so an over-typed
-		# "received" there would submit an over-paid invoice with a negative
+		# or a UPI collection is charged what it is charged, so an over-typed
+		# figure there would submit an over-paid invoice with a negative
 		# outstanding.
 		if frappe.db.get_value("Mode of Payment", mode, "type") == "Cash":
-			tendered = max(received, payable)
+			tendered = received
 		else:
-			tendered = payable
-		rows = [{"mode_of_payment": mode, "amount": tendered}]
+			tendered = min(received, payable)
+		rows = [{"mode_of_payment": mode, "amount": tendered}] if tendered > 0 else []
 
-	# Replace the payment table rather than appending to it: a POS Profile puts
-	# its own default row on the invoice, and adding ours next to it counts the
-	# money twice. These rows are what the customer actually handed over — ERPNext
-	# works the change out from there.
-	invoice.set("payments", rows)
+		# Which bank the collection actually landed in. Only asked of a card, UPI
+		# or transfer — cash goes in the drawer, and the drawer is the drawer.
+		chosen = (data.get("bank_account") or "").strip()
+		if chosen and rows and frappe.db.get_value("Mode of Payment", mode, "type") != "Cash":
+			account = frappe.db.get_value(
+				"Account", chosen, ["name", "company", "account_type", "is_group"], as_dict=True)
+			if not account or account.is_group or account.account_type not in ("Bank", "Cash") \
+					or account.company != invoice.company:
+				frappe.throw(_("That is not an account this shop banks into."),
+				             title=_("Bank account"))
+			rows[0]["account"] = account.name
+			# Remembered on the invoice because ERPNext rewrites the row's account
+			# from the Mode of Payment on every validate; the hook puts it back.
+			if invoice.meta.has_field("a3_bank_account"):
+				invoice.a3_bank_account = account.name
+
+	settled = sum(flt(r["amount"]) for r in rows)
+	short = settled + 0.005 < payable
+
+	if short:
+		# A bill the customer has not settled is not a till sale. ERPNext expects a
+		# POS invoice to be paid in full, so this is posted as an ordinary credit
+		# invoice and whatever was handed over is receipted against it.
+		invoice.is_pos = 0
+		invoice.pos_profile = None
+		invoice.set("payments", [])
+	else:
+		# Replace the payment table rather than appending to it: a POS Profile puts
+		# its own default row on the invoice, and adding ours next to it counts the
+		# money twice. These rows are what the customer actually handed over —
+		# ERPNext works the change out from there.
+		invoice.set("payments", rows)
 
 	_stamp_cost_center(invoice, cost_center)
 	invoice.save(ignore_permissions=True)
 	invoice.submit()
+
+	if short and settled > 0:
+		_receipt(invoice, settled, mode or "Cash")
+		invoice.reload()
 
 	return {
 		"invoice": invoice.name,
@@ -538,7 +578,8 @@ def checkout(payload) -> dict:
 		             for r in rows],
 		"net_total": flt(invoice.net_total),
 		"tax": flt(invoice.total_taxes_and_charges),
-		"paid": flt(invoice.grand_total),
+		"paid": payable - flt(invoice.outstanding_amount),
+		"outstanding": flt(invoice.outstanding_amount),
 		"customer_name": invoice.customer_name,
 		"print_url": print_url(invoice.name),
 	}
@@ -741,6 +782,13 @@ def _build_invoice(data: dict, employee, draft: bool = False):
 	elif flt(data.get("discount_amount")):
 		invoice.apply_discount_on = discount_on
 		invoice.discount_amount = flt(data["discount_amount"])
+
+	# Which bank is settling this bill, when it is financed.
+	partner = (data.get("financier") or "").strip()
+	if partner and invoice.meta.has_field("a3_finance_partner"):
+		if not frappe.db.exists("Finance Partner", partner):
+			frappe.throw(_("That bank is not set up."), title=_("Financier"))
+		invoice.a3_finance_partner = partner
 
 	if data.get("notes"):
 		invoice.remarks = str(data["notes"])[:500]
@@ -1089,3 +1137,90 @@ def recent_invoices(limit: int = 10) -> list[dict]:
 	for row in rows:
 		row["print_url"] = print_url(row["name"])
 	return rows
+
+
+@frappe.whitelist()
+def finance_partners() -> list[dict]:
+	"""The banks this shop sells on EMI through.
+
+	The counter only says which bank approved the purchase. Tenure, interest and
+	the instalment are settled on the financier's own machine, so none of that is
+	asked for here — picking the bank is the whole interaction.
+	"""
+	_me()
+	rows = frappe.get_all(
+		"Finance Partner",
+		filters={"is_active": 1} if frappe.get_meta("Finance Partner").has_field("is_active") else {},
+		fields=["name", "partner_name", "mode_of_payment"],
+		order_by="partner_name",
+	)
+	return [{"partner": r.name, "label": r.partner_name or r.name,
+	         "mode_of_payment": r.mode_of_payment} for r in rows]
+
+
+def _receipt(invoice, amount: float, mode: str) -> None:
+	"""Receipt a part payment against a bill the customer has not settled."""
+	from erpnext.accounts.doctype.payment_entry.payment_entry import get_payment_entry
+
+	account = frappe.db.get_value(
+		"Mode of Payment Account",
+		{"parent": mode, "company": invoice.company}, "default_account")
+	if not account:
+		frappe.throw(
+			_("{0} has no account set for this company — head office has to add it once.")
+			.format(mode), title=_("Payment"))
+
+	# ERPNext reads the account's balance while building the entry, and branch
+	# roles hold select-only on Account on purpose — the chart of accounts is kept
+	# off the shop floor. The caller has already been checked for Sales Invoice
+	# create, so the mechanical posting runs elevated rather than opening the
+	# ledger up to every till.
+	actor = frappe.session.user
+	frappe.set_user("Administrator")
+	try:
+		entry = get_payment_entry("Sales Invoice", invoice.name, party_amount=amount)
+	finally:
+		frappe.set_user(actor)
+	entry.mode_of_payment = mode
+	entry.paid_to = account
+	entry.received_amount = amount
+	entry.base_received_amount = amount
+	entry.reference_no = invoice.name
+	entry.reference_date = invoice.posting_date
+	# Branch staff hold a User Permission on Cost Center, and strict permissions
+	# refuse a blank one as firmly as a foreign one.
+	if invoice.get("cost_center") and entry.meta.has_field("cost_center"):
+		entry.cost_center = invoice.cost_center
+	for row in entry.get("deductions") or []:
+		row.cost_center = invoice.get("cost_center") or row.cost_center
+	entry.flags.ignore_permissions = True
+	frappe.set_user("Administrator")
+	try:
+		entry.insert(ignore_permissions=True)
+		entry.submit()
+	finally:
+		frappe.set_user(actor)
+
+
+@frappe.whitelist()
+def bank_accounts() -> list[dict]:
+	"""The accounts a card, UPI or transfer collection can land in.
+
+	The shop banks with several — a card machine settles into one, the QR code
+	into another — so a counter that could only post to the mode's default would
+	leave every balance wrong but one.
+	"""
+	_me()
+	company = frappe.db.get_single_value("Global Defaults", "default_company")
+	rows = frappe.db.sql(
+		"""
+		select name, account_name, account_type
+		from `tabAccount`
+		where company = %(company)s and is_group = 0 and disabled = 0
+		  and account_type in ('Bank', 'Cash')
+		order by account_type, account_name
+		""",
+		{"company": company}, as_dict=True,
+	)
+	return [{"account": r.name, "label": r.account_name, "kind": r.account_type}
+	        for r in rows]

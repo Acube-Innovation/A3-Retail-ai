@@ -1,0 +1,171 @@
+{#- The copy a financier is given before releasing money.
+
+    Same sheet the customer gets, so the bank recognises the shop and can tie it
+    to the tax invoice by number — but headed FINANCIER COPY, and carrying both
+    figures the bank needs: what the goods were sold for, and what the bank has
+    sanctioned against them. They are often not the same number, because the
+    customer has put money down or the bank has capped its exposure.
+
+    It is deliberately not a second tax invoice at a different value. One sale
+    has one invoice value; a document that restated it would not agree with the
+    shop's GST return, the customer's copy, or the stock that left the shelf.
+-#}
+{%- set profile = a3_branch_profile(doc.get("branch")) or {} -%}
+{%- set company = frappe.get_cached_doc("Company", doc.company) -%}
+{%- set gstin = profile.get("gstin") or doc.get("company_gstin") or company.get("gstin") or "" -%}
+{%- set pan = gstin[2:12] if gstin|length == 15 else "" -%}
+{%- set head_name = profile.get("trade_name") or profile.get("branch") or company.name -%}
+{%- set addr_lines = [profile.get("address_line1"), profile.get("address_line2"),
+                      [profile.get("city"), profile.get("state"), profile.get("pincode")]
+                      |select|join(", ")]|select|list -%}
+{%- set payable = doc.rounded_total|float or doc.grand_total|float -%}
+{%- set approved = doc.get("a3_approved_amount")|float -%}
+{%- set paid = payable - (doc.outstanding_amount|float) -%}
+{%- set partner = frappe.db.get_value("Finance Partner", doc.get("a3_finance_partner"),
+                                      "partner_name") or doc.get("a3_finance_partner") -%}
+
+<style>
+	.mbb { font-family: Helvetica, Arial, sans-serif; font-size: 9pt; color: #000; }
+	.mbb table { width: 100%; border-collapse: collapse; }
+	.mbb .sheet, .mbb .sheet td, .mbb .sheet th { border: 1px solid #000; }
+	.mbb td, .mbb th { padding: 3px 6px; vertical-align: top; }
+	.mbb .kind { font-weight: bold; font-size: 10pt; letter-spacing: .3px; }
+	.mbb .copy { border: 1px solid #999; color: #444; padding: 2px 8px; font-size: 8pt;
+		margin-left: 10px; }
+	.mbb .org { font-size: 13pt; font-weight: bold; margin-bottom: 1px; }
+	.mbb .logo { width: 96px; text-align: center; }
+	.mbb .logo img { max-width: 88px; max-height: 76px; }
+	.mbb .meta { text-align: center; font-weight: bold; }
+	.mbb .meta-val { text-align: center; white-space: nowrap; font-size: 9pt; }
+	.mbb .label { font-size: 8pt; font-weight: bold; letter-spacing: .3px; }
+	.mbb .items th { background: #efefef; text-align: center; font-size: 8.5pt; }
+	.mbb .num { text-align: right; white-space: nowrap; }
+	.mbb .mid { text-align: center; }
+	.mbb .imei { color: #666; font-size: 8pt; }
+	.mbb .fill td { height: 170px; }
+	.mbb .tot td { font-weight: bold; background: #efefef; }
+	.mbb .approved td { font-weight: bold; font-size: 11pt; background: #efefef; }
+	.mbb .sign { height: 86px; text-align: center; vertical-align: bottom; }
+	.mbb .sign img { max-height: 54px; }
+</style>
+
+<div class="mbb">
+
+	<div style="margin-bottom:6px">
+		<span class="kind">FINANCIER COPY</span>
+		<span class="copy">NOT A TAX INVOICE</span>
+	</div>
+
+	<table class="sheet">
+		<tr>
+			<td class="logo">
+				{% if company.company_logo %}<img src="{{ company.company_logo }}">{% endif %}
+			</td>
+			<td>
+				<div class="org">{{ head_name }}</div>
+				{% for line in addr_lines %}<div>{{ line }}</div>{% endfor %}
+				<div><b>GSTIN:</b> {{ gstin or "—" }}{% if pan %} &nbsp; <b>PAN:</b> {{ pan }}{% endif %}</div>
+				{% if profile.get("phone") %}<div><b>Mobile:</b> {{ profile.phone }}</div>{% endif %}
+			</td>
+			<td style="width:31%;padding:0">
+				<table style="border:none">
+					<tr>
+						<td class="meta" style="border:none;border-bottom:1px solid #000">Invoice No.</td>
+						<td class="meta" style="border:none;border-bottom:1px solid #000;border-left:1px solid #000">
+							Invoice Date</td>
+					</tr>
+					<tr>
+						<td class="meta-val" style="border:none">{{ doc.name }}</td>
+						<td class="meta-val" style="border:none;border-left:1px solid #000">
+							{{ a3_daymonth(doc.posting_date) }}</td>
+					</tr>
+				</table>
+			</td>
+		</tr>
+	</table>
+
+	<table class="sheet" style="border-top:none">
+		<tr>
+			<td style="width:50%">
+				<div class="label">CUSTOMER</div>
+				<div><b>{{ doc.customer_name }}</b></div>
+				{% if doc.address_display %}<div>{{ doc.address_display|striptags }}</div>{% endif %}
+				{% set mobile = doc.contact_mobile or frappe.db.get_value("Customer", doc.customer, "a3_mobile_no") %}
+				{% if mobile %}<div>Mobile: {{ mobile }}</div>{% endif %}
+			</td>
+			<td>
+				<div class="label">FINANCED BY</div>
+				<div><b>{{ partner or "—" }}</b></div>
+				{% if doc.get("a3_emi_application") %}
+				<div>Application: {{ doc.a3_emi_application }}</div>{% endif %}
+			</td>
+		</tr>
+	</table>
+
+	<table class="sheet items" style="border-top:none">
+		<thead>
+			<tr>
+				<th style="width:7%">S.NO.</th>
+				<th>ITEMS</th>
+				<th style="width:13%">HSN</th>
+				<th style="width:10%">QTY.</th>
+				<th style="width:18%">AMOUNT</th>
+			</tr>
+		</thead>
+		<tbody>
+			{% for row in doc.items %}
+			<tr>
+				<td class="mid">{{ loop.index }}</td>
+				<td>
+					{{ row.item_name }}
+					{% set serials = a3_serials(row) %}
+					{% if serials %}<div class="imei">IMEI/Serial No: {{ serials }}</div>{% endif %}
+				</td>
+				<td class="mid">{{ row.gst_hsn_code or "" }}</td>
+				<td class="mid">{{ row.qty|int }} {{ row.uom or row.stock_uom }}</td>
+				<td class="num">{{ "{:,.2f}".format(row.amount|float) }}</td>
+			</tr>
+			{% endfor %}
+			<tr class="fill"><td></td><td></td><td></td><td></td><td></td></tr>
+		</tbody>
+		<tfoot>
+			<tr class="tot">
+				<td></td><td colspan="2" class="num">INVOICE VALUE (incl. GST)</td>
+				<td></td>
+				<td class="num">₹ {{ "{:,.2f}".format(payable) }}</td>
+			</tr>
+			<tr>
+				<td></td><td colspan="2" class="num"><b>RECEIVED FROM CUSTOMER</b></td>
+				<td></td>
+				<td class="num">₹ {{ "{:,.2f}".format(paid) }}</td>
+			</tr>
+			<tr class="approved">
+				<td></td><td colspan="2" class="num">AMOUNT APPROVED BY FINANCIER</td>
+				<td></td>
+				<td class="num">₹ {{ "{:,.2f}".format(approved) }}</td>
+			</tr>
+		</tfoot>
+	</table>
+
+	<table class="sheet" style="border-top:none">
+		<tr><td>
+			<div class="label">Amount approved (in words)</div>
+			<div>{{ a3_words(approved, doc.currency)|replace("INR ", "")|replace(" only.", "") }} Rupees</div>
+		</td></tr>
+	</table>
+
+	<table class="sheet" style="border-top:none">
+		<tr>
+			<td style="width:52%">
+				<div class="label">Note</div>
+				<div>This copy is issued to {{ partner or "the financier" }} against tax invoice
+					{{ doc.name }} dated {{ a3_daymonth(doc.posting_date) }}. The goods were sold
+					for the invoice value shown above.</div>
+			</td>
+			<td class="sign">
+				{% if profile.get("signature") %}<img src="{{ profile.signature }}"><br>{% endif %}
+				Authorised Signatory For<br>{{ head_name }}
+			</td>
+		</tr>
+	</table>
+</div>

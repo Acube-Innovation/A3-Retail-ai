@@ -297,10 +297,24 @@ EMI_FIELDS = {
 	"Sales Invoice": [
 		_field("a3_emi_application", "EMI Application", "Link", "A3 Retail Finance",
 			options="EMI Application", insert_after="a3_ew_attached", no_copy=1),
+		# Which bank financed the purchase. The counter picks only this — the
+		# tenure and instalment are settled on the financier's own machine — and
+		# it is what the financier's copy of the bill is raised against.
+		_field("a3_finance_partner", "Financed By", "Link", "A3 Retail Finance",
+			options="Finance Partner", insert_after="a3_emi_application", no_copy=1),
+		_field("a3_approved_amount", "Amount Approved By Financier", "Currency",
+			"A3 Retail Finance", insert_after="a3_finance_partner", no_copy=1),
+		# Which of the shop's bank accounts a card or UPI collection reached.
+		# ERPNext overwrites the payment row's account from the Mode of Payment on
+		# every validate, so the counter's choice is remembered here and put back.
+		_field("a3_bank_account", "Banked Into", "Link", "A3 Retail Sales",
+			options="Account", insert_after="a3_approved_amount", no_copy=1),
 	],
 	"POS Invoice": [
 		_field("a3_emi_application", "EMI Application", "Link", "A3 Retail Finance",
 			options="EMI Application", insert_after="a3_ew_attached", no_copy=1),
+		_field("a3_finance_partner", "Financed By", "Link", "A3 Retail Finance",
+			options="Finance Partner", insert_after="a3_emi_application", no_copy=1),
 	],
 }
 

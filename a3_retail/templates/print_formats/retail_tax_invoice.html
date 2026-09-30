@@ -1,24 +1,247 @@
-{% import "a3_retail/templates/print_formats/a3_base.html" as base %}
-{% set is_service = doc.get("a3_job_card") %}
-{{ base.styles() }}
-{{ base.title_band(doc, "Tax Invoice", a3_payment_qr(doc), "Scan to pay") }}
-{{ base.party_block(
-	"Bill To", base.customer_block(doc),
-	"Invoice Details",
-	'Date: ' ~ frappe.format(doc.posting_date, {"fieldtype": "Date"}) ~
-	'<br>Branch: ' ~ (doc.get("branch") or "") ~
-	('<br>Job Card: ' ~ doc.get("a3_job_card") if doc.get("a3_job_card") else "") ~
-	('<br>IRN: ' ~ doc.get("irn") if doc.get("irn") else "")) }}
-{{ base.items_table(doc.items, [("Item", "item_name", ""), ("HSN", "gst_hsn_code", ""), ("Qty", "qty", "num"), ("Rate", "rate", "money"), ("Amount", "amount", "money")]) }}
-{% set imei_rows = a3_serial_lines(doc) %}
-{% if imei_rows %}<div class="a3-block"><h4>IMEI / Serial</h4>{{ imei_rows|join("<br>") }}</div>{% endif %}
-{{ base.hsn_summary(doc) }}
-{{ base.totals(a3_invoice_total_lines(doc), "Grand Total", doc.grand_total, doc.currency) }}
-<div class="a3-block">
-	<h4>Warranty</h4>
-	{% if is_service %}Repairs carry {{ a3_setting("service_warranty_days") or 90 }} days of service warranty on the work performed.
-	{% else %}Manufacturer warranty applies as printed on the box. Physical and liquid damage are excluded.{% endif %}
+{#- Tax invoice, laid out the way the shop's customers already know it.
+
+    PhoneXpert billed on myBillBook for years and its customers recognise that
+    sheet, so this reproduces it rather than inventing a house style: one ruled
+    box per section, the IMEI under the item it belongs to, the HSN summary
+    below the totals, and the amount spelled out in words.
+
+    Everything comes off the branch where the sale happened, falling back to the
+    company when a Branch Profile has no address of its own.
+-#}
+{%- set profile = a3_branch_profile(doc.get("branch")) or {} -%}
+{%- set company = frappe.get_cached_doc("Company", doc.company) -%}
+{%- set gstin = profile.get("gstin") or doc.get("company_gstin") or company.get("gstin") or "" -%}
+{#- The PAN sits inside the GSTIN: two digits of state, then the ten of the PAN. -#}
+{%- set pan = gstin[2:12] if gstin|length == 15 else "" -%}
+{%- set head_name = profile.get("trade_name") or profile.get("branch") or company.name -%}
+{%- set addr_lines = [profile.get("address_line1"), profile.get("address_line2"),
+                      [profile.get("city"), profile.get("state"), profile.get("pincode")]
+                      |select|join(", ")]|select|list -%}
+{%- set paid = (doc.grand_total|float) - (doc.outstanding_amount|float) -%}
+{%- set summary = a3_hsn_summary(doc) -%}
+{#- The tax on a line is its share of the tax the invoice actually carries. The
+    tax rows hold the pre-discount figure and the item rows hold no GST rate at
+    all, so apportioning on taxable value is the only split that adds back up to
+    the totals the customer is being asked to pay. -#}
+{%- set net_total = doc.net_total|float or 1.0 -%}
+{%- set tax_total = doc.total_taxes_and_charges|float -%}
+{%- set has_igst = summary|selectattr("igst")|list|length > 0 -%}
+
+<style>
+	.mbb { font-family: Helvetica, Arial, sans-serif; font-size: 9pt; color: #000; }
+	.mbb table { width: 100%; border-collapse: collapse; }
+	.mbb .sheet, .mbb .sheet td, .mbb .sheet th { border: 1px solid #000; }
+	.mbb td, .mbb th { padding: 3px 6px; vertical-align: top; }
+	.mbb .kind { font-weight: bold; font-size: 10pt; letter-spacing: .3px; }
+	.mbb .copy { border: 1px solid #999; color: #444; padding: 2px 8px; font-size: 8pt;
+		margin-left: 10px; }
+	.mbb .org { font-size: 13pt; font-weight: bold; margin-bottom: 1px; }
+	.mbb .logo { width: 96px; text-align: center; }
+	.mbb .logo img { max-width: 88px; max-height: 76px; }
+	.mbb .meta { text-align: center; font-weight: bold; }
+	.mbb .meta-val { text-align: center; white-space: nowrap; font-size: 9pt; }
+	.mbb .label { font-size: 8pt; font-weight: bold; letter-spacing: .3px; }
+	.mbb .items th { background: #efefef; text-align: center; font-size: 8.5pt; }
+	.mbb .items td { font-size: 9pt; }
+	.mbb .num { text-align: right; white-space: nowrap; }
+	.mbb .mid { text-align: center; }
+	.mbb .imei { color: #666; font-size: 8pt; }
+	.mbb .fill td { height: 300px; }
+	.mbb .sum th { background: #efefef; text-align: center; font-size: 8.5pt; }
+	.mbb .tot td { font-weight: bold; background: #efefef; }
+	.mbb .sign { height: 86px; text-align: center; vertical-align: bottom; }
+	.mbb .sign img { max-height: 54px; }
+</style>
+
+<div class="mbb">
+
+	<div style="margin-bottom:6px">
+		<span class="kind">TAX INVOICE</span>
+		<span class="copy">ORIGINAL FOR RECIPIENT</span>
+	</div>
+
+	{#- who is billing, and under which number -#}
+	<table class="sheet">
+		<tr>
+			<td class="logo">
+				{% if company.company_logo %}<img src="{{ company.company_logo }}">{% endif %}
+			</td>
+			<td>
+				<div class="org">{{ head_name }}</div>
+				{% for line in addr_lines %}<div>{{ line }}</div>{% endfor %}
+				<table style="border:none;width:auto">
+					<tr>
+						<td style="border:none;padding:0 28px 0 0"><b>GSTIN:</b><br>{{ gstin or "—" }}</td>
+						{%- set phone = profile.get("phone") or company.phone_no -%}
+						{% if phone %}<td style="border:none;padding:0">
+							<b>Mobile:</b><br>{{ phone }}</td>{% endif %}
+					</tr>
+				</table>
+				{% if pan %}<div><b>PAN Number:</b> {{ pan }}</div>{% endif %}
+				{% if profile.get("email") or company.email %}
+				<div><b>Email:</b> {{ profile.get("email") or company.email }}</div>{% endif %}
+			</td>
+			<td style="width:31%;padding:0">
+				<table style="border:none">
+					<tr>
+						<td class="meta" style="border:none;border-bottom:1px solid #000">Invoice No.</td>
+						<td class="meta" style="border:none;border-bottom:1px solid #000;border-left:1px solid #000">
+							Invoice Date</td>
+					</tr>
+					<tr>
+						<td class="meta-val" style="border:none">{{ doc.name }}</td>
+						<td class="meta-val" style="border:none;border-left:1px solid #000">
+							{{ a3_daymonth(doc.posting_date) }} {{ a3_clock(doc.posting_time) }}</td>
+					</tr>
+				</table>
+			</td>
+		</tr>
+	</table>
+
+	{#- who is being billed -#}
+	<table class="sheet" style="border-top:none">
+		<tr>
+			<td style="width:50%">
+				<div class="label">BILL TO</div>
+				<div><b>{{ doc.customer_name }}</b></div>
+				{% if doc.address_display %}<div>Address: {{ doc.address_display|striptags }}</div>{% endif %}
+				{% if doc.place_of_supply %}<div>Place of Supply: {{ doc.place_of_supply }}</div>{% endif %}
+				{% set mobile = doc.contact_mobile or frappe.db.get_value("Customer", doc.customer, "a3_mobile_no") %}
+				{% if mobile %}<div>Mobile: {{ mobile }}</div>{% endif %}
+			</td>
+			<td>
+				<div class="label">SHIP TO</div>
+				<div><b>{{ doc.customer_name }}</b></div>
+				{% set ship = doc.shipping_address or doc.address_display %}
+				{% if ship %}<div>Address: {{ ship|striptags }}</div>{% endif %}
+			</td>
+		</tr>
+	</table>
+
+	{#- what was sold -#}
+	<table class="sheet items" style="border-top:none">
+		<thead>
+			<tr>
+				<th style="width:7%">S.NO.</th>
+				<th>ITEMS</th>
+				<th style="width:11%">HSN</th>
+				<th style="width:9%">QTY.</th>
+				<th style="width:12%">RATE</th>
+				<th style="width:13%">TAX</th>
+				<th style="width:14%">AMOUNT</th>
+			</tr>
+		</thead>
+		<tbody>
+			{% for row in doc.items %}
+			{%- set line_net = row.net_amount|float -%}
+			{%- set line_tax = tax_total * line_net / net_total -%}
+			{%- set line_rate = (line_tax / line_net * 100) if line_net else 0 -%}
+			<tr>
+				<td class="mid">{{ loop.index }}</td>
+				<td>
+					{{ row.item_name }}
+					{% set serials = a3_serials(row) %}
+					{% if serials %}<div class="imei">IMEI/Serial No: {{ serials }}</div>{% endif %}
+				</td>
+				<td class="mid">{{ row.gst_hsn_code or "" }}</td>
+				<td class="mid">{{ row.qty|int }} {{ row.uom or row.stock_uom }}</td>
+				<td class="num">{{ "{:,.2f}".format(row.net_rate|float or row.rate|float) }}</td>
+				<td class="num">
+					{% if line_tax %}{{ "{:,.2f}".format(line_tax) }}
+					<div class="imei">({{ line_rate|round|int }}%)</div>{% endif %}
+				</td>
+				<td class="num">{{ "{:,.2f}".format(line_net + line_tax) }}</td>
+			</tr>
+			{% endfor %}
+			{#- The blank space below the items is not one empty box: every column
+			    rule runs down to the totals, as on the sheet the shop has always
+			    used. Seven cells, not a colspan. -#}
+			<tr class="fill"><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+		</tbody>
+		<tfoot>
+			<tr class="tot">
+				<td></td>
+				<td colspan="2" class="num">TOTAL</td>
+				<td class="mid">{{ doc.total_qty|int }}</td>
+				<td></td>
+				<td class="num">₹ {{ "{:,.2f}".format(doc.total_taxes_and_charges|float) }}</td>
+				<td class="num">₹ {{ "{:,.2f}".format(doc.grand_total|float) }}</td>
+			</tr>
+			<tr>
+				<td></td>
+				<td colspan="4" class="num"><b>RECEIVED AMOUNT</b></td>
+				<td></td>
+				<td class="num">₹ {{ "{:,.2f}".format(paid) }}</td>
+			</tr>
+			<tr>
+				<td></td>
+				<td colspan="4" class="num"><b>BALANCE AMOUNT</b></td>
+				<td></td>
+				<td class="num">₹ {{ "{:,.2f}".format(doc.outstanding_amount|float) }}</td>
+			</tr>
+		</tfoot>
+	</table>
+
+	{#- the statutory HSN summary -#}
+	<table class="sheet sum" style="border-top:none">
+		<thead>
+			<tr>
+				<th rowspan="2" style="width:22%">HSN/SAC</th>
+				<th rowspan="2" style="width:26%">Taxable Value</th>
+				{% if has_igst %}<th colspan="2">IGST</th>
+				{% else %}<th colspan="2">CGST</th><th colspan="2">SGST</th>{% endif %}
+				<th rowspan="2" style="width:18%">Total Tax Amount</th>
+			</tr>
+			<tr>
+				<th>Rate</th><th>Amount</th>
+				{% if not has_igst %}<th>Rate</th><th>Amount</th>{% endif %}
+			</tr>
+		</thead>
+		<tbody>
+			{% for row in summary %}
+			{%- set tax = row.cgst + row.sgst + row.igst + row.cess -%}
+			<tr>
+				<td class="mid">{{ row.hsn }}</td>
+				<td class="num">{{ "{:,.2f}".format(row.taxable) }}</td>
+				{% if has_igst %}
+				<td class="mid">{{ (row.igst / row.taxable * 100)|round|int if row.taxable else 0 }}%</td>
+				<td class="num">{{ "{:,.2f}".format(row.igst) }}</td>
+				{% else %}
+				<td class="mid">{{ (row.cgst / row.taxable * 100)|round(2) if row.taxable else 0 }}%</td>
+				<td class="num">{{ "{:,.2f}".format(row.cgst) }}</td>
+				<td class="mid">{{ (row.sgst / row.taxable * 100)|round(2) if row.taxable else 0 }}%</td>
+				<td class="num">{{ "{:,.2f}".format(row.sgst) }}</td>
+				{% endif %}
+				<td class="num" style="white-space:nowrap">₹ {{ "{:,.2f}".format(tax) }}</td>
+			</tr>
+			{% endfor %}
+		</tbody>
+	</table>
+
+	<table class="sheet" style="border-top:none">
+		<tr><td>
+			<div class="label">Total Amount (in words)</div>
+			{%- set payable = doc.rounded_total|float or doc.grand_total|float -%}
+			{%- set words = a3_words(payable, doc.currency)|replace("INR ", "")
+				|replace(" only.", "")|replace(" only", "") -%}
+			<div>{{ words }} Rupees</div>
+		</td></tr>
+	</table>
+
+	<table class="sheet" style="border-top:none">
+		<tr>
+			<td style="width:52%">
+				<div class="label">Terms and Conditions</div>
+				{#- The branch's own terms, worded as the shop has always printed them. -#}
+				{%- set terms = profile.get("invoice_terms") or a3_terms(doc) -%}
+				{% if terms %}{% for line in terms.split("\n") %}
+				{% if line.strip() %}<div>{{ line.strip() }}</div>{% endif %}
+				{% endfor %}{% endif %}
+			</td>
+			<td class="sign">
+				{% if profile.get("signature") %}<img src="{{ profile.signature }}"><br>{% endif %}
+				Authorised Signatory For<br>{{ head_name }}
+			</td>
+		</tr>
+	</table>
 </div>
-{{ base.terms(doc) }}
-{{ base.signatures("Received By") }}
-{{ base.footer(doc) }}
