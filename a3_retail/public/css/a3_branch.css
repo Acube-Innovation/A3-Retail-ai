@@ -739,9 +739,13 @@ body.side-collapsed .side-nav a, body.side-collapsed .side-soon { justify-conten
 .pay-tiles.is-muted { opacity: .55; }
 
 .split-line { display: flex; align-items: center; gap: 7px; margin-bottom: 8px; }
-.split-line select { flex: 0 0 96px; padding: 9px 8px; font-family: inherit; font-size: 13px;
-	background: var(--card); border: 1px solid var(--line-strong); border-radius: 9px;
-	color: var(--ink); cursor: pointer; }
+/* `min-width: 0` matters: a flex item defaults to `min-width: auto`, so a select
+   whose longest option is "SBI CURRENT ACCOUNT" grows past its 96px basis and
+   knocks the amount box out of line with the row below. */
+.split-line select { flex: 0 0 96px; width: 96px; min-width: 0; padding: 9px 8px;
+	font-family: inherit; font-size: 13px; background: var(--card);
+	border: 1px solid var(--line-strong); border-radius: 9px; color: var(--ink);
+	cursor: pointer; text-overflow: ellipsis; }
 .split-line .input-rupee { flex: 1; width: auto; }
 .split-drop { flex: 0 0 30px; height: 34px; border: 1px solid var(--line); border-radius: 9px;
 	background: var(--card); color: var(--muted); font-size: 17px; line-height: 1;
@@ -1879,3 +1883,20 @@ body.side-collapsed .side-nav a, body.side-collapsed .side-soon { justify-conten
 /* The account a card or UPI collection reached. Reads as the chosen bank once
    picked, so the counter can see it without opening the dialog again. */
 .bank-pick { width: 100%; justify-content: center; font-size: 12px; padding: 7px 8px; }
+
+/* Under the amount on a split line: which bank the money reaches, and for the
+   financed line which bank it came from. A line of its own — `.split-line` is a
+   flex row, so the caption has to claim the full width or it sits in the row and
+   squeezes the amount box. */
+.split-line { flex-wrap: wrap; }
+.split-bank { flex: 0 0 100%; display: flex; align-items: center; gap: 6px;
+	font-size: 11px; color: var(--muted); margin: -4px 0 4px 2px; }
+/* The financed line's account sits in the same column as every other tender,
+   so the rows line up. A long bank name is clipped rather than shunting the
+   amount box out of alignment — the full name is in the list it came from. */
+.split-line select.is-account { flex: 0 0 96px; width: 96px; min-width: 0; }
+.split-bank select, .split-bank .split-bank-pick { flex: 0 1 auto; font: inherit;
+	color: inherit; background: transparent; border: none;
+	border-bottom: 1px dotted var(--line-strong); padding: 1px 2px; cursor: pointer;
+	max-width: 200px; text-align: left; border-radius: 0; }
+.split-bank .split-bank-pick:hover { color: var(--sky-dark); }

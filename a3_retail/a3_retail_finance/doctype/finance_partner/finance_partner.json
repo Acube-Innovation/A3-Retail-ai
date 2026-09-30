@@ -18,6 +18,7 @@
   "commercials_section",
   "mode_of_payment",
   "settlement_account",
+  "bank_account",
   "mdr_expense_account",
   "col_break_2",
   "mdr_percent",
@@ -110,6 +111,13 @@
    "label": "Settlement Receivable Account",
    "options": "Account",
    "reqd": 1
+  },
+  {
+   "fieldname": "bank_account",
+   "fieldtype": "Link",
+   "options": "Account",
+   "label": "Credited Into",
+   "description": "The bank account this financier pays the shop into. Offered at the counter when an EMI sale is split, and changeable there."
   },
   {
    "fieldname": "mdr_expense_account",

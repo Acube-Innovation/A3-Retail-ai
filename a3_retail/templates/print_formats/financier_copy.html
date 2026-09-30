@@ -1,28 +1,36 @@
-{#- The copy a financier is given before releasing money.
+{#- The copy a financier is given, restated at the amount they sanctioned.
 
-    Same sheet the customer gets, so the bank recognises the shop and can tie it
-    to the tax invoice by number — but headed FINANCIER COPY, and carrying both
-    figures the bank needs: what the goods were sold for, and what the bank has
-    sanctioned against them. They are often not the same number, because the
-    customer has put money down or the bank has capped its exposure.
+    The same sheet as the tax invoice, band for band — the bank asked for the
+    invoice and this is the invoice — with every money figure scaled to the
+    approved amount so the columns still add up: rate times quantity is the line
+    amount, taxable plus tax is the total, and the HSN summary agrees with both.
 
-    It is deliberately not a second tax invoice at a different value. One sale
-    has one invoice value; a document that restated it would not agree with the
-    shop's GST return, the customer's copy, or the stock that left the shelf.
+    The approved amount can never exceed the bill; `bills.set_approved_amount`
+    refuses that, so this document can only ever state less than the sale, never
+    more.
 -#}
 {%- set profile = a3_branch_profile(doc.get("branch")) or {} -%}
 {%- set company = frappe.get_cached_doc("Company", doc.company) -%}
 {%- set gstin = profile.get("gstin") or doc.get("company_gstin") or company.get("gstin") or "" -%}
+{#- The PAN sits inside the GSTIN: two digits of state, then the ten of the PAN. -#}
 {%- set pan = gstin[2:12] if gstin|length == 15 else "" -%}
 {%- set head_name = profile.get("trade_name") or profile.get("branch") or company.name -%}
 {%- set addr_lines = [profile.get("address_line1"), profile.get("address_line2"),
                       [profile.get("city"), profile.get("state"), profile.get("pincode")]
                       |select|join(", ")]|select|list -%}
 {%- set payable = doc.rounded_total|float or doc.grand_total|float -%}
-{%- set approved = doc.get("a3_approved_amount")|float -%}
-{%- set paid = payable - (doc.outstanding_amount|float) -%}
-{%- set partner = frappe.db.get_value("Finance Partner", doc.get("a3_finance_partner"),
-                                      "partner_name") or doc.get("a3_finance_partner") -%}
+{%- set approved = doc.get("a3_approved_amount")|float or payable -%}
+{#- Everything below is the invoice scaled to what the bank approved. -#}
+{%- set factor = (approved / payable) if payable else 1.0 -%}
+{%- set paid = approved -%}
+{%- set summary = a3_hsn_summary(doc) -%}
+{#- The tax on a line is its share of the tax the invoice actually carries. The
+    tax rows hold the pre-discount figure and the item rows hold no GST rate at
+    all, so apportioning on taxable value is the only split that adds back up to
+    the totals the customer is being asked to pay. -#}
+{%- set net_total = doc.net_total|float or 1.0 -%}
+{%- set tax_total = doc.total_taxes_and_charges|float -%}
+{%- set has_igst = summary|selectattr("igst")|list|length > 0 -%}
 
 <style>
 	.mbb { font-family: Helvetica, Arial, sans-serif; font-size: 9pt; color: #000; }
@@ -39,12 +47,13 @@
 	.mbb .meta-val { text-align: center; white-space: nowrap; font-size: 9pt; }
 	.mbb .label { font-size: 8pt; font-weight: bold; letter-spacing: .3px; }
 	.mbb .items th { background: #efefef; text-align: center; font-size: 8.5pt; }
+	.mbb .items td { font-size: 9pt; }
 	.mbb .num { text-align: right; white-space: nowrap; }
 	.mbb .mid { text-align: center; }
 	.mbb .imei { color: #666; font-size: 8pt; }
-	.mbb .fill td { height: 170px; }
+	.mbb .fill td { height: 300px; }
+	.mbb .sum th { background: #efefef; text-align: center; font-size: 8.5pt; }
 	.mbb .tot td { font-weight: bold; background: #efefef; }
-	.mbb .approved td { font-weight: bold; font-size: 11pt; background: #efefef; }
 	.mbb .sign { height: 86px; text-align: center; vertical-align: bottom; }
 	.mbb .sign img { max-height: 54px; }
 </style>
@@ -52,10 +61,11 @@
 <div class="mbb">
 
 	<div style="margin-bottom:6px">
-		<span class="kind">FINANCIER COPY</span>
-		<span class="copy">NOT A TAX INVOICE</span>
+		<span class="kind">TAX INVOICE</span>
+		<span class="copy">ORIGINAL FOR RECIPIENT</span>
 	</div>
 
+	{#- who is billing, and under which number -#}
 	<table class="sheet">
 		<tr>
 			<td class="logo">
@@ -64,8 +74,17 @@
 			<td>
 				<div class="org">{{ head_name }}</div>
 				{% for line in addr_lines %}<div>{{ line }}</div>{% endfor %}
-				<div><b>GSTIN:</b> {{ gstin or "—" }}{% if pan %} &nbsp; <b>PAN:</b> {{ pan }}{% endif %}</div>
-				{% if profile.get("phone") %}<div><b>Mobile:</b> {{ profile.phone }}</div>{% endif %}
+				<table style="border:none;width:auto">
+					<tr>
+						<td style="border:none;padding:0 28px 0 0"><b>GSTIN:</b><br>{{ gstin or "—" }}</td>
+						{%- set phone = profile.get("phone") or company.phone_no -%}
+						{% if phone %}<td style="border:none;padding:0">
+							<b>Mobile:</b><br>{{ phone }}</td>{% endif %}
+					</tr>
+				</table>
+				{% if pan %}<div><b>PAN Number:</b> {{ pan }}</div>{% endif %}
+				{% if profile.get("email") or company.email %}
+				<div><b>Email:</b> {{ profile.get("email") or company.email }}</div>{% endif %}
 			</td>
 			<td style="width:31%;padding:0">
 				<table style="border:none">
@@ -77,43 +96,51 @@
 					<tr>
 						<td class="meta-val" style="border:none">{{ doc.name }}</td>
 						<td class="meta-val" style="border:none;border-left:1px solid #000">
-							{{ a3_daymonth(doc.posting_date) }}</td>
+							{{ a3_daymonth(doc.posting_date) }} {{ a3_clock(doc.posting_time) }}</td>
 					</tr>
 				</table>
 			</td>
 		</tr>
 	</table>
 
+	{#- who is being billed -#}
 	<table class="sheet" style="border-top:none">
 		<tr>
 			<td style="width:50%">
-				<div class="label">CUSTOMER</div>
+				<div class="label">BILL TO</div>
 				<div><b>{{ doc.customer_name }}</b></div>
-				{% if doc.address_display %}<div>{{ doc.address_display|striptags }}</div>{% endif %}
+				{% if doc.address_display %}<div>Address: {{ doc.address_display|striptags }}</div>{% endif %}
+				{% if doc.place_of_supply %}<div>Place of Supply: {{ doc.place_of_supply }}</div>{% endif %}
 				{% set mobile = doc.contact_mobile or frappe.db.get_value("Customer", doc.customer, "a3_mobile_no") %}
 				{% if mobile %}<div>Mobile: {{ mobile }}</div>{% endif %}
 			</td>
 			<td>
-				<div class="label">FINANCED BY</div>
-				<div><b>{{ partner or "—" }}</b></div>
-				{% if doc.get("a3_emi_application") %}
-				<div>Application: {{ doc.a3_emi_application }}</div>{% endif %}
+				<div class="label">SHIP TO</div>
+				<div><b>{{ doc.customer_name }}</b></div>
+				{% set ship = doc.shipping_address or doc.address_display %}
+				{% if ship %}<div>Address: {{ ship|striptags }}</div>{% endif %}
 			</td>
 		</tr>
 	</table>
 
+	{#- what was sold -#}
 	<table class="sheet items" style="border-top:none">
 		<thead>
 			<tr>
 				<th style="width:7%">S.NO.</th>
 				<th>ITEMS</th>
-				<th style="width:13%">HSN</th>
-				<th style="width:10%">QTY.</th>
-				<th style="width:18%">AMOUNT</th>
+				<th style="width:11%">HSN</th>
+				<th style="width:9%">QTY.</th>
+				<th style="width:12%">RATE</th>
+				<th style="width:13%">TAX</th>
+				<th style="width:14%">AMOUNT</th>
 			</tr>
 		</thead>
 		<tbody>
 			{% for row in doc.items %}
+			{%- set line_net = (row.net_amount|float) * factor -%}
+			{%- set line_tax = tax_total * factor * line_net / (net_total * factor) -%}
+			{%- set line_rate = (line_tax / line_net * 100) if line_net else 0 -%}
 			<tr>
 				<td class="mid">{{ loop.index }}</td>
 				<td>
@@ -123,44 +150,97 @@
 				</td>
 				<td class="mid">{{ row.gst_hsn_code or "" }}</td>
 				<td class="mid">{{ row.qty|int }} {{ row.uom or row.stock_uom }}</td>
-				<td class="num">{{ "{:,.2f}".format(row.amount|float) }}</td>
+				<td class="num">{{ "{:,.2f}".format((row.net_rate|float or row.rate|float) * factor) }}</td>
+				<td class="num">
+					{% if line_tax %}{{ "{:,.2f}".format(line_tax) }}
+					<div class="imei">({{ line_rate|round|int }}%)</div>{% endif %}
+				</td>
+				<td class="num">{{ "{:,.2f}".format(line_net + line_tax) }}</td>
 			</tr>
 			{% endfor %}
-			<tr class="fill"><td></td><td></td><td></td><td></td><td></td></tr>
+			{#- The blank space below the items is not one empty box: every column
+			    rule runs down to the totals, as on the sheet the shop has always
+			    used. Seven cells, not a colspan. -#}
+			<tr class="fill"><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
 		</tbody>
 		<tfoot>
 			<tr class="tot">
-				<td></td><td colspan="2" class="num">INVOICE VALUE (incl. GST)</td>
 				<td></td>
-				<td class="num">₹ {{ "{:,.2f}".format(payable) }}</td>
+				<td colspan="2" class="num">TOTAL</td>
+				<td class="mid">{{ doc.total_qty|int }}</td>
+				<td></td>
+				<td class="num">₹ {{ "{:,.2f}".format((doc.total_taxes_and_charges|float) * factor) }}</td>
+				<td class="num">₹ {{ "{:,.2f}".format(approved) }}</td>
 			</tr>
 			<tr>
-				<td></td><td colspan="2" class="num"><b>RECEIVED FROM CUSTOMER</b></td>
+				<td></td>
+				<td colspan="4" class="num"><b>RECEIVED AMOUNT</b></td>
 				<td></td>
 				<td class="num">₹ {{ "{:,.2f}".format(paid) }}</td>
 			</tr>
-			<tr class="approved">
-				<td></td><td colspan="2" class="num">AMOUNT APPROVED BY FINANCIER</td>
+			<tr>
 				<td></td>
-				<td class="num">₹ {{ "{:,.2f}".format(approved) }}</td>
+				<td colspan="4" class="num"><b>BALANCE AMOUNT</b></td>
+				<td></td>
+				<td class="num">₹ 0.00</td>
 			</tr>
 		</tfoot>
 	</table>
 
+	{#- the statutory HSN summary -#}
+	<table class="sheet sum" style="border-top:none">
+		<thead>
+			<tr>
+				<th rowspan="2" style="width:22%">HSN/SAC</th>
+				<th rowspan="2" style="width:26%">Taxable Value</th>
+				{% if has_igst %}<th colspan="2">IGST</th>
+				{% else %}<th colspan="2">CGST</th><th colspan="2">SGST</th>{% endif %}
+				<th rowspan="2" style="width:18%">Total Tax Amount</th>
+			</tr>
+			<tr>
+				<th>Rate</th><th>Amount</th>
+				{% if not has_igst %}<th>Rate</th><th>Amount</th>{% endif %}
+			</tr>
+		</thead>
+		<tbody>
+			{% for row in summary %}
+			{%- set tax = (row.cgst + row.sgst + row.igst + row.cess) * factor -%}
+			<tr>
+				<td class="mid">{{ row.hsn }}</td>
+				<td class="num">{{ "{:,.2f}".format(row.taxable * factor) }}</td>
+				{% if has_igst %}
+				<td class="mid">{{ (row.igst / row.taxable * 100)|round|int if row.taxable else 0 }}%</td>
+				<td class="num">{{ "{:,.2f}".format(row.igst * factor) }}</td>
+				{% else %}
+				<td class="mid">{{ (row.cgst / row.taxable * 100)|round(2) if row.taxable else 0 }}%</td>
+				<td class="num">{{ "{:,.2f}".format(row.cgst * factor) }}</td>
+				<td class="mid">{{ (row.sgst / row.taxable * 100)|round(2) if row.taxable else 0 }}%</td>
+				<td class="num">{{ "{:,.2f}".format(row.sgst * factor) }}</td>
+				{% endif %}
+				<td class="num" style="white-space:nowrap">₹ {{ "{:,.2f}".format(tax) }}</td>
+			</tr>
+			{% endfor %}
+		</tbody>
+	</table>
+
 	<table class="sheet" style="border-top:none">
 		<tr><td>
-			<div class="label">Amount approved (in words)</div>
-			<div>{{ a3_words(approved, doc.currency)|replace("INR ", "")|replace(" only.", "") }} Rupees</div>
+			<div class="label">Total Amount (in words)</div>
+			{%- set words = a3_words(approved, doc.currency)|replace("INR ", "")
+				|replace(" only.", "")|replace(" only", "") -%}
+			<div>{{ words }} Rupees</div>
 		</td></tr>
 	</table>
 
 	<table class="sheet" style="border-top:none">
 		<tr>
 			<td style="width:52%">
-				<div class="label">Note</div>
-				<div>This copy is issued to {{ partner or "the financier" }} against tax invoice
-					{{ doc.name }} dated {{ a3_daymonth(doc.posting_date) }}. The goods were sold
-					for the invoice value shown above.</div>
+				<div class="label">Terms and Conditions</div>
+				{#- The branch's own terms, worded as the shop has always printed them. -#}
+				{%- set terms = profile.get("invoice_terms") or a3_terms(doc) -%}
+				{% if terms %}{% for line in terms.split("\n") %}
+				{% if line.strip() %}<div>{{ line.strip() }}</div>{% endif %}
+				{% endfor %}{% endif %}
 			</td>
 			<td class="sign">
 				{% if profile.get("signature") %}<img src="{{ profile.signature }}"><br>{% endif %}
