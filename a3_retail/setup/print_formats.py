@@ -24,6 +24,8 @@ FORMATS = [
 	("Service Estimate", "Service Estimate", "service_estimate", "A4"),
 	("Service Invoice", "Sales Invoice", "service_tax_invoice", "A4"),
 	("Retail Tax Invoice", "Sales Invoice", "retail_tax_invoice", "A4"),
+	# The copy a bank is given before releasing money on an EMI sale.
+	("Financier Copy", "Sales Invoice", "financier_copy", "A4"),
 	("POS Receipt", "POS Invoice", "pos_receipt", "80mm"),
 	("Delivery Challan", "Delivery Note", "delivery_challan", "A4"),
 	("Device Delivery Note", "Service Job Card", "device_delivery_note", "A5"),

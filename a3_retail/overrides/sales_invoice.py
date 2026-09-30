@@ -29,8 +29,25 @@ def _may_override(user: str | None = None) -> bool:
 	return bool(OVERRIDE_ROLES & set(frappe.get_roles(user)))
 
 
+def restore_banked_account(doc) -> None:
+	"""Put the counter's chosen bank back on the payment rows.
+
+	`set_account_for_mode_of_payment` rewrites every row's account from the Mode
+	of Payment each time the invoice validates — not only the blank ones — so a
+	bank picked at the till is lost unless it is re-applied afterwards. This hook
+	runs after that, which is the only place the choice survives to the ledger.
+	"""
+	chosen = doc.get("a3_bank_account")
+	if not chosen:
+		return
+	for row in doc.get("payments") or []:
+		if frappe.db.get_value("Mode of Payment", row.mode_of_payment, "type") != "Cash":
+			row.account = chosen
+
+
 def validate(doc, method=None):
 	"""Runs for both Sales Invoice and POS Invoice."""
+	restore_banked_account(doc)
 	validate_device_serials(doc)
 	validate_minimum_price(doc)
 	ensure_sales_person(doc)

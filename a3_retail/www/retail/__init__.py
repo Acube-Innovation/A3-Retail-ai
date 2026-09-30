@@ -13,6 +13,7 @@ ASSETS = (
 	("js", "a3_purchases.js"),
 	("js", "a3_purchase_entry.js"),
 	("js", "a3_cashbank.js"),
+	("js", "a3_returns.js"),
 )
 
 

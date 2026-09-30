@@ -141,6 +141,25 @@ window.INVOICE = (function () {
 		}
 	}
 
+	/** The copy the financier gets, once the shop knows what was sanctioned. */
+	async function askBankBill(data) {
+		const typed = window.prompt(
+			`How much has ${data.financier} approved?\n\n`
+			+ `The bill is ${money(data.totals.grand)}. The copy shows both figures — `
+			+ `what the goods were sold for and what the bank has sanctioned.`,
+			String(Math.round(data.totals.grand)));
+		if (typed === null) return;
+
+		try {
+			const result = await A3.call("a3_retail.api.bills.set_approved_amount", {
+				name: data.name, amount: Number(typed) || 0,
+			});
+			window.open(result.print_url, "_blank");
+		} catch (error) {
+			alert(error.message || "Could not raise the bank copy.");
+		}
+	}
+
 	function print() {
 		window.open(state.data.print_url, "_blank");
 	}
@@ -288,6 +307,9 @@ window.INVOICE = (function () {
 				${data.editable
 					? `<a class="btn btn-outline btn-icon" href="/retail/sales?invoice=${
 						encodeURIComponent(data.name)}">${icon("pencil")} Edit Invoice</a>` : ""}
+				${data.financier && data.status === "Submitted"
+					? `<button class="btn btn-outline btn-icon" id="bank-bill">${
+						icon("file")} Bank Bill</button>` : ""}
 				${totals.balance > 0 && data.status === "Submitted"
 					? `<button class="btn btn-orange btn-icon" id="collect">${icon("cash")} Collect Payment</button>`
 					: ""}
@@ -297,6 +319,7 @@ window.INVOICE = (function () {
 
 		if ($("print-bottom")) $("print-bottom").addEventListener("click", print);
 		if ($("collect")) $("collect").addEventListener("click", askPayment);
+		if ($("bank-bill")) $("bank-bill").addEventListener("click", () => askBankBill(data));
 		if ($("draft-save")) {
 			$("draft-save").addEventListener("click", () => saveDraftHeader(data.name));
 			fillSellers(data.sales_person);

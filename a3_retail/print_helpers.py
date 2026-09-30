@@ -9,7 +9,7 @@ format is hard to debug, and the sandbox makes non-trivial Jinja awkward.
 """
 
 import frappe
-from frappe.utils import flt, fmt_money, money_in_words
+from frappe.utils import flt, fmt_money, getdate, money_in_words
 
 from a3_retail.utils import qr as qr_utils
 
@@ -52,7 +52,8 @@ def a3_branch_profile(branch: str) -> dict:
 	profile = frappe.db.get_value(
 		"Branch Profile",
 		{"branch": branch},
-		["name", "branch", "address", "contact_no", "branch_email", "gstin", "letter_head"],
+		["name", "branch", "trade_name", "signature", "invoice_terms", "address",
+		 "contact_no", "branch_email", "gstin", "letter_head"],
 		as_dict=True,
 	)
 	if not profile:
@@ -61,6 +62,12 @@ def a3_branch_profile(branch: str) -> dict:
 	flat = {
 		"name": profile.name,
 		"branch": profile.branch,
+		# What customers call the shop, which is not always what the branch is
+		# called in the system — "PhoneXpert Digital store & Care" rather than
+		# "PhoneXpert Sales PSLA".
+		"trade_name": profile.get("trade_name") or profile.branch,
+		"signature": profile.get("signature"),
+		"invoice_terms": profile.get("invoice_terms"),
 		"phone": profile.contact_no,
 		"email": profile.branch_email,
 		"gstin": profile.gstin,
@@ -225,3 +232,28 @@ def a3_job_card_totals(doc) -> list[tuple]:
 		("Warranty Borne", -flt(doc.get("warranty_borne_amount"))),
 		("Advance Paid", -flt(doc.get("advance_amount"))),
 	]
+
+
+def a3_clock(value) -> str:
+	"""Time as a shop prints it — "1:41 PM", not "13:41:00"."""
+	if not value:
+		return ""
+	if isinstance(value, str):
+		value = value.split(".")[0]
+		parts = value.split(":")
+		if len(parts) < 2:
+			return value
+		hour, minute = int(parts[0]), parts[1]
+	else:
+		total = int(value.total_seconds()) if hasattr(value, "total_seconds") else 0
+		hour, minute = total // 3600, f"{(total % 3600) // 60:02d}"
+	suffix = "AM" if hour < 12 else "PM"
+	shown = hour % 12 or 12
+	return f"{shown}:{minute} {suffix}"
+
+
+def a3_daymonth(value) -> str:
+	"""Date as a shop prints it — 29/09/2026."""
+	if not value:
+		return ""
+	return getdate(value).strftime("%d/%m/%Y")

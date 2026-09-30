@@ -15,6 +15,9 @@
   "company",
   "cost_center",
   "address",
+  "trade_name",
+  "signature",
+  "invoice_terms",
   "gstin",
   "state_code",
   "contact_section",
@@ -122,6 +125,24 @@
    "fieldtype": "Link",
    "label": "Branch Address",
    "options": "Address"
+  },
+  {
+   "fieldname": "trade_name",
+   "fieldtype": "Data",
+   "label": "Trade Name (on printed bills)",
+   "description": "The name customers know this shop by \u2014 printed at the head of the tax invoice. Falls back to the branch name when blank."
+  },
+  {
+   "fieldname": "signature",
+   "fieldtype": "Attach Image",
+   "label": "Authorised Signature",
+   "description": "Stamp or signature printed at the foot of this branch's tax invoices."
+  },
+  {
+   "fieldname": "invoice_terms",
+   "fieldtype": "Small Text",
+   "label": "Invoice Terms",
+   "description": "Printed under Terms and Conditions on this branch's tax invoices."
   },
   {
    "fieldname": "gstin",
