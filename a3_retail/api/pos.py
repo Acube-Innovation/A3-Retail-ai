@@ -502,10 +502,14 @@ def checkout(payload) -> dict:
 	# A customer may settle one bill in more than one form — part UPI, the rest in
 	# cash. When the counter sends a split, it decides the rows; otherwise the
 	# single selected tile does, exactly as before.
-	if data.get("payments"):
+	from_split = bool(data.get("payments"))
+	if from_split:
 		rows = split_payment_rows(data["payments"], payable)
 		mode = rows[0]["mode_of_payment"] if len(rows) == 1 else None
 		received = sum(flt(r["amount"]) for r in rows)
+		banked = {r["mode_of_payment"]: r["account"] for r in rows if r.get("account")}
+		if banked and invoice.meta.has_field("a3_split_accounts"):
+			invoice.a3_split_accounts = frappe.as_json(banked)
 	else:
 		mode = resolve_mode(data.get("mode_of_payment") or "Cash")
 		raw = data.get("received_amount")
@@ -545,7 +549,11 @@ def checkout(payload) -> dict:
 				invoice.a3_bank_account = account.name
 
 	settled = sum(flt(r["amount"]) for r in rows)
-	short = settled + 0.005 < payable
+	# `split_payment_rows` has already accepted the split against its own
+	# tolerance; re-judging it here on a tighter one would turn a balanced bill
+	# into a credit sale over a rupee of rounding.
+	slack = SPLIT_TOLERANCE if from_split else 0.005
+	short = settled + slack < payable
 
 	if short:
 		# A bill the customer has not settled is not a till sale. ERPNext expects a
@@ -976,14 +984,24 @@ def split_payment_rows(splits, payable: float) -> list[dict]:
 	* only a cash drawer can take more than the bill, because change comes out of
 	  it. An over-tendered card or UPI line posts a negative outstanding instead.
 	"""
-	totals: dict[str, float] = {}
+	# Each line may also name the account it landed in — the bank a card settled
+	# into, or the one a financier credits. Lines on the same mode but different
+	# accounts stay apart, because they are different balances.
+	totals: dict[tuple[str, str | None], float] = {}
 	for entry in splits or []:
 		label = (entry.get("mode_of_payment") or entry.get("mode") or "").strip()
 		amount = flt(entry.get("amount"))
 		if not label or amount <= 0:
 			continue
 		mode = _strict_mode(label)
-		totals[mode] = totals.get(mode, 0) + amount
+		account = (entry.get("account") or "").strip() or None
+		if account:
+			held = frappe.db.get_value(
+				"Account", account, ["account_type", "is_group", "company"], as_dict=True)
+			if not held or held.is_group or held.account_type not in ("Bank", "Cash"):
+				frappe.throw(_("That is not an account this shop banks into."),
+				             title=_("Bank account"))
+		totals[(mode, account)] = totals.get((mode, account), 0) + amount
 
 	if not totals:
 		frappe.throw(
@@ -1005,7 +1023,7 @@ def split_payment_rows(splits, payable: float) -> list[dict]:
 	excess = collected - payable
 	if excess > SPLIT_TOLERANCE:
 		cash = sum(
-			amount for mode, amount in totals.items()
+			amount for (mode, _account), amount in totals.items()
 			if frappe.db.get_value("Mode of Payment", mode, "type") == "Cash"
 		)
 		if excess > cash + SPLIT_TOLERANCE:
@@ -1016,7 +1034,13 @@ def split_payment_rows(splits, payable: float) -> list[dict]:
 				title=_("More than the bill"),
 			)
 
-	return [{"mode_of_payment": mode, "amount": amount} for mode, amount in totals.items()]
+	rows = []
+	for (mode, account), amount in totals.items():
+		row = {"mode_of_payment": mode, "amount": amount}
+		if account:
+			row["account"] = account
+		rows.append(row)
+	return rows
 
 
 def resolve_mode(tile: str) -> str | None:
@@ -1151,11 +1175,14 @@ def finance_partners() -> list[dict]:
 	rows = frappe.get_all(
 		"Finance Partner",
 		filters={"is_active": 1} if frappe.get_meta("Finance Partner").has_field("is_active") else {},
-		fields=["name", "partner_name", "mode_of_payment"],
+		fields=["name", "partner_name", "mode_of_payment", "bank_account"],
 		order_by="partner_name",
 	)
 	return [{"partner": r.name, "label": r.partner_name or r.name,
-	         "mode_of_payment": r.mode_of_payment} for r in rows]
+	         "mode_of_payment": r.mode_of_payment,
+	         "bank_account": r.bank_account,
+	         "bank_label": frappe.db.get_value("Account", r.bank_account, "account_name")
+	         if r.bank_account else None} for r in rows]
 
 
 def _receipt(invoice, amount: float, mode: str) -> None:

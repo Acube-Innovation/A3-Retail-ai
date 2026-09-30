@@ -309,6 +309,11 @@ EMI_FIELDS = {
 		# every validate, so the counter's choice is remembered here and put back.
 		_field("a3_bank_account", "Banked Into", "Link", "A3 Retail Sales",
 			options="Account", insert_after="a3_approved_amount", no_copy=1),
+		# A split names a bank per line. ERPNext rewrites every payment row's
+		# account from its Mode of Payment on each validate, so the counter's
+		# choices are kept here as {mode: account} and put back afterwards.
+		_field("a3_split_accounts", "Split Banks", "Small Text", "A3 Retail Sales",
+			insert_after="a3_bank_account", no_copy=1, read_only=1),
 	],
 	"POS Invoice": [
 		_field("a3_emi_application", "EMI Application", "Link", "A3 Retail Finance",

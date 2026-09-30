@@ -37,10 +37,28 @@ def restore_banked_account(doc) -> None:
 	bank picked at the till is lost unless it is re-applied afterwards. This hook
 	runs after that, which is the only place the choice survives to the ledger.
 	"""
+	rows = doc.get("payments") or []
+	if not rows:
+		return
+
+	# A split names a bank per line, kept as {mode: account}.
+	mapped = {}
+	if doc.get("a3_split_accounts"):
+		try:
+			mapped = frappe.parse_json(doc.a3_split_accounts) or {}
+		except Exception:
+			mapped = {}
+	if mapped:
+		for row in rows:
+			account = mapped.get(row.mode_of_payment)
+			if account:
+				row.account = account
+		return
+
 	chosen = doc.get("a3_bank_account")
 	if not chosen:
 		return
-	for row in doc.get("payments") or []:
+	for row in rows:
 		if frappe.db.get_value("Mode of Payment", row.mode_of_payment, "type") != "Cash":
 			row.account = chosen
 

@@ -24,6 +24,8 @@ window.POS = (function () {
 		// counter picked for this bill.
 		bankAccounts: [],
 		bankAccount: "",
+		// The banks this shop sells on EMI through.
+		financiers: [],
 		// Whether the price list already carries GST — set from the branch's tax
 		// template so the running total matches the invoice that gets posted.
 		pricesIncludeTax: false,
@@ -524,19 +526,13 @@ window.POS = (function () {
 		const row = document.createElement("div");
 		row.className = "split-line";
 
-		const select = document.createElement("select");
-		select.setAttribute("aria-label", "Payment type");
-		SPLIT_MODES.forEach((name) => {
-			const option = document.createElement("option");
-			option.value = name;
-			option.textContent = name;
-			if (name === line.mode) option.selected = true;
-			select.appendChild(option);
-		});
-		select.addEventListener("change", () => {
-			state.splits[index].mode = select.value;
-			paintTotals();
-		});
+		// On a financed line the first cell is the bank the money is credited
+		// into — that is what the counter is looking for — and the financier
+		// itself is named underneath. On every other line it is the tender.
+		const select = line.kind === "emi"
+			? accountSelect(index)
+			: modeSelect(line, index);
+		if (line.kind === "emi") select.classList.add("is-account");
 
 		const wrap = document.createElement("div");
 		wrap.className = "input-rupee";
@@ -551,6 +547,9 @@ window.POS = (function () {
 		amount.setAttribute("aria-label", "Amount paid by " + line.mode);
 		amount.addEventListener("input", () => {
 			state.splits[index].amount = Number(amount.value) || 0;
+			// Whatever the customer puts down is money the financier no longer
+			// has to lend, so the financed line absorbs the difference.
+			rebalanceAgainstEmi(index);
 			paintTotals();
 		});
 		wrap.append(rupee, amount);
@@ -569,7 +568,139 @@ window.POS = (function () {
 		});
 
 		row.append(select, wrap, remove);
+
+		// Under the amount, in words rather than another table row: which bank
+		// this money reaches, and for the financed line which bank it came from.
+		// Both are selectable, because a counter should be able to correct them.
+		const caption = document.createElement("div");
+		caption.className = "split-bank";
+		if (line.kind === "emi") {
+			caption.append(captionLabel("financed by "), financierSelect(index));
+		} else if (line.mode !== "Cash") {
+			const named = state.bankAccounts.find((a) => a.account === line.account);
+			const pick = document.createElement("button");
+			pick.type = "button";
+			pick.className = "split-bank-pick";
+			pick.textContent = named ? named.label : "choose account";
+			pick.addEventListener("click", () => askSplitAccount(index));
+			caption.append(captionLabel("into "), pick);
+		}
+		if (caption.childElementCount) row.append(caption);
 		return row;
+	}
+
+	function modeSelect(line, index) {
+		const select = document.createElement("select");
+		select.setAttribute("aria-label", "Payment type");
+		SPLIT_MODES.forEach((name) => {
+			const option = document.createElement("option");
+			option.value = name;
+			option.textContent = name;
+			if (name === line.mode) option.selected = true;
+			select.appendChild(option);
+		});
+		select.addEventListener("change", () => {
+			state.splits[index].mode = select.value;
+			// Cash goes in the drawer; anything else has to say which bank, and
+			// is asked for it there and then rather than left to be noticed.
+			const wasCash = select.value === "Cash";
+			if (wasCash) state.splits[index].account = "";
+			$("split-lines").textContent = "";
+			paintTotals();
+			if (!wasCash && !state.splits[index].account) askSplitAccount(index);
+		});
+		return select;
+	}
+
+	/** The same dialog a single tender uses, for one line of a split. */
+	function askSplitAccount(index) {
+		if (!state.bankAccounts.length) {
+			return say("No bank account is set up for this company.", "error");
+		}
+		showList(
+			"Into which account?",
+			state.splits[index].mode + " · " + money(state.splits[index].amount || 0),
+			state.bankAccounts.map((a) => ({
+				title: a.label,
+				meta: a.kind === "Cash" ? "cash in hand" : "bank account",
+				action: "Select",
+			})),
+			(picked) => {
+				$("list-modal").hidden = true;
+				state.splits[index].account = state.bankAccounts[picked].account;
+				$("split-lines").textContent = "";
+				paintTotals();
+			});
+	}
+
+	function captionLabel(text) {
+		const span = document.createElement("span");
+		span.textContent = text;
+		return span;
+	}
+
+	/** Which of the shop's accounts this line reaches. */
+	function accountSelect(index) {
+		const select = document.createElement("select");
+		select.setAttribute("aria-label", "Bank account for this payment");
+		const blank = document.createElement("option");
+		blank.value = "";
+		blank.textContent = "choose account";
+		select.appendChild(blank);
+		state.bankAccounts.forEach((a) => {
+			const option = document.createElement("option");
+			option.value = a.account;
+			option.textContent = a.label;
+			if (a.account === state.splits[index].account) option.selected = true;
+			select.appendChild(option);
+		});
+		select.addEventListener("change", () => {
+			state.splits[index].account = select.value;
+			paintTotals();
+		});
+		return select;
+	}
+
+	/** Which bank financed the line, and therefore which account it credits. */
+	function financierSelect(index) {
+		const select = document.createElement("select");
+		select.setAttribute("aria-label", "Financier");
+		state.financiers.forEach((p) => {
+			const option = document.createElement("option");
+			option.value = p.partner;
+			option.textContent = p.mode_of_payment || ("EMI - " + p.label);
+			if (p.partner === state.splits[index].financier) option.selected = true;
+			select.appendChild(option);
+		});
+		select.addEventListener("change", () => {
+			const picked = state.financiers.find((p) => p.partner === select.value);
+			applyFinancier(index, picked);
+			$("split-lines").textContent = "";
+			paintTotals();
+		});
+		return select;
+	}
+
+	function applyFinancier(index, partner) {
+		if (!partner) return;
+		const line = state.splits[index];
+		line.financier = partner.partner;
+		line.mode = partner.mode_of_payment || line.mode;
+		line.account = partner.bank_account || "";
+		state.financier = partner.partner;
+	}
+
+	/** The financed line carries whatever the customer has not put down. */
+	function rebalanceAgainstEmi(changedIndex) {
+		const emi = state.splits.findIndex((l) => l.kind === "emi");
+		if (emi < 0 || emi === changedIndex) return;
+		const payable = totals().grand;
+		const others = state.splits.reduce(
+			(sum, l, i) => i === emi ? sum : sum + (Number(l.amount) || 0), 0);
+		state.splits[emi].amount = Math.max(payable - others, 0);
+		const box = $("split-lines").children[emi];
+		const input = box && box.querySelector("input");
+		if (input) input.value = state.splits[emi].amount || "";
 	}
 
 	/** Seed the split with the balance still owing on the next unused mode. */
@@ -591,7 +722,9 @@ window.POS = (function () {
 		$("pay-split").hidden = !on;
 		$("pay-tiles").classList.toggle("is-muted", on);
 
-		if (on && !state.splits.length) {
+		if (on && state.splits.length) {
+			$("split-lines").textContent = "";
+		} else if (on && !state.splits.length) {
 			// Open with the amount already on the bill against the selected tile,
 			// so the usual case is one keystroke: change it, and add the balance.
 			const payable = totals().grand;
@@ -829,7 +962,10 @@ window.POS = (function () {
 					// Only sent when the counter is actually splitting; the server
 					// falls back to the single tile otherwise.
 					payments: (!draft && state.split)
-						? state.splits
+						? state.splits.map((l) => ({
+							mode_of_payment: l.mode, amount: l.amount,
+							account: l.account || "",
+						}))
 							.filter((line) => (Number(line.amount) || 0) > 0)
 							.map((line) => ({ mode_of_payment: line.mode, amount: Number(line.amount) }))
 						: null,
@@ -987,15 +1123,33 @@ window.POS = (function () {
 		}
 	}
 
+	/**
+	 * A financed sale is nearly always part paid, so picking the bank opens the
+	 * split straight away with the bank's line already on it. The customer's own
+	 * money then goes on a second line, and the financed line shrinks by it.
+	 */
 	function pickFinancier(partner) {
 		state.financier = partner.partner;
-		// The bill is settled by the bank, so the tender is that bank's own mode —
-		// which points at its settlement account, keeping what it owes visible.
-		if (partner.mode_of_payment) {
-			state.mode = partner.mode_of_payment;
+		if (partner.mode_of_payment) state.mode = partner.mode_of_payment;
+
+		const payable = totals().grand;
+		const emi = state.splits.findIndex((l) => l.kind === "emi");
+		if (emi >= 0) {
+			applyFinancier(emi, partner);
+		} else {
+			const others = state.splits.reduce((sum, l) => sum + (Number(l.amount) || 0), 0);
+			state.splits.unshift({
+				kind: "emi",
+				mode: partner.mode_of_payment || "Other",
+				account: partner.bank_account || "",
+				financier: partner.partner,
+				amount: Math.max(payable - others, 0),
+			});
 		}
-		say("Financed by " + partner.label + ".", "ok");
-		paintTotals();
+		setSplit(true);
+		say("Financed by " + partner.label
+			+ (partner.bank_label ? " — credited into " + partner.bank_label : "")
+			+ ". Add what the customer is paying.", "ok");
 	}
 
 	// --------------------------------------------------------------- start
@@ -1105,6 +1259,10 @@ window.POS = (function () {
 			state.bankAccounts = rows || [];
 			paintBankRow();
 		}).catch(() => { /* the tiles still work without it */ });
+
+		A3.call("a3_retail.api.pos.finance_partners").then((rows) => {
+			state.financiers = rows || [];
+		}).catch(() => { /* EMI simply will not be offered */ });
 
 		$("bank-pick").addEventListener("click", askBankAccount);
 

@@ -142,21 +142,32 @@ window.INVOICE = (function () {
 	}
 
 	/** The copy the financier gets, once the shop knows what was sanctioned. */
-	async function askBankBill(data) {
-		const typed = window.prompt(
-			`How much has ${data.financier} approved?\n\n`
-			+ `The bill is ${money(data.totals.grand)}. The copy shows both figures — `
-			+ `what the goods were sold for and what the bank has sanctioned.`,
-			String(Math.round(data.totals.grand)));
-		if (typed === null) return;
+	function askBankBill(data) {
+		$("bank-note").textContent =
+			`${data.name} · ${data.financier} · bill ${money(data.totals.grand)}`;
+		$("bank-amount").value = Math.round(data.totals.grand);
+		$("bank-amount").max = data.totals.grand;
+		$("bank-msg").textContent = "";
+		$("bank-modal").hidden = false;
+		$("bank-amount").focus();
+	}
 
+	async function openBankBill() {
+		const msg = $("bank-msg");
+		$("bank-save").disabled = true;
+		msg.textContent = "";
 		try {
 			const result = await A3.call("a3_retail.api.bills.set_approved_amount", {
-				name: data.name, amount: Number(typed) || 0,
+				name: state.data.name, amount: Number($("bank-amount").value) || 0,
 			});
+			$("bank-modal").hidden = true;
 			window.open(result.print_url, "_blank");
+			load();
 		} catch (error) {
-			alert(error.message || "Could not raise the bank copy.");
+			msg.textContent = error.message || "Could not raise the bank bill.";
+			msg.className = "msg error";
+		} finally {
+			$("bank-save").disabled = false;
 		}
 	}
 
@@ -320,6 +331,7 @@ window.INVOICE = (function () {
 		if ($("print-bottom")) $("print-bottom").addEventListener("click", print);
 		if ($("collect")) $("collect").addEventListener("click", askPayment);
 		if ($("bank-bill")) $("bank-bill").addEventListener("click", () => askBankBill(data));
+		if ($("bank-save")) $("bank-save").addEventListener("click", openBankBill);
 		if ($("draft-save")) {
 			$("draft-save").addEventListener("click", () => saveDraftHeader(data.name));
 			fillSellers(data.sales_person);
