@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="csrf-token" content="{{ csrf_token }}">
+	<meta name="robots" content="noindex">
+	<title>{{ _("Debit Notes") }} · {{ me.branch }} · {{ app_name }}</title>
+	<link rel="stylesheet" href="/assets/a3_retail/css/a3_branch.css?v={{ asset_v }}">
+	<script src="/assets/a3_retail/js/a3_branch.js?v={{ asset_v }}" defer></script>
+	<script src="/assets/a3_retail/js/a3_debit_notes.js?v={{ asset_v }}" defer></script>
+</head>
+<body class="pos-body">
+<div class="app">
+
+	{% include "a3_retail/www/retail/_sidebar.html" %}
+
+	<div class="main">
+		<header class="topbar">
+			<div class="topbar-branch topbar-title">
+				<h1>{{ _("Debit Notes") }} <span class="chip">{{ me.branch }}</span></h1>
+				<p class="topbar-sub">{{ _("Goods going back to a supplier, and the credit for them") }}</p>
+			</div>
+			<div class="topbar-right">
+				<a class="btn btn-quiet" href="/retail/purchases">{{ _("Purchases") }}</a>
+				<div class="who">
+					<div class="name">{{ me.employee_name }}</div>
+					<div class="role">{{ me.designation or "" }}</div>
+				</div>
+				<div class="avatar">{{ initials }}</div>
+				<a class="btn btn-quiet" href="/retail/logout">{{ _("Sign out") }}</a>
+			</div>
+		</header>
+
+		<main class="content pe-grid">
+			<div class="pe-main">
+
+				<section class="svc-panel">
+					<div class="panel-head"><h2>{{ _("Going back to") }}</h2></div>
+					<div class="field">
+						<input id="supplier-q" type="search" autocomplete="off" autofocus
+						       placeholder="{{ _('Search the supplier by name or phone…') }}">
+						<div id="supplier-hits" class="pick-list"></div>
+						<p class="muted" id="supplier-picked"></p>
+					</div>
+				</section>
+
+				<section class="svc-panel">
+					<div class="panel-head"><h2>{{ _("What is going back") }}</h2></div>
+					<div class="field">
+						<input id="item-q" type="search" autocomplete="off"
+						       placeholder="{{ _('Search what this branch holds…') }}">
+						<div id="item-hits" class="pick-list"></div>
+					</div>
+
+					<table class="bill-table" id="lines">
+						<thead><tr>
+							<th>{{ _("Item") }}</th><th>{{ _("In stock") }}</th>
+							<th>{{ _("Going back") }}</th><th>{{ _("Rate") }}</th>
+							<th>{{ _("Amount") }}</th><th></th>
+						</tr></thead>
+						<tbody></tbody>
+					</table>
+					<p class="muted" id="empty-note">{{ _("Nothing added yet.") }}</p>
+				</section>
+
+				<section class="svc-panel">
+					<div class="panel-head"><h2>{{ _("Recent debit notes") }}</h2>
+						<button class="btn btn-quiet" id="refresh">{{ _("Refresh") }}</button>
+					</div>
+					<div id="rows"><p class="muted">{{ _("Loading…") }}</p></div>
+				</section>
+			</div>
+
+			<aside class="pe-side">
+				<section class="svc-panel">
+					<h2>{{ _("Debit note") }}</h2>
+					<div class="bill-totals">
+						<div class="tr"><span>{{ _("Lines") }}</span><span id="d-lines">0</span></div>
+						<div class="tr tr-grand"><span>{{ _("Value going back") }}</span>
+							<span id="d-total">₹0.00</span></div>
+					</div>
+
+					<div class="field"><label for="d-bill">{{ _("Supplier's reference") }}</label>
+						<input id="d-bill" type="text" placeholder="{{ _('Their note number, if any') }}"></div>
+					<div class="field"><label for="d-date">{{ _("Date") }}</label>
+						<input id="d-date" type="date"></div>
+					<div class="field"><label for="d-reason">{{ _("Reason") }}</label>
+						<input id="d-reason" type="text" maxlength="200"
+						       placeholder="{{ _('Why is it going back?') }}"></div>
+					<p class="muted">{{ _("The stock leaves and what this supplier is owed drops by the same amount.") }}</p>
+
+					<button class="btn btn-primary btn-wide" id="d-save" disabled>
+						{{ _("Raise Debit Note") }}</button>
+					<p class="msg" id="work-msg"></p>
+				</section>
+			</aside>
+		</main>
+	</div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script>
+window.addEventListener("DOMContentLoaded", function () {
+	DEBIT_NOTES.start({ branch: {{ me.branch|tojson }} });
+});
+</script>
+</body>
+</html>
