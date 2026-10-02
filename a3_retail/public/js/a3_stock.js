@@ -513,6 +513,7 @@ window.STOCK = (function () {
 
 	async function openRequest(row, source) {
 		const branches = state.boot.branches;
+		startLines(row);
 		openWork("Request stock",
 			`${row ? row.item_name + " · " : ""}Ask another branch to send stock here.`,
 			`<div class="field-grid three">
@@ -525,13 +526,7 @@ window.STOCK = (function () {
 				<label class="field"><span>Required by</span>
 					<input id="w-required" type="date"></label>
 			</div>
-			<div class="field-grid">
-				<label class="field"><span>Item</span>
-					<input id="w-item" value="${esc(row ? row.item_code : "")}"
-					       placeholder="Item code"></label>
-				<label class="field"><span>Quantity</span>
-					<input id="w-qty" type="number" min="1" step="1" value="1"></label>
-			</div>
+			${linesMarkup()}
 			<label class="field"><span>Purpose</span>
 				<select id="w-purpose">
 					<option>Stock Balancing</option><option>Customer Sale</option>
@@ -544,8 +539,7 @@ window.STOCK = (function () {
 						priority: $("w-priority").value,
 						required_by: $("w-required").value || null,
 						purpose: $("w-purpose").value,
-						items: [{ item_code: $("w-item").value.trim(),
-						          qty: Number($("w-qty").value) || 0 }],
+						items: linesPayload(),
 					},
 				});
 				toast(`${result.request} sent to ${$("w-source").value}.`, "ok");
@@ -575,8 +569,7 @@ window.STOCK = (function () {
 					payload: {
 						required_by: $("w-required").value || null,
 						reason: $("w-reason").value.trim(),
-						items: [{ item_code: $("w-item").value.trim(),
-						          qty: Number($("w-qty").value) || 0 }],
+						items: linesPayload(),
 					},
 				});
 				toast(`${result.material_request} raised.`, "ok");
@@ -584,22 +577,77 @@ window.STOCK = (function () {
 			});
 	}
 
-	function openMove() {
-		const warehouses = state.boot.warehouses;
-		const options = warehouses.map((warehouse) =>
-			`<option value="${esc(warehouse)}">${esc(warehouse)}</option>`).join("");
+	/**
+	 * Lines a move or a request carries.
+	 *
+	 * The counter is usually shifting a handful of things at once — three
+	 * chargers and a phone — and raising four documents for that was the reason
+	 * nobody used the screen. Kept here so the move and the request behave the
+	 * same way.
+	 */
+	let workLines = [];
 
+	function linesMarkup() {
+		return `<div class="work-lines" id="w-lines"></div>
+			<button class="btn btn-quiet btn-block" id="w-add" type="button">
+				+ Add another item</button>`;
+	}
+
+	function paintLines() {
+		const host = $("w-lines");
+		if (!host) return;
+		host.innerHTML = workLines.map((line, index) => `
+			<div class="field-grid work-line">
+				<label class="field"><span>${index ? "" : "Item"}</span>
+					<input class="w-code" data-i="${index}" value="${esc(line.item_code)}"
+					       placeholder="Item code" list="w-item-list"></label>
+				<label class="field"><span>${index ? "" : "Quantity"}</span>
+					<input class="w-num" data-i="${index}" type="number" min="1" step="1"
+					       value="${line.qty}"></label>
+				<button class="btn btn-quiet work-drop" data-i="${index}" type="button"
+				        ${workLines.length > 1 ? "" : "disabled"}>×</button>
+			</div>`).join("");
+
+		host.querySelectorAll(".w-code").forEach((n) => n.addEventListener("input", () => {
+			workLines[Number(n.dataset.i)].item_code = n.value.trim();
+		}));
+		host.querySelectorAll(".w-num").forEach((n) => n.addEventListener("input", () => {
+			workLines[Number(n.dataset.i)].qty = Number(n.value) || 0;
+		}));
+		host.querySelectorAll(".work-drop").forEach((n) => n.addEventListener("click", () => {
+			workLines.splice(Number(n.dataset.i), 1);
+			paintLines();
+		}));
+	}
+
+	function startLines(row) {
+		workLines = [{ item_code: row ? row.item_code : "", qty: 1 }];
+		setTimeout(() => {
+			paintLines();
+			const add = $("w-add");
+			if (add) add.addEventListener("click", () => {
+				workLines.push({ item_code: "", qty: 1 });
+				paintLines();
+			});
+		}, 0);
+	}
+
+	const linesPayload = () => workLines
+		.filter((l) => l.item_code && l.qty > 0)
+		.map((l) => ({ item_code: l.item_code, qty: l.qty }));
+
+	function openMove() {
+		const options = (state.network || []).map((w) =>
+			`<option value="${esc(w.warehouse)}">${esc(w.label)}</option>`).join("");
+
+		startLines(null);
 		openWork("Move stock",
-			"Between this branch's own warehouses. Creates a Stock Entry — Material Transfer.",
+			"Any warehouse in the chain to any other. Creates a Stock Entry — Material Transfer.",
 			`<div class="field-grid">
 				<label class="field"><span>From</span><select id="w-source">${options}</select></label>
 				<label class="field"><span>To</span><select id="w-target">${options}</select></label>
 			</div>
-			<div class="field-grid">
-				<label class="field"><span>Item</span><input id="w-item" placeholder="Item code"></label>
-				<label class="field"><span>Quantity</span>
-					<input id="w-qty" type="number" min="1" step="1" value="1"></label>
-			</div>
+			${linesMarkup()}
 			<label class="field"><span>Remarks</span><input id="w-remarks"></label>`,
 			"Move it",
 			async () => {
@@ -607,8 +655,7 @@ window.STOCK = (function () {
 					payload: {
 						source: $("w-source").value, target: $("w-target").value,
 						remarks: $("w-remarks").value.trim(),
-						items: [{ item_code: $("w-item").value.trim(),
-						          qty: Number($("w-qty").value) || 0 }],
+						items: linesPayload(),
 					},
 				});
 				toast(`Moved — ${result.stock_entry}.`, "ok");
@@ -834,6 +881,10 @@ window.STOCK = (function () {
 	async function start(options) {
 		state.branch = options.branch;
 		state.boot = await A3.call("a3_retail.api.stock_control.bootstrap", {});
+		// Every warehouse in the chain, so a move or a request can name any of
+		// them rather than only this branch's own shelves.
+		state.network = await A3.call("a3_retail.api.stock_control.network_warehouses", {})
+			.catch(() => (state.boot.warehouses || []).map((w) => ({ warehouse: w, label: w })));
 
 		$("item-group").innerHTML += state.boot.item_groups.map((group) =>
 			`<option value="${esc(group)}">${esc(group)}</option>`).join("");

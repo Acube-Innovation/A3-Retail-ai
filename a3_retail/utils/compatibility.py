@@ -187,3 +187,15 @@ def search_clause(alias: str = "i") -> str:
 	return (f"exists (select 1 from `tabItem Compatible Device` icd "
 	        f"where icd.parent = {alias}.name and icd.parenttype = 'Item' "
 	        f"and icd.device_model like %(query)s)")
+
+
+def barcode_clause(alias: str = "i", param: str = "query") -> str:
+	"""SQL that matches the barcode printed on the box.
+
+	Every screen that looks items up has to accept one: a counter scans the box
+	on the Stock page and the Purchases page just as readily as at the till, and
+	a search that only knows names sends them back to typing. Returns a bare
+	EXISTS so it can be dropped into an existing OR chain.
+	"""
+	return (f"exists (select 1 from `tabItem Barcode` a3bc "
+	        f"where a3bc.parent = {alias}.name and a3bc.barcode like %({param})s)")

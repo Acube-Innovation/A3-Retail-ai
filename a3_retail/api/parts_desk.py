@@ -77,7 +77,10 @@ def catalogue(kind: str = "parts", query: str = "", brand: str = "", status: str
 	          "limit": min(cint(limit) or 60, 200)}
 
 	if query:
-		conditions.append("(i.name like %(like)s or i.item_name like %(like)s "
+		from a3_retail.utils.compatibility import barcode_clause
+
+		conditions.append("(" + barcode_clause("i", "like") + " or "
+		                  "i.name like %(like)s or i.item_name like %(like)s "
 		                  "or i.brand like %(like)s)")
 		values["like"] = f"%{query}%"
 	if brand:

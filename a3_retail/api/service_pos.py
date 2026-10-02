@@ -361,7 +361,9 @@ def search_items(query: str = "", kind: str = "", limit: int = 20) -> list[dict]
 			where w.custom_branch = %(branch)s group by b.item_code
 		) bin on bin.item_code = i.name
 		where i.disabled = 0 and i.item_group in %(groups)s
-		  and (%(query)s = '' or i.name like %(like)s or i.item_name like %(like)s)
+		  and (%(query)s = '' or i.name like %(like)s or i.item_name like %(like)s
+		       or exists (select 1 from `tabItem Barcode` a3bc
+		                  where a3bc.parent = i.name and a3bc.barcode like %(like)s))
 		order by i.item_name
 		limit %(limit)s
 		""",

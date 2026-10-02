@@ -75,7 +75,10 @@ def search_items(query: str = "", filters: dict | str | None = None, branch: str
 	values = {"query": f"%{query}%", "limit": int(limit)}
 
 	if query:
-		conditions.append("(i.name like %(query)s or i.item_name like %(query)s)")
+		from a3_retail.utils.compatibility import barcode_clause
+
+		conditions.append("(i.name like %(query)s or i.item_name like %(query)s or "
+		                  + barcode_clause("i") + ")")
 	if filters.get("item_group"):
 		conditions.append("i.item_group = %(item_group)s")
 		values["item_group"] = filters["item_group"]
