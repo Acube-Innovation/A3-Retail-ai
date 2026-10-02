@@ -66,7 +66,9 @@ def stock_items(query: str = "", limit: int = 10) -> list[dict]:
 		from `tabItem` i
 		join `tabBin` b on b.item_code = i.name and b.warehouse = %(warehouse)s
 		where ifnull(i.disabled, 0) = 0 and b.actual_qty > 0
-		  and (i.name like %(q)s or i.item_name like %(q)s)
+		  and (i.name like %(q)s or i.item_name like %(q)s
+		       or exists (select 1 from `tabItem Barcode` a3bc
+		                  where a3bc.parent = i.name and a3bc.barcode like %(q)s))
 		order by i.item_name
 		limit %(limit)s
 		""",

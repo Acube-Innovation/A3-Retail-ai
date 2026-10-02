@@ -1900,3 +1900,10 @@ body.side-collapsed .side-nav a, body.side-collapsed .side-soon { justify-conten
 	border-bottom: 1px dotted var(--line-strong); padding: 1px 2px; cursor: pointer;
 	max-width: 200px; text-align: left; border-radius: 0; }
 .split-bank .split-bank-pick:hover { color: var(--sky-dark); }
+
+/* Item lines in the stock dialogs. One move or request usually carries several
+   things, so the rows stack and only the first keeps its labels. */
+.work-lines { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+.work-line { grid-template-columns: 1fr 110px 34px; align-items: end; gap: 8px; }
+.work-drop { padding: 8px 0; min-width: 34px; line-height: 1; }
+.work-drop:disabled { opacity: .35; cursor: not-allowed; }

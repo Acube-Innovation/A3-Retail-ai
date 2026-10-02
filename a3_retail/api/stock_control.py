@@ -33,6 +33,26 @@ def _warehouses(branch: str) -> list[str]:
 	)
 
 
+def _network_warehouses() -> list[dict]:
+	"""Every branch's warehouses, so a move or a request can name any of them.
+
+	A chain this size shifts stock between shops all day, and a counter that
+	could only see its own shelves had to raise a request and wait for the other
+	branch to notice. The branch is carried on each row so the list reads as
+	"Sales PSLA · Store" rather than a wall of similar names.
+	"""
+	rows = frappe.db.sql(
+		"""
+		select w.name, w.custom_branch as branch, w.warehouse_name
+		from `tabWarehouse` w
+		where ifnull(w.disabled, 0) = 0 and ifnull(w.is_group, 0) = 0
+		  and ifnull(w.custom_branch, '') <> ''
+		order by w.custom_branch, w.warehouse_name
+		""", as_dict=True)
+	return [{"warehouse": r.name, "branch": r.branch,
+	         "label": f"{r.branch} · {r.warehouse_name}"} for r in rows]
+
+
 def _default_warehouse(branch: str) -> str:
 	"""The shelf a branch sends from, or receives into.
 
@@ -62,6 +82,13 @@ def _profile(branch: str):
 # ---------------------------------------------------------------------------
 # What the page needs before anything else
 # ---------------------------------------------------------------------------
+@frappe.whitelist()
+def network_warehouses() -> list[dict]:
+	"""Every warehouse in the chain, for a move or a request."""
+	_me()
+	return _network_warehouses()
+
+
 @frappe.whitelist()
 def bootstrap() -> dict:
 	"""The branch, its warehouses, and what this person is allowed to do."""
@@ -102,10 +129,11 @@ def _stock_conditions(data: dict, branch: str) -> tuple[str, dict]:
 
 	if data.get("query"):
 		# Searching stock by the handset it fits, the same as the counter does.
-		from a3_retail.utils.compatibility import search_clause
+		from a3_retail.utils.compatibility import barcode_clause, search_clause
 
 		conditions.append("(i.name like %(like)s or i.item_name like %(like)s "
 		                  "or i.brand like %(like)s or "
+		                  + barcode_clause("i", "like") + " or "
 		                  + search_clause("i").replace("%(query)s", "%(like)s") + ")")
 		values["like"] = f"%{data['query']}%"
 	if data.get("item_group"):
@@ -890,17 +918,23 @@ def _own_request(request: str, field: str):
 
 @frappe.whitelist()
 def move_stock(payload) -> dict:
-	"""An internal move — one warehouse to another, inside this branch."""
+	"""Move stock from one warehouse to another, anywhere in the chain.
+
+	Not only within the branch: the shops shift stock between themselves
+	constantly, and making every one of those wait on a request-and-approve
+	round trip was slower than the shop actually works. The Stock Request flow
+	is still there for when a branch wants to *ask* rather than take.
+	"""
 	employee = _me()
 	require_permission("Stock Entry", "create")
 
 	data = frappe.parse_json(payload) if isinstance(payload, str) else (payload or {})
 	source = data.get("source")
 	target = data.get("target")
-	mine = set(_warehouses(employee.branch))
+	known = {row["warehouse"] for row in _network_warehouses()}
 
-	if source not in mine or target not in mine:
-		frappe.throw(_("Both warehouses have to belong to {0}.").format(employee.branch))
+	if source not in known or target not in known:
+		frappe.throw(_("Pick two warehouses from the list."))
 	if source == target:
 		frappe.throw(_("Pick two different warehouses."))
 
@@ -926,7 +960,10 @@ def move_stock(payload) -> dict:
 	entry.from_warehouse = source
 	entry.to_warehouse = target
 	if entry.meta.has_field("branch"):
-		entry.branch = employee.branch
+		# The move belongs to the branch the stock leaves, which is whose figure
+		# changes; the receiving branch sees it arrive on its own ledger.
+		entry.branch = frappe.db.get_value("Warehouse", source, "custom_branch") \
+			or employee.branch
 	entry.remarks = data.get("remarks")
 
 	for row in items:

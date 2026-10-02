@@ -121,6 +121,8 @@ def catalogue(query: str = "", item_group: str | None = None, only_in_stock: int
 
 		conditions.append(
 			"(i.name like %(query)s or i.item_name like %(query)s or i.brand like %(query)s"
+			" or exists (select 1 from `tabItem Barcode` bc"
+			"            where bc.parent = i.name and bc.barcode like %(query)s)"
 			f" or {search_clause('i')})"
 		)
 		values["query"] = f"%{query}%"
@@ -257,6 +259,15 @@ def scan(code: str) -> dict | None:
 	if frappe.db.exists("Item", code):
 		rows = catalogue(query=code, limit=1)
 		return {"kind": "item", "item": rows[0] if rows else None}
+
+	# The label on an accessory box carries a barcode, not an IMEI — a 13-digit
+	# EAN rather than a 15-digit serial — and it is the commonest thing a counter
+	# scans. Without this the scanner finds nothing and the cashier types the name.
+	barcoded = frappe.db.get_value("Item Barcode", {"barcode": code}, "parent")
+	if barcoded:
+		rows = catalogue(query=barcoded, limit=1)
+		return {"kind": "item", "barcode": code,
+		        "item": rows[0] if rows else None}
 
 	rows = catalogue(query=code, limit=1)
 	return {"kind": "item", "item": rows[0]} if rows else None
