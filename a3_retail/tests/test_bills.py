@@ -386,3 +386,48 @@ class TestEditingAHeldBill(FrappeTestCase):
 		)
 		self.assertEqual(
 			str(frappe.db.get_value("Sales Invoice", self.held, "posting_date")), "2026-09-20")
+
+
+class TestPaymentLinesOnThePrint(FrappeTestCase):
+	"""A bill paid several ways prints each way under RECEIVED AMOUNT."""
+
+	def _invoice(self, docstatus=1, change=0, payments=()):
+		doc = frappe.get_doc({
+			"doctype": "Sales Invoice", "name": "A3-PRINT-TEST", "docstatus": docstatus,
+			"change_amount": change,
+			"payments": [{"mode_of_payment": mode, "amount": amount} for mode, amount in payments],
+		})
+		doc.name = "A3-PRINT-TEST"
+		return doc
+
+	def test_every_method_is_listed_in_order(self):
+		from a3_retail.print_helpers import a3_received_lines
+
+		lines = a3_received_lines(self._invoice(payments=[("Cash", 500), ("UPI", 400)]))
+		self.assertEqual([(l["label"], l["amount"]) for l in lines], [("Cash", 500), ("UPI", 400)])
+
+	def test_cash_is_shown_net_of_the_change_given_back(self):
+		from a3_retail.print_helpers import a3_received_lines
+
+		if frappe.db.get_value("Mode of Payment", "Cash", "type") != "Cash":
+			self.skipTest("no Cash mode of payment on this site")
+		lines = a3_received_lines(self._invoice(change=100, payments=[("Cash", 600), ("UPI", 400)]))
+		self.assertEqual(sum(l["amount"] for l in lines), 900)
+		self.assertEqual(lines[0]["amount"], 500)
+
+	def test_a_draft_prints_no_payment_lines(self):
+		from a3_retail.print_helpers import a3_received_lines
+
+		self.assertEqual(a3_received_lines(self._invoice(docstatus=0, payments=[("Cash", 500)])), [])
+
+	def test_the_lines_sit_between_received_and_balance(self):
+		html = open(frappe.get_app_path(
+			"a3_retail", "templates", "print_formats", "retail_tax_invoice.html")).read()
+		foot = html[html.index("<tfoot>"):html.index("</tfoot>")]
+		self.assertLess(foot.index("RECEIVED AMOUNT"), foot.index("a3_received_lines(doc)"))
+		self.assertLess(foot.index("a3_received_lines(doc)"), foot.index("BALANCE AMOUNT"))
+
+	def test_received_is_the_rounded_bill_the_lines_add_up_to(self):
+		html = open(frappe.get_app_path(
+			"a3_retail", "templates", "print_formats", "retail_tax_invoice.html")).read()
+		self.assertIn("doc.rounded_total|float or doc.grand_total|float", html)

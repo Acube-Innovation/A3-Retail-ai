@@ -189,6 +189,62 @@ def a3_payment_lines(doc) -> list[tuple]:
 	]
 
 
+def a3_received_lines(doc) -> list[dict]:
+	"""How the received amount was paid, one {label, amount} per method.
+
+	A till sale keeps its tender in `payments`; a bill the customer did not settle
+	in full is posted without them and receipted by a Payment Entry instead (see
+	`api.pos._receipt`), so both are read. Cash is shown net of the change handed
+	back, so the rows add up to the RECEIVED AMOUNT printed above them. A draft
+	has taken nothing and lists nothing.
+	"""
+	if doc.get("docstatus") != 1:
+		return []
+
+	split_banks = {}
+	if doc.get("a3_split_accounts"):
+		try:
+			split_banks = frappe.parse_json(doc.a3_split_accounts) or {}
+		except ValueError:
+			split_banks = {}
+	financed_mode = frappe.db.get_value(
+		"Finance Partner", doc.get("a3_finance_partner"), "mode_of_payment"
+	) if doc.get("a3_finance_partner") else None
+
+	def label(mode, account=None):
+		text = mode or "Payment"
+		if mode and mode == financed_mode:
+			text += " (financed)"
+		account = account or split_banks.get(mode)
+		if account and frappe.db.get_value("Account", account, "account_type") == "Bank":
+			text += " · " + (frappe.db.get_value("Account", account, "account_name") or account)
+		return text
+
+	lines = []
+	change = flt(doc.get("change_amount"))
+	for row in doc.get("payments") or []:
+		amount = flt(row.get("amount"))
+		if change and frappe.db.get_value("Mode of Payment", row.get("mode_of_payment"), "type") == "Cash":
+			amount, change = amount - change, 0
+		if amount > 0:
+			lines.append({"label": label(row.get("mode_of_payment"), row.get("account")),
+			              "amount": amount})
+
+	for entry in frappe.db.sql(
+		"""select pe.mode_of_payment, pe.paid_to, ref.allocated_amount
+		   from `tabPayment Entry Reference` ref
+		   join `tabPayment Entry` pe on pe.name = ref.parent
+		   where ref.reference_doctype = 'Sales Invoice' and ref.reference_name = %s
+		     and pe.docstatus = 1
+		   order by pe.posting_date, pe.creation""",
+		doc.name, as_dict=True,
+	):
+		if flt(entry.allocated_amount) > 0:
+			lines.append({"label": label(entry.mode_of_payment, entry.paid_to),
+			              "amount": flt(entry.allocated_amount)})
+	return lines
+
+
 def a3_thermal_total_lines(doc) -> list[tuple]:
 	lines = [("Net", a3_money(doc.get("base_net_total")))]
 	lines += [(label, a3_money(amount)) for label, amount in a3_tax_lines(doc)]

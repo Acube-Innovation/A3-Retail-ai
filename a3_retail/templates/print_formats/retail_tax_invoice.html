@@ -17,7 +17,9 @@
 {%- set addr_lines = [profile.get("address_line1"), profile.get("address_line2"),
                       [profile.get("city"), profile.get("state"), profile.get("pincode")]
                       |select|join(", ")]|select|list -%}
-{%- set paid = (doc.grand_total|float) - (doc.outstanding_amount|float) -%}
+{#- What the customer handed over is the rounded bill, not the paise-exact one,
+    so the payment lines printed under it add up to it. -#}
+{%- set paid = (doc.rounded_total|float or doc.grand_total|float) - (doc.outstanding_amount|float) -%}
 {%- set summary = a3_hsn_summary(doc) -%}
 {#- The tax on a line is its share of the tax the invoice actually carries. The
     tax rows hold the pre-discount figure and the item rows hold no GST rate at
@@ -49,6 +51,7 @@
 	.mbb .fill td { height: 300px; }
 	.mbb .sum th { background: #efefef; text-align: center; font-size: 8.5pt; }
 	.mbb .tot td { font-weight: bold; background: #efefef; }
+	.mbb .paid-by td { font-size: 8pt; color: #444; }
 	.mbb .sign { height: 86px; text-align: center; vertical-align: bottom; }
 	.mbb .sign img { max-height: 54px; }
 </style>
@@ -173,6 +176,15 @@
 				<td></td>
 				<td class="num">₹ {{ "{:,.2f}".format(paid) }}</td>
 			</tr>
+			{#- How it was paid: one line per method, adding up to the figure above. -#}
+			{% for line in a3_received_lines(doc) %}
+			<tr class="paid-by">
+				<td></td>
+				<td colspan="4" class="num">{{ line.label }}</td>
+				<td></td>
+				<td class="num">₹ {{ "{:,.2f}".format(line.amount) }}</td>
+			</tr>
+			{% endfor %}
 			<tr>
 				<td></td>
 				<td colspan="4" class="num"><b>BALANCE AMOUNT</b></td>
