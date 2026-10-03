@@ -152,3 +152,27 @@ class TestPermissionMatrix(FrappeTestCase):
 		)
 		self.assertIn("Branch Manager", rows)
 		self.assertNotIn("Sales Executive", rows)
+
+	def test_whoever_can_raise_a_sales_invoice_can_list_pos_profiles(self):
+		"""ERPNext's `get_pos_profile` lists POS Profiles under the user's own
+		permissions while pricing an invoice; without at least select, checkout
+		fails with "does not have doctype access" for the counter staff."""
+		raisers = [role for role, flags in PERMISSION_MATRIX["Sales Invoice"].items() if "C" in flags]
+		for role in raisers:
+			perm = frappe.db.get_value(
+				"Custom DocPerm",
+				{"parent": "POS Profile", "role": role, "permlevel": 0},
+				["read", "select"],
+				as_dict=True,
+			)
+			self.assertTrue(perm and (perm.read or perm.select), f"{role} cannot list POS Profiles")
+
+	def test_counter_staff_see_pos_profiles_by_name_only(self):
+		perm = frappe.db.get_value(
+			"Custom DocPerm",
+			{"parent": "POS Profile", "role": "Sales Executive", "permlevel": 0},
+			["read", "select"],
+			as_dict=True,
+		)
+		self.assertTrue(perm.select)
+		self.assertFalse(perm.read, "the profile's income accounts are not for the shop floor")

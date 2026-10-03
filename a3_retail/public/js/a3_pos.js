@@ -962,12 +962,12 @@ window.POS = (function () {
 					// Only sent when the counter is actually splitting; the server
 					// falls back to the single tile otherwise.
 					payments: (!draft && state.split)
-						? state.splits.map((l) => ({
-							mode_of_payment: l.mode, amount: l.amount,
-							account: l.account || "",
-						}))
+						? state.splits
 							.filter((line) => (Number(line.amount) || 0) > 0)
-							.map((line) => ({ mode_of_payment: line.mode, amount: Number(line.amount) }))
+							.map((line) => ({
+								mode_of_payment: line.mode, amount: Number(line.amount),
+								account: line.account || "",
+							}))
 						: null,
 					discount_percent: state.discountBy === "pct"
 						? Number($("discount-pct").value) || 0 : 0,

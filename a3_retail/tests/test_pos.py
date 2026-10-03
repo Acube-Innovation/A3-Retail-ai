@@ -510,3 +510,15 @@ class TestSplitPayment(FrappeTestCase):
 	def test_rounding_under_a_rupee_is_tolerated(self):
 		rows = self._rows(("UPI", 999.60))
 		self.assertEqual(len(rows), 1)
+
+	def test_the_counter_sends_each_line_s_mode_and_account(self):
+		"""The counter's split lines hold `mode`; the server reads
+		`mode_of_payment`. A second pass that re-read `line.mode` after the rename
+		sent every mode as undefined, so every split and EMI sale was refused as
+		"nothing entered"."""
+		script = open(frappe.get_app_path("a3_retail", "public", "js", "a3_pos.js")).read()
+		start = script.index("payments: (!draft && state.split)")
+		payload = script[start:script.index(": null,", start)]
+		self.assertIn("mode_of_payment: line.mode", payload)
+		self.assertIn("account: line.account", payload)
+		self.assertEqual(payload.count(".map("), 1, "one pass, so nothing is renamed twice")
