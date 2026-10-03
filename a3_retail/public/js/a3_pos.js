@@ -38,7 +38,6 @@ window.POS = (function () {
 	// The tiles a counter can split across. EMI is absent on purpose — it is a
 	// loan somebody else approves, not money taken at the till.
 	const SPLIT_MODES = ["Cash", "UPI", "Card", "Wallet", "Other"];
-	const HOLD_KEY = "a3_pos_holds";
 	const $ = (id) => document.getElementById(id);
 
 	const money = (value) =>
@@ -847,42 +846,27 @@ window.POS = (function () {
 	}
 
 	// ------------------------------------------------------- quick actions
-	function holds() {
-		try { return JSON.parse(localStorage.getItem(HOLD_KEY) || "[]"); }
-		catch (error) { return []; }
-	}
-
-	function holdBill() {
-		if (!state.cart.length) return say("Nothing to hold.", "error");
-		const list = holds();
-		list.unshift({
-			at: new Date().toISOString(), customer: state.customer,
-			mobile: $("mobile").value, cart: state.cart,
-		});
-		localStorage.setItem(HOLD_KEY, JSON.stringify(list.slice(0, 20)));
-		state.cart = [];
-		paintCart();
-		say("Bill held. Press F6 to bring it back.", "ok");
-	}
-
-	function openDrafts() {
-		const list = holds();
-		showList("Held bills", list.length ? "" : "Nothing is on hold.",
-			list.map((hold, index) => ({
-				title: (hold.cart[0] ? hold.cart[0].item_name : "Empty") +
-					(hold.cart.length > 1 ? ` +${hold.cart.length - 1} more` : ""),
-				meta: new Date(hold.at).toLocaleString("en-IN") + (hold.mobile ? " · " + hold.mobile : ""),
-				action: "Resume", index,
-			})),
-			(index) => {
-				const list2 = holds();
-				const hold = list2.splice(index, 1)[0];
-				localStorage.setItem(HOLD_KEY, JSON.stringify(list2));
-				state.cart = hold.cart;
-				if (hold.mobile) { $("mobile").value = hold.mobile; findCustomer(); }
-				paintCart();
-				$("list-modal").hidden = true;
-			});
+	/** The branch's held bills — the drafts Hold (F4) saved on the server. Picking
+	 *  one opens that bill at the counter, exactly as Edit does from Bills. */
+	async function openDrafts() {
+		showList("Held bills", "Loading…", []);
+		try {
+			const rows = await A3.call("a3_retail.api.pos.held_invoices");
+			showList("Held bills", rows.length ? "" : "Nothing is on hold.",
+				rows.map((row) => ({
+					title: row.name + " · " + (row.customer_name || ""),
+					meta: moneyShort(row.grand_total)
+						+ (row.summary ? " · " + row.summary : "")
+						+ " · " + new Date(String(row.modified).replace(" ", "T"))
+							.toLocaleString("en-IN"),
+					action: "Open",
+				})),
+				(index) => {
+					window.location.href = "/retail/sales?invoice=" + encodeURIComponent(rows[index].name);
+				});
+		} catch (error) {
+			showList("Held bills", error.message || "Could not load the held bills.", []);
+		}
 	}
 
 	async function recentBills() {
@@ -969,6 +953,9 @@ window.POS = (function () {
 								account: line.account || "",
 							}))
 						: null,
+					// A held bill keeps whatever is in the payment panel, so picking
+					// it up again carries on from there instead of from Cash.
+					tender: draft ? heldTender() : null,
 					discount_percent: state.discountBy === "pct"
 						? Number($("discount-pct").value) || 0 : 0,
 					discount_amount: state.discountBy === "amt"
@@ -1031,6 +1018,61 @@ window.POS = (function () {
 		paintCart();
 	}
 
+	// ------------------------------------------------------- the held tender
+	/** The payment panel as it stands, to park with a held bill. */
+	function heldTender() {
+		return {
+			split: state.split,
+			mode: state.mode,
+			// Only a figure the cashier typed is kept; an untouched box means "the
+			// whole bill", which may change by the time the bill is picked up.
+			received_amount: state.receivedTyped && $("received").value.trim() !== ""
+				? Number($("received").value) || 0 : null,
+			bank_account: state.bankAccount || "",
+			financier: state.financier || "",
+			lines: state.split ? state.splits.map((line) => ({
+				mode: line.mode, amount: Number(line.amount) || 0,
+				account: line.account || "", financier: line.financier || "",
+				kind: line.kind || "",
+			})) : [],
+		};
+	}
+
+	/** Put a held bill's payment panel back exactly as it was left. */
+	function restoreTender(tender) {
+		state.mode = tender.mode || "Cash";
+		state.financier = tender.financier || "";
+		state.bankAccount = tender.bank_account || "";
+
+		// A financed bill was picked through the EMI tile; its mode is the
+		// financier's own, which has no tile of its name.
+		const tileMode = state.financier && !document.querySelector(
+			`#pay-tiles .pay[data-mode="${CSS.escape(state.mode)}"]`) ? "EMI" : state.mode;
+		$("pay-tiles").querySelectorAll(".pay").forEach((tile) => {
+			tile.classList.toggle("is-active", tile.dataset.mode === tileMode);
+		});
+
+		if (tender.received_amount !== null && tender.received_amount !== undefined) {
+			$("received").value = tender.received_amount;
+			state.receivedTyped = true;
+		}
+
+		state.splits = (tender.lines || []).map((line) => ({
+			mode: line.mode, amount: line.amount, account: line.account || "",
+			financier: line.financier || "", ...(line.kind ? { kind: line.kind } : {}),
+		}));
+		setSplit(Boolean(tender.split && state.splits.length));
+		paintBankLabel();
+	}
+
+	/** The single-tender bank button names the chosen account, once both are known. */
+	function paintBankLabel() {
+		if (!$("bank-pick")) return;
+		const named = state.bankAccounts.find((a) => a.account === state.bankAccount);
+		$("bank-pick").textContent = named ? named.label : "Choose account";
+		paintBankRow();
+	}
+
 	// ------------------------------------------------------- editing a draft
 	/** A draft from Bills is the counter's own cart again: same lines, same
 	 *  customer, same discount — so saving it updates that bill rather than
@@ -1044,8 +1086,11 @@ window.POS = (function () {
 			state.mode = bill.mode_of_payment || "Cash";
 
 			// A bill that was split stays split when it is reopened, or the counter
-			// would silently re-tender the whole amount in one form.
-			if (bill.is_split && (bill.payments || []).length > 1) {
+			// would silently re-tender the whole amount in one form. A bill held
+			// from the counter brings back its whole payment panel.
+			if (bill.tender) {
+				restoreTender(bill.tender);
+			} else if (bill.is_split && (bill.payments || []).length > 1) {
 				state.splits = bill.payments.map((p) => ({
 					mode: p.mode_of_payment, amount: p.amount,
 				}));
@@ -1255,13 +1300,22 @@ window.POS = (function () {
 			state.receivedTyped = true;
 			paintTotals();
 		});
+		// A held bill opened straight from Bills can arrive before these lists;
+		// repainting names its accounts and financier once they are known.
+		const repaintSplit = () => {
+			if (!state.split) return;
+			$("split-lines").textContent = "";
+			paintTotals();
+		};
 		A3.call("a3_retail.api.pos.bank_accounts").then((rows) => {
 			state.bankAccounts = rows || [];
-			paintBankRow();
+			paintBankLabel();
+			repaintSplit();
 		}).catch(() => { /* the tiles still work without it */ });
 
 		A3.call("a3_retail.api.pos.finance_partners").then((rows) => {
 			state.financiers = rows || [];
+			repaintSplit();
 		}).catch(() => { /* EMI simply will not be offered */ });
 
 		$("bank-pick").addEventListener("click", askBankAccount);

@@ -351,6 +351,7 @@ window.INVOICE = (function () {
 
 	function paymentsPanel(data) {
 		const rows = data.payments;
+		const held = data.held_tender || [];
 		return `<div class="svc-panel">
 			<div class="panel-head"><h2>Payment Summary</h2>
 				<span class="pill ${payTone(data.payment_status)}">${esc(data.payment_status)}</span></div>
@@ -361,8 +362,22 @@ window.INVOICE = (function () {
 					<span class="row-amount">${money(row.amount)}</span>
 					<span class="pill pill-sky">${esc(row.mode || "—")}</span>
 				</div>`).join("")}</div>`
+				: held.length ? heldTenderRows(held)
 				: '<div class="cust-none">Nothing has been paid against this bill yet.</div>'}
 		</div>`;
+	}
+
+	/** How a held bill is going to be paid, as it was left at the counter. */
+	function heldTenderRows(held) {
+		return `<div class="row-list">${held.map((row) => `
+				<div class="row-line">
+					<span class="row-main"><b>${esc(row.mode)}</b><small>${esc(
+						row.financier ? "financed by " + row.financier
+						: row.bank ? "into " + row.bank : "")}</small></span>
+					<span class="row-amount">${money(row.amount)}</span>
+					<span class="pill pill-warn">On hold</span>
+				</div>`).join("")}</div>
+			<p class="muted">Saved with the bill — taken when it is completed at the counter.</p>`;
 	}
 
 	function servicePanel(service) {

@@ -522,3 +522,81 @@ class TestSplitPayment(FrappeTestCase):
 		self.assertIn("mode_of_payment: line.mode", payload)
 		self.assertIn("account: line.account", payload)
 		self.assertEqual(payload.count(".map("), 1, "one pass, so nothing is renamed twice")
+
+
+class TestHeldTender(FrappeTestCase):
+	"""Hold (F4) parks the payment panel with the draft and brings it back.
+
+	A draft is not a POS invoice, so ERPNext keeps no payment table on it; before
+	this, reopening a held bill started the tender again from Cash.
+	"""
+
+	SPLIT = {
+		"split": True, "mode": "EMI - Bajaj", "received_amount": None,
+		"bank_account": "", "financier": "Bajaj",
+		"lines": [
+			{"mode": "EMI - Bajaj", "amount": 1500, "account": "SBI - X", "financier": "Bajaj",
+			 "kind": "emi"},
+			{"mode": "Cash", "amount": 400, "account": "", "financier": "", "kind": ""},
+		],
+	}
+
+	def test_a_split_comes_back_line_for_line(self):
+		tender = pos.held_tender(self.SPLIT)
+		self.assertTrue(tender["split"])
+		self.assertEqual([(l["mode"], l["amount"]) for l in tender["lines"]],
+		                 [("EMI - Bajaj", 1500), ("Cash", 400)])
+		self.assertEqual(tender["lines"][0]["kind"], "emi")
+		self.assertEqual(tender["lines"][0]["account"], "SBI - X")
+
+	def test_it_survives_being_stored_as_text(self):
+		self.assertEqual(pos.held_tender(frappe.as_json(self.SPLIT)), pos.held_tender(self.SPLIT))
+
+	def test_an_untouched_received_box_stays_the_whole_bill(self):
+		"""None, not 0 — a typed zero is a credit sale, an empty box is not."""
+		tender = pos.held_tender({"mode": "Cash", "received_amount": None})
+		self.assertIsNone(tender["received_amount"])
+		self.assertFalse(tender["split"])
+
+	def test_only_the_counter_s_own_shape_is_kept(self):
+		tender = pos.held_tender({
+			"split": True, "extra": "x",
+			"lines": [{"mode": "Cash", "amount": -5, "evil": "y"}, {"amount": 10}],
+		})
+		self.assertNotIn("extra", tender)
+		self.assertEqual(tender["lines"], [
+			{"mode": "Cash", "amount": 0, "account": "", "financier": "", "kind": ""}])
+
+	def test_garbage_is_dropped_rather_than_raised(self):
+		self.assertIsNone(pos.held_tender("not json"))
+		self.assertIsNone(pos.held_tender(["a", "list"]))
+
+	def test_the_field_is_declared_in_code(self):
+		from a3_retail.setup.custom_fields import EMI_FIELDS
+
+		names = [f["fieldname"] for f in EMI_FIELDS["Sales Invoice"]]
+		self.assertIn("a3_held_tender", names)
+
+	def test_hold_sends_the_tender_and_editing_restores_it(self):
+		script = open(frappe.get_app_path("a3_retail", "public", "js", "a3_pos.js")).read()
+		self.assertIn("tender: draft ? heldTender() : null", script)
+		self.assertIn("restoreTender(bill.tender)", script)
+
+	def test_checkout_clears_what_was_parked(self):
+		source = open(frappe.get_app_path("a3_retail", "api", "pos.py")).read()
+		checkout = source[source.index("def checkout("):source.index("def save_draft(")]
+		self.assertIn("invoice.a3_held_tender = None", checkout)
+
+	def test_drafts_f6_lists_the_server_s_held_bills(self):
+		"""F6 once read a list kept in one browser's storage, which Hold (F4) no
+		longer writes — so it always said "Nothing is on hold"."""
+		script = open(frappe.get_app_path("a3_retail", "public", "js", "a3_pos.js")).read()
+		drafts = script[script.index("async function openDrafts"):script.index("async function recentBills")]
+		self.assertIn("a3_retail.api.pos.held_invoices", drafts)
+		self.assertIn("/retail/sales?invoice=", drafts)
+		self.assertNotIn("localStorage", drafts)
+
+		source = open(frappe.get_app_path("a3_retail", "api", "pos.py")).read()
+		held = source[source.index("def held_invoices("):source.index("def finance_partners(")]
+		self.assertIn('"branch": employee.branch', held)
+		self.assertIn('"docstatus": 0', held)

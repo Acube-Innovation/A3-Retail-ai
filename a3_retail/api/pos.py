@@ -580,6 +580,10 @@ def checkout(payload) -> dict:
 		# ERPNext works the change out from there.
 		invoice.set("payments", rows)
 
+	# The tender is real now; what was parked with the draft no longer describes it.
+	if invoice.meta.has_field("a3_held_tender"):
+		invoice.a3_held_tender = None
+
 	_stamp_cost_center(invoice, cost_center)
 	invoice.save(ignore_permissions=True)
 	invoice.submit()
@@ -617,6 +621,10 @@ def save_draft(payload) -> dict:
 	data = frappe.parse_json(payload) if isinstance(payload, str) else (payload or {})
 	invoice, _profile, _cost_center = _build_invoice(data, employee, draft=True)
 
+	if invoice.meta.has_field("a3_held_tender"):
+		tender = held_tender(data.get("tender"))
+		invoice.a3_held_tender = frappe.as_json(tender) if tender else None
+
 	invoice.flags.ignore_permissions = True
 	_save(invoice)
 
@@ -630,6 +638,60 @@ def save_draft(payload) -> dict:
 		# A bill on hold has no print address — it is not a bill yet.
 		"print_url": None,
 	}
+
+
+HELD_TENDER_LINES = 10
+
+
+def held_tender(raw) -> dict | None:
+	"""What the counter had typed into the payment panel, kept with a held bill.
+
+	Nothing here is money taken — the draft posts nothing — so it is not judged
+	the way `split_payment_rows` judges a checkout: a half-entered split is a
+	perfectly good thing to park. It is only trimmed to the shape the counter
+	reads back, so a draft cannot carry anything else in this field.
+	"""
+	if isinstance(raw, str):
+		try:
+			raw = frappe.parse_json(raw)
+		except ValueError:
+			return None
+	if not isinstance(raw, dict):
+		return None
+
+	def text(value, limit=140):
+		return str(value or "").strip()[:limit]
+
+	lines = []
+	for line in (raw.get("lines") or [])[:HELD_TENDER_LINES]:
+		if not isinstance(line, dict) or not text(line.get("mode")):
+			continue
+		lines.append({
+			"mode": text(line.get("mode")),
+			"amount": max(flt(line.get("amount")), 0),
+			"account": text(line.get("account")),
+			"financier": text(line.get("financier")),
+			"kind": "emi" if line.get("kind") == "emi" else "",
+		})
+
+	received = raw.get("received_amount")
+	tender = {
+		"split": bool(raw.get("split")) and bool(lines),
+		"mode": text(raw.get("mode")) or "Cash",
+		# None keeps "the whole bill" apart from a typed figure, as at checkout.
+		"received_amount": None if received in (None, "") else max(flt(received), 0),
+		"bank_account": text(raw.get("bank_account")),
+		"financier": text(raw.get("financier")),
+		"lines": lines,
+	}
+	return tender
+
+
+def read_held_tender(doc) -> dict | None:
+	"""The tender parked with a draft, or None for anything that is not one."""
+	if doc.docstatus != 0 or not doc.get("a3_held_tender"):
+		return None
+	return held_tender(doc.a3_held_tender)
 
 
 @frappe.whitelist()
@@ -688,6 +750,9 @@ def load_invoice(invoice: str) -> dict:
 	return {
 		"payments": paid,
 		"is_split": len(paid) > 1,
+		# What was in the payment panel when the bill was held; the counter puts
+		# it back exactly instead of starting the tender again.
+		"tender": read_held_tender(doc),
 		"invoice": doc.name,
 		"customer": doc.customer,
 		"customer_name": doc.customer_name,
@@ -1171,6 +1236,32 @@ def recent_invoices(limit: int = 10) -> list[dict]:
 	)
 	for row in rows:
 		row["print_url"] = print_url(row["name"])
+	return rows
+
+
+@frappe.whitelist()
+def held_invoices(limit: int = 30) -> list[dict]:
+	"""This branch's bills on hold — the drafts Hold (F4) saved — newest first.
+
+	Any counter at the branch can pick one up: a held bill is a draft invoice on
+	the server, not something kept in one till's browser.
+	"""
+	employee = _me()
+	require_permission("Sales Invoice", "read")
+
+	rows = frappe.get_all(
+		"Sales Invoice",
+		filters={"branch": employee.branch, "docstatus": 0, "is_return": 0},
+		fields=["name", "customer_name", "grand_total", "posting_date", "modified"],
+		order_by="modified desc",
+		limit=min(cint(limit) or 30, 100),
+	)
+	for row in rows:
+		items = frappe.get_all(
+			"Sales Invoice Item", filters={"parent": row["name"]},
+			fields=["item_name"], order_by="idx", limit=2, pluck="item_name")
+		count = frappe.db.count("Sales Invoice Item", {"parent": row["name"]})
+		row["summary"] = (items[0] if items else "") + (f" +{count - 1} more" if count > 1 else "")
 	return rows
 
 

@@ -314,6 +314,12 @@ EMI_FIELDS = {
 		# choices are kept here as {mode: account} and put back afterwards.
 		_field("a3_split_accounts", "Split Banks", "Small Text", "A3 Retail Sales",
 			insert_after="a3_bank_account", no_copy=1, read_only=1),
+		# What the counter had entered when the bill was put on hold — tile or
+		# split lines, amounts, banks, financier. A draft is not a POS invoice, so
+		# ERPNext keeps no payment table on it; without this, reopening a held
+		# bill started the tender again from Cash. Cleared when the bill completes.
+		_field("a3_held_tender", "Held Tender", "Small Text", "A3 Retail Sales",
+			insert_after="a3_split_accounts", no_copy=1, read_only=1, hidden=1),
 	],
 	"POS Invoice": [
 		_field("a3_emi_application", "EMI Application", "Link", "A3 Retail Finance",
