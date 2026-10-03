@@ -17,7 +17,7 @@ from frappe import _
 from frappe.utils import cint, flt, getdate, nowdate
 
 from a3_retail.api import require_permission, stamp_cost_center
-from a3_retail.api.pos import print_url, resolve_mode
+from a3_retail.api.pos import print_url, read_held_tender, resolve_mode
 from a3_retail.api.staff import _me
 
 PAGE_SIZES = (20, 50, 100)
@@ -273,6 +273,9 @@ def invoice(name: str) -> dict:
 			"balance": flt(doc.outstanding_amount),
 		},
 		"payments": _payments(doc),
+		# On a held bill: how the customer is going to pay, as entered at the
+		# counter. Nothing in it has been taken yet.
+		"held_tender": _held_tender_lines(doc),
 		"service": _service_block(doc),
 		"warranty": _warranty_block(doc),
 		"timeline": _timeline(doc),
@@ -288,6 +291,34 @@ def invoice(name: str) -> dict:
 			"Print Format", {"name": "POS Receipt", "doc_type": "Sales Invoice"})
 		else None,
 	}
+
+
+def _held_tender_lines(doc) -> list[dict]:
+	"""The held tender as display rows: one per split line, or the single tile."""
+	tender = read_held_tender(doc)
+	if not tender:
+		return []
+
+	def bank(account):
+		return frappe.db.get_value("Account", account, "account_name") if account else None
+
+	if tender["split"]:
+		return [{
+			"mode": line["mode"],
+			"amount": line["amount"],
+			"bank": bank(line["account"]),
+			"financier": frappe.db.get_value("Finance Partner", line["financier"], "partner_name")
+			if line["financier"] else None,
+		} for line in tender["lines"] if line["amount"] > 0]
+
+	payable = flt(doc.rounded_total) or flt(doc.grand_total)
+	received = tender["received_amount"]
+	return [{
+		"mode": tender["mode"],
+		"amount": payable if received is None else received,
+		"bank": bank(tender["bank_account"]),
+		"financier": None,
+	}]
 
 
 def _customer_block(doc) -> dict:
