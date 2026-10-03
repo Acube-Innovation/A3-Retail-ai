@@ -62,6 +62,14 @@ class TestBillsPages(FrappeTestCase):
 		api = open(frappe.get_app_path("a3_retail", "api", "bills.py")).read()
 		self.assertIn("from a3_retail.api.pos import print_url", api)
 
+	def test_a_held_bill_s_form_does_not_push_the_sheet_into_the_side_column(self):
+		"""The draft form is an extra item in the two-column `.inv` grid. Unless it
+		spans both columns, the sheet lands in the 340px side column and its totals
+		overlap everything beside them."""
+		css = open(frappe.get_app_path("a3_retail", "public", "css", "a3_branch.css")).read()
+		rule = css[css.index(".inv-draft-edit {"):]
+		self.assertIn("grid-column: 1 / -1", rule[: rule.index("}")])
+
 
 class TestBillsAccess(FrappeTestCase):
 	def test_a_guest_cannot_read_the_bills(self):

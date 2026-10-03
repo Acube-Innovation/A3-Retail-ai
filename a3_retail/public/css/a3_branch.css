@@ -1876,8 +1876,10 @@ body.side-collapsed .side-nav a, body.side-collapsed .side-soon { justify-conten
 
 
 /* A bill on hold still has paperwork to settle — date, salesman, note — so the
-   form sits above the sheet rather than replacing it. */
-.inv-draft-edit { border-left: 3px solid var(--warn, #e9a23b); }
+   form sits above the sheet rather than replacing it. It spans both columns of
+   `.inv`: as a plain grid item it would take the sheet's column and push the
+   sheet into the 340px side column. */
+.inv-draft-edit { grid-column: 1 / -1; border-left: 3px solid var(--warn, #e9a23b); }
 .inv-draft-edit .panel-head { align-items: center; }
 
 /* The account a card or UPI collection reached. Reads as the chosen bank once

@@ -179,6 +179,17 @@ PERMISSION_MATRIX: dict[str, dict[str, str]] = {
 		"Reception Executive": "CRUS",
 		"Accounts Manager": "CRUDS",
 	},
+	# Pricing an invoice (`set_missing_values`) makes ERPNext list the POS Profiles
+	# the user may see, so whoever can raise a Sales Invoice needs at least select
+	# on it, or the counter and service billing fail on checkout. Select, not read:
+	# the profile carries income accounts shop-floor staff are not meant to open.
+	"POS Profile": {
+		"A3 Retail Admin": "L",
+		"Branch Manager": "L",
+		"Sales Executive": "L",
+		"Reception Executive": "L",
+		"Accounts Executive": "L",
+	},
 	"Customer": {
 		"A3 Retail Admin": "CRUD",
 		"Branch Manager": "CRUD",
