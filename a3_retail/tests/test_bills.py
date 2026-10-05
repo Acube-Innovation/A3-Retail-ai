@@ -420,12 +420,12 @@ class TestPaymentLinesOnThePrint(FrappeTestCase):
 
 		self.assertEqual(a3_received_lines(self._invoice(docstatus=0, payments=[("Cash", 500)])), [])
 
-	def test_the_lines_sit_between_received_and_balance(self):
+	def test_the_invoice_prints_only_received_and_balance(self):
 		html = open(frappe.get_app_path(
 			"a3_retail", "templates", "print_formats", "retail_tax_invoice.html")).read()
 		foot = html[html.index("<tfoot>"):html.index("</tfoot>")]
-		self.assertLess(foot.index("RECEIVED AMOUNT"), foot.index("a3_received_lines(doc)"))
-		self.assertLess(foot.index("a3_received_lines(doc)"), foot.index("BALANCE AMOUNT"))
+		self.assertLess(foot.index("RECEIVED AMOUNT"), foot.index("BALANCE AMOUNT"))
+		self.assertNotIn("a3_received_lines(doc)", foot)
 
 	def test_received_is_the_rounded_bill_the_lines_add_up_to(self):
 		html = open(frappe.get_app_path(
