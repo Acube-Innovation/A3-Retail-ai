@@ -566,10 +566,12 @@ def checkout(payload) -> dict:
 	slack = SPLIT_TOLERANCE if from_split else 0.005
 	short = settled + slack < payable
 
-	if short:
-		# A bill the customer has not settled is not a till sale. ERPNext expects a
-		# POS invoice to be paid in full, so this is posted as an ordinary credit
-		# invoice and whatever was handed over is receipted against it.
+	# A split settles through one Payment Entry per line rather than through the
+	# invoice's own payment table. The counter has taken money in two or three
+	# different forms — some of it from a financier weeks later — and each is a
+	# receipt in its own right: an accountant reconciles a bank line against a
+	# document, not against a row inside somebody else's invoice.
+	if short or from_split:
 		invoice.is_pos = 0
 		invoice.pos_profile = None
 		invoice.set("payments", [])
@@ -588,7 +590,22 @@ def checkout(payload) -> dict:
 	invoice.save(ignore_permissions=True)
 	invoice.submit()
 
-	if short and settled > 0:
+	if from_split:
+		# Cash is the only line that can be over-tendered, and the excess is change
+		# rather than money the shop kept — so the receipts add up to the bill, not
+		# to what crossed the counter.
+		excess = max(settled - payable, 0)
+		for row in rows:
+			amount = flt(row["amount"])
+			if excess > 0 and frappe.db.get_value(
+					"Mode of Payment", row["mode_of_payment"], "type") == "Cash":
+				taken = min(excess, amount)
+				amount -= taken
+				excess -= taken
+			if amount > 0:
+				_receipt(invoice, amount, row["mode_of_payment"], row.get("account"))
+		invoice.reload()
+	elif short and settled > 0:
 		_receipt(invoice, settled, mode or "Cash")
 		invoice.reload()
 
@@ -1287,11 +1304,15 @@ def finance_partners() -> list[dict]:
 	         if r.bank_account else None} for r in rows]
 
 
-def _receipt(invoice, amount: float, mode: str) -> None:
-	"""Receipt a part payment against a bill the customer has not settled."""
+def _receipt(invoice, amount: float, mode: str, account: str | None = None) -> None:
+	"""Receipt one tender against a bill — a Payment Entry of its own.
+
+	`account` is the bank the counter named for this line; without one the Mode
+	of Payment's own account is used.
+	"""
 	from erpnext.accounts.doctype.payment_entry.payment_entry import get_payment_entry
 
-	account = frappe.db.get_value(
+	account = account or frappe.db.get_value(
 		"Mode of Payment Account",
 		{"parent": mode, "company": invoice.company}, "default_account")
 	if not account:
