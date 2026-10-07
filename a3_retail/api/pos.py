@@ -117,12 +117,15 @@ def catalogue(query: str = "", item_group: str | None = None, only_in_stock: int
 	if query:
 		# A customer names their handset, not the part number: "A50", not
 		# "SPR-DSP-A50". So the search also looks at the phones an item fits.
-		from a3_retail.utils.compatibility import search_clause
+		from a3_retail.utils.compatibility import search_clause, serial_clause
 
 		conditions.append(
 			"(i.name like %(query)s or i.item_name like %(query)s or i.brand like %(query)s"
 			" or exists (select 1 from `tabItem Barcode` bc"
 			"            where bc.parent = i.name and bc.barcode like %(query)s)"
+			# An IMEI read off the box has to find its phone here too, not only
+			# through the scanner — the counter types them by hand just as often.
+			f" or {serial_clause('i', 'query', 'branch')}"
 			f" or {search_clause('i')})"
 		)
 		values["query"] = f"%{query}%"
@@ -591,10 +594,17 @@ def checkout(payload) -> dict:
 	invoice.submit()
 
 	if from_split:
+		# What the bill actually owes, read back from the submitted invoice rather
+		# than from the figure the rows were built against: rounding moves it, and
+		# a receipt may never allocate more than the bill owes.
+		invoice.reload()
+		owed = flt(invoice.outstanding_amount)
+
 		# Cash is the only line that can be over-tendered, and the excess is change
 		# rather than money the shop kept — so the receipts add up to the bill, not
 		# to what crossed the counter.
-		excess = max(settled - payable, 0)
+		excess = max(settled - owed, 0)
+		lines = []
 		for row in rows:
 			amount = flt(row["amount"])
 			if excess > 0 and frappe.db.get_value(
@@ -602,11 +612,27 @@ def checkout(payload) -> dict:
 				taken = min(excess, amount)
 				amount -= taken
 				excess -= taken
-			if amount > 0:
-				_receipt(invoice, amount, row["mode_of_payment"], row.get("account"))
+			lines.append([amount, row["mode_of_payment"], row.get("account")])
+
+		# With no cash line there is nothing to hand change back from, so a split
+		# accepted against the rupee of tolerance can still sit a few paise over
+		# the bill. Those paise come off the last lines: the shop is owed the bill,
+		# not the tender.
+		over = sum(line[0] for line in lines) - owed
+		for line in reversed(lines):
+			if over <= 0:
+				break
+			taken = min(over, line[0])
+			line[0] -= taken
+			over -= taken
+
+		for amount, line_mode, account in lines:
+			if amount > 0.005:
+				_receipt(invoice, amount, line_mode, account)
 		invoice.reload()
 	elif short and settled > 0:
-		_receipt(invoice, settled, mode or "Cash")
+		invoice.reload()
+		_receipt(invoice, min(settled, flt(invoice.outstanding_amount)), mode or "Cash")
 		invoice.reload()
 
 	return {

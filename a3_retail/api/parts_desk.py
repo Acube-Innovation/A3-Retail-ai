@@ -77,9 +77,11 @@ def catalogue(kind: str = "parts", query: str = "", brand: str = "", status: str
 	          "limit": min(cint(limit) or 60, 200)}
 
 	if query:
-		from a3_retail.utils.compatibility import barcode_clause
+		from a3_retail.utils.compatibility import barcode_clause, serial_clause
 
 		conditions.append("(" + barcode_clause("i", "like") + " or "
+		                  # A serialised part is looked up by its own number too.
+		                  + serial_clause("i", "like") + " or "
 		                  "i.name like %(like)s or i.item_name like %(like)s "
 		                  "or i.brand like %(like)s)")
 		values["like"] = f"%{query}%"
