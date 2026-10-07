@@ -346,18 +346,21 @@ def find_customer(mobile_no: str) -> dict | None:
 	if not name:
 		return None
 
-	customer = frappe.db.get_value(
-		"Customer", name, ["name", "customer_name", "a3_mobile_no", "email_id", "a3_dnc"],
-		as_dict=True,
-	)
+	fields = ["name", "customer_name", "a3_mobile_no", "email_id", "a3_dnc"]
+	# So the counter can see at a glance that this one bills as a business.
+	if frappe.db.has_column("Customer", "gstin"):
+		fields.append("gstin")
+	customer = frappe.db.get_value("Customer", name, fields, as_dict=True)
 	customer["address"] = _primary_address(name)
 	customer["history"] = _history(name)
 	return customer
 
 
 def _primary_address(customer: str) -> dict:
+	gstin = "a.gstin," if frappe.db.has_column("Address", "gstin") else ""
 	link = frappe.db.sql(
-		"""select a.name, a.address_line1, a.address_line2, a.city, a.state, a.pincode
+		f"""select a.name, a.address_line1, a.address_line2, a.city, a.state,
+		          a.pincode, {gstin} a.address_type
 		   from `tabAddress` a
 		   join `tabDynamic Link` l on l.parent = a.name
 		   where l.link_doctype = 'Customer' and l.link_name = %s
@@ -426,21 +429,36 @@ def loyalty(customer: str) -> dict:
 @frappe.whitelist()
 def save_customer(mobile_no: str, customer_name: str, email: str | None = None,
                   address_line1: str | None = None, city: str | None = None,
-                  pincode: str | None = None, state: str | None = None) -> dict:
-	"""Create the walk-in, or fill in what we did not have before."""
+                  pincode: str | None = None, state: str | None = None,
+                  gstin: str | None = None) -> dict:
+	"""Create the walk-in, or fill in what we did not have before.
+
+	A `gstin` makes this a registered buyer and the bill a B2B one. It goes on
+	the billing address as well as the customer, because that is where ERPNext
+	reads the number it prints and files, and the state it derives place of
+	supply from.
+	"""
 	employee = _me()
 	require_permission("Customer", "create")
 
-	from a3_retail.api.customer import get_or_create
+	from a3_retail.api.customer import get_or_create, gstin_state, validate_gstin
 
+	gstin = validate_gstin(gstin)
 	customer = get_or_create(
-		mobile_no=mobile_no, customer_name=customer_name, email=email, branch=employee.branch
+		mobile_no=mobile_no, customer_name=customer_name, email=email,
+		branch=employee.branch, gstin=gstin,
 	)
 	name = customer["name"] if isinstance(customer, dict) else customer
 
-	if address_line1:
-		_save_address(name, customer_name, address_line1, city, pincode,
-		              state or _branch_state(employee.branch))
+	# A registered buyer is taxed on the state in their GSTIN, not on whatever
+	# was typed into the address — that is the figure their own return carries.
+	home = gstin_state(gstin) or state or _branch_state(employee.branch)
+
+	# B2B needs an address to hang the GSTIN off, so one is started from the
+	# little we have rather than waiting for the counter to type a street.
+	if address_line1 or gstin:
+		_save_address(name, customer_name, address_line1 or "-", city, pincode,
+		              home, gstin=gstin)
 
 	return find_customer(mobile_no) or {"name": name, "customer_name": customer_name}
 
@@ -469,7 +487,8 @@ def _branch_state(branch: str) -> str | None:
 
 
 def _save_address(customer: str, customer_name: str, line1: str, city: str | None,
-                  pincode: str | None, state: str | None = None):
+                  pincode: str | None, state: str | None = None,
+                  gstin: str | None = None):
 	existing = _primary_address(customer)
 	doc = frappe.get_doc("Address", existing["name"]) if existing.get("name") \
 		else frappe.new_doc("Address")
@@ -485,6 +504,13 @@ def _save_address(customer: str, customer_name: str, line1: str, city: str | Non
 	doc.state = state or doc.state
 	doc.pincode = pincode
 	doc.country = doc.country or "India"
+	if gstin and doc.meta.has_field("gstin"):
+		# ERPNext prints and files the address's GSTIN, not the customer's.
+		doc.gstin = gstin
+		if doc.meta.has_field("gst_category"):
+			from a3_retail.api.customer import _gst_category
+
+			doc.gst_category = _gst_category(gstin)
 	doc.flags.ignore_mandatory = True
 	doc.save()
 

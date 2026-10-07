@@ -106,7 +106,18 @@
 			<td style="width:50%">
 				<div class="label">BILL TO</div>
 				<div><b>{{ doc.customer_name }}</b></div>
-				{% if doc.address_display %}<div>Address: {{ doc.address_display|striptags }}</div>{% endif %}
+				{#- A business buyer claims the input credit against this number, so a
+				    B2B bill is not a valid document without it on the face. ERPNext
+				    already folds it into address_display, so it is taken out of there
+				    and given its own line instead of being printed twice. -#}
+				{%- set buyer_gstin = doc.get("billing_address_gstin")
+				        or frappe.db.get_value("Customer", doc.customer, "gstin") -%}
+				{%- set addr = (doc.address_display or "")|striptags -%}
+				{%- if buyer_gstin -%}
+					{%- set addr = addr|replace("GSTIN: " ~ buyer_gstin, "")|trim -%}
+				{%- endif -%}
+				{% if addr %}<div>Address: {{ addr }}</div>{% endif %}
+				{% if buyer_gstin %}<div>GSTIN: {{ buyer_gstin }}</div>{% endif %}
 				{% if doc.place_of_supply %}<div>Place of Supply: {{ doc.place_of_supply }}</div>{% endif %}
 				{% set mobile = doc.contact_mobile or frappe.db.get_value("Customer", doc.customer, "a3_mobile_no") %}
 				{% if mobile %}<div>Mobile: {{ mobile }}</div>{% endif %}

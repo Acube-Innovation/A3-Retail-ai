@@ -24,6 +24,57 @@ def normalize_mobile(mobile_no: str | None) -> str:
 	return digits
 
 
+def normalize_gstin(gstin: str | None) -> str:
+	"""Upper-case, strip spaces. A blank GSTIN is a walk-in, not an error."""
+	return re.sub(r"\s+", "", str(gstin or "")).upper()
+
+
+def validate_gstin(gstin: str | None) -> str:
+	"""Check a GSTIN before it reaches a bill, in words the counter can act on.
+
+	A wrong GSTIN is worse than none: the buyer cannot claim the credit and the
+	return has to be amended. India Compliance checks the length and the check
+	digit, so a typo is caught here rather than at the GST portal — but its
+	message names field codes, so it is restated for the person at the counter.
+	"""
+	gstin = normalize_gstin(gstin)
+	if not gstin:
+		return ""
+	try:
+		from india_compliance.gst_india.utils import validate_gstin as _check
+	except ImportError:
+		if len(gstin) != 15:
+			frappe.throw(_("A GSTIN is 15 characters. {0} has {1}.")
+			             .format(gstin, len(gstin)), title=_("Check the GSTIN"))
+		return gstin
+	try:
+		_check(gstin)
+	except frappe.ValidationError:
+		frappe.throw(
+			_("{0} is not a valid GSTIN. Check it against the buyer's papers — "
+			  "a wrong one costs them the input credit.").format(gstin),
+			title=_("Check the GSTIN"))
+	return gstin
+
+
+def gstin_state(gstin: str | None) -> str | None:
+	"""The state a GSTIN belongs to, from its first two digits.
+
+	This is what decides place of supply, and so whether the bill carries IGST or
+	CGST/SGST. Taking it from the GSTIN rather than from a typed address means a
+	B2B bill is taxed on the buyer's registration, which is the figure that has
+	to agree with their return.
+	"""
+	gstin = normalize_gstin(gstin)
+	if len(gstin) != 15:
+		return None
+	try:
+		from india_compliance.gst_india.constants import STATE_NUMBERS
+	except ImportError:
+		return None
+	return {number: name for name, number in STATE_NUMBERS.items()}.get(gstin[:2])
+
+
 def validate_mobile(mobile_no: str) -> str:
 	mobile = normalize_mobile(mobile_no)
 	if not MOBILE_RE.match(mobile):
@@ -113,17 +164,26 @@ def get_or_create(
 	email: str | None = None,
 	marketing_optin: int = 1,
 	customer_group: str | None = None,
+	gstin: str | None = None,
 ) -> dict:
 	"""Find a customer by mobile, or create one. Idempotent by mobile number.
 
 	The unique index on `Customer.a3_mobile_no` is what actually prevents
 	duplicates; the pre-check just avoids a noisy exception on the happy path.
+
+	`gstin` makes the customer a registered buyer, so the bill can be raised B2B.
+	A shop often meets the same buyer as a walk-in first and is handed the GSTIN
+	only when they want a company bill, so one supplied for a customer already
+	on file is filled in rather than ignored.
 	"""
 	require_permission("Customer", "read")
 
 	mobile = validate_mobile(mobile_no)
+	gstin = validate_gstin(gstin)
 	existing = frappe.db.get_value("Customer", {"a3_mobile_no": mobile}, "name")
 	if existing:
+		if gstin:
+			_apply_gstin(existing, gstin)
 		return get_profile(existing)
 
 	require_permission("Customer", "create")
@@ -145,6 +205,11 @@ def get_or_create(
 	doc.a3_marketing_optin = 1 if int(marketing_optin or 0) else 0
 	if email:
 		doc.email_id = email
+	if gstin:
+		doc.gstin = gstin
+		doc.gst_category = _gst_category(gstin)
+		# A GSTIN belongs to a business, and ERPNext prints the type on the bill.
+		doc.customer_type = "Company"
 
 	try:
 		doc.insert()
@@ -157,6 +222,40 @@ def get_or_create(
 		raise
 
 	return get_profile(doc.name)
+
+
+def _gst_category(gstin: str) -> str:
+	"""What kind of registration this GSTIN is — India Compliance works it out."""
+	try:
+		from india_compliance.gst_india.utils import guess_gst_category
+	except ImportError:
+		return "Registered Regular"
+	return guess_gst_category(gstin, "India") or "Registered Regular"
+
+
+def _apply_gstin(customer: str, gstin: str) -> None:
+	"""Record a GSTIN against a customer already on file.
+
+	Only ever fills a gap or corrects a typo the counter is re-entering; it never
+	quietly moves a bill from one registration to another, because past invoices
+	were filed under the old number.
+	"""
+	current = frappe.db.get_value("Customer", customer, "gstin")
+	if normalize_gstin(current) == gstin:
+		return
+	if current:
+		frappe.throw(
+			_("{0} is already registered under GSTIN {1}. Head office has to change "
+			  "it, because bills already filed carry the old number.")
+			.format(frappe.db.get_value("Customer", customer, "customer_name"), current),
+			title=_("GSTIN already set"))
+	require_permission("Customer", "write")
+	doc = frappe.get_doc("Customer", customer)
+	doc.gstin = gstin
+	doc.gst_category = _gst_category(gstin)
+	doc.customer_type = "Company"
+	doc.flags.ignore_mandatory = True
+	doc.save(ignore_permissions=True)
 
 
 def _default_customer_group(preferred: str | None = None) -> str:
