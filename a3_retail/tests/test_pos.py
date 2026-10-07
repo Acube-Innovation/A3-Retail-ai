@@ -117,6 +117,38 @@ class TestCatalogue(FrappeTestCase):
 		narrowed = pos.catalogue(query="Redmi", limit=60)
 		self.assertLess(len(narrowed), len(everything))
 
+	def test_an_imei_finds_the_phone_it_belongs_to(self):
+		"""The counter types IMEIs into the search box, not only into the scanner.
+
+		Barcodes were already matched and IMEIs were not, so typing one looked
+		exactly like the phone being out of stock.
+		"""
+		serials = pos.serials("MOB-APL-15-128-BLK", limit=1)
+		if not serials:
+			self.skipTest("no serial in stock to search for")
+		imei = serials[0]["serial_no"]
+		codes = [row["item_code"] for row in pos.catalogue(query=imei, limit=10)]
+		self.assertIn("MOB-APL-15-128-BLK", codes)
+
+	def test_part_of_an_imei_is_enough(self):
+		"""Counter staff read the last digits off the box rather than all fifteen."""
+		serials = pos.serials("MOB-APL-15-128-BLK", limit=1)
+		if not serials:
+			self.skipTest("no serial in stock to search for")
+		tail = serials[0]["serial_no"][-7:]
+		codes = [row["item_code"] for row in pos.catalogue(query=tail, limit=20)]
+		self.assertIn("MOB-APL-15-128-BLK", codes)
+
+	def test_a_sold_imei_does_not_offer_its_item(self):
+		"""Offering it would let the counter add a phone it cannot then serialise;
+		`scan` is what explains a sold one."""
+		sold = frappe.db.get_value(
+			"Serial No", {"status": ("!=", "Active")}, ["name", "item_code"], as_dict=True)
+		if not sold:
+			self.skipTest("nothing sold on this site yet")
+		codes = [row["item_code"] for row in pos.catalogue(query=sold.name, limit=10)]
+		self.assertNotIn(sold.item_code, codes)
+
 	def test_serials_are_from_this_branch_only(self):
 		rows = pos.serials("MOB-APL-15-128-BLK")
 		self.assertTrue(rows)

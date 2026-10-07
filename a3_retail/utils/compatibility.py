@@ -199,3 +199,28 @@ def barcode_clause(alias: str = "i", param: str = "query") -> str:
 	"""
 	return (f"exists (select 1 from `tabItem Barcode` a3bc "
 	        f"where a3bc.parent = {alias}.name and a3bc.barcode like %({param})s)")
+
+
+def serial_clause(alias: str = "i", param: str = "query",
+                  branch_param: str | None = None) -> str:
+	"""SQL that matches a phone's IMEI, so typing one finds the item it belongs to.
+
+	The IMEI is the number on the box the counter reads out, and on a phone shop's
+	floor it identifies the goods more often than the item name does. A search
+	that only knows barcodes finds nothing for it, which looks to the person at
+	the till exactly like the phone not being in stock.
+
+	Only stock still on the shelf is matched. A sold IMEI belongs to a bill, not
+	to the catalogue, and offering its item here would invite the counter to add
+	it and then be refused a serial. `scan()` is what explains a sold one.
+
+	Pass `branch_param` to keep the match inside one branch's warehouses.
+	Returns a bare EXISTS so it can be dropped into an existing OR chain.
+	"""
+	where = (f"a3sn.item_code = {alias}.name and a3sn.serial_no like %({param})s "
+	         f"and a3sn.status = 'Active' and ifnull(a3sn.warehouse, '') != ''")
+	if branch_param:
+		where += (f" and exists (select 1 from `tabWarehouse` a3w "
+		          f"where a3w.name = a3sn.warehouse "
+		          f"and a3w.custom_branch = %({branch_param})s)")
+	return f"exists (select 1 from `tabSerial No` a3sn where {where})"

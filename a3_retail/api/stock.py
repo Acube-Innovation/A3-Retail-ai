@@ -75,10 +75,12 @@ def search_items(query: str = "", filters: dict | str | None = None, branch: str
 	values = {"query": f"%{query}%", "limit": int(limit)}
 
 	if query:
-		from a3_retail.utils.compatibility import barcode_clause
+		from a3_retail.utils.compatibility import barcode_clause, serial_clause
 
 		conditions.append("(i.name like %(query)s or i.item_name like %(query)s or "
-		                  + barcode_clause("i") + ")")
+		                  + barcode_clause("i") + " or "
+		                  # An IMEI read off the box finds its phone here too.
+		                  + serial_clause("i", "query") + ")")
 	if filters.get("item_group"):
 		conditions.append("i.item_group = %(item_group)s")
 		values["item_group"] = filters["item_group"]

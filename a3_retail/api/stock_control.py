@@ -129,11 +129,14 @@ def _stock_conditions(data: dict, branch: str) -> tuple[str, dict]:
 
 	if data.get("query"):
 		# Searching stock by the handset it fits, the same as the counter does.
-		from a3_retail.utils.compatibility import barcode_clause, search_clause
+		from a3_retail.utils.compatibility import (barcode_clause, search_clause,
+		                                           serial_clause)
 
 		conditions.append("(i.name like %(like)s or i.item_name like %(like)s "
 		                  "or i.brand like %(like)s or "
 		                  + barcode_clause("i", "like") + " or "
+		                  # An IMEI read off the box finds its phone here too.
+		                  + serial_clause("i", "like") + " or "
 		                  + search_clause("i").replace("%(query)s", "%(like)s") + ")")
 		values["like"] = f"%{data['query']}%"
 	if data.get("item_group"):
