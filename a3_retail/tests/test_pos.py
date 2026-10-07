@@ -243,6 +243,83 @@ class TestCustomerAtTheCounter(FrappeTestCase):
 	def test_an_unknown_number_returns_nothing(self):
 		self.assertIsNone(pos.find_customer("9000000001"))
 
+	# ---- B2B: a business buyer bills against their GSTIN ------------------
+	# Invented registrations whose check digits are valid, so India Compliance
+	# accepts them. A real customer's GSTIN must never end up in the repository.
+	GSTIN = "32AAAAA0000A1ZB"            # Kerala, the branch's own state
+	GSTIN_KARNATAKA = "29AAAAA0000A1ZY"  # out of state, so IGST
+
+	def test_a_gstin_makes_the_customer_a_registered_business(self):
+		saved = pos.save_customer(
+			mobile_no="9847019001", customer_name="Nilgiri Traders LLP",
+			address_line1="MG Road", city="Kochi", gstin=self.GSTIN)
+		doc = frappe.get_doc("Customer", saved["name"])
+		self.assertEqual(doc.gstin, self.GSTIN)
+		self.assertEqual(doc.gst_category, "Registered Regular")
+		self.assertEqual(doc.customer_type, "Company")
+
+	def test_the_gstin_also_lands_on_the_billing_address(self):
+		"""ERPNext files the address's GSTIN, not the customer's, so a bill
+		raised without it goes into GSTR-1 missing the buyer's registration."""
+		saved = pos.save_customer(
+			mobile_no="9847019002", customer_name="Backwater Systems Pvt Ltd",
+			address_line1="Marine Drive", city="Kochi", gstin=self.GSTIN)
+		self.assertEqual(pos._primary_address(saved["name"]).get("gstin"), self.GSTIN)
+
+	def test_a_gstin_alone_is_enough_to_start_an_address(self):
+		"""B2B needs somewhere to hang the number; waiting for a street would
+		leave the bill filing without it."""
+		saved = pos.save_customer(
+			mobile_no="9847019003", customer_name="Spice Route Exports",
+			gstin=self.GSTIN)
+		self.assertEqual(pos._primary_address(saved["name"]).get("gstin"), self.GSTIN)
+
+	def test_place_of_supply_follows_the_gstin_not_the_typed_address(self):
+		"""An out-of-state buyer pays IGST, and the registration decides that —
+		not whatever city the counter typed."""
+		saved = pos.save_customer(
+			mobile_no="9847019004", customer_name="Bengaluru Retail Pvt Ltd",
+			address_line1="Brigade Road", city="Kochi",
+			gstin=self.GSTIN_KARNATAKA)
+		self.assertEqual(pos._primary_address(saved["name"]).get("state"), "Karnataka")
+
+	def test_a_mistyped_gstin_is_refused_before_it_reaches_a_bill(self):
+		"""Its check digit is wrong, so the buyer would lose the input credit."""
+		with self.assertRaises(frappe.ValidationError):
+			pos.save_customer(mobile_no="9847019005", customer_name="Typo Traders",
+			                  gstin="32AAAAA0000A1ZC")   # check digit is wrong
+
+	def test_a_walk_in_still_needs_no_gstin(self):
+		saved = pos.save_customer(mobile_no="9847019006", customer_name="Anil Kumar")
+		doc = frappe.get_doc("Customer", saved["name"])
+		self.assertFalse(doc.get("gstin"))
+		self.assertEqual(doc.customer_type, "Individual")
+
+	def test_a_gstin_is_filled_in_for_a_buyer_already_on_file(self):
+		"""The shop meets them as a walk-in first and is handed the GSTIN only
+		when they ask for a company bill."""
+		pos.save_customer(mobile_no="9847019007", customer_name="Later Registered Co")
+		saved = pos.save_customer(mobile_no="9847019007",
+		                          customer_name="Later Registered Co",
+		                          gstin=self.GSTIN)
+		self.assertEqual(frappe.db.get_value("Customer", saved["name"], "gstin"),
+		                 self.GSTIN)
+
+	def test_a_second_different_gstin_is_refused(self):
+		"""Bills already filed carry the old number, so this is head office's
+		call rather than the counter's."""
+		pos.save_customer(mobile_no="9847019008", customer_name="One Gstin Only Ltd",
+		                  gstin=self.GSTIN)
+		with self.assertRaises(frappe.ValidationError):
+			pos.save_customer(mobile_no="9847019008",
+			                  customer_name="One Gstin Only Ltd",
+			                  gstin=self.GSTIN_KARNATAKA)
+
+	def test_the_counter_can_see_a_buyer_bills_as_a_business(self):
+		pos.save_customer(mobile_no="9847019009", customer_name="Visible Gstin Ltd",
+		                  gstin=self.GSTIN)
+		self.assertEqual(pos.find_customer("9847019009").get("gstin"), self.GSTIN)
+
 	def test_a_short_number_is_not_a_lookup(self):
 		self.assertIsNone(pos.find_customer("98470"))
 

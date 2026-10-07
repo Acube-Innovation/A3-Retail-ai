@@ -760,7 +760,8 @@ window.POS = (function () {
 		$("customer-city").value = address.city || "";
 		if (address.state) $("customer-state").value = address.state;
 		$("customer-pin").value = address.pincode || "";
-		setChip("Known customer", "good");
+		$("customer-gstin").value = found.gstin || address.gstin || "";
+		setChip(found.gstin ? "Known business" : "Known customer", "good");
 
 		const history = found.history || {};
 		$("customer-history").innerHTML =
@@ -793,6 +794,7 @@ window.POS = (function () {
 				city: $("customer-city").value.trim(),
 				state: $("customer-state").value.trim(),
 				pincode: $("customer-pin").value.trim(),
+				gstin: $("customer-gstin").value.trim().toUpperCase(),
 			});
 			state.customer = saved.name;
 			setChip("Ready to bill", "good");
@@ -838,7 +840,8 @@ window.POS = (function () {
 	function newCustomer() {
 		state.customer = null;
 		["mobile", "customer-name", "customer-email", "customer-address",
-		 "customer-city", "customer-pin"].forEach((id) => { $(id).value = ""; });
+		 "customer-city", "customer-pin", "customer-gstin"]
+			.forEach((id) => { $(id).value = ""; });
 		$("customer-history").innerHTML = "";
 		setChip("New customer", "warn");
 		$("mobile").focus();

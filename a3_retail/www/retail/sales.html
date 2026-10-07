@@ -65,6 +65,11 @@
 						<input id="customer-state" placeholder="{{ _('State') }}"
 						       value="{{ profile.state or '' }}">
 						<input id="customer-pin" inputmode="numeric" maxlength="6" placeholder="{{ _('PIN') }}">
+						{#- A business buyer wants the bill in the firm's name, against
+						    its GSTIN, so it can claim the input credit. -#}
+						<input id="customer-gstin" maxlength="15" autocapitalize="characters"
+						       spellcheck="false" class="pos-gstin"
+						       placeholder="{{ _('GSTIN (for a business bill)') }}">
 					</div>
 
 					<div class="pos-cust-foot" id="cust-foot" hidden>

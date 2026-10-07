@@ -585,6 +585,12 @@ body.side-collapsed .side-nav a, body.side-collapsed .side-soon { justify-conten
 	color: var(--ink); }
 .input-icon:focus-within { border-color: var(--sky); box-shadow: 0 0 0 3px rgba(41, 171, 226, .16); }
 .pos-cust-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+/* The GSTIN is the one field that changes what kind of bill this is, and a
+   15-character number is cramped in a third of the panel. Given the whole row
+   it also reads as the deliberate step it is, rather than as another address
+   line someone fills in by habit. */
+.pos-cust-grid .pos-gstin { grid-column: 1 / -1; letter-spacing: .04em;
+	text-transform: uppercase; }
 .pos-cust-foot { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
 .pos-history { display: flex; flex-wrap: wrap; gap: 6px; }
 .pos-history span { font-size: 11.5px; color: var(--muted); background: rgba(42, 51, 66, .05);
