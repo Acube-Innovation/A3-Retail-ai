@@ -137,9 +137,16 @@ class StockDamageReport(A3BranchMixin, Document):
 			return self.stock_entry_transfer
 
 		profile = get_branch_profile(self.branch)
-		damaged = profile.damaged_warehouse if profile else None
+		damaged = _damaged_warehouse(profile)
 		if not damaged:
-			frappe.throw(_("Branch {0} has no Damaged Goods warehouse.").format(self.branch))
+			frappe.throw(_("Branch {0} has no warehouse to move the goods to.")
+			             .format(self.branch))
+
+		# A branch that keeps one warehouse has nowhere separate to quarantine
+		# damaged goods, so there is no transfer to make — the write-off below
+		# takes them straight off the shelf they are already on.
+		if damaged == profile.default_warehouse:
+			return None
 
 		entry = frappe.new_doc("Stock Entry")
 		entry.stock_entry_type = "Material Transfer"
@@ -176,11 +183,11 @@ class StockDamageReport(A3BranchMixin, Document):
 		"""Write the goods off out of the Damaged warehouse."""
 		if self.stock_entry_writeoff:
 			return self.stock_entry_writeoff
-		if not self.stock_entry_transfer:
-			frappe.throw(_("Move the goods to the Damaged warehouse first."))
-
 		profile = get_branch_profile(self.branch)
-		damaged = profile.damaged_warehouse if profile else None
+		damaged = _damaged_warehouse(profile)
+		# Only a branch that quarantines damaged goods has a transfer to do first.
+		if not self.stock_entry_transfer and damaged != (profile and profile.default_warehouse):
+			frappe.throw(_("Move the goods to the Damaged warehouse first."))
 		abbr = frappe.get_cached_value("Company", self.company, "abbr")
 		expense = f"Stock Damage Written Off - {abbr}"
 
@@ -333,3 +340,15 @@ def create_from_transfer_discrepancy(stock_request: str, item_code: str, qty: fl
 	)
 	doc.insert()
 	return doc.name
+
+
+def _damaged_warehouse(profile):
+	"""Where damaged goods wait to be written off.
+
+	A branch that keeps a single warehouse has no quarantine shelf, so this
+	falls back to its own — the goods are written off from where they stand
+	rather than being refused for want of a second warehouse.
+	"""
+	if not profile:
+		return None
+	return profile.get("damaged_warehouse") or profile.default_warehouse
