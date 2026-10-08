@@ -90,6 +90,16 @@
 			<label class="field"><span>{{ _("PIN") }}</span>
 				<input id="c-pin" inputmode="numeric" maxlength="6"></label>
 		</div>
+		{#- A business buyer needs the bill against its GSTIN to claim the input
+		    credit. Fetch fills the rest in from the number, the same way the
+		    purchase screen does for a distributor. -#}
+		<div class="field-gstin">
+			<label class="field"><span>{{ _("GSTIN (for a business bill)") }}</span>
+				<input id="c-gstin" maxlength="15" autocapitalize="characters"
+				       spellcheck="false"></label>
+			<button class="btn btn-outline" id="c-fetch" type="button">{{ _("Fetch") }}</button>
+		</div>
+		<div class="modal-note" id="c-gstin-note"></div>
 		<div class="modal-actions">
 			<button class="btn btn-quiet" data-close>{{ _("Cancel") }}</button>
 			<button class="btn btn-primary" id="c-save">{{ _("Save customer") }}</button>

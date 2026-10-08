@@ -490,8 +490,9 @@ window.CUST = (function () {
 	function newCustomer() {
 		state.editing = null;
 		$("customer-modal-title").textContent = "New customer";
-		["c-mobile", "c-name", "c-email", "c-address", "c-city", "c-pin"]
+		["c-mobile", "c-name", "c-email", "c-address", "c-city", "c-pin", "c-gstin"]
 			.forEach((id) => { $(id).value = ""; });
+		$("c-gstin-note").textContent = "";
 		$("customer-modal").hidden = false;
 		$("c-mobile").focus();
 	}
@@ -503,8 +504,35 @@ window.CUST = (function () {
 		$("c-name").value = state.profile.customer_name || "";
 		$("c-email").value = state.profile.email || "";
 		$("c-address").value = "";
+		$("c-gstin").value = state.profile.gstin || "";
+		$("c-gstin-note").textContent = "";
 		$("customer-modal").hidden = false;
 		$("c-name").focus();
+	}
+
+	/** Fill the firm's details in from its GST number, as the purchase screen
+	 *  does for a distributor. Without the GST API subscription this still
+	 *  checks the number and reads the state out of it, and says so. */
+	async function fetchGstin() {
+		const gstin = $("c-gstin").value.trim().toUpperCase();
+		if (!gstin) return;
+		$("c-fetch").disabled = true;
+		$("c-gstin-note").textContent = "Checking…";
+		try {
+			const info = await A3.call("a3_retail.api.customer.gstin_info", { gstin });
+			if (info.customer_name && !$("c-name").value.trim())
+				$("c-name").value = info.customer_name;
+			if (info.address_line1) $("c-address").value = info.address_line1;
+			if (info.city) $("c-city").value = info.city;
+			if (info.state) $("c-state").value = info.state;
+			if (info.pincode) $("c-pin").value = info.pincode;
+			$("c-gstin-note").textContent = info.note
+				|| ("Found " + (info.customer_name || gstin) + " on the GST portal.");
+		} catch (error) {
+			$("c-gstin-note").textContent = error.message || "Could not check that number.";
+		} finally {
+			$("c-fetch").disabled = false;
+		}
 	}
 
 	async function saveCustomer() {
@@ -517,6 +545,7 @@ window.CUST = (function () {
 				city: $("c-city").value.trim(),
 				state: $("c-state").value.trim(),
 				pincode: $("c-pin").value.trim(),
+				gstin: $("c-gstin").value.trim().toUpperCase(),
 			});
 			$("customer-modal").hidden = true;
 			toast("Customer saved.", "ok");
@@ -565,6 +594,8 @@ window.CUST = (function () {
 		});
 
 		$("new-customer").addEventListener("click", newCustomer);
+		$("c-fetch").addEventListener("click", fetchGstin);
+		$("c-gstin").addEventListener("change", fetchGstin);
 		$("c-save").addEventListener("click", saveCustomer);
 		$("message-send").addEventListener("click", sendMessage);
 		$("note-save").addEventListener("click", saveNote);

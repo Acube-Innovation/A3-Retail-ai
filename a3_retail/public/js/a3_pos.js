@@ -781,6 +781,26 @@ window.POS = (function () {
 		$("cust-foot").hidden = !text;
 	}
 
+	/** Fill a firm's details in from its GST number, as the purchase screen does
+	 *  for a distributor. Without the GST API subscription this still checks the
+	 *  number and reads the state out of it, which is what sets place of supply. */
+	async function fetchGstin() {
+		const gstin = $("customer-gstin").value.trim().toUpperCase();
+		if (!gstin) return;
+		try {
+			const info = await A3.call("a3_retail.api.customer.gstin_info", { gstin });
+			if (info.customer_name && !$("customer-name").value.trim())
+				$("customer-name").value = info.customer_name;
+			if (info.address_line1) $("customer-address").value = info.address_line1;
+			if (info.city) $("customer-city").value = info.city;
+			if (info.state) $("customer-state").value = info.state;
+			if (info.pincode) $("customer-pin").value = info.pincode;
+			say(info.note || ("Found " + (info.customer_name || gstin) + "."), "ok");
+		} catch (error) {
+			say(error.message || "Could not check that number.", "error");
+		}
+	}
+
 	async function saveCustomer() {
 		const name = $("customer-name").value.trim();
 		if (!name) return say("The customer needs a name.", "error");
@@ -1285,6 +1305,9 @@ window.POS = (function () {
 		$("find-customer").addEventListener("click", findCustomer);
 		$("mobile").addEventListener("keydown", (e) => { if (e.key === "Enter") findCustomer(); });
 		$("save-customer").addEventListener("click", saveCustomer);
+		// Leaving the GSTIN box is the moment to check it, so a typo is caught
+		// before the bill rather than at the portal.
+		$("customer-gstin").addEventListener("change", fetchGstin);
 		$("new-customer").addEventListener("click", newCustomer);
 		$("cust-q").addEventListener("input", () => {
 			clearTimeout(custTimer);

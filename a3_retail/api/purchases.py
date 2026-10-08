@@ -67,63 +67,22 @@ def search_suppliers(query: str = "", limit: int = 10) -> list[dict]:
 
 @frappe.whitelist()
 def gstin_info(gstin: str) -> dict:
-	"""Look up a GSTIN so the counter does not retype the distributor's details.
+	"""Look a GSTIN up so the counter does not retype the distributor's details.
 
-	india_compliance's own endpoint refuses anyone without desk access, and branch
-	staff are Website Users by design — so this guards the caller itself and then
-	uses the internal helper.
-
-	The live lookup needs an India Compliance API subscription. Without one, the
-	number is still checked and the state read out of it, because the first two
-	digits *are* the state code. Say which of the two happened rather than
-	returning a half-filled form with no explanation.
+	india_compliance's own endpoint refuses anyone without desk access, and
+	branch staff are Website Users by design — so the caller is guarded here and
+	the lookup itself is shared with the customer screen, since a GST number
+	means the same thing on either side of the counter.
 	"""
 	_me()
 	require_permission("Supplier", "create")
 
-	gstin = (gstin or "").strip().upper()
-	if not gstin:
-		frappe.throw(_("Enter the GST number first."), title=_("GSTIN"))
+	from a3_retail.api.customer import gstin_details
 
-	from india_compliance.gst_india.constants import STATE_NUMBERS
-	from india_compliance.gst_india.utils import validate_gstin
-
-	# Raises with a plain message if the number or its check digit is wrong.
-	validate_gstin(gstin)
-
-	state = {number: name for name, number in STATE_NUMBERS.items()}.get(gstin[:2])
-	offline = {"gstin": gstin, "state": state, "source": "number"}
-
-	if not frappe.db.get_single_value("GST Settings", "api_secret"):
-		offline["note"] = _("Checked the number. Full details need the GST API, "
-		                    "which head office has not switched on yet.")
-		return offline
-
-	try:
-		from india_compliance.gst_india.utils.gstin_info import _get_gstin_info
-
-		info = _get_gstin_info(gstin, throw_error=False) or {}
-	except Exception:
-		frappe.clear_last_message()
-		info = {}
-
-	if not info.get("business_name"):
-		offline["note"] = _("Checked the number, but the GST portal did not answer. "
-		                    "Fill the rest in by hand.")
-		return offline
-
-	address = info.get("permanent_address") or {}
-	return {
-		"gstin": gstin,
-		"supplier_name": info.get("business_name"),
-		"gst_category": info.get("gst_category"),
-		"state": address.get("state") or state,
-		"address_line1": address.get("address_line1"),
-		"address_line2": address.get("address_line2"),
-		"city": address.get("city"),
-		"pincode": address.get("pincode"),
-		"source": "portal",
-	}
+	out = gstin_details(gstin)
+	if out.get("party_name"):
+		out["supplier_name"] = out["party_name"]
+	return out
 
 
 @frappe.whitelist()

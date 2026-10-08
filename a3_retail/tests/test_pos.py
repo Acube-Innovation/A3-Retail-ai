@@ -315,6 +315,53 @@ class TestCustomerAtTheCounter(FrappeTestCase):
 			                  customer_name="One Gstin Only Ltd",
 			                  gstin=self.GSTIN_KARNATAKA)
 
+	def test_a_gstin_lookup_reads_the_state_out_of_the_number(self):
+		"""The first two digits are the state code, so this much works whether or
+		not head office has paid for the GST portal API."""
+		from a3_retail.api import customer as customer_api
+
+		info = customer_api.gstin_info(self.GSTIN_KARNATAKA)
+		self.assertEqual(info["gstin"], self.GSTIN_KARNATAKA)
+		self.assertEqual(info["state"], "Karnataka")
+
+	def test_a_lookup_says_why_it_could_not_fill_the_rest_in(self):
+		"""Better than a half-filled form with no explanation."""
+		from a3_retail.api import customer as customer_api
+
+		info = customer_api.gstin_info(self.GSTIN)
+		self.assertTrue(info.get("party_name") or info.get("note"),
+		                "either the portal answered or it said why not")
+
+	def test_a_lookup_refuses_a_mistyped_number(self):
+		from a3_retail.api import customer as customer_api
+
+		with self.assertRaises(frappe.ValidationError):
+			customer_api.gstin_info("32AAAAA0000A1ZC")
+
+	def test_a_lookup_asks_for_a_number_before_checking_one(self):
+		from a3_retail.api import customer as customer_api
+
+		with self.assertRaises(frappe.ValidationError):
+			customer_api.gstin_info("")
+
+	def test_customer_and_supplier_lookups_agree(self):
+		"""One GST number, one answer — two copies of this would drift apart."""
+		from a3_retail.api import customer as customer_api
+		from a3_retail.api import purchases
+
+		mine = customer_api.gstin_info(self.GSTIN)
+		theirs = purchases.gstin_info(self.GSTIN)
+		for key in ("gstin", "state", "source"):
+			self.assertEqual(mine.get(key), theirs.get(key))
+
+	def test_the_profile_carries_the_gstin(self):
+		"""The edit form shows it back, so it must come down with the profile."""
+		from a3_retail.api import customer as customer_api
+
+		saved = pos.save_customer(mobile_no="9847019010",
+		                          customer_name="Profile Gstin Ltd", gstin=self.GSTIN)
+		self.assertEqual(customer_api.get_profile(saved["name"])["gstin"], self.GSTIN)
+
 	def test_the_counter_can_see_a_buyer_bills_as_a_business(self):
 		pos.save_customer(mobile_no="9847019009", customer_name="Visible Gstin Ltd",
 		                  gstin=self.GSTIN)

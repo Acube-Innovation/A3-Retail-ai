@@ -75,6 +75,73 @@ def gstin_state(gstin: str | None) -> str | None:
 	return {number: name for name, number in STATE_NUMBERS.items()}.get(gstin[:2])
 
 
+def gstin_details(gstin: str) -> dict:
+	"""Everything a GSTIN can tell us about the party it belongs to.
+
+	Shared by the customer and the supplier screens, because a GST number means
+	the same thing whichever side of the counter the party is on, and two copies
+	of this would drift apart.
+
+	The live portal lookup needs an India Compliance API subscription. Without
+	one the number is still checked and the state read out of it — the first two
+	digits *are* the state code — and `note` says which of the two happened, so
+	the screen never shows a half-filled form with no explanation.
+	"""
+	gstin = normalize_gstin(gstin)
+	if not gstin:
+		frappe.throw(_("Enter the GST number first."), title=_("GSTIN"))
+
+	validate_gstin(gstin)
+	out = {"gstin": gstin, "state": gstin_state(gstin), "source": "number"}
+
+	if not frappe.db.get_single_value("GST Settings", "api_secret"):
+		out["note"] = _("Checked the number. Full details need the GST API, "
+		                "which head office has not switched on yet.")
+		return out
+
+	try:
+		from india_compliance.gst_india.utils.gstin_info import _get_gstin_info
+
+		info = _get_gstin_info(gstin, throw_error=False) or {}
+	except Exception:
+		frappe.clear_last_message()
+		info = {}
+
+	if not info.get("business_name"):
+		out["note"] = _("Checked the number, but the GST portal did not answer. "
+		                "Fill the rest in by hand.")
+		return out
+
+	address = info.get("permanent_address") or {}
+	out.update({
+		"party_name": info.get("business_name"),
+		"gst_category": info.get("gst_category"),
+		"state": address.get("state") or out["state"],
+		"address_line1": address.get("address_line1"),
+		"address_line2": address.get("address_line2"),
+		"city": address.get("city"),
+		"pincode": address.get("pincode"),
+		"source": "portal",
+	})
+	return out
+
+
+@frappe.whitelist()
+def gstin_info(gstin: str) -> dict:
+	"""Look a buyer's GSTIN up so the counter does not retype their details.
+
+	India Compliance's own endpoint refuses anyone without desk access, and
+	branch staff are Website Users by design — so the caller is guarded here and
+	the shared lookup does the work.
+	"""
+	require_permission("Customer", "create")
+
+	out = gstin_details(gstin)
+	if out.get("party_name"):
+		out["customer_name"] = out["party_name"]
+	return out
+
+
 def validate_mobile(mobile_no: str) -> str:
 	mobile = normalize_mobile(mobile_no)
 	if not MOBILE_RE.match(mobile):
@@ -140,6 +207,9 @@ def get_profile(customer: str) -> dict:
 		"mobile_no": doc.a3_mobile_no,
 		"whatsapp_no": doc.a3_whatsapp_no,
 		"email": doc.get("email_id"),
+		# So a screen can tell a business buyer from a walk-in, and show the
+		# number back when their details are edited.
+		"gstin": doc.get("gstin"),
 		"customer_group": doc.customer_group,
 		"territory": doc.territory,
 		"source_branch": doc.a3_source_branch,
