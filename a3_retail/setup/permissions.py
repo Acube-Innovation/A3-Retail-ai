@@ -227,6 +227,19 @@ PERMISSION_MATRIX: dict[str, dict[str, str]] = {
 		"Reception Executive": "L",
 		"Store Keeper": "L",
 	},
+	# Select-only, for the same reason as Account. ERPNext 15.122 made
+	# `get_taxes_and_charges` and `get_default_taxes_and_charges` demand `select`
+	# on the tax master, and India Compliance calls them while it works out GST
+	# for the party — so simply putting a customer on a bill now touches these.
+	# Without it the counter is refused with a bare "Not permitted" and cannot
+	# hold or complete a sale at all.
+	#
+	# Granted to A3 Branch Staff rather than to the selling roles: it is the one
+	# role every portal user holds, and the technicians raising service bills
+	# have no selling role to hang it on. Nobody at a branch opens these
+	# templates — they only ever need to be referenced.
+	"Sales Taxes and Charges Template": {"A3 Branch Staff": "L"},
+	"Purchase Taxes and Charges Template": {"A3 Branch Staff": "L"},
 	# The counter captures the delivery address with the customer (scope 2.1).
 	"Address": {
 		"A3 Retail Admin": "CRUD",
