@@ -121,6 +121,36 @@
 </div>
 
 <!-- ------------------------------------------------------------- dialogs -->
+{#- Correcting an item from the shop floor. The code, unit and whether it is
+    serialised decide how existing stock is valued and counted, so they are
+    shown but not editable — changing them would rewrite history. -#}
+<div class="modal" id="item-modal" hidden>
+	<div class="modal-card">
+		<h3>{{ _("Edit item") }}</h3>
+		<p class="modal-note"><b id="item-code"></b> · <span id="item-fixed"></span></p>
+		<label class="field"><span>{{ _("Item name") }}</span><input id="item-name"></label>
+		<div class="field-grid">
+			<label class="field"><span>{{ _("Brand") }}</span><input id="item-brand"></label>
+			<label class="field"><span>{{ _("HSN code") }}</span>
+				<input id="item-hsn" inputmode="numeric" maxlength="8"></label>
+		</div>
+		<div class="field-grid">
+			<label class="field"><span>{{ _("Selling price") }}</span>
+				<input id="item-rate" inputmode="decimal"></label>
+			<label class="field"><span>{{ _("Barcode") }}</span><input id="item-barcode"></label>
+		</div>
+		<div class="modal-note" id="item-barcodes"></div>
+		<label class="check">
+			<input type="checkbox" id="item-disabled">
+			<span>{{ _("Stop selling this item") }}</span></label>
+		<div class="modal-note" id="item-note"></div>
+		<div class="modal-actions">
+			<button class="btn btn-quiet" data-close>{{ _("Cancel") }}</button>
+			<button class="btn btn-primary" id="item-save">{{ _("Save item") }}</button>
+		</div>
+	</div>
+</div>
+
 <div class="modal" id="work-modal" hidden>
 	<div class="modal-card modal-wide">
 		<h3 id="work-title"></h3>

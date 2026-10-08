@@ -735,6 +735,11 @@ window.POS = (function () {
 	}
 
 	// ------------------------------------------------------------ customer
+	/** The panel fields that a saved record fills, and that a new sale clears. */
+	const FILLED_FIELDS = ["customer-name", "customer-email", "customer-address",
+	                       "customer-city", "customer-state", "customer-pin",
+	                       "customer-gstin"];
+
 	async function findCustomer() {
 		const mobile = $("mobile").value.trim();
 		if (mobile.length !== 10) return say("Enter the ten-digit mobile number.", "error");
@@ -742,12 +747,34 @@ window.POS = (function () {
 		const found = await A3.call("a3_retail.api.pos.find_customer", { mobile_no: mobile });
 		if (found) return fillCustomer(found);
 
+		// Not on file. Take the new customer deliberately in one dialog rather
+		// than letting the counter type into a panel that looks like a record.
 		state.customer = null;
-		$("customer-name").value = "";
+		clearCustomerFields();
 		setChip("New customer", "warn");
 		$("customer-history").innerHTML = "";
-		say("New number — add the name and save.");
+		say("");
 		paintTotals();
+		openNewCustomer(mobile);
+	}
+
+	/** A saved customer is shown, not edited: the till is for billing, and a
+	 *  correction belongs in Customers where it is recorded against the record
+	 *  rather than typed over mid-sale. */
+	function lockCustomerFields(locked) {
+		FILLED_FIELDS.forEach((id) => {
+			const node = $(id);
+			node.readOnly = locked;
+			node.classList.toggle("is-locked", locked);
+		});
+		$("customer-gstin-fetch").disabled = locked;
+		$("cust-edit").hidden = !locked;
+	}
+
+	function clearCustomerFields() {
+		FILLED_FIELDS.forEach((id) => { $(id).value = ""; });
+		$("customer-note").textContent = "";
+		lockCustomerFields(false);
 	}
 
 	function fillCustomer(found) {
@@ -762,6 +789,9 @@ window.POS = (function () {
 		$("customer-pin").value = address.pincode || "";
 		$("customer-gstin").value = found.gstin || address.gstin || "";
 		setChip(found.gstin ? "Known business" : "Known customer", "good");
+		lockCustomerFields(true);
+		$("customer-note").textContent =
+			"On file — open Customers to change these details.";
 
 		const history = found.history || {};
 		$("customer-history").innerHTML =
@@ -780,6 +810,64 @@ window.POS = (function () {
 		chip.hidden = !text;
 		$("cust-foot").hidden = !text;
 	}
+
+	function openNewCustomer(mobile) {
+		["nc-name", "nc-email", "nc-address", "nc-city", "nc-pin", "nc-gstin"]
+			.forEach((id) => { $(id).value = ""; });
+		$("nc-mobile").value = mobile;
+		$("nc-note").textContent = "";
+		$("new-customer-modal").hidden = false;
+		$("nc-name").focus();
+	}
+
+	async function saveNewCustomer() {
+		const name = $("nc-name").value.trim();
+		if (!name) { $("nc-note").textContent = "The customer needs a name."; return; }
+		try {
+			const saved = await A3.call("a3_retail.api.pos.save_customer", {
+				mobile_no: $("nc-mobile").value.trim(),
+				customer_name: name,
+				email: $("nc-email").value.trim(),
+				address_line1: $("nc-address").value.trim(),
+				city: $("nc-city").value.trim(),
+				state: $("nc-state").value.trim(),
+				pincode: $("nc-pin").value.trim(),
+				gstin: $("nc-gstin").value.trim().toUpperCase(),
+			});
+			$("new-customer-modal").hidden = true;
+			fillCustomer(saved);
+			say(name + " added.", "ok");
+		} catch (error) {
+			$("nc-note").textContent = error.message || "Could not add that customer.";
+		}
+	}
+
+	/** Look the firm up from its GST number, into whichever form asked. */
+	async function gstinInto(gstinId, fields, noteId) {
+		const gstin = $(gstinId).value.trim().toUpperCase();
+		if (!gstin) return;
+		const note = noteId ? $(noteId) : null;
+		if (note) note.textContent = "Checking\u2026";
+		try {
+			const info = await A3.call("a3_retail.api.customer.gstin_info", { gstin });
+			if (info.customer_name && !$(fields.name).value.trim())
+				$(fields.name).value = info.customer_name;
+			if (info.address_line1) $(fields.address).value = info.address_line1;
+			if (info.city) $(fields.city).value = info.city;
+			if (info.state) $(fields.state).value = info.state;
+			if (info.pincode) $(fields.pin).value = info.pincode;
+			const message = info.note
+				|| ("Found " + (info.customer_name || gstin) + " on the GST portal.");
+			if (note) note.textContent = message; else say(message, "ok");
+		} catch (error) {
+			const message = error.message || "Could not check that number.";
+			if (note) note.textContent = message; else say(message, "error");
+		}
+	}
+
+	const POS_GSTIN_FIELDS = { name: "customer-name", address: "customer-address",
+	                           city: "customer-city", state: "customer-state",
+	                           pin: "customer-pin" };
 
 	async function saveCustomer() {
 		const name = $("customer-name").value.trim();
@@ -842,6 +930,8 @@ window.POS = (function () {
 		["mobile", "customer-name", "customer-email", "customer-address",
 		 "customer-city", "customer-pin", "customer-gstin"]
 			.forEach((id) => { $(id).value = ""; });
+		lockCustomerFields(false);
+		$("customer-note").textContent = "";
 		$("customer-history").innerHTML = "";
 		setChip("New customer", "warn");
 		$("mobile").focus();
@@ -1285,6 +1375,21 @@ window.POS = (function () {
 		$("find-customer").addEventListener("click", findCustomer);
 		$("mobile").addEventListener("keydown", (e) => { if (e.key === "Enter") findCustomer(); });
 		$("save-customer").addEventListener("click", saveCustomer);
+		// Leaving the GSTIN box is the moment to check it, so a typo is caught
+		// before the bill rather than at the portal; Fetch does the same on demand.
+		const posGstin = () => gstinInto("customer-gstin", POS_GSTIN_FIELDS, "customer-note");
+		$("customer-gstin").addEventListener("change", posGstin);
+		$("customer-gstin-fetch").addEventListener("click", posGstin);
+		$("cust-edit").addEventListener("click", () => {
+			window.open("/retail/customers?customer=" + encodeURIComponent(state.customer), "_blank");
+		});
+		$("nc-save").addEventListener("click", saveNewCustomer);
+		$("nc-fetch").addEventListener("click", () => gstinInto("nc-gstin", {
+			name: "nc-name", address: "nc-address", city: "nc-city",
+			state: "nc-state", pin: "nc-pin" }, "nc-note"));
+		$("nc-gstin").addEventListener("change", () => gstinInto("nc-gstin", {
+			name: "nc-name", address: "nc-address", city: "nc-city",
+			state: "nc-state", pin: "nc-pin" }, "nc-note"));
 		$("new-customer").addEventListener("click", newCustomer);
 		$("cust-q").addEventListener("input", () => {
 			clearTimeout(custTimer);

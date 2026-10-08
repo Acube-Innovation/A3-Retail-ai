@@ -52,7 +52,7 @@
 			<table class="bill-table">
 				<thead><tr>
 					<th>Bill</th><th>Supplier</th><th>Date</th><th>Lines</th>
-					<th>Total</th><th>Owed</th><th>Status</th>
+					<th>Total</th><th>Owed</th><th>Status</th><th></th>
 				</tr></thead>
 				<tbody>${rows.map((r) => `
 					<tr>
@@ -63,9 +63,21 @@
 						<td>${money(r.grand_total)}</td>
 						<td>${r.outstanding_amount > 0 ? money(r.outstanding_amount) : "—"}</td>
 						<td><span class="pill">${esc(r.docstatus === 0 ? "Draft" : r.status)}</span></td>
+						<td>${r.outstanding_amount > 0 && r.docstatus === 1
+							? `<button class="btn btn-outline btn-sm pay-bill"
+							           data-supplier="${esc(r.supplier)}">Pay</button>` : ""}</td>
 					</tr>`).join("")}
 				</tbody>
 			</table>`;
+
+		$("rows").querySelectorAll(".pay-bill").forEach((node) => {
+			node.addEventListener("click", () => {
+				// Settled against the distributor rather than the single bill: one
+				// payment usually closes several, and that screen allocates them.
+				window.location.href = "/retail/suppliers?supplier="
+					+ encodeURIComponent(node.dataset.supplier) + "&pay=1";
+			});
+		});
 	}
 
 	async function start(options) {
