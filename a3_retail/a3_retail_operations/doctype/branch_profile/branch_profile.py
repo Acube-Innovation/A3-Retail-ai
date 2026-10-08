@@ -12,11 +12,13 @@ from frappe import _
 from frappe.model.document import Document
 from frappe.utils import get_time
 
+# One warehouse per branch, named after the branch. The shop counts its stock in
+# one place per shop, so a second warehouse for the bench or for damaged goods
+# was a shelf nobody ever put anything on — every one of them stood empty, while
+# cluttering every warehouse picker in the app. The service and damage flows fall
+# back to this one and skip the transfer that used to move stock between them.
 WAREHOUSE_SUFFIXES = {
-	"default_warehouse": "Store",
-	"service_warehouse": "Service Bay",
-	"damaged_warehouse": "Damaged",
-	"used_device_warehouse": "Used Devices",
+	"default_warehouse": "",
 }
 
 # Branch types that do not repair devices do not need a service bay.
@@ -100,7 +102,7 @@ class BranchProfile(Document):
 
 	# --------------------------------------------------------------- automation
 	def create_branch_warehouses(self):
-		"""Create the four branch warehouses that were left blank (scope 1.1)."""
+		"""Create the branch's warehouse if it was left blank (scope 1.1)."""
 		parent = get_or_create_branch_group(self.company)
 		abbr = frappe.get_cached_value("Company", self.company, "abbr")
 
@@ -110,7 +112,7 @@ class BranchProfile(Document):
 			if fieldname == "service_warehouse" and self.branch_type not in SERVICE_TYPES:
 				continue
 
-			warehouse_name = f"{self.branch} {suffix}"
+			warehouse_name = f"{self.branch} {suffix}".strip()
 			full_name = f"{warehouse_name} - {abbr}"
 			if not frappe.db.exists("Warehouse", full_name):
 				warehouse = frappe.new_doc("Warehouse")

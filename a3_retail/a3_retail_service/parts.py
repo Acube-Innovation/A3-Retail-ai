@@ -110,7 +110,7 @@ def _raise_stock_request(doc, row, profile, source_branch: str, qty: float) -> d
 
 	request = frappe.new_doc("Stock Request")
 	request.requesting_branch = doc.branch
-	request.requesting_warehouse = profile.service_warehouse
+	request.requesting_warehouse = _bench(profile)
 	request.source_branch = source_branch
 	# Leave source_warehouse blank: Stock Request picks the branch warehouse that
 	# actually holds the part (a spare lives in the Service Bay, not the store).
@@ -143,7 +143,7 @@ def _raise_material_request(doc, row, profile, qty: float, purpose: str = "Purch
 		{
 			"item_code": row.item_code,
 			"qty": qty,
-			"warehouse": profile.service_warehouse,
+			"warehouse": _bench(profile),
 			"schedule_date": add_days(nowdate(), 3),
 		},
 	)
@@ -174,6 +174,13 @@ def _move_to_awaiting_parts(doc):
 # ---------------------------------------------------------------------------
 # Issuing and returning
 # ---------------------------------------------------------------------------
+def _bench(profile) -> str:
+	"""Where a technician works out of. A branch with one warehouse works out of
+	that one, so this falls back rather than returning nothing."""
+	return profile.get("service_warehouse") or profile.default_warehouse
+
+
+
 @frappe.whitelist()
 def issue_parts(job_card: str) -> dict:
 	"""Move required parts from the branch store into the Service Bay."""
@@ -190,6 +197,18 @@ def issue_parts(job_card: str) -> dict:
 	if not pending:
 		return {"issued": 0, "message": _("Nothing to issue.")}
 
+	# A branch that keeps one warehouse has no separate bench to move the part
+	# to: it is already where the technician picks it up. The part is marked
+	# issued so the job card still tracks it, but no stock moves, because a
+	# transfer from a warehouse to itself is not a movement and ERPNext is right
+	# to refuse one.
+	bench = _bench(profile)
+	if bench == profile.default_warehouse:
+		for row in pending:
+			row.db_set("part_status", "Issued", update_modified=False)
+		resume_if_parts_ready(doc.name)
+		return {"issued": len(pending), "stock_entry": None}
+
 	entry = frappe.new_doc("Stock Entry")
 	entry.stock_entry_type = "Material Transfer"
 	entry.purpose = "Material Transfer"
@@ -197,7 +216,7 @@ def issue_parts(job_card: str) -> dict:
 	entry.posting_date = getdate(nowdate())
 	entry.branch = doc.branch
 	entry.from_warehouse = profile.default_warehouse
-	entry.to_warehouse = profile.service_warehouse
+	entry.to_warehouse = bench
 
 	for row in pending:
 		entry.append(
@@ -206,7 +225,7 @@ def issue_parts(job_card: str) -> dict:
 				"item_code": row.item_code,
 				"qty": flt(row.qty),
 				"s_warehouse": profile.default_warehouse,
-				"t_warehouse": profile.service_warehouse,
+				"t_warehouse": bench,
 				"serial_no": row.serial_no,
 			},
 		)
@@ -241,13 +260,20 @@ def return_unused_parts(job_card: str, row_names: list | str | None = None) -> d
 	if not rows:
 		return {"returned": 0}
 
+	# Nothing moved on the way out, so nothing moves on the way back.
+	bench = _bench(profile)
+	if bench == profile.default_warehouse:
+		for row in rows:
+			row.db_set("part_status", "Returned", update_modified=False)
+		return {"returned": len(rows), "stock_entry": None}
+
 	entry = frappe.new_doc("Stock Entry")
 	entry.stock_entry_type = "Material Transfer"
 	entry.purpose = "Material Transfer"
 	entry.company = doc.company
 	entry.posting_date = getdate(nowdate())
 	entry.branch = doc.branch
-	entry.from_warehouse = profile.service_warehouse
+	entry.from_warehouse = bench
 	entry.to_warehouse = profile.default_warehouse
 
 	for row in rows:
@@ -256,7 +282,7 @@ def return_unused_parts(job_card: str, row_names: list | str | None = None) -> d
 			{
 				"item_code": row.item_code,
 				"qty": flt(row.qty),
-				"s_warehouse": profile.service_warehouse,
+				"s_warehouse": bench,
 				"t_warehouse": profile.default_warehouse,
 				"serial_no": row.serial_no,
 			},
