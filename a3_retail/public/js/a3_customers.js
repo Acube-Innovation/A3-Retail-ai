@@ -622,6 +622,11 @@ window.CUST = (function () {
 		});
 
 		await loadList(1);
+
+		// The till links straight to a record when the counter wants to correct
+		// something it will not let them type over mid-sale.
+		const wanted = new URLSearchParams(window.location.search).get("customer");
+		if (wanted) await open(wanted);
 	}
 
 	return { start, state };

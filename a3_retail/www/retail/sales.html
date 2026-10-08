@@ -55,6 +55,10 @@
 						</div>
 						<button class="btn btn-find" id="find-customer">{{ _("Find") }}</button>
 						<span class="chip" id="customer-chip" hidden></span>
+						{#- A saved record is corrected in Customers, where the change is
+						    recorded against it, not typed over during a sale. -#}
+						<button class="btn btn-quiet btn-sm" id="cust-edit" type="button"
+						        hidden>{{ _("Edit") }}</button>
 					</div>
 
 					<div class="pos-cust-grid">
@@ -66,11 +70,17 @@
 						       value="{{ profile.state or '' }}">
 						<input id="customer-pin" inputmode="numeric" maxlength="6" placeholder="{{ _('PIN') }}">
 						{#- A business buyer wants the bill in the firm's name, against
-						    its GSTIN, so it can claim the input credit. -#}
-						<input id="customer-gstin" maxlength="15" autocapitalize="characters"
-						       spellcheck="false" class="pos-gstin"
-						       placeholder="{{ _('GSTIN (for a business bill)') }}">
+						    its GSTIN, so it can claim the input credit. Fetch fills the
+						    rest in from the number, as the purchase screen does. -#}
+						<div class="pos-gstin-row">
+							<input id="customer-gstin" maxlength="15" autocapitalize="characters"
+							       spellcheck="false"
+							       placeholder="{{ _('GSTIN (for a business bill)') }}">
+							<button class="btn btn-outline" id="customer-gstin-fetch"
+							        type="button">{{ _("Fetch") }}</button>
+						</div>
 					</div>
+					<div class="pos-cust-note" id="customer-note"></div>
 
 					<div class="pos-cust-foot" id="cust-foot" hidden>
 						<button class="btn btn-outline" id="save-customer">{{ _("Save customer") }}</button>
@@ -277,6 +287,42 @@
 </div>
 
 <!-- ------------------------------------------------------------- dialogs -->
+{#- A number the shop has not seen before. Rather than letting the counter type
+    into a panel that looks like an existing record, the new customer is taken
+    deliberately, in one place, and the panel then shows them read-only. -#}
+<div class="modal" id="new-customer-modal" hidden>
+	<div class="modal-card">
+		<h3>{{ _("New customer") }}</h3>
+		<p class="modal-note">{{ _("This number is not on file. A name is all it takes; the rest can wait.") }}</p>
+		<label class="field"><span>{{ _("Mobile number") }}</span>
+			<input id="nc-mobile" inputmode="numeric" maxlength="10" readonly></label>
+		<div class="field-grid">
+			<label class="field"><span>{{ _("Customer name") }}</span><input id="nc-name"></label>
+			<label class="field"><span>{{ _("Email (optional)") }}</span>
+				<input id="nc-email" type="email"></label>
+		</div>
+		<label class="field"><span>{{ _("Address") }}</span><input id="nc-address"></label>
+		<div class="field-grid three">
+			<label class="field"><span>{{ _("City") }}</span><input id="nc-city"></label>
+			<label class="field"><span>{{ _("State") }}</span>
+				<input id="nc-state" value="{{ profile.state or '' }}"></label>
+			<label class="field"><span>{{ _("PIN") }}</span>
+				<input id="nc-pin" inputmode="numeric" maxlength="6"></label>
+		</div>
+		<div class="field-gstin">
+			<label class="field"><span>{{ _("GSTIN (for a business bill)") }}</span>
+				<input id="nc-gstin" maxlength="15" autocapitalize="characters"
+				       spellcheck="false"></label>
+			<button class="btn btn-outline" id="nc-fetch" type="button">{{ _("Fetch") }}</button>
+		</div>
+		<div class="modal-note" id="nc-note"></div>
+		<div class="modal-actions">
+			<button class="btn btn-quiet" data-close>{{ _("Cancel") }}</button>
+			<button class="btn btn-primary" id="nc-save">{{ _("Add customer") }}</button>
+		</div>
+	</div>
+</div>
+
 <div class="modal" id="serial-modal" hidden>
 	<div class="modal-card">
 		<h3 id="serial-title">{{ _("Pick the IMEI") }}</h3>

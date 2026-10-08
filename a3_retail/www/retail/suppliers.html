@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="csrf-token" content="{{ csrf_token }}">
+	<meta name="robots" content="noindex">
+	<title>{{ _("Suppliers") }} · {{ me.branch }} · {{ app_name }}</title>
+	<link rel="stylesheet" href="/assets/a3_retail/css/a3_branch.css?v={{ asset_v }}">
+	<script src="/assets/a3_retail/js/a3_branch.js?v={{ asset_v }}" defer></script>
+	<script src="/assets/a3_retail/js/a3_suppliers.js?v={{ asset_v }}" defer></script>
+</head>
+<body class="pos-body">
+<div class="app">
+
+	{% include "a3_retail/www/retail/_sidebar.html" %}
+
+	<div class="main">
+		<header class="topbar">
+			<div class="topbar-branch topbar-title">
+				<h1>{{ _("Supplier Management") }}</h1>
+				<p class="topbar-sub">{{ _("Distributors, their bills, what has been paid and what is owed") }}</p>
+			</div>
+			<div class="topbar-right">
+				<button class="btn btn-primary btn-new" id="new-supplier">
+					+ {{ _("New Supplier") }}</button>
+				<a class="btn btn-quiet" href="/retail/purchases">{{ _("Purchases") }}</a>
+				<a class="btn btn-quiet" href="/retail/dashboard">{{ _("Dashboard") }}</a>
+				<div class="who">
+					<div class="name">{{ me.employee_name }}</div>
+					<div class="role">{{ me.designation or "" }}</div>
+				</div>
+				<div class="avatar">{{ initials }}</div>
+				<a class="btn btn-quiet" href="/retail/logout">{{ _("Sign out") }}</a>
+			</div>
+		</header>
+
+		<main class="cust">
+			<!-- ================================================ the list -->
+			<aside class="cust-list svc-panel">
+				<h2>{{ _("Suppliers") }} (<span id="count">0</span>)</h2>
+				<div class="cust-search">
+					<div class="pos-search-box">
+						<input id="q" autocomplete="off"
+						       placeholder="{{ _('Search by name, GSTIN or phone…') }}">
+					</div>
+					<button class="icon-btn plain" id="owing" title="{{ _('Only those owed money') }}">
+						{% set icon = "filter" %}{% include "a3_retail/www/retail/_icons.html" %}
+					</button>
+				</div>
+
+				<ul class="cust-rows" id="rows"></ul>
+
+				<div class="cust-pager">
+					<span id="showing"></span>
+					<div class="pager" id="pager"></div>
+				</div>
+			</aside>
+
+			<!-- ============================================ the supplier -->
+			<section class="cust-detail" id="detail">
+				<div class="cust-empty">{{ _("Pick a supplier from the list.") }}</div>
+			</section>
+		</main>
+	</div>
+</div>
+
+<!-- ------------------------------------------------------------- dialogs -->
+<div class="modal" id="supplier-modal" hidden>
+	<div class="modal-card">
+		<h3 id="supplier-modal-title">{{ _("New supplier") }}</h3>
+		<p class="modal-note">{{ _("A name is all it takes; the GSTIN fills the rest in.") }}</p>
+		<div class="field-grid">
+			<label class="field"><span>{{ _("Supplier name") }}</span><input id="s-name"></label>
+			<label class="field"><span>{{ _("Phone") }}</span>
+				<input id="s-phone" inputmode="numeric" maxlength="10"></label>
+		</div>
+		<label class="field"><span>{{ _("Email (optional)") }}</span>
+			<input id="s-email" type="email"></label>
+		<label class="field"><span>{{ _("Address") }}</span><input id="s-address"></label>
+		<div class="field-grid three">
+			<label class="field"><span>{{ _("City") }}</span><input id="s-city"></label>
+			<label class="field"><span>{{ _("State") }}</span>
+				<input id="s-state" value="{{ profile.state or '' }}"></label>
+			<label class="field"><span>{{ _("PIN") }}</span>
+				<input id="s-pin" inputmode="numeric" maxlength="6"></label>
+		</div>
+		{#- A purchase filed under a wrong GSTIN is as much trouble as a sale, so
+		    the number is checked here and the state read out of it. -#}
+		<div class="field-gstin">
+			<label class="field"><span>{{ _("GSTIN") }}</span>
+				<input id="s-gstin" maxlength="15" autocapitalize="characters"
+				       spellcheck="false"></label>
+			<button class="btn btn-outline" id="s-fetch" type="button">{{ _("Fetch") }}</button>
+		</div>
+		<div class="modal-note" id="s-note"></div>
+		<div class="modal-actions">
+			<button class="btn btn-quiet" data-close>{{ _("Cancel") }}</button>
+			<button class="btn btn-primary" id="s-save">{{ _("Save supplier") }}</button>
+		</div>
+	</div>
+</div>
+
+{#- Money going out, against the bills it settles. The allocation is shown line
+    by line so the ledger ends up saying which invoice each rupee closed, rather
+    than leaving a loose credit on the account. -#}
+<div class="modal" id="pay-modal" hidden>
+	<div class="modal-card modal-wide">
+		<h3>{{ _("Pay supplier") }}</h3>
+		<p class="modal-note" id="pay-to"></p>
+		<div class="field-grid three">
+			<label class="field"><span>{{ _("Amount") }}</span>
+				<input id="pay-amount" inputmode="decimal"></label>
+			<label class="field"><span>{{ _("Paid by") }}</span>
+				<select id="pay-mode">
+					{% for mode in payment_modes %}<option>{{ mode }}</option>{% endfor %}
+				</select></label>
+			<label class="field"><span>{{ _("Reference (optional)") }}</span>
+				<input id="pay-ref"></label>
+		</div>
+		<div class="pay-head">
+			<span>{{ _("Settle these bills") }}</span>
+			<button class="btn btn-quiet btn-sm" id="pay-auto" type="button">
+				{{ _("Allocate oldest first") }}</button>
+		</div>
+		<ul class="pay-rows" id="pay-rows"></ul>
+		<div class="pay-foot">
+			<span id="pay-summary"></span>
+		</div>
+		<div class="modal-note" id="pay-note"></div>
+		<div class="modal-actions">
+			<button class="btn btn-quiet" data-close>{{ _("Cancel") }}</button>
+			<button class="btn btn-primary" id="pay-save">{{ _("Record payment") }}</button>
+		</div>
+	</div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+</body>
+</html>

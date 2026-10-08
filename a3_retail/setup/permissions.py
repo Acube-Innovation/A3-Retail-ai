@@ -206,11 +206,14 @@ PERMISSION_MATRIX: dict[str, dict[str, str]] = {
 	# purchase cannot be recorded without an Item. The screens only offer "add
 	# new" after a search has come back empty, which is the guard against the same
 	# charger appearing under four names.
+	# Same reasoning: a branch that can add an item can correct its name, HSN or
+	# barcode. The Store Keeper already could, and the mismatch meant a typo had
+	# to go to head office.
 	"Item": {
 		"A3 Retail Admin": "CRUD",
-		"Branch Manager": "CR",
-		"Service Manager": "CR",
-		"Sales Executive": "CR",
+		"Branch Manager": "CRU",
+		"Service Manager": "CRU",
+		"Sales Executive": "CRU",
 		"Reception Executive": "R",
 		"Technician": "R",
 		"Store Keeper": "CRU",
@@ -465,11 +468,14 @@ PERMISSION_MATRIX: dict[str, dict[str, str]] = {
 		"Accounts Executive": "CRU",
 		"Auditor": "R",
 	},
+	# Write, because a distributor's details are corrected by whoever is standing
+	# in front of them — a wrong GSTIN on a supplier is a wrong purchase return.
+	# The roles that may add one may fix one.
 	"Supplier": {
 		"A3 Retail Admin": "CRUD",
-		"Branch Manager": "CR",
-		"Store Keeper": "CR",
-		"Sales Executive": "CR",
+		"Branch Manager": "CRU",
+		"Store Keeper": "CRU",
+		"Sales Executive": "CRU",
 		"Accounts Manager": "CRUD",
 		"Accounts Executive": "CRU",
 		"Auditor": "R",

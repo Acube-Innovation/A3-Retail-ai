@@ -152,6 +152,7 @@ window.STOCK = (function () {
 						row.branches ? row.branches + " branches" : "Only here"}</button></td>
 					<td class="bill-actions">
 						<button class="btn btn-outline btn-sm" data-ask="${index}">Request</button>
+						<button class="btn btn-quiet btn-sm" data-edit="${index}">Edit</button>
 					</td>
 				</tr>`).join("")}</tbody>
 		</table>`;
@@ -165,6 +166,57 @@ window.STOCK = (function () {
 		$("stock-wrap").querySelectorAll("[data-ask]").forEach((node) => {
 			node.addEventListener("click", () => openRequest(state.rows[Number(node.dataset.ask)]));
 		});
+		$("stock-wrap").querySelectorAll("[data-edit]").forEach((node) => {
+			node.addEventListener("click", () => openItem(state.rows[Number(node.dataset.edit)]));
+		});
+	}
+
+	/** Correct an item from the shop floor. A typo in a name, a missing HSN or a
+	 *  barcode that never got scanned in are all things the branch finds and head
+	 *  office does not. What decides how existing stock is valued or counted —
+	 *  the code, the unit, whether it is serialised — is shown but not editable. */
+	async function openItem(row) {
+		const details = await A3.call("a3_retail.api.stock.item_details",
+		                              { item_code: row.item_code });
+		state.editing = details.item_code;
+		$("item-code").textContent = details.item_code;
+		$("item-fixed").textContent = details.stock_uom
+			+ (details.has_serial_no ? " · serialised, moves by IMEI" : "");
+		$("item-name").value = details.item_name || "";
+		$("item-brand").value = details.brand || "";
+		$("item-hsn").value = details.gst_hsn_code || "";
+		$("item-rate").value = details.selling_rate || "";
+		$("item-barcode").value = (details.barcodes || [])[0] || "";
+		$("item-barcodes").textContent = (details.barcodes || []).length > 1
+			? "also scans as " + details.barcodes.slice(1).join(", ") : "";
+		$("item-disabled").checked = !!details.disabled;
+		$("item-note").textContent = "";
+		$("item-modal").hidden = false;
+		$("item-name").focus();
+	}
+
+	async function saveItem() {
+		const name = $("item-name").value.trim();
+		if (!name) { $("item-note").textContent = "The item needs a name."; return; }
+		$("item-save").disabled = true;
+		try {
+			await A3.call("a3_retail.api.stock.save_item", {
+				item_code: state.editing,
+				item_name: name,
+				brand: $("item-brand").value.trim(),
+				gst_hsn_code: $("item-hsn").value.trim(),
+				barcode: $("item-barcode").value.trim(),
+				selling_rate: $("item-rate").value.trim(),
+				disabled: $("item-disabled").checked ? 1 : 0,
+			});
+			$("item-modal").hidden = true;
+			toast(name + " saved.", "ok");
+			await loadStock(state.page || 1);
+		} catch (error) {
+			$("item-note").textContent = error.message || "Could not save that item.";
+		} finally {
+			$("item-save").disabled = false;
+		}
 	}
 
 	function paintPager(data) {
@@ -962,6 +1014,7 @@ window.STOCK = (function () {
 		});
 		$("refresh").addEventListener("click", () => { loadAll(); toast("Refreshed."); });
 
+		$("item-save").addEventListener("click", saveItem);
 		document.querySelectorAll("[data-close]").forEach((node) => {
 			node.addEventListener("click", () => { node.closest(".modal").hidden = true; });
 		});
