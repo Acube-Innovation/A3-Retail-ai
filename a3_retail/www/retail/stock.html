@@ -40,11 +40,11 @@
 		<main class="stk">
 			<!-- ------------------------------------------- what you can do -->
 			<section class="stk-actions">
-				<button class="btn btn-primary" data-do="request">+ {{ _("Request Stock") }}</button>
-				<button class="btn btn-purple" data-do="procure">+ {{ _("Request Procurement") }}</button>
-				<button class="btn btn-orange" data-do="move">{{ _("Move Stock") }}</button>
+				<button class="btn btn-primary" data-do="request" hidden>+ {{ _("Request Stock") }}</button>
+				<button class="btn btn-purple" data-do="procure" hidden>+ {{ _("Request Procurement") }}</button>
+				<button class="btn btn-orange" data-do="move" hidden>{{ _("Move Stock") }}</button>
 				<button class="btn btn-save" data-do="receive">{{ _("Receive Stock") }}</button>
-				<button class="btn btn-quiet" data-do="adjust">{{ _("Stock Adjustment") }}</button>
+				<button class="btn btn-quiet" data-do="adjust" hidden>{{ _("Stock Adjustment") }}</button>
 				<!-- Shown only to roles that hold Create on Item; the item master is
 				     shared by every branch. -->
 				<button class="btn btn-quiet" data-do="new-item" id="btn-new-item" hidden>

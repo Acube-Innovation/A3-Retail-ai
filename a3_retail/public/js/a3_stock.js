@@ -674,8 +674,14 @@ window.STOCK = (function () {
 				timer = setTimeout(() => suggest(i, n.value.trim()), 200);
 			});
 			// Leaving the box is the moment to find out whether this one is a
-			// handset, and if it is, which handsets are on that shelf.
-			n.addEventListener("change", () => loadSerials(Number(n.dataset.i)));
+			// handset, and if it is, which handsets are on that shelf — but only
+			// when the item has actually changed. Repainting every line on every
+			// blur is what used to wipe the suggestion the cursor was heading
+			// for.
+			n.addEventListener("change", () => {
+				const i = Number(n.dataset.i);
+				if (workLines[i].item_code !== workLines[i].loaded_for) loadSerials(i);
+			});
 		});
 		host.querySelectorAll(".w-num").forEach((n) => n.addEventListener("input", () => {
 			workLines[Number(n.dataset.i)].qty = Number(n.value) || 0;
@@ -684,6 +690,13 @@ window.STOCK = (function () {
 			workLines.splice(Number(n.dataset.i), 1);
 			paintLines();
 		}));
+		// The gun sends the digits then Enter, so this runs once per handset.
+		host.querySelectorAll(".w-scan").forEach((n) => n.addEventListener("keydown", (event) => {
+			if (event.key !== "Enter") return;
+			event.preventDefault();
+			scanSerial(Number(n.dataset.i), n.value);
+			n.value = "";
+		}));
 		host.querySelectorAll(".w-imei").forEach((n) => n.addEventListener("change", () => {
 			const line = workLines[Number(n.dataset.i)];
 			const imei = n.value;
@@ -691,7 +704,7 @@ window.STOCK = (function () {
 			else line.picked = line.picked.filter((s) => s !== imei);
 			line.qty = line.picked.length;
 			const count = host.querySelector(`.w-imei-count[data-i="${n.dataset.i}"]`);
-			if (count) count.textContent = line.picked.length + " of " + line.serials.length;
+			if (count) count.textContent = line.picked.length + "/" + line.serials.length;
 			const qty = host.querySelector(`.w-num[data-i="${n.dataset.i}"]`);
 			if (qty) qty.value = line.qty || "";
 		}));
@@ -738,8 +751,15 @@ window.STOCK = (function () {
 				<span>${esc(r.item_name)}${r.has_serial ? " <small>IMEI</small>" : ""}</span>
 				<b>${qty(r.available)} ${esc(r.stock_uom || "")}</b>
 			</button>`).join("");
+		// `mousedown`, not `click`, and the default suppressed with it. Clicking
+		// one of these takes focus off the box above, which fires its `change`
+		// and repaints the lines — and the repaint replaced this button before
+		// the click could land on it. The pick silently did nothing and the
+		// typed text stayed behind, so the move was attempted against whatever
+		// had been half-typed.
 		box.querySelectorAll(".w-hit").forEach((node) => {
-			node.addEventListener("click", () => {
+			node.addEventListener("mousedown", (event) => {
+				event.preventDefault();
 				box.innerHTML = "";
 				pick(node.dataset.code);
 			});
@@ -753,14 +773,65 @@ window.STOCK = (function () {
 		if (!line.serials.length) {
 			return `<p class="muted w-imei-none">No IMEIs of that item in this warehouse.</p>`;
 		}
+		// Scanned rather than hunted for. A shelf can hold forty of the same
+		// handset, and finding one number in that list by eye is slower than
+		// reading the box — so the gun goes to the top, as it does on a
+		// purchase, and the list below is there to check the tally and to
+		// correct a mis-scan.
 		return `<div class="w-imei-box">
-			<div class="w-imei-head">Pick the handsets
-				<b class="w-imei-count" data-i="${index}">${line.picked.length} of ${line.serials.length}</b></div>
+			<div class="imei-scan-row">
+				<span class="scan-glyph" aria-hidden="true"></span>
+				<input class="w-scan" data-i="${index}" autocomplete="off" inputmode="numeric"
+				       placeholder="Scan the IMEI on the box, or type it and press Enter">
+				<span class="imei-tally w-imei-count" data-i="${index}"
+				      >${line.picked.length}/${line.serials.length}</span>
+			</div>
+			<div class="imei-flash w-flash" data-i="${index}" hidden></div>
+			<div class="w-imei-head">On this shelf
+				<b>${line.picked.length ? line.picked.length + " going" : "none picked yet"}</b></div>
 			<ul class="imei-list">${line.serials.map((imei) => `
 				<li><label><input type="checkbox" class="w-imei" data-i="${index}"
 				        value="${esc(imei)}" ${line.picked.includes(imei) ? "checked" : ""}>
 					<span>${esc(imei)}</span></label></li>`).join("")}</ul>
 		</div>`;
+	}
+
+	/** One scan, against the handsets actually on the shelf being emptied. */
+	function scanSerial(index, raw) {
+		const line = workLines[index];
+		const imei = (raw || "").trim();
+		if (!line || !line.serials || !imei) return;
+		const flash = (text, kind) => {
+			const node = $("w-lines").querySelector(`.w-flash[data-i="${index}"]`);
+			if (!node) return;
+			node.textContent = text;
+			node.className = "imei-flash w-flash" + (kind ? " " + kind : "");
+			node.hidden = !text;
+		};
+		// Matched loosely, because a scanner reads the whole label and a person
+		// types the digits — but only against this shelf, so a handset that has
+		// already gone cannot be sent twice.
+		const found = line.serials.find(
+			(s) => s === imei || s.replace(/\s/g, "") === imei.replace(/\s/g, ""));
+		if (!found) {
+			flash(`${imei} is not on this shelf.`, "warn");
+			return;
+		}
+		if (line.picked.includes(found)) {
+			flash(`${found} is already going.`, "warn");
+			return;
+		}
+		line.picked.push(found);
+		line.qty = line.picked.length;
+		flash(`${found} added`, "ok");
+		const host = $("w-lines");
+		const box = host.querySelector(
+			`.w-imei[data-i="${index}"][value="${found.replace(/"/g, "&quot;")}"]`);
+		if (box) box.checked = true;
+		const tally = host.querySelector(`.w-imei-count[data-i="${index}"]`);
+		if (tally) tally.textContent = `${line.picked.length}/${line.serials.length}`;
+		const qty = host.querySelector(`.w-num[data-i="${index}"]`);
+		if (qty) qty.value = line.qty || "";
 	}
 
 	async function loadSerials(index) {
@@ -778,8 +849,15 @@ window.STOCK = (function () {
 		// plain quantity box is the right thing to leave in place.
 		line.serials = rows.length ? rows.map((r) => r.serial_no || r.name) : null;
 		line.picked = [];
+		line.loaded_for = line.item_code;
 		if (line.serials) line.qty = 0;
 		paintLines();
+		// Straight on to the next thing the person has to do: the number on the
+		// box if this is a handset, otherwise how many are going.
+		const host = $("w-lines");
+		const next = host && host.querySelector(
+			line.serials ? `.w-scan[data-i="${index}"]` : `.w-num[data-i="${index}"]`);
+		if (next) next.focus();
 	}
 
 	function startLines(row) {
@@ -838,6 +916,17 @@ window.STOCK = (function () {
 				loadKpis();
 				loadSide();
 			});
+
+		// The list is every warehouse in the chain, in branch order, so without
+		// this it opened on whichever branch sorts first — and the item search,
+		// which only offers what is actually on the shelf it is pointed at,
+		// then found nothing for stock the counter can see in front of them.
+		// Stock moves out of your own shop far more often than into it.
+		const mine = (state.boot.warehouses || [])[0];
+		if (mine) $("w-source").value = mine;
+		const elsewhere = (state.network || []).find(
+			(w) => w.warehouse !== $("w-source").value);
+		if (elsewhere) $("w-target").value = elsewhere.warehouse;
 	}
 
 	function openAdjust() {
@@ -1087,9 +1176,20 @@ window.STOCK = (function () {
 		$("warehouse").innerHTML += state.boot.warehouses.map((warehouse) =>
 			`<option value="${esc(warehouse)}">${esc(warehouse)}</option>`).join("");
 
-		// Adding to the shared item master is not every counter's job, so the
-		// button only appears for whoever the permission matrix allows.
-		$("btn-new-item").hidden = !(state.boot.can && state.boot.can.create_item);
+		// Not every counter does every one of these, and the matrix in
+		// `setup/permissions.py` decides which. A button that is going to be
+		// refused is worse than no button: it is offered, the dialog is filled
+		// in, and the refusal lands after the work — so each one is shown only
+		// to whoever can actually finish it.
+		const can = state.boot.can || {};
+		const ALLOWED = {
+			"new-item": "create_item", "request": "request", "procure": "procure",
+			"move": "transfer", "adjust": "adjust",
+		};
+		document.querySelectorAll("[data-do]").forEach((node) => {
+			const needs = ALLOWED[node.dataset.do];
+			if (needs) node.hidden = !can[needs];
+		});
 
 		$("q").addEventListener("input", () => {
 			clearTimeout(searchTimer);

@@ -1325,6 +1325,7 @@ def print_url(doctype: str, name: str) -> str:
 	formats = {
 		"Stock Request": "Stock Transfer Note",
 		"Stock Entry": "Stock Transfer Note",
+		"Purchase Invoice": "A3 Purchase Invoice",
 	}
 	query = {"doctype": doctype, "name": name, "no_letterhead": 0, "_lang": "en"}
 	chosen = formats.get(doctype)

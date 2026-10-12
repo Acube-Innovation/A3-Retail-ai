@@ -18,8 +18,8 @@ THERMAL_FORMATS = [name for name, _dt, _tpl, size in pf.FORMATS if size == "80mm
 class TestRegister(FrappeTestCase):
 	def test_every_registered_format_exists(self):
 		# Twenty-four at scope 13.3, plus the settlement statement the financing
-		# desk prints.
-		self.assertEqual(len(pf.FORMATS), 25)
+		# desk prints, the courier manifest, and the distributor's bill.
+		self.assertEqual(len(pf.FORMATS), 27)
 		for name, doctype, _template, _size in pf.FORMATS:
 			self.assertTrue(frappe.db.exists("Print Format", name), name)
 			self.assertEqual(frappe.db.get_value("Print Format", name, "doc_type"), doctype, name)
