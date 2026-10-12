@@ -2035,3 +2035,18 @@ input.is-locked { background: rgba(42, 51, 66, .04); color: var(--muted);
 /* The IMEI list on a purchase: one number per line, read off the cartons. */
 #imei-box { width: 100%; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 	font-size: 13px; line-height: 1.7; letter-spacing: .02em; resize: vertical; }
+/* Scanning cartons into a purchase line. The gun gets a box of its own above
+   the list, with a running tally, so the counter can keep both hands on the
+   stock and still see where they are. */
+.imei-scan-row { display: flex; align-items: stretch; gap: 8px; margin-bottom: 8px; }
+.imei-scan-row input { flex: 1 1 auto; min-width: 0; }
+.imei-tally { flex: 0 0 auto; display: flex; align-items: center; padding: 0 12px;
+	border: 1px solid var(--line); border-radius: var(--radius-sm);
+	background: #fbfcfe; font-size: 12.5px; font-weight: 700; color: var(--muted);
+	font-variant-numeric: tabular-nums; }
+.imei-tally.is-done { border-color: #bfe3cd; background: #f3fbf6; color: #2f7a52; }
+/* One line of feedback per scan, where the eye already is. */
+.imei-flash { margin-bottom: 8px; padding: 6px 10px; border-radius: var(--radius-sm);
+	font-size: 12px; font-variant-numeric: tabular-nums; }
+.imei-flash.ok { background: #f3fbf6; color: #2f7a52; }
+.imei-flash.warn { background: #fdf4f4; color: var(--danger-dark, #b03a3a); }

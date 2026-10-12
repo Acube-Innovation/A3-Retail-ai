@@ -220,10 +220,49 @@
 		state.imeiRow = index;
 		const line = state.lines[index];
 		$("imei-title").textContent = line.item_name;
+		$("imei-wanted").textContent =
+			`${line.qty || 0} handset${line.qty === 1 ? "" : "s"} on this line.`
+			+ " Scan each box, or type the numbers below.";
 		$("imei-box").value = line.serials.join("\n");
+		$("imei-scan").value = "";
+		flashImei("");
 		$("imei-modal").hidden = false;
 		countImei();
-		$("imei-box").focus();
+		// The gun is the fast path, so the caret waits there rather than in the
+		// list — a scanner types into whatever has focus.
+		$("imei-scan").focus();
+	}
+
+	function flashImei(text, kind) {
+		const node = $("imei-flash");
+		node.textContent = text;
+		node.className = "imei-flash" + (kind ? " " + kind : "");
+		node.hidden = !text;
+	}
+
+	/** One scan. The gun sends the digits then Enter, so this runs per carton. */
+	function scanImei() {
+		const imei = $("imei-scan").value.trim();
+		$("imei-scan").value = "";
+		if (!imei) return;
+
+		const already = readImei();
+		if (already.includes(imei)) {
+			// Two scans of the same box is the commonest mis-scan there is, and
+			// saying so now beats a refusal once the whole pallet is counted.
+			flashImei(`${imei} — already scanned`, "warn");
+			return;
+		}
+		const elsewhere = state.lines.some(
+			(l, i) => i !== state.imeiRow && l.serials.includes(imei));
+		if (elsewhere) {
+			flashImei(`${imei} — already on another line of this bill`, "warn");
+			return;
+		}
+		const box = $("imei-box");
+		box.value = box.value.replace(/\s*$/, "") + (box.value.trim() ? "\n" : "") + imei;
+		flashImei(`${imei} added`, "ok");
+		countImei();
 	}
 
 	/** Whatever is in the box, one per line, blanks and repeats dropped. */
@@ -248,6 +287,9 @@
 			(l, i) => i !== state.imeiRow && l.serials.includes(imei)));
 		if (clash.length) bits.push(`${clash[0]} is already on another line`);
 		$("imei-note").textContent = bits.join(" · ");
+		$("imei-tally").textContent = `${found.length}/${line.qty || 0}`;
+		$("imei-tally").classList.toggle("is-done",
+			!!line.qty && found.length === line.qty);
 	}
 
 	function closeImei() {
@@ -362,6 +404,9 @@
 
 		$("imei-done").addEventListener("click", closeImei);
 		$("imei-box").addEventListener("input", countImei);
+		$("imei-scan").addEventListener("keydown", (event) => {
+			if (event.key === "Enter") { event.preventDefault(); scanImei(); }
+		});
 		document.querySelectorAll("[data-close]").forEach((node) => {
 			node.addEventListener("click", () => {
 				const modal = node.closest(".modal");

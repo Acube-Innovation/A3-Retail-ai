@@ -182,9 +182,17 @@ window.addEventListener("DOMContentLoaded", function () {
 <div class="modal" id="imei-modal" hidden>
 	<div class="modal-card">
 		<h3 id="imei-title">{{ _("IMEI numbers") }}</h3>
-		<p class="modal-note">{{ _("One number per line — scan them in, type them, or paste a list. These are new handsets, so the numbers will not be in the system yet.") }}</p>
-		<textarea id="imei-box" rows="8" spellcheck="false" autocomplete="off"
-		          placeholder="{{ _('356938035643809&#10;356938035643810') }}"></textarea>
+		<p class="modal-note" id="imei-wanted"></p>
+		{#- The gun stays in the box: scan each carton and the number drops into
+		    the list below, which stays open for typing, pasting or correcting. -#}
+		<div class="imei-scan-row">
+			<input id="imei-scan" autocomplete="off" inputmode="numeric"
+			       placeholder="{{ _('Scan the IMEI barcode on the box') }}">
+			<span class="imei-tally" id="imei-tally">0</span>
+		</div>
+		<div class="imei-flash" id="imei-flash" hidden></div>
+		<textarea id="imei-box" rows="5" spellcheck="false" autocomplete="off"
+		          placeholder="{{ _('…or type them here, one per line') }}"></textarea>
 		<div class="modal-note" id="imei-note"></div>
 		<div class="modal-actions">
 			<button class="btn btn-quiet" data-close>{{ _("Close") }}</button>
