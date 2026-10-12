@@ -121,12 +121,23 @@
 					item_group: $("i-group").value,
 					hsn_code: $("i-hsn").value.trim(),
 					uom: $("i-uom").value,
-					selling_price: Number($("i-price").value) || 0,
+					// `selling_price` was never a field the server reads — it reads
+					// `selling_rate`, so every price typed here was dropped on the
+					// floor and the item came out priced at nothing.
+					selling_rate: Number($("i-price").value) || 0,
+					purchase_rate: Number($("i-cost").value) || 0,
+					barcode: $("i-barcode").value.trim(),
 					has_serial: $("i-serial").checked ? 1 : 0,
 					opening_qty: 0,
 				},
 			});
 			addLine(made.item_code || made.item, name, $("i-serial").checked);
+			const cost = Number($("i-cost").value) || 0;
+			if (cost > 0) {
+				const line = state.lines[state.lines.length - 1];
+				if (line) { line.rate = cost; paintLines(); }
+			}
+			["i-cost", "i-barcode"].forEach((id) => { $(id).value = ""; });
 			$("item-new").hidden = true;
 			say(name + " added to the catalogue.", "ok");
 		} catch (error) {
@@ -140,6 +151,7 @@
 		// bumping the count without a number to go with it would be a lie.
 		if (found) { if (!found.has_serial) found.qty += 1; }
 		else state.lines.push({ item_code: code, item_name: label, qty: 1, rate: 0,
+		                        sell: 0, sell_hint: 0,
 		                        has_serial: !!hasSerial, serials: [] });
 		$("item-q").value = "";
 		$("item-hits").innerHTML = "";
@@ -156,6 +168,9 @@
 				           value="${l.qty || ""}"></td>
 				<td><input class="rate" data-i="${i}" inputmode="decimal"
 				           placeholder="0.00" value="${l.rate || ""}"></td>
+				<td><input class="sell" data-i="${i}" inputmode="decimal"
+				           placeholder="${l.sell_hint ? money(l.sell_hint) : "0.00"}"
+				           value="${l.sell || ""}"></td>
 				<td>${l.has_serial
 					? `<button class="btn btn-sm imei ${
 						l.qty && l.serials.length === l.qty ? "is-done" : "is-todo"}" data-i="${i}"
@@ -188,6 +203,11 @@
 			const line = state.lines[Number(n.dataset.i)];
 			line.rate = Number(n.value) || 0;
 			refreshTotals(Number(n.dataset.i));
+		}));
+		// The price does not touch the bill's total — it is what the shop will
+		// ask for the goods, carried onto each piece as it comes in.
+		body.querySelectorAll(".sell").forEach((n) => n.addEventListener("input", () => {
+			state.lines[Number(n.dataset.i)].sell = Number(n.value) || 0;
 		}));
 		body.querySelectorAll(".imei").forEach((n) => n.addEventListener("click", () => {
 			openImei(Number(n.dataset.i));
@@ -333,6 +353,7 @@
 					mode_of_payment: $("p-mode").value,
 					items: state.lines.map((l) => ({
 						item_code: l.item_code, qty: l.qty, rate: l.rate,
+						selling_rate: l.sell || 0,
 						serials: l.has_serial ? l.serials : [],
 					})),
 				},

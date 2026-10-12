@@ -231,6 +231,7 @@ def create(payload) -> dict:
 	if doc.meta.has_field("branch"):
 		doc.branch = employee.branch
 
+	priced: dict[str, float] = {}
 	for row in items:
 		code = row["item_code"]
 		if not frappe.db.exists("Item", code):
@@ -247,6 +248,7 @@ def create(payload) -> dict:
 		if serials:
 			line.use_serial_batch_fields = 1
 			line.serial_no = "\n".join(serials)
+		priced[code] = flt(row.get("selling_rate"))
 
 	if cost_center and doc.meta.has_field("cost_center"):
 		doc.cost_center = cost_center
@@ -256,6 +258,17 @@ def create(payload) -> dict:
 	doc.flags.ignore_permissions = True
 	doc.insert(ignore_permissions=True)
 	doc.submit()
+
+	# What the shop last paid, kept on the item so the next purchase of it opens
+	# with the right figure instead of a blank box.
+	from a3_retail.api.stock_control import set_buying_rate, set_selling_rate
+
+	for row in doc.items:
+		set_buying_rate(row.item_code, flt(row.rate))
+		if flt(priced.get(row.item_code)) > 0:
+			set_selling_rate(row.item_code, flt(priced[row.item_code]), employee.branch)
+
+	_stamp_serials(doc, priced)
 
 	# Paid on the spot, or left on the supplier's account to settle later.
 	paid = flt(data.get("paid_amount"))
@@ -305,3 +318,31 @@ def _settle(invoice, paid: float, mode: str, employee) -> None:
 	entry.flags.ignore_permissions = True
 	entry.insert(ignore_permissions=True)
 	entry.submit()
+
+
+def _stamp_serials(invoice, priced: dict) -> None:
+	"""Write what each piece cost, what it is priced at, and when it arrived.
+
+	A shop buys the same handset at several costs through the year and prices
+	each intake differently, so the figures belong on the piece. Without them the
+	counter picking an IMEI is choosing blind between stock that is not worth the
+	same money.
+	"""
+	for row in invoice.items:
+		serials = [s.strip() for s in (row.serial_no or "").splitlines() if s.strip()]
+		if not serials:
+			continue
+		selling = flt(priced.get(row.item_code)) or _current_selling(row.item_code)
+		for serial in serials:
+			if not frappe.db.exists("Serial No", serial):
+				continue
+			frappe.db.set_value("Serial No", serial, {
+				"a3_purchase_cost": flt(row.rate),
+				"a3_selling_price": selling,
+				"a3_received_on": invoice.posting_date,
+			}, update_modified=False)
+
+
+def _current_selling(item_code: str) -> float:
+	return flt(frappe.db.get_value(
+		"Item Price", {"item_code": item_code, "selling": 1}, "price_list_rate"))

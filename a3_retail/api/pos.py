@@ -216,12 +216,17 @@ def serials(item_code: str, limit: int = 60) -> list[dict]:
 		"""
 		select s.name as serial_no, coalesce(nullif(s.a3_imei_1, ''), s.name) as imei,
 		       s.warehouse,
-		       datediff(curdate(), date(s.creation)) as age_days
+		       datediff(curdate(), date(s.creation)) as age_days,
+		       -- What this particular piece cost and is priced at. The same
+		       -- handset is bought at different costs through the year and
+		       -- priced accordingly, so the counter is told which one it holds.
+		       coalesce(s.a3_received_on, date(s.creation)) as received_on,
+		       ifnull(s.a3_selling_price, 0) as selling_price
 		from `tabSerial No` s
 		join `tabWarehouse` w on w.name = s.warehouse
 		where s.item_code = %(item_code)s and s.status = 'Active'
 		  and w.custom_branch = %(branch)s
-		order by s.creation
+		order by coalesce(s.a3_received_on, date(s.creation)), s.creation
 		limit %(limit)s
 		""",
 		{"item_code": item_code, "branch": employee.branch, "limit": cint(limit) or 60},

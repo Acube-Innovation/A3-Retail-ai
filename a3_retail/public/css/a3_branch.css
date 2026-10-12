@@ -801,10 +801,23 @@ input.is-locked { background: rgba(42, 51, 66, .04); color: var(--muted);
 	border: 1px solid var(--line-strong); border-radius: var(--radius-sm); margin-bottom: 10px; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
 .serial-list, .branch-list, .simple-list { list-style: none; margin: 0; padding: 0; }
-.serial-list li button { width: 100%; display: flex; justify-content: space-between; align-items: center;
+/* Four columns, because two pieces of the same model are not the same goods:
+   one came in last March at one price and one last week at another. */
+.serial-list li button { width: 100%; display: grid;
+	grid-template-columns: 1fr 72px 86px 44px; align-items: center;
 	gap: 10px; padding: 11px 12px; margin-bottom: 6px; cursor: pointer; background: #f7f9fc;
 	border: 1px solid var(--line); border-radius: var(--radius-sm); font-family: inherit;
-	font-size: 14px; font-variant-numeric: tabular-nums; }
+	font-size: 14px; font-variant-numeric: tabular-nums; text-align: left; }
+.serial-head { display: grid; grid-template-columns: 1fr 72px 86px 44px; gap: 10px;
+	padding: 0 12px 5px; font-size: 10px; font-weight: 700; letter-spacing: .05em;
+	text-transform: uppercase; color: var(--muted); }
+.serial-head span:not(:first-child), .serial-list li button span:not(.serial-imei) {
+	text-align: right; }
+.serial-list .serial-imei { font-size: 13.5px; }
+.serial-list .serial-age, .serial-head span:last-child { color: var(--faint); font-size: 11.5px; }
+.serial-list .serial-price { font-weight: 700; font-size: 13px; }
+/* Only worth colouring when they actually differ — otherwise it is noise. */
+.serial-list .serial-price.is-mixed { color: var(--brand, #c2660a); }
 .serial-list li button:hover { border-color: var(--sky); background: #fff; }
 .serial-list small { color: var(--faint); font-size: 11px; }
 .branch-list li, .simple-list li { display: flex; align-items: center; justify-content: space-between;
@@ -1992,29 +2005,32 @@ input.is-locked { background: rgba(42, 51, 66, .04); color: var(--muted);
    not as a row of boxes. */
 #lines { table-layout: fixed; }
 #lines th:nth-child(1) { width: auto; }
-#lines th:nth-child(2) { width: 72px; }
-#lines th:nth-child(3) { width: 104px; }
-#lines th:nth-child(4) { width: 92px; }
-#lines th:nth-child(5) { width: 92px; }
-#lines th:nth-child(6) { width: 34px; }
-#lines th:nth-child(2), #lines th:nth-child(3), #lines th:nth-child(5) { text-align: right; }
+#lines th:nth-child(2) { width: 64px; }
+#lines th:nth-child(3) { width: 96px; }
+#lines th:nth-child(4) { width: 100px; }
+#lines th:nth-child(5) { width: 78px; }
+#lines th:nth-child(6) { width: 96px; }
+#lines th:nth-child(7) { width: 34px; }
+#lines th:nth-child(2), #lines th:nth-child(3), #lines th:nth-child(4),
+#lines th:nth-child(6) { text-align: right; }
 /* The count sits in the middle of its column, so its heading does too. */
-#lines th:nth-child(4) { text-align: center; }
+#lines th:nth-child(5) { text-align: center; }
 #lines td:nth-child(1) { white-space: normal; font-weight: 600; }
-#lines td:nth-child(5) { text-align: right; font-weight: 700;
+#lines td:nth-child(6) { text-align: right; font-weight: 700;
 	font-variant-numeric: tabular-nums; }
 
 /* A resting border, unlike the cart line at the till: there the figure is always
    filled in, so a borderless box still reads as a number. Here the quantity can
    be empty while the bill is being written, and with no border the column simply
    looked like nothing was there. */
-#lines input.qty, #lines input.rate {
+#lines input.qty, #lines input.rate, #lines input.sell {
 	width: 100%; padding: 5px 8px; font-family: inherit; font-size: 12.5px;
 	font-weight: 600; color: var(--ink); text-align: right;
 	border: 1px solid var(--line); border-radius: 6px; background: var(--card);
 	font-variant-numeric: tabular-nums; }
-#lines input.qty:hover, #lines input.rate:hover { border-color: var(--line-strong); }
-#lines input.qty:focus, #lines input.rate:focus {
+#lines input.qty:hover, #lines input.rate:hover, #lines input.sell:hover {
+	border-color: var(--line-strong); }
+#lines input.qty:focus, #lines input.rate:focus, #lines input.sell:focus {
 	outline: none; border-color: var(--sky); background: var(--card);
 	box-shadow: 0 0 0 3px rgba(41, 171, 226, .14); }
 

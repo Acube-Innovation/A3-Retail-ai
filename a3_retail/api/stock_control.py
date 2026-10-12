@@ -1126,6 +1126,12 @@ def _create_item(data, employee, item_code, item_name, item_group, hsn, brand) -
 		price.price_list_rate = selling
 		price.insert(ignore_permissions=True)
 
+	# Both figures belong on the item, the way the shop is used to seeing them:
+	# what it costs and what it sells for. The cost was only ever used to value
+	# the opening stock, so an item catalogued without an opening forgot it
+	# entirely and the next purchase had nothing to suggest.
+	set_buying_rate(doc.name, flt(data.get("purchase_rate")))
+
 	# Opening stock is optional: the counter may be cataloguing something it has
 	# not received yet.
 	opening = flt(data.get("opening_qty"))
@@ -1175,6 +1181,54 @@ def _create_item(data, employee, item_code, item_name, item_group, hsn, brand) -
 		"opening_qty": opening,
 		"reconciliation": reconciliation,
 	}
+
+
+def set_buying_rate(item_code: str, rate: float) -> None:
+	"""What the shop last paid for this item, kept on the item itself.
+
+	One buying price per item, replaced rather than stacked: a shop wants to know
+	today's cost, and a pile of historic rows is how ERPNext ends up quoting a
+	two-year-old figure on a purchase.
+	"""
+	rate = flt(rate)
+	if rate <= 0:
+		return
+	existing = frappe.db.get_value(
+		"Item Price", {"item_code": item_code, "price_list": "Standard Buying",
+		               "buying": 1}, "name")
+	if existing:
+		frappe.db.set_value("Item Price", existing, "price_list_rate", rate)
+	else:
+		price = frappe.new_doc("Item Price")
+		price.item_code = item_code
+		price.price_list = "Standard Buying"
+		price.buying = 1
+		price.price_list_rate = rate
+		price.flags.ignore_permissions = True
+		price.insert(ignore_permissions=True)
+	if frappe.db.has_column("Item", "last_purchase_rate"):
+		frappe.db.set_value("Item", item_code, "last_purchase_rate", rate,
+		                    update_modified=False)
+
+
+def set_selling_rate(item_code: str, rate: float, branch: str) -> None:
+	"""The price the shop asks for this item, replaced rather than stacked."""
+	rate = flt(rate)
+	if rate <= 0:
+		return
+	price_list = _selling_price_list(branch)
+	existing = frappe.db.get_value(
+		"Item Price", {"item_code": item_code, "price_list": price_list, "selling": 1}, "name")
+	if existing:
+		frappe.db.set_value("Item Price", existing, "price_list_rate", rate)
+		return
+	price = frappe.new_doc("Item Price")
+	price.item_code = item_code
+	price.price_list = price_list
+	price.selling = 1
+	price.price_list_rate = rate
+	price.flags.ignore_permissions = True
+	price.insert(ignore_permissions=True)
 
 
 def _selling_price_list(branch: str) -> str:

@@ -109,9 +109,19 @@
 							<div class="field"><label for="i-uom">{{ _("Unit") }}</label>
 								<select id="i-uom"></select></div>
 						</div>
+						{#- Both figures, the way the shop is used to seeing them: what
+						    it costs and what it sells for. -#}
 						<div class="field-row">
+							<div class="field"><label for="i-cost">{{ _("Purchase rate") }}</label>
+								<input id="i-cost" inputmode="decimal" placeholder="0.00"></div>
 							<div class="field"><label for="i-price">{{ _("Selling price") }}</label>
-								<input id="i-price" type="number" min="0" step="0.01"></div>
+								<input id="i-price" inputmode="decimal" placeholder="0.00"></div>
+						</div>
+						{#- The code on the box, so the till can scan it later. -#}
+						<div class="field-row">
+							<div class="field"><label for="i-barcode">{{ _("Item code (barcode)") }}</label>
+								<input id="i-barcode" autocomplete="off"
+								       placeholder="{{ _('Scan the barcode on the box') }}"></div>
 							<div class="field check">
 								<label><input id="i-serial" type="checkbox"> {{ _("Has IMEI / serial") }}</label>
 							</div>
@@ -125,8 +135,8 @@
 					<table class="bill-table" id="lines">
 						<thead><tr>
 							<th>{{ _("Item") }}</th><th>{{ _("Qty") }}</th>
-							<th>{{ _("Cost rate") }}</th><th>{{ _("IMEI") }}</th>
-							<th>{{ _("Amount") }}</th><th></th>
+							<th>{{ _("Cost rate") }}</th><th>{{ _("Selling price") }}</th>
+							<th>{{ _("IMEI") }}</th><th>{{ _("Amount") }}</th><th></th>
 						</tr></thead>
 						<tbody></tbody>
 					</table>
