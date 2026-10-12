@@ -6,16 +6,12 @@ import os
 
 import frappe
 
-ASSETS = (
-	("css", "a3_branch.css"),
-	("js", "a3_branch.js"),
-	("js", "a3_pos.js"),
-	("js", "a3_purchases.js"),
-	("js", "a3_purchase_entry.js"),
-	("js", "a3_cashbank.js"),
-	("js", "a3_returns.js"),
-	("js", "a3_debit_notes.js"),
-)
+# Scanned rather than listed. This was a hand-kept tuple of eight files, and the
+# thirteen scripts nobody remembered to add to it — the stock page, customers,
+# suppliers, bills, EMI and the rest — never moved the stamp when they changed.
+# A browser then kept the old copy indefinitely and the change simply never
+# arrived, which is a miserable thing to debug from the shop floor.
+ASSET_FOLDERS = (("css", ".css"), ("js", ".js"))
 
 
 def asset_version() -> str:
@@ -52,8 +48,11 @@ def require_branch_kind(context, kind: str) -> None:
 
 def _stamp() -> str:
 	newest = 0.0
-	for folder, name in ASSETS:
-		path = frappe.get_app_path("a3_retail", "public", folder, name)
-		if os.path.exists(path):
-			newest = max(newest, os.path.getmtime(path))
+	for folder, suffix in ASSET_FOLDERS:
+		root = frappe.get_app_path("a3_retail", "public", folder)
+		if not os.path.isdir(root):
+			continue
+		for name in os.listdir(root):
+			if name.endswith(suffix):
+				newest = max(newest, os.path.getmtime(os.path.join(root, name)))
 	return str(int(newest))

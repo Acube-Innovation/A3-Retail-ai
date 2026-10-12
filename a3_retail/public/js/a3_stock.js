@@ -704,35 +704,44 @@ window.STOCK = (function () {
 		const host = $("w-lines");
 		const box = host && host.querySelector(`.w-hits[data-i="${index}"]`);
 		if (!box) return;
-		const source = $("w-source") ? $("w-source").value : null;
-		if (!source || query.length < 2) { box.innerHTML = ""; return; }
+		await fillHits(box, query, $("w-source") ? $("w-source").value : null, (code) => {
+			workLines[index].item_code = code;
+			const input = host.querySelector(`.w-code[data-i="${index}"]`);
+			if (input) input.value = code;
+			loadSerials(index);
+		});
+	}
 
+	/** The same list for any dialog that needs one: by element id rather than by
+	 *  line, because the adjustment screen counts one item, not a basket. */
+	async function suggestInto(boxId, query, warehouse, pick) {
+		const box = $(boxId);
+		if (box) await fillHits(box, query, warehouse, pick);
+	}
+
+	async function fillHits(box, query, warehouse, pick) {
+		if (!warehouse || query.length < 2) { box.innerHTML = ""; return; }
 		let rows = [];
 		try {
 			rows = await A3.call("a3_retail.api.stock_control.search_stock",
-			                     { query, warehouse: source, limit: 8 });
+			                     { query, warehouse, limit: 8 });
 		} catch (error) {
 			box.innerHTML = `<p class="muted">${esc(error.message || "Could not search.")}</p>`;
 			return;
 		}
 		if (!rows.length) {
-			box.innerHTML = `<p class="muted">Nothing by that name in ${esc(source)}.</p>`;
+			box.innerHTML = `<p class="muted">Nothing by that name in ${esc(warehouse)}.</p>`;
 			return;
 		}
 		box.innerHTML = rows.map((r) => `
-			<button type="button" class="w-hit" data-i="${index}"
-			        data-code="${esc(r.item_code)}">
+			<button type="button" class="w-hit" data-code="${esc(r.item_code)}">
 				<span>${esc(r.item_name)}${r.has_serial ? " <small>IMEI</small>" : ""}</span>
 				<b>${qty(r.available)} ${esc(r.stock_uom || "")}</b>
 			</button>`).join("");
 		box.querySelectorAll(".w-hit").forEach((node) => {
 			node.addEventListener("click", () => {
-				const i = Number(node.dataset.i);
-				workLines[i].item_code = node.dataset.code;
-				const input = host.querySelector(`.w-code[data-i="${i}"]`);
-				if (input) input.value = node.dataset.code;
 				box.innerHTML = "";
-				loadSerials(i);
+				pick(node.dataset.code);
 			});
 		});
 	}
@@ -841,8 +850,11 @@ window.STOCK = (function () {
 			`<div class="field-grid">
 				<label class="field"><span>Warehouse</span>
 					<select id="w-warehouse">${options}</select></label>
-				<label class="field"><span>Item</span><input id="w-item" placeholder="Item code"></label>
+				<label class="field"><span>Item</span>
+					<input id="w-item" placeholder="Type the item name or scan it"
+					       autocomplete="off"></label>
 			</div>
+			<div class="w-hits" id="w-item-hits"></div>
 			<div class="field-grid">
 				<label class="field"><span>Counted quantity</span>
 					<input id="w-qty" type="number" min="0" step="1" value="0"></label>
@@ -851,6 +863,7 @@ window.STOCK = (function () {
 			</div>`,
 			"Submit adjustment",
 			async () => {
+				if (!$("w-item").value.trim()) throw new Error("Pick the item being counted.");
 				const result = await A3.call("a3_retail.api.stock_control.adjust_stock", {
 					payload: {
 						warehouse: $("w-warehouse").value, reason: $("w-reason").value.trim(),
@@ -863,6 +876,21 @@ window.STOCK = (function () {
 				loadKpis();
 				loadTab("adjustments");
 			});
+
+		// The same search as Move stock, against the shelf being counted. A
+		// reconciliation sets a figure, so picking an item the warehouse does not
+		// hold is how stock gets conjured out of a typo.
+		setTimeout(() => {
+			const field = $("w-item");
+			if (!field) return;
+			let timer = null;
+			const run = () => suggestInto("w-item-hits", field.value.trim(),
+			                              $("w-warehouse").value, (code) => {
+				field.value = code;
+			});
+			field.addEventListener("input", () => { clearTimeout(timer); timer = setTimeout(run, 200); });
+			$("w-warehouse").addEventListener("change", run);
+		}, 0);
 	}
 
 	/** Add something new to the catalogue, and optionally what is already on the shelf. */
