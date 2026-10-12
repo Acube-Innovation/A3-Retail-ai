@@ -151,9 +151,18 @@ MASTER_FIELDS = {
 			insert_after="a3_sales_invoice", read_only=1, in_standard_filter=1),
 		_field("a3_purchase_cost", "Purchase Cost", "Currency", SALES_MODULE, permlevel=1,
 			insert_after="a3_branch", description="Used for margin-scheme GST on resale"),
+		# A shop buys the same handset at different costs through the year and
+		# prices each intake accordingly. The price is settled when the stock is
+		# bought, so it is recorded against the piece rather than the item, and
+		# the counter is told which one it is holding.
+		_field("a3_selling_price", "Selling Price", "Currency", SALES_MODULE,
+			insert_after="a3_purchase_cost", read_only=1,
+			description="What this piece was priced at when it was bought in"),
+		_field("a3_received_on", "Received On", "Date", SALES_MODULE,
+			insert_after="a3_selling_price", read_only=1, in_standard_filter=1),
 
 		_field("a3_warranty_section", "Warranty State", "Section Break", "A3 Retail Warranty",
-			insert_after="a3_purchase_cost"),
+			insert_after="a3_received_on"),
 		_field("a3_brand_warranty_expiry", "Brand Warranty Expiry", "Date", "A3 Retail Warranty",
 			insert_after="a3_warranty_section", read_only=1),
 		_field("a3_ew_registration", "Extended Warranty", "Link", "A3 Retail Warranty",

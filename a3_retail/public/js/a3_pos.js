@@ -95,6 +95,13 @@ window.POS = (function () {
 	}
 
 	/** The card reads brand, then model, then what the line will need. */
+	const shortDate = (value) => {
+		if (!value) return "—";
+		const date = new Date(String(value).slice(0, 10) + "T00:00:00");
+		return isNaN(date) ? "—"
+			: date.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "2-digit" });
+	};
+
 	function cardLines(item) {
 		const brand = item.brand || "";
 		let name = item.item_name || item.item_code;
@@ -127,7 +134,7 @@ window.POS = (function () {
 			         title="${esc(item.item_name)}${item.is_stock_item
 					? " · " + (item.branch_qty > 0 ? item.branch_qty + " in stock here" : "none here")
 					: ""}">
-				${badge(item)}
+				${badge(item) ? `<div class="card-flags">${badge(item)}</div>` : ""}
 				<div class="card-main">
 					<div class="card-thumb">${thumb(item)}</div>
 					<div class="card-body">${cardLines(item)}</div>
@@ -193,16 +200,28 @@ window.POS = (function () {
 			return;
 		}
 
-		$("serial-list").innerHTML = free.map((row) => `
-			<li><button data-serial="${esc(row.serial_no)}">
-				<span>${esc(row.imei || row.serial_no)}</span>
-				<small>${row.age_days} days in stock</small>
+		// Two pieces of the same model are not the same goods: one came in last
+		// March at one price and one last week at another. The counter is shown
+		// which is which rather than picking the first row.
+		const mixed = new Set(free.map((r) => Number(r.selling_price) || 0)).size > 1;
+		$("serial-list").innerHTML =
+			`<li class="serial-head"><span>IMEI</span><span>Received</span>
+				<span>Price</span><span>In stock</span></li>`
+			+ free.map((row) => `
+			<li><button data-serial="${esc(row.serial_no)}" data-price="${row.selling_price || 0}">
+				<span class="serial-imei">${esc(row.imei || row.serial_no)}</span>
+				<span>${esc(shortDate(row.received_on))}</span>
+				<span class="serial-price${mixed ? " is-mixed" : ""}">${
+					Number(row.selling_price) > 0 ? moneyShort(row.selling_price) : "—"}</span>
+				<span class="serial-age">${row.age_days}d</span>
 			</button></li>`).join("");
 
 		$("serial-list").querySelectorAll("button").forEach((node) => {
 			node.addEventListener("click", () => {
 				modal.hidden = true;
-				addLine(item, node.dataset.serial, lineIndex);
+				const priced = Number(node.dataset.price) || 0;
+				addLine(priced > 0 ? { ...item, rate: priced } : item,
+				        node.dataset.serial, lineIndex);
 			});
 		});
 

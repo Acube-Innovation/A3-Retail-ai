@@ -20,6 +20,7 @@ from frappe.utils import cint, flt, fmt_money, getdate, nowdate
 from a3_retail.api import require_permission
 from a3_retail.api.customer import normalize_mobile
 from a3_retail.api.staff import _me
+from a3_retail.utils import tax
 
 CART_LIMIT = 40
 
@@ -172,17 +173,14 @@ def catalogue(query: str = "", item_group: str | None = None, only_in_stock: int
 
 
 def _item_gst_rate(item_code: str) -> float:
-	"""The rate the line will be taxed at, so the bill can show GST as you type."""
-	template = frappe.db.get_value(
-		"Item Tax", {"parenttype": "Item", "parent": item_code}, "item_tax_template"
-	)
-	if template:
-		rate = frappe.db.get_value(
-			"Item Tax Template Detail", {"parent": template}, "tax_rate", order_by="tax_rate desc"
-		)
-		if rate:
-			return flt(rate) * 2 if flt(rate) < 15 else flt(rate)
-	return 18.0
+	"""The rate the line will be taxed at, so the bill can show GST as you type.
+
+	This used to read the largest row in the template and double anything under
+	15, on the assumption it had found one half of a CGST/SGST pair. It had not:
+	the largest row is the undivided IGST one, so a 12% item was shown as 24%
+	and a 5% item as 10%. `utils.tax` reads the row that holds the whole charge.
+	"""
+	return tax.item_rate(item_code)
 
 
 def _is_new(item_code: str) -> bool:
@@ -216,12 +214,17 @@ def serials(item_code: str, limit: int = 60) -> list[dict]:
 		"""
 		select s.name as serial_no, coalesce(nullif(s.a3_imei_1, ''), s.name) as imei,
 		       s.warehouse,
-		       datediff(curdate(), date(s.creation)) as age_days
+		       datediff(curdate(), date(s.creation)) as age_days,
+		       -- What this particular piece cost and is priced at. The same
+		       -- handset is bought at different costs through the year and
+		       -- priced accordingly, so the counter is told which one it holds.
+		       coalesce(s.a3_received_on, date(s.creation)) as received_on,
+		       ifnull(s.a3_selling_price, 0) as selling_price
 		from `tabSerial No` s
 		join `tabWarehouse` w on w.name = s.warehouse
 		where s.item_code = %(item_code)s and s.status = 'Active'
 		  and w.custom_branch = %(branch)s
-		order by s.creation
+		order by coalesce(s.a3_received_on, date(s.creation)), s.creation
 		limit %(limit)s
 		""",
 		{"item_code": item_code, "branch": employee.branch, "limit": cint(limit) or 60},

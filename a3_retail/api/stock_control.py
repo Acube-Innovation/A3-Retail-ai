@@ -19,6 +19,7 @@ from frappe.utils import cint, flt, getdate, nowdate
 
 from a3_retail.api import require_permission
 from a3_retail.api.staff import _me
+from a3_retail.utils import tax
 
 LOW_STOCK_FLOOR = 5
 
@@ -116,6 +117,7 @@ def bootstrap() -> dict:
 		},
 		"uoms": frappe.get_all("UOM", filters={"enabled": 1}, pluck="name",
 		                       order_by="name", limit_page_length=0),
+		"tax_templates": tax.templates(),
 		"as_of": frappe.utils.now_datetime().strftime("%H:%M"),
 	}
 
@@ -1101,7 +1103,10 @@ def _create_item(data, employee, item_code, item_name, item_group, hsn, brand) -
 	doc.item_name = item_name[:140]
 	doc.item_group = item_group
 	doc.stock_uom = (data.get("uom") or "Nos").strip() or "Nos"
-	doc.is_stock_item = 1
+	# A fitting charge or a screen-guard application is bought and sold but
+	# never counted, and ERPNext will not let a non-stock item near a warehouse
+	# — which is exactly the behaviour wanted.
+	doc.is_stock_item = 0 if cint(data.get("is_service")) else 1
 	doc.is_sales_item = 1
 	doc.is_purchase_item = 1
 	doc.include_item_in_manufacturing = 0
@@ -1109,8 +1114,18 @@ def _create_item(data, employee, item_code, item_name, item_group, hsn, brand) -
 		doc.brand = brand
 	if hsn:
 		doc.gst_hsn_code = hsn
-	if cint(data.get("has_serial")):
+	if cint(data.get("has_serial")) and doc.is_stock_item:
 		doc.has_serial_no = 1
+	description = (data.get("description") or "").strip()
+	if description:
+		doc.description = description[:500]
+	# The rate is picked on the form as a number; it is stored as the template
+	# that carries it, which is what the invoice reads when it works out GST.
+	template = (data.get("tax_template") or "").strip()
+	if template:
+		if not frappe.db.exists("Item Tax Template", template):
+			frappe.throw(_("{0} is not a tax rate on this site.").format(template))
+		doc.append("taxes", {"item_tax_template": template})
 	if flt(data.get("reorder_level")):
 		doc.safety_stock = flt(data["reorder_level"])
 	barcode = (data.get("barcode") or "").strip()
@@ -1126,9 +1141,15 @@ def _create_item(data, employee, item_code, item_name, item_group, hsn, brand) -
 		price.price_list_rate = selling
 		price.insert(ignore_permissions=True)
 
+	# Both figures belong on the item, the way the shop is used to seeing them:
+	# what it costs and what it sells for. The cost was only ever used to value
+	# the opening stock, so an item catalogued without an opening forgot it
+	# entirely and the next purchase had nothing to suggest.
+	set_buying_rate(doc.name, flt(data.get("purchase_rate")))
+
 	# Opening stock is optional: the counter may be cataloguing something it has
 	# not received yet.
-	opening = flt(data.get("opening_qty"))
+	opening = flt(data.get("opening_qty")) if doc.is_stock_item else 0
 	reconciliation = None
 	if opening > 0:
 		warehouse = data.get("warehouse")
@@ -1175,6 +1196,54 @@ def _create_item(data, employee, item_code, item_name, item_group, hsn, brand) -
 		"opening_qty": opening,
 		"reconciliation": reconciliation,
 	}
+
+
+def set_buying_rate(item_code: str, rate: float) -> None:
+	"""What the shop last paid for this item, kept on the item itself.
+
+	One buying price per item, replaced rather than stacked: a shop wants to know
+	today's cost, and a pile of historic rows is how ERPNext ends up quoting a
+	two-year-old figure on a purchase.
+	"""
+	rate = flt(rate)
+	if rate <= 0:
+		return
+	existing = frappe.db.get_value(
+		"Item Price", {"item_code": item_code, "price_list": "Standard Buying",
+		               "buying": 1}, "name")
+	if existing:
+		frappe.db.set_value("Item Price", existing, "price_list_rate", rate)
+	else:
+		price = frappe.new_doc("Item Price")
+		price.item_code = item_code
+		price.price_list = "Standard Buying"
+		price.buying = 1
+		price.price_list_rate = rate
+		price.flags.ignore_permissions = True
+		price.insert(ignore_permissions=True)
+	if frappe.db.has_column("Item", "last_purchase_rate"):
+		frappe.db.set_value("Item", item_code, "last_purchase_rate", rate,
+		                    update_modified=False)
+
+
+def set_selling_rate(item_code: str, rate: float, branch: str) -> None:
+	"""The price the shop asks for this item, replaced rather than stacked."""
+	rate = flt(rate)
+	if rate <= 0:
+		return
+	price_list = _selling_price_list(branch)
+	existing = frappe.db.get_value(
+		"Item Price", {"item_code": item_code, "price_list": price_list, "selling": 1}, "name")
+	if existing:
+		frappe.db.set_value("Item Price", existing, "price_list_rate", rate)
+		return
+	price = frappe.new_doc("Item Price")
+	price.item_code = item_code
+	price.price_list = price_list
+	price.selling = 1
+	price.price_list_rate = rate
+	price.flags.ignore_permissions = True
+	price.insert(ignore_permissions=True)
 
 
 def _selling_price_list(branch: str) -> str:
