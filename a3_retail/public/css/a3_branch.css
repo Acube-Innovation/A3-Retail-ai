@@ -1978,10 +1978,51 @@ input.is-locked { background: rgba(42, 51, 66, .04); color: var(--muted);
 .imei-list .drop { border: none; background: none; cursor: pointer;
 	color: var(--muted); font-size: 16px; line-height: 1; padding: 0 4px; }
 .imei-list .drop:hover { color: var(--danger, #c0392b); }
-/* The cost rate is a plain box: a number spinner invites the arrow keys and
-   steals the scroll wheel over a figure somebody is reading. */
-#lines input.rate, #lines input.qty { width: 100%; text-align: right;
+/* The purchase line, dressed like the cart line at the till.
+   `width: 100%` turned these into two enormous pills: a quantity is two
+   characters and a cost four or five, so they are sized to their content and
+   stay quiet until the cursor is in them — the row reads as a row of figures,
+   not as a row of boxes. */
+#lines { table-layout: fixed; }
+#lines th:nth-child(1) { width: auto; }
+#lines th:nth-child(2) { width: 72px; }
+#lines th:nth-child(3) { width: 104px; }
+#lines th:nth-child(4) { width: 92px; }
+#lines th:nth-child(5) { width: 92px; }
+#lines th:nth-child(6) { width: 34px; }
+#lines th:nth-child(2), #lines th:nth-child(3), #lines th:nth-child(5) { text-align: right; }
+/* The count sits in the middle of its column, so its heading does too. */
+#lines th:nth-child(4) { text-align: center; }
+#lines td:nth-child(1) { white-space: normal; font-weight: 600; }
+#lines td:nth-child(5) { text-align: right; font-weight: 700;
 	font-variant-numeric: tabular-nums; }
+
+/* A resting border, unlike the cart line at the till: there the figure is always
+   filled in, so a borderless box still reads as a number. Here the quantity can
+   be empty while the bill is being written, and with no border the column simply
+   looked like nothing was there. */
+#lines input.qty, #lines input.rate {
+	width: 100%; padding: 5px 8px; font-family: inherit; font-size: 12.5px;
+	font-weight: 600; color: var(--ink); text-align: right;
+	border: 1px solid var(--line); border-radius: 6px; background: var(--card);
+	font-variant-numeric: tabular-nums; }
+#lines input.qty:hover, #lines input.rate:hover { border-color: var(--line-strong); }
+#lines input.qty:focus, #lines input.rate:focus {
+	outline: none; border-color: var(--sky); background: var(--card);
+	box-shadow: 0 0 0 3px rgba(41, 171, 226, .14); }
+
+/* The IMEI count is a reading, not an alarm. A line that still needs its numbers
+   is work to do, not a mistake — red belongs on a bill that will not save, and
+   this one just has not been filled in yet. */
+#lines .btn.imei { width: 100%; padding: 4px 6px; font-size: 11.5px; font-weight: 600;
+	border-radius: 6px; font-variant-numeric: tabular-nums; border: 1px solid var(--line);
+	background: var(--card); color: var(--muted); cursor: pointer; }
+#lines .btn.imei:hover { border-color: var(--line-strong); color: var(--ink); }
+#lines .btn.imei.is-todo { border-style: dashed; }
+#lines .btn.imei.is-done { border-color: #bfe3cd; background: #f3fbf6; color: #2f7a52; }
+#lines .drop { border: 0; background: none; color: var(--faint); font-size: 15px;
+	line-height: 1; padding: 0; cursor: pointer; }
+#lines .drop:hover { color: var(--danger-dark, #c0392b); }
 /* Picking handsets inside the Move stock dialog, under the line they belong to. */
 .w-imei-box { margin: -4px 0 10px; }
 .w-imei-head { display: flex; justify-content: space-between; align-items: baseline;
@@ -1994,4 +2035,3 @@ input.is-locked { background: rgba(42, 51, 66, .04); color: var(--muted);
 /* The IMEI list on a purchase: one number per line, read off the cartons. */
 #imei-box { width: 100%; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 	font-size: 13px; line-height: 1.7; letter-spacing: .02em; resize: vertical; }
-.btn.imei.warn { border-color: var(--danger, #c0392b); color: var(--danger, #c0392b); }

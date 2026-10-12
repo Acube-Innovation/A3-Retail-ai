@@ -139,8 +139,7 @@
 		// A serialised line counts its own quantity: one handset per IMEI, so
 		// bumping the count without a number to go with it would be a lie.
 		if (found) { if (!found.has_serial) found.qty += 1; }
-		else state.lines.push({ item_code: code, item_name: label,
-		                        qty: hasSerial ? 0 : 1, rate: 0,
+		else state.lines.push({ item_code: code, item_name: label, qty: 1, rate: 0,
 		                        has_serial: !!hasSerial, serials: [] });
 		$("item-q").value = "";
 		$("item-hits").innerHTML = "";
@@ -158,9 +157,9 @@
 				<td><input class="rate" data-i="${i}" inputmode="decimal"
 				           placeholder="0.00" value="${l.rate || ""}"></td>
 				<td>${l.has_serial
-					? `<button class="btn btn-outline btn-sm imei ${
-						l.serials.length === l.qty && l.qty ? "" : "warn"}" data-i="${i}"
-						>${l.serials.length}/${l.qty || 0} IMEI</button>`
+					? `<button class="btn btn-sm imei ${
+						l.qty && l.serials.length === l.qty ? "is-done" : "is-todo"}" data-i="${i}"
+						>${l.serials.length}/${l.qty || 0}</button>`
 					: '<span class="muted">—</span>'}</td>
 				<td class="amount">${money(l.qty * l.rate)}</td>
 				<td><button class="drop" data-i="${i}" aria-label="Remove">×</button></td>
@@ -179,9 +178,10 @@
 			// it has to follow the number being typed — without redrawing the row.
 			const button = body.querySelector(`tr[data-row="${i}"] .imei`);
 			if (button) {
-				button.textContent = `${line.serials.length}/${line.qty || 0} IMEI`;
-				button.classList.toggle("warn",
-					!(line.qty && line.serials.length === line.qty));
+				button.textContent = `${line.serials.length}/${line.qty || 0}`;
+				const done = !!line.qty && line.serials.length === line.qty;
+				button.classList.toggle("is-done", done);
+				button.classList.toggle("is-todo", !done);
 			}
 		}));
 		body.querySelectorAll(".rate").forEach((n) => n.addEventListener("input", () => {
