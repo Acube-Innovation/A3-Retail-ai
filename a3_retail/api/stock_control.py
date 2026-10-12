@@ -1263,3 +1263,52 @@ def print_url(doctype: str, name: str) -> str:
 		query["format"] = chosen
 
 	return f"/api/method/frappe.utils.print_format.download_pdf?{urlencode(query)}"
+
+
+@frappe.whitelist()
+def search_stock(query: str = "", warehouse: str | None = None,
+                 limit: int = 10) -> list[dict]:
+    """Items on a particular shelf, for the move and adjust screens.
+
+    Scoped to the warehouse the stock is coming out of, because an item the
+    branch does not hold is not a candidate for moving: offering the whole
+    catalogue here is how somebody picks a line that then fails on submit for
+    want of stock.
+
+    Matched on name, code, barcode or IMEI — the counter has the box in hand and
+    whichever number is printed on it is the one they will type.
+    """
+    _me()
+    require_permission("Item", "read")
+
+    query = (query or "").strip()
+    if len(query) < 2 or not warehouse:
+        return []
+    if warehouse not in {row["warehouse"] for row in _network_warehouses()}:
+        frappe.throw(_("That warehouse is not one of ours."))
+
+    from a3_retail.utils.compatibility import barcode_clause, serial_clause
+
+    rows = frappe.db.sql(
+        f"""
+        select i.name as item_code, i.item_name, i.stock_uom,
+               ifnull(i.has_serial_no, 0) as has_serial,
+               b.actual_qty - ifnull(b.reserved_qty, 0) as available
+        from `tabBin` b
+        join `tabItem` i on i.name = b.item_code
+        where b.warehouse = %(warehouse)s
+          and b.actual_qty - ifnull(b.reserved_qty, 0) > 0
+          and i.disabled = 0
+          and (i.name like %(like)s or i.item_name like %(like)s
+               or {barcode_clause("i", "like")}
+               or {serial_clause("i", "like")})
+        order by i.item_name
+        limit %(limit)s
+        """,
+        {"warehouse": warehouse, "like": f"%{query}%",
+         "limit": min(max(cint(limit) or 10, 1), 40)},
+        as_dict=True,
+    )
+    for row in rows:
+        row["available"] = flt(row["available"])
+    return rows

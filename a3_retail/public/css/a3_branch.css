@@ -2050,3 +2050,17 @@ input.is-locked { background: rgba(42, 51, 66, .04); color: var(--muted);
 	font-size: 12px; font-variant-numeric: tabular-nums; }
 .imei-flash.ok { background: #f3fbf6; color: #2f7a52; }
 .imei-flash.warn { background: #fdf4f4; color: var(--danger-dark, #b03a3a); }
+/* Item suggestions under a Move stock line: what that shelf actually holds,
+   with the figure, so a line that cannot be filled is never picked. */
+.w-hits { margin: -4px 0 10px; }
+.w-hits:empty { margin: 0; }
+.w-hits .muted { font-size: 12px; margin: 0 0 6px; }
+.w-hit { display: flex; align-items: center; justify-content: space-between; gap: 12px;
+	width: 100%; padding: 7px 10px; border: 1px solid var(--line); border-top: 0;
+	background: var(--card); cursor: pointer; font-size: 12.5px; text-align: left; }
+.w-hit:first-child { border-top: 1px solid var(--line);
+	border-radius: var(--radius-sm) var(--radius-sm) 0 0; }
+.w-hit:last-child { border-radius: 0 0 var(--radius-sm) var(--radius-sm); }
+.w-hit:hover { background: #f5f8fc; }
+.w-hit small { color: var(--muted); font-size: 10px; letter-spacing: .04em; }
+.w-hit b { flex: 0 0 auto; font-variant-numeric: tabular-nums; color: var(--muted); }

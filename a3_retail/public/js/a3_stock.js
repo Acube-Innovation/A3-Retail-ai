@@ -652,7 +652,7 @@ window.STOCK = (function () {
 			<div class="field-grid work-line">
 				<label class="field"><span>${index ? "" : "Item"}</span>
 					<input class="w-code" data-i="${index}" value="${esc(line.item_code)}"
-					       placeholder="Item code" list="w-item-list"></label>
+					       placeholder="Type the item name or scan it" autocomplete="off"></label>
 				<label class="field"><span>${index ? "" : "Quantity"}</span>
 					<input class="w-num" data-i="${index}" inputmode="numeric"
 					       value="${line.qty || ""}"
@@ -660,13 +660,18 @@ window.STOCK = (function () {
 				<button class="btn btn-quiet work-drop" data-i="${index}" type="button"
 				        ${workLines.length > 1 ? "" : "disabled"}>×</button>
 			</div>
+			<div class="w-hits" data-i="${index}"></div>
 			${line.serials ? imeiMarkup(line, index) : ""}`).join("");
 
 		// Typing must not redraw the row — replacing an input mid-keystroke takes
 		// the focus with it.
 		host.querySelectorAll(".w-code").forEach((n) => {
+			let timer = null;
 			n.addEventListener("input", () => {
-				workLines[Number(n.dataset.i)].item_code = n.value.trim();
+				const i = Number(n.dataset.i);
+				workLines[i].item_code = n.value.trim();
+				clearTimeout(timer);
+				timer = setTimeout(() => suggest(i, n.value.trim()), 200);
 			});
 			// Leaving the box is the moment to find out whether this one is a
 			// handset, and if it is, which handsets are on that shelf.
@@ -690,6 +695,46 @@ window.STOCK = (function () {
 			const qty = host.querySelector(`.w-num[data-i="${n.dataset.i}"]`);
 			if (qty) qty.value = line.qty || "";
 		}));
+	}
+
+	/** What is on the shelf the stock is leaving. Offering the whole catalogue
+	 *  here is how somebody picks a line that then fails on submit for want of
+	 *  stock, so only what that warehouse actually holds is listed. */
+	async function suggest(index, query) {
+		const host = $("w-lines");
+		const box = host && host.querySelector(`.w-hits[data-i="${index}"]`);
+		if (!box) return;
+		const source = $("w-source") ? $("w-source").value : null;
+		if (!source || query.length < 2) { box.innerHTML = ""; return; }
+
+		let rows = [];
+		try {
+			rows = await A3.call("a3_retail.api.stock_control.search_stock",
+			                     { query, warehouse: source, limit: 8 });
+		} catch (error) {
+			box.innerHTML = `<p class="muted">${esc(error.message || "Could not search.")}</p>`;
+			return;
+		}
+		if (!rows.length) {
+			box.innerHTML = `<p class="muted">Nothing by that name in ${esc(source)}.</p>`;
+			return;
+		}
+		box.innerHTML = rows.map((r) => `
+			<button type="button" class="w-hit" data-i="${index}"
+			        data-code="${esc(r.item_code)}">
+				<span>${esc(r.item_name)}${r.has_serial ? " <small>IMEI</small>" : ""}</span>
+				<b>${qty(r.available)} ${esc(r.stock_uom || "")}</b>
+			</button>`).join("");
+		box.querySelectorAll(".w-hit").forEach((node) => {
+			node.addEventListener("click", () => {
+				const i = Number(node.dataset.i);
+				workLines[i].item_code = node.dataset.code;
+				const input = host.querySelector(`.w-code[data-i="${i}"]`);
+				if (input) input.value = node.dataset.code;
+				box.innerHTML = "";
+				loadSerials(i);
+			});
+		});
 	}
 
 	/** A serialised item moves by IMEI: the shop is not moving "two phones", it
