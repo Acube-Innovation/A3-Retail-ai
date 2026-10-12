@@ -19,7 +19,7 @@
 		return n.innerHTML;
 	}
 
-	const state = { branch: "", supplier: null, lines: [], saving: false };
+	const state = { branch: "", supplier: null, lines: [], saving: false, imeiRow: null };
 	let supplierTimer = null;
 	let itemTimer = null;
 
@@ -106,7 +106,8 @@
 		const hits = await A3.call("a3_retail.api.pos.catalogue", { query: q, limit: 8 });
 		$("item-hits").innerHTML = (hits || []).length
 			? hits.map((i) => `<button class="pick" data-code="${esc(i.item_code)}"
-				data-label="${esc(i.item_name)}">${esc(i.item_name)}</button>`).join("")
+				data-label="${esc(i.item_name)}" data-serial="${i.has_serial ? 1 : 0}"
+				>${esc(i.item_name)}${i.has_serial ? ' <small>IMEI</small>' : ""}</button>`).join("")
 			: '<p class="muted">Not in the catalogue — use “New item”.</p>';
 	}
 
@@ -125,7 +126,7 @@
 					opening_qty: 0,
 				},
 			});
-			addLine(made.item_code || made.item, name);
+			addLine(made.item_code || made.item, name, $("i-serial").checked);
 			$("item-new").hidden = true;
 			say(name + " added to the catalogue.", "ok");
 		} catch (error) {
@@ -133,10 +134,14 @@
 		}
 	}
 
-	function addLine(code, label) {
+	function addLine(code, label, hasSerial) {
 		const found = state.lines.find((l) => l.item_code === code);
-		if (found) found.qty += 1;
-		else state.lines.push({ item_code: code, item_name: label, qty: 1, rate: 0 });
+		// A serialised line counts its own quantity: one handset per IMEI, so
+		// bumping the count without a number to go with it would be a lie.
+		if (found) { if (!found.has_serial) found.qty += 1; }
+		else state.lines.push({ item_code: code, item_name: label,
+		                        qty: hasSerial ? 0 : 1, rate: 0,
+		                        has_serial: !!hasSerial, serials: [] });
 		$("item-q").value = "";
 		$("item-hits").innerHTML = "";
 		paintLines();
@@ -146,26 +151,109 @@
 		const body = $("lines").querySelector("tbody");
 		$("empty-note").hidden = state.lines.length > 0;
 		body.innerHTML = state.lines.map((l, i) => `
-			<tr>
+			<tr data-row="${i}">
 				<td>${esc(l.item_name)}</td>
-				<td><input class="qty" data-i="${i}" type="number" min="1" step="1" value="${l.qty}"></td>
-				<td><input class="rate" data-i="${i}" type="number" min="0" step="0.01" value="${l.rate}"></td>
-				<td>${money(l.qty * l.rate)}</td>
+				<td><input class="qty" data-i="${i}" inputmode="numeric" value="${l.qty || ""}"
+				           ${l.has_serial ? "readonly title='Counted from the IMEIs'" : ""}></td>
+				<td><input class="rate" data-i="${i}" inputmode="decimal"
+				           placeholder="0.00" value="${l.rate || ""}"></td>
+				<td>${l.has_serial
+					? `<button class="btn btn-outline btn-sm imei" data-i="${i}">${
+						l.serials.length ? l.serials.length + " IMEI" : "Add IMEI"}</button>`
+					: '<span class="muted">—</span>'}</td>
+				<td class="amount">${money(l.qty * l.rate)}</td>
 				<td><button class="drop" data-i="${i}" aria-label="Remove">×</button></td>
 			</tr>`).join("");
 
+		// Typing must not redraw the row: replacing the input mid-keystroke takes
+		// the focus with it, which is why the cost rate could never be typed into
+		// — you got one character and the caret vanished. Only the figures that
+		// are derived from the number are rewritten.
 		body.querySelectorAll(".qty").forEach((n) => n.addEventListener("input", () => {
-			state.lines[Number(n.dataset.i)].qty = Number(n.value) || 0; paintLines();
+			const line = state.lines[Number(n.dataset.i)];
+			line.qty = Number(n.value) || 0;
+			refreshTotals(Number(n.dataset.i));
 		}));
 		body.querySelectorAll(".rate").forEach((n) => n.addEventListener("input", () => {
-			state.lines[Number(n.dataset.i)].rate = Number(n.value) || 0; paintLines();
+			const line = state.lines[Number(n.dataset.i)];
+			line.rate = Number(n.value) || 0;
+			refreshTotals(Number(n.dataset.i));
+		}));
+		body.querySelectorAll(".imei").forEach((n) => n.addEventListener("click", () => {
+			openImei(Number(n.dataset.i));
 		}));
 		body.querySelectorAll(".drop").forEach((n) => n.addEventListener("click", () => {
 			state.lines.splice(Number(n.dataset.i), 1); paintLines();
 		}));
 
+		refreshTotals();
+	}
+
+	/** The amount on one row, and the figures in the footer. Nothing is replaced
+	 *  that somebody might be typing into. */
+	function refreshTotals(index) {
+		const body = $("lines").querySelector("tbody");
+		if (index != null) {
+			const line = state.lines[index];
+			const cell = body.querySelector(`tr[data-row="${index}"] .amount`);
+			if (cell) cell.textContent = money(line.qty * line.rate);
+		}
 		$("p-lines").textContent = state.lines.length;
 		$("p-total").textContent = money(total());
+	}
+
+	// ------------------------------------------------------------------ IMEI
+	function openImei(index) {
+		state.imeiRow = index;
+		const line = state.lines[index];
+		$("imei-title").textContent = line.item_name;
+		$("imei-scan").value = "";
+		$("imei-note").textContent = "";
+		paintImei();
+		$("imei-modal").hidden = false;
+		$("imei-scan").focus();
+	}
+
+	function paintImei() {
+		const line = state.lines[state.imeiRow];
+		$("imei-list").innerHTML = line.serials.map((imei, i) => `
+			<li><span>${esc(imei)}</span>
+				<button class="drop" data-imei="${i}" aria-label="Remove">×</button></li>`).join("")
+			|| '<li class="muted">Nothing scanned yet.</li>';
+		$("imei-list").querySelectorAll("[data-imei]").forEach((n) =>
+			n.addEventListener("click", () => {
+				line.serials.splice(Number(n.dataset.imei), 1);
+				paintImei();
+			}));
+	}
+
+	function takeImei() {
+		const line = state.lines[state.imeiRow];
+		const imei = $("imei-scan").value.trim();
+		if (!imei) return;
+		// A handset is one object: the same number twice is a mis-scan, and it
+		// would be refused on save anyway with a message nobody can act on.
+		if (line.serials.includes(imei)) {
+			$("imei-note").textContent = imei + " is already on this line.";
+			$("imei-scan").select();
+			return;
+		}
+		if (state.lines.some((l, i) => i !== state.imeiRow && l.serials.includes(imei))) {
+			$("imei-note").textContent = imei + " is already on another line of this bill.";
+			$("imei-scan").select();
+			return;
+		}
+		line.serials.push(imei);
+		$("imei-scan").value = "";
+		$("imei-note").textContent = "";
+		paintImei();
+	}
+
+	function closeImei() {
+		const line = state.lines[state.imeiRow];
+		line.qty = line.serials.length;   // one handset per number, always
+		$("imei-modal").hidden = true;
+		paintLines();
 	}
 
 	const total = () => state.lines.reduce((sum, l) => sum + l.qty * l.rate, 0);
@@ -176,6 +264,8 @@
 		if (!state.supplier) return note("Choose who the stock was bought from.", "error");
 		if (!state.lines.length) return note("Add what came in.", "error");
 		if (state.lines.some((l) => l.qty <= 0)) return note("Every line needs a quantity.", "error");
+		const short = state.lines.find((l) => l.has_serial && l.serials.length !== l.qty);
+		if (short) return note(`${short.item_name} needs an IMEI for each handset.`, "error");
 
 		state.saving = true;
 		$("p-save").disabled = true;
@@ -191,6 +281,7 @@
 					mode_of_payment: $("p-mode").value,
 					items: state.lines.map((l) => ({
 						item_code: l.item_code, qty: l.qty, rate: l.rate,
+						serials: l.has_serial ? l.serials : [],
 					})),
 				},
 			});
@@ -255,7 +346,19 @@
 		});
 		$("item-hits").addEventListener("click", (event) => {
 			const pick = event.target.closest(".pick");
-			if (pick) addLine(pick.dataset.code, pick.dataset.label);
+			if (pick) addLine(pick.dataset.code, pick.dataset.label,
+			                  pick.dataset.serial === "1");
+		});
+
+		$("imei-done").addEventListener("click", closeImei);
+		$("imei-scan").addEventListener("keydown", (event) => {
+			if (event.key === "Enter") { event.preventDefault(); takeImei(); }
+		});
+		document.querySelectorAll("[data-close]").forEach((node) => {
+			node.addEventListener("click", () => {
+				const modal = node.closest(".modal");
+				if (modal) { modal.hidden = true; if (modal.id === "imei-modal") closeImei(); }
+			});
 		});
 
 		$("p-save").addEventListener("click", save);

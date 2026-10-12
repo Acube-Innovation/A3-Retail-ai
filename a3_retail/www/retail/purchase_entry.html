@@ -125,7 +125,8 @@
 					<table class="bill-table" id="lines">
 						<thead><tr>
 							<th>{{ _("Item") }}</th><th>{{ _("Qty") }}</th>
-							<th>{{ _("Cost rate") }}</th><th>{{ _("Amount") }}</th><th></th>
+							<th>{{ _("Cost rate") }}</th><th>{{ _("IMEI") }}</th>
+							<th>{{ _("Amount") }}</th><th></th>
 						</tr></thead>
 						<tbody></tbody>
 					</table>
@@ -175,5 +176,23 @@ window.addEventListener("DOMContentLoaded", function () {
 	PURCHASE_ENTRY.start({ branch: {{ me.branch|tojson }} });
 });
 </script>
+{#- A phone comes in with its IMEI on the box, and the number has to be on the
+    bill or the handset cannot be sold later. They are scanned in here rather
+    than typed into the line, because a delivery is twenty of them at a time. -#}
+<div class="modal" id="imei-modal" hidden>
+	<div class="modal-card">
+		<h3 id="imei-title">{{ _("IMEI numbers") }}</h3>
+		<p class="modal-note">{{ _("Scan each handset, or type the number and press Enter.") }}</p>
+		<input id="imei-scan" placeholder="{{ _('Scan IMEI') }}" autocomplete="off"
+		       inputmode="numeric">
+		<ul class="imei-list" id="imei-list"></ul>
+		<div class="modal-note" id="imei-note"></div>
+		<div class="modal-actions">
+			<button class="btn btn-quiet" data-close>{{ _("Close") }}</button>
+			<button class="btn btn-primary" id="imei-done">{{ _("Done") }}</button>
+		</div>
+	</div>
+</div>
+
 </body>
 </html>

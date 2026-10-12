@@ -1962,3 +1962,32 @@ input.is-locked { background: rgba(42, 51, 66, .04); color: var(--muted);
 .cust-facts div span { display: block; font-size: 11px; color: var(--muted);
 	text-transform: uppercase; letter-spacing: .05em; }
 .ctile b.warn, .num.warn, .pill.warn { color: var(--danger, #c0392b); }
+
+/* ==========================================================================
+   IMEI capture — on a purchase, and when moving serialised stock
+   A delivery is twenty handsets at a time, so the list has to scroll while the
+   scan box stays put at the top.
+   ========================================================================== */
+.imei-list { list-style: none; margin: 10px 0 0; padding: 0; max-height: 240px;
+	overflow-y: auto; border: 1px solid var(--line); border-radius: var(--radius); }
+.imei-list li { display: flex; align-items: center; justify-content: space-between;
+	gap: 10px; padding: 7px 12px; border-bottom: 1px solid var(--line);
+	font-size: 13px; font-variant-numeric: tabular-nums; }
+.imei-list li:last-child { border-bottom: none; }
+.imei-list li.muted { color: var(--muted); justify-content: flex-start; }
+.imei-list .drop { border: none; background: none; cursor: pointer;
+	color: var(--muted); font-size: 16px; line-height: 1; padding: 0 4px; }
+.imei-list .drop:hover { color: var(--danger, #c0392b); }
+/* The cost rate is a plain box: a number spinner invites the arrow keys and
+   steals the scroll wheel over a figure somebody is reading. */
+#lines input.rate, #lines input.qty { width: 100%; text-align: right;
+	font-variant-numeric: tabular-nums; }
+/* Picking handsets inside the Move stock dialog, under the line they belong to. */
+.w-imei-box { margin: -4px 0 10px; }
+.w-imei-head { display: flex; justify-content: space-between; align-items: baseline;
+	font-size: 11px; color: var(--muted); text-transform: uppercase;
+	letter-spacing: .05em; margin-bottom: 4px; }
+.w-imei-box .imei-list { max-height: 170px; }
+.w-imei-box .imei-list li label { display: flex; align-items: center; gap: 9px;
+	cursor: pointer; width: 100%; }
+.w-imei-none { margin: -4px 0 10px; font-size: 12px; }
