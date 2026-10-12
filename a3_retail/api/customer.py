@@ -95,8 +95,14 @@ def gstin_details(gstin: str) -> dict:
 	out = {"gstin": gstin, "state": gstin_state(gstin), "source": "number"}
 
 	if not frappe.db.get_single_value("GST Settings", "api_secret"):
-		out["note"] = _("Checked the number. Full details need the GST API, "
-		                "which head office has not switched on yet.")
+		# Naming the setting, because "ask head office" sends the counter to
+		# somebody who will also not know. The number and its state are good
+		# either way — those come out of the digits, not off the portal.
+		out["note"] = _(
+			"Checked the number and read the state from it. The name and address "
+			"come from the GST portal, which needs an API key: head office can "
+			"get one free at Awesome Bar → India Compliance Account, then paste "
+			"it into GST Settings → API Secret.")
 		return out
 
 	try:

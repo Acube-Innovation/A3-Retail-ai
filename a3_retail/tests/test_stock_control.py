@@ -382,3 +382,58 @@ class TestTransferLifecycle(FrappeTestCase):
 		with self.assertRaises(frappe.ValidationError) as caught:
 			stock.receive_request(in_transit, {row.item_code: flt(row.qty) - 1})
 		self.assertIn("differs", str(caught.exception).lower())
+
+
+class TestStockSearch(FrappeTestCase):
+	"""The item box on Move stock, which had nothing behind it at all.
+
+	It pointed at a `<datalist>` that was never built, so typing a name listed
+	nothing and the counter had to know the item code by heart.
+	"""
+
+	def setUp(self):
+		user = user_for("Vipin S")
+		if not user:
+			self.skipTest("Vipin S is not provisioned")
+		frappe.set_user(user)
+
+	def tearDown(self):
+		frappe.set_user("Administrator")
+
+	def _shelf(self):
+		for row in stock.network_warehouses():
+			if frappe.db.exists("Bin", {"warehouse": row["warehouse"], "actual_qty": (">", 0)}):
+				return row["warehouse"]
+		return None
+
+	def test_only_what_that_shelf_holds_is_offered(self):
+		"""Offering the whole catalogue is how a line gets picked that then
+		fails on submit for want of stock."""
+		shelf = self._shelf()
+		if not shelf:
+			self.skipTest("no warehouse with stock on this site")
+		for row in stock.search_stock("ba", shelf, 20) or []:
+			self.assertGreater(flt(row["available"]), 0)
+
+	def test_a_name_finds_the_item(self):
+		shelf = self._shelf()
+		if not shelf:
+			self.skipTest("no warehouse with stock on this site")
+		item = frappe.db.get_value("Bin", {"warehouse": shelf, "actual_qty": (">", 0)}, "item_code")
+		word = str(item).split()[0]
+		codes = [r["item_code"] for r in stock.search_stock(word, shelf, 40)]
+		self.assertIn(item, codes)
+
+	def test_a_stub_is_not_a_search(self):
+		"""One letter would return most of the shelf; the box waits for two."""
+		shelf = self._shelf()
+		if not shelf:
+			self.skipTest("no warehouse with stock on this site")
+		self.assertEqual(stock.search_stock("a", shelf), [])
+
+	def test_without_a_warehouse_there_is_nothing_to_search(self):
+		self.assertEqual(stock.search_stock("phone", None), [])
+
+	def test_a_warehouse_outside_the_chain_is_refused(self):
+		with self.assertRaises(frappe.ValidationError):
+			stock.search_stock("phone", "Someone Else Store - XX")

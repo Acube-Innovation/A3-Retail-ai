@@ -652,17 +652,31 @@ window.STOCK = (function () {
 			<div class="field-grid work-line">
 				<label class="field"><span>${index ? "" : "Item"}</span>
 					<input class="w-code" data-i="${index}" value="${esc(line.item_code)}"
-					       placeholder="Item code" list="w-item-list"></label>
+					       placeholder="Type the item name or scan it" autocomplete="off"></label>
 				<label class="field"><span>${index ? "" : "Quantity"}</span>
-					<input class="w-num" data-i="${index}" type="number" min="1" step="1"
-					       value="${line.qty}"></label>
+					<input class="w-num" data-i="${index}" inputmode="numeric"
+					       value="${line.qty || ""}"
+					       ${line.serials ? "readonly title='Counted from the IMEIs'" : ""}></label>
 				<button class="btn btn-quiet work-drop" data-i="${index}" type="button"
 				        ${workLines.length > 1 ? "" : "disabled"}>×</button>
-			</div>`).join("");
+			</div>
+			<div class="w-hits" data-i="${index}"></div>
+			${line.serials ? imeiMarkup(line, index) : ""}`).join("");
 
-		host.querySelectorAll(".w-code").forEach((n) => n.addEventListener("input", () => {
-			workLines[Number(n.dataset.i)].item_code = n.value.trim();
-		}));
+		// Typing must not redraw the row — replacing an input mid-keystroke takes
+		// the focus with it.
+		host.querySelectorAll(".w-code").forEach((n) => {
+			let timer = null;
+			n.addEventListener("input", () => {
+				const i = Number(n.dataset.i);
+				workLines[i].item_code = n.value.trim();
+				clearTimeout(timer);
+				timer = setTimeout(() => suggest(i, n.value.trim()), 200);
+			});
+			// Leaving the box is the moment to find out whether this one is a
+			// handset, and if it is, which handsets are on that shelf.
+			n.addEventListener("change", () => loadSerials(Number(n.dataset.i)));
+		});
 		host.querySelectorAll(".w-num").forEach((n) => n.addEventListener("input", () => {
 			workLines[Number(n.dataset.i)].qty = Number(n.value) || 0;
 		}));
@@ -670,23 +684,128 @@ window.STOCK = (function () {
 			workLines.splice(Number(n.dataset.i), 1);
 			paintLines();
 		}));
+		host.querySelectorAll(".w-imei").forEach((n) => n.addEventListener("change", () => {
+			const line = workLines[Number(n.dataset.i)];
+			const imei = n.value;
+			if (n.checked) line.picked.push(imei);
+			else line.picked = line.picked.filter((s) => s !== imei);
+			line.qty = line.picked.length;
+			const count = host.querySelector(`.w-imei-count[data-i="${n.dataset.i}"]`);
+			if (count) count.textContent = line.picked.length + " of " + line.serials.length;
+			const qty = host.querySelector(`.w-num[data-i="${n.dataset.i}"]`);
+			if (qty) qty.value = line.qty || "";
+		}));
+	}
+
+	/** What is on the shelf the stock is leaving. Offering the whole catalogue
+	 *  here is how somebody picks a line that then fails on submit for want of
+	 *  stock, so only what that warehouse actually holds is listed. */
+	async function suggest(index, query) {
+		const host = $("w-lines");
+		const box = host && host.querySelector(`.w-hits[data-i="${index}"]`);
+		if (!box) return;
+		await fillHits(box, query, $("w-source") ? $("w-source").value : null, (code) => {
+			workLines[index].item_code = code;
+			const input = host.querySelector(`.w-code[data-i="${index}"]`);
+			if (input) input.value = code;
+			loadSerials(index);
+		});
+	}
+
+	/** The same list for any dialog that needs one: by element id rather than by
+	 *  line, because the adjustment screen counts one item, not a basket. */
+	async function suggestInto(boxId, query, warehouse, pick) {
+		const box = $(boxId);
+		if (box) await fillHits(box, query, warehouse, pick);
+	}
+
+	async function fillHits(box, query, warehouse, pick) {
+		if (!warehouse || query.length < 2) { box.innerHTML = ""; return; }
+		let rows = [];
+		try {
+			rows = await A3.call("a3_retail.api.stock_control.search_stock",
+			                     { query, warehouse, limit: 8 });
+		} catch (error) {
+			box.innerHTML = `<p class="muted">${esc(error.message || "Could not search.")}</p>`;
+			return;
+		}
+		if (!rows.length) {
+			box.innerHTML = `<p class="muted">Nothing by that name in ${esc(warehouse)}.</p>`;
+			return;
+		}
+		box.innerHTML = rows.map((r) => `
+			<button type="button" class="w-hit" data-code="${esc(r.item_code)}">
+				<span>${esc(r.item_name)}${r.has_serial ? " <small>IMEI</small>" : ""}</span>
+				<b>${qty(r.available)} ${esc(r.stock_uom || "")}</b>
+			</button>`).join("");
+		box.querySelectorAll(".w-hit").forEach((node) => {
+			node.addEventListener("click", () => {
+				box.innerHTML = "";
+				pick(node.dataset.code);
+			});
+		});
+	}
+
+	/** A serialised item moves by IMEI: the shop is not moving "two phones", it
+	 *  is moving these two. The list is what is actually on the source shelf, so
+	 *  a number that has already gone cannot be picked by mistake. */
+	function imeiMarkup(line, index) {
+		if (!line.serials.length) {
+			return `<p class="muted w-imei-none">No IMEIs of that item in this warehouse.</p>`;
+		}
+		return `<div class="w-imei-box">
+			<div class="w-imei-head">Pick the handsets
+				<b class="w-imei-count" data-i="${index}">${line.picked.length} of ${line.serials.length}</b></div>
+			<ul class="imei-list">${line.serials.map((imei) => `
+				<li><label><input type="checkbox" class="w-imei" data-i="${index}"
+				        value="${esc(imei)}" ${line.picked.includes(imei) ? "checked" : ""}>
+					<span>${esc(imei)}</span></label></li>`).join("")}</ul>
+		</div>`;
+	}
+
+	async function loadSerials(index) {
+		const line = workLines[index];
+		const source = $("w-source") ? $("w-source").value : null;
+		if (!line.item_code || !source) return;
+		let rows = [];
+		try {
+			rows = await A3.call("a3_retail.api.stock.serial_list",
+			                     { item_code: line.item_code, warehouse: source, limit: 200 });
+		} catch (error) {
+			rows = [];
+		}
+		// No serials in stock means the item is not tracked that way, and the
+		// plain quantity box is the right thing to leave in place.
+		line.serials = rows.length ? rows.map((r) => r.serial_no || r.name) : null;
+		line.picked = [];
+		if (line.serials) line.qty = 0;
+		paintLines();
 	}
 
 	function startLines(row) {
-		workLines = [{ item_code: row ? row.item_code : "", qty: 1 }];
+		workLines = [{ item_code: row ? row.item_code : "", qty: 1,
+		               serials: null, picked: [] }];
 		setTimeout(() => {
 			paintLines();
+			if (workLines[0].item_code) loadSerials(0);
 			const add = $("w-add");
 			if (add) add.addEventListener("click", () => {
-				workLines.push({ item_code: "", qty: 1 });
+				workLines.push({ item_code: "", qty: 1, serials: null, picked: [] });
 				paintLines();
+			});
+			// Changing where the stock comes from changes which handsets are on
+			// offer, so every line has to be asked again.
+			const source = $("w-source");
+			if (source) source.addEventListener("change", () => {
+				workLines.forEach((_, i) => loadSerials(i));
 			});
 		}, 0);
 	}
 
 	const linesPayload = () => workLines
 		.filter((l) => l.item_code && l.qty > 0)
-		.map((l) => ({ item_code: l.item_code, qty: l.qty }));
+		.map((l) => ({ item_code: l.item_code, qty: l.qty,
+		               serials: l.serials ? l.picked : [] }));
 
 	function openMove() {
 		const options = (state.network || []).map((w) =>
@@ -703,6 +822,10 @@ window.STOCK = (function () {
 			<label class="field"><span>Remarks</span><input id="w-remarks"></label>`,
 			"Move it",
 			async () => {
+				const short = workLines.find((l) => l.item_code && l.serials
+				                                    && l.picked.length === 0);
+				if (short) throw new Error(
+					short.item_code + " moves by IMEI — pick which handsets are going.");
 				const result = await A3.call("a3_retail.api.stock_control.move_stock", {
 					payload: {
 						source: $("w-source").value, target: $("w-target").value,
@@ -727,8 +850,11 @@ window.STOCK = (function () {
 			`<div class="field-grid">
 				<label class="field"><span>Warehouse</span>
 					<select id="w-warehouse">${options}</select></label>
-				<label class="field"><span>Item</span><input id="w-item" placeholder="Item code"></label>
+				<label class="field"><span>Item</span>
+					<input id="w-item" placeholder="Type the item name or scan it"
+					       autocomplete="off"></label>
 			</div>
+			<div class="w-hits" id="w-item-hits"></div>
 			<div class="field-grid">
 				<label class="field"><span>Counted quantity</span>
 					<input id="w-qty" type="number" min="0" step="1" value="0"></label>
@@ -737,6 +863,7 @@ window.STOCK = (function () {
 			</div>`,
 			"Submit adjustment",
 			async () => {
+				if (!$("w-item").value.trim()) throw new Error("Pick the item being counted.");
 				const result = await A3.call("a3_retail.api.stock_control.adjust_stock", {
 					payload: {
 						warehouse: $("w-warehouse").value, reason: $("w-reason").value.trim(),
@@ -749,6 +876,21 @@ window.STOCK = (function () {
 				loadKpis();
 				loadTab("adjustments");
 			});
+
+		// The same search as Move stock, against the shelf being counted. A
+		// reconciliation sets a figure, so picking an item the warehouse does not
+		// hold is how stock gets conjured out of a typo.
+		setTimeout(() => {
+			const field = $("w-item");
+			if (!field) return;
+			let timer = null;
+			const run = () => suggestInto("w-item-hits", field.value.trim(),
+			                              $("w-warehouse").value, (code) => {
+				field.value = code;
+			});
+			field.addEventListener("input", () => { clearTimeout(timer); timer = setTimeout(run, 200); });
+			$("w-warehouse").addEventListener("change", run);
+		}, 0);
 	}
 
 	/** Add something new to the catalogue, and optionally what is already on the shelf. */
