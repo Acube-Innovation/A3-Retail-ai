@@ -311,6 +311,14 @@ PERMISSION_MATRIX: dict[str, dict[str, str]] = {
 		# receipts"). Granted deliberately — a store keeper who cannot post a
 		# transfer cannot do the job.
 		"Store Keeper": "CRUDS",
+		# The counters move stock between the shops constantly — a handset is
+		# carried across for a customer waiting at the other branch — and
+		# routing every one of those through a manager was slower than the
+		# shops actually work. Without this a technician could post a transfer
+		# and the person at the counter could not, which is backwards. The
+		# ask-and-approve path is still there in Stock Request for a branch
+		# that wants to request rather than take.
+		"Sales Executive": "CRUDS",
 		"Accounts Manager": "R",
 	},
 	"Stock Request": {

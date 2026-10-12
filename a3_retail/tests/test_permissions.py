@@ -2,6 +2,8 @@
 # See license.txt
 """Branch data isolation (scope step 3, 13.5)."""
 
+import inspect
+
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
@@ -152,6 +154,45 @@ class TestPermissionMatrix(FrappeTestCase):
 		)
 		self.assertIn("Branch Manager", rows)
 		self.assertNotIn("Sales Executive", rows)
+
+	def test_the_counter_can_move_stock(self):
+		"""The shops carry handsets across to each other all day.
+
+		Sales Executive is the counter, and without this a technician could post
+		a transfer while the person actually serving the customer could not —
+		and found out only after filling the dialog in, because the screen
+		offered the button to everyone.
+		"""
+		self.assertIn("C", PERMISSION_MATRIX["Stock Entry"]["Sales Executive"])
+		self.assertIn("S", PERMISSION_MATRIX["Stock Entry"]["Sales Executive"])
+
+	def test_the_stock_screen_only_offers_what_the_matrix_allows(self):
+		"""Every button on the stock workspace is gated on a capability that
+		`bootstrap()` reports, and each of those has to mean a real permission —
+		a button that is going to be refused is worse than no button."""
+		from a3_retail.api import stock_control
+
+		gated = {
+			"request": "Stock Request", "procure": "Material Request",
+			"transfer": "Stock Entry", "adjust": "Stock Reconciliation",
+			"create_item": "Item",
+		}
+		source = inspect.getsource(stock_control.bootstrap)
+		for capability, doctype in gated.items():
+			self.assertIn(f'"{capability}"', source,
+			              f"bootstrap() must report {capability}")
+			self.assertIn(doctype, PERMISSION_MATRIX,
+			              f"{doctype} is gated on but not in the matrix")
+
+		markup = open(frappe.get_app_path(
+			"a3_retail", "www", "retail", "stock.html")).read()
+		script = open(frappe.get_app_path(
+			"a3_retail", "public", "js", "a3_stock.js")).read()
+		# every action that posts a document starts hidden and is revealed by
+		# the capability check, rather than being shown and then refused
+		for action in ("request", "procure", "move", "adjust"):
+			self.assertIn(f'data-do="{action}" hidden', markup, action)
+		self.assertIn("ALLOWED", script)
 
 	def test_whoever_can_raise_a_sales_invoice_can_list_pos_profiles(self):
 		"""ERPNext's `get_pos_profile` lists POS Profiles under the user's own

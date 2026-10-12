@@ -838,6 +838,17 @@ window.STOCK = (function () {
 				loadKpis();
 				loadSide();
 			});
+
+		// The list is every warehouse in the chain, in branch order, so without
+		// this it opened on whichever branch sorts first — and the item search,
+		// which only offers what is actually on the shelf it is pointed at,
+		// then found nothing for stock the counter can see in front of them.
+		// Stock moves out of your own shop far more often than into it.
+		const mine = (state.boot.warehouses || [])[0];
+		if (mine) $("w-source").value = mine;
+		const elsewhere = (state.network || []).find(
+			(w) => w.warehouse !== $("w-source").value);
+		if (elsewhere) $("w-target").value = elsewhere.warehouse;
 	}
 
 	function openAdjust() {
@@ -1087,9 +1098,20 @@ window.STOCK = (function () {
 		$("warehouse").innerHTML += state.boot.warehouses.map((warehouse) =>
 			`<option value="${esc(warehouse)}">${esc(warehouse)}</option>`).join("");
 
-		// Adding to the shared item master is not every counter's job, so the
-		// button only appears for whoever the permission matrix allows.
-		$("btn-new-item").hidden = !(state.boot.can && state.boot.can.create_item);
+		// Not every counter does every one of these, and the matrix in
+		// `setup/permissions.py` decides which. A button that is going to be
+		// refused is worse than no button: it is offered, the dialog is filled
+		// in, and the refusal lands after the work — so each one is shown only
+		// to whoever can actually finish it.
+		const can = state.boot.can || {};
+		const ALLOWED = {
+			"new-item": "create_item", "request": "request", "procure": "procure",
+			"move": "transfer", "adjust": "adjust",
+		};
+		document.querySelectorAll("[data-do]").forEach((node) => {
+			const needs = ALLOWED[node.dataset.do];
+			if (needs) node.hidden = !can[needs];
+		});
 
 		$("q").addEventListener("input", () => {
 			clearTimeout(searchTimer);
