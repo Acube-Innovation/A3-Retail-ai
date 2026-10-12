@@ -19,6 +19,7 @@ from frappe.utils import cint, flt, getdate, nowdate
 
 from a3_retail.api import require_permission
 from a3_retail.api.staff import _me
+from a3_retail.utils import tax
 
 LOW_STOCK_FLOOR = 5
 
@@ -116,6 +117,7 @@ def bootstrap() -> dict:
 		},
 		"uoms": frappe.get_all("UOM", filters={"enabled": 1}, pluck="name",
 		                       order_by="name", limit_page_length=0),
+		"tax_templates": tax.templates(),
 		"as_of": frappe.utils.now_datetime().strftime("%H:%M"),
 	}
 
@@ -1101,7 +1103,10 @@ def _create_item(data, employee, item_code, item_name, item_group, hsn, brand) -
 	doc.item_name = item_name[:140]
 	doc.item_group = item_group
 	doc.stock_uom = (data.get("uom") or "Nos").strip() or "Nos"
-	doc.is_stock_item = 1
+	# A fitting charge or a screen-guard application is bought and sold but
+	# never counted, and ERPNext will not let a non-stock item near a warehouse
+	# — which is exactly the behaviour wanted.
+	doc.is_stock_item = 0 if cint(data.get("is_service")) else 1
 	doc.is_sales_item = 1
 	doc.is_purchase_item = 1
 	doc.include_item_in_manufacturing = 0
@@ -1109,8 +1114,18 @@ def _create_item(data, employee, item_code, item_name, item_group, hsn, brand) -
 		doc.brand = brand
 	if hsn:
 		doc.gst_hsn_code = hsn
-	if cint(data.get("has_serial")):
+	if cint(data.get("has_serial")) and doc.is_stock_item:
 		doc.has_serial_no = 1
+	description = (data.get("description") or "").strip()
+	if description:
+		doc.description = description[:500]
+	# The rate is picked on the form as a number; it is stored as the template
+	# that carries it, which is what the invoice reads when it works out GST.
+	template = (data.get("tax_template") or "").strip()
+	if template:
+		if not frappe.db.exists("Item Tax Template", template):
+			frappe.throw(_("{0} is not a tax rate on this site.").format(template))
+		doc.append("taxes", {"item_tax_template": template})
 	if flt(data.get("reorder_level")):
 		doc.safety_stock = flt(data["reorder_level"])
 	barcode = (data.get("barcode") or "").strip()
@@ -1134,7 +1149,7 @@ def _create_item(data, employee, item_code, item_name, item_group, hsn, brand) -
 
 	# Opening stock is optional: the counter may be cataloguing something it has
 	# not received yet.
-	opening = flt(data.get("opening_qty"))
+	opening = flt(data.get("opening_qty")) if doc.is_stock_item else 0
 	reconciliation = None
 	if opening > 0:
 		warehouse = data.get("warehouse")

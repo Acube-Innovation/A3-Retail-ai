@@ -37,8 +37,37 @@ class TestPurchasesPage(FrappeTestCase):
 		self.assertIn("/assets/a3_retail/js/a3_purchase_entry.js", entry)
 		# the supplier and the item are both addable without leaving the page
 		self.assertIn('id="supplier-new"', entry)
-		self.assertIn('id="item-new"', entry)
+		self.assertIn('id="ni-modal"', entry)
 		self.assertIn('id="s-gstin"', entry)
+
+	def test_the_three_dialogs_a_line_needs(self):
+		"""Items, their IMEIs and an item nobody has catalogued yet.
+
+		A rep reads out a dozen lines in a row, so each of these is gathered in
+		one place and closed again rather than pushed into the bill itself.
+		"""
+		entry = open(frappe.get_app_path(
+			"a3_retail", "www", "retail", "purchase_entry.html")).read()
+
+		# picking items: both prices and the shelf count, side by side
+		self.assertIn('id="pick-modal"', entry)
+		for column in ("Item Name", "Item Code", "Stock", "Sales Price",
+		               "Purchase Price", "Quantity"):
+			self.assertIn(column, entry)
+		self.assertIn('id="pick-gun"', entry)
+
+		# the handsets, one row each rather than a paragraph of numbers
+		self.assertIn('id="imei-modal"', entry)
+		self.assertIn("IMEI/Serial No", entry)
+		self.assertIn('id="imei-rows"', entry)
+
+		# a new item, with the figures the shop actually quotes
+		self.assertIn('data-pane="basic"', entry)
+		self.assertIn('data-pane="stock"', entry)
+		self.assertIn('data-pane="pricing"', entry)
+		for field in ("ni-name", "ni-cost", "ni-price", "ni-gst", "ni-code",
+		              "ni-hsn", "ni-serial"):
+			self.assertIn(f'id="{field}"', entry)
 
 		# and the list hands off to it rather than opening a dialog
 		listing = open(os.path.join(folder, "purchases.html")).read()

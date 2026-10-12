@@ -86,61 +86,31 @@
 				</section>
 
 				<section class="svc-panel">
-					<div class="panel-head"><h2>{{ _("What came in") }}</h2>
-						<button class="btn btn-quiet" id="toggle-item">+ {{ _("New item") }}</button>
-					</div>
-					<div class="field">
-						<input id="item-q" type="search" autocomplete="off"
-						       placeholder="{{ _('Search the catalogue…') }}">
-						<div id="item-hits" class="pick-list"></div>
-					</div>
+					<div class="panel-head"><h2>{{ _("What came in") }}</h2></div>
 
-					<div id="item-new" hidden>
-						<p class="muted">{{ _("Only add an item the search above could not find.") }}</p>
-						<div class="field-row">
-							<div class="field"><label for="i-name">{{ _("Item name") }}</label>
-								<input id="i-name" type="text"></div>
-							<div class="field"><label for="i-group">{{ _("Group") }}</label>
-								<select id="i-group"></select></div>
-						</div>
-						<div class="field-row">
-							<div class="field"><label for="i-hsn">{{ _("HSN code") }}</label>
-								<input id="i-hsn" type="text" placeholder="85171300"></div>
-							<div class="field"><label for="i-uom">{{ _("Unit") }}</label>
-								<select id="i-uom"></select></div>
-						</div>
-						{#- Both figures, the way the shop is used to seeing them: what
-						    it costs and what it sells for. -#}
-						<div class="field-row">
-							<div class="field"><label for="i-cost">{{ _("Purchase rate") }}</label>
-								<input id="i-cost" inputmode="decimal" placeholder="0.00"></div>
-							<div class="field"><label for="i-price">{{ _("Selling price") }}</label>
-								<input id="i-price" inputmode="decimal" placeholder="0.00"></div>
-						</div>
-						{#- The code on the box, so the till can scan it later. -#}
-						<div class="field-row">
-							<div class="field"><label for="i-barcode">{{ _("Item code (barcode)") }}</label>
-								<input id="i-barcode" autocomplete="off"
-								       placeholder="{{ _('Scan the barcode on the box') }}"></div>
-							<div class="field check">
-								<label><input id="i-serial" type="checkbox"> {{ _("Has IMEI / serial") }}</label>
-							</div>
-						</div>
-						<div class="modal-actions">
-							<button class="btn btn-quiet" id="i-cancel">{{ _("Cancel") }}</button>
-							<button class="btn btn-primary" id="i-save">{{ _("Save item") }}</button>
-						</div>
-					</div>
-
-					<table class="bill-table" id="lines">
+					<table class="bill-table pe-lines" id="lines">
 						<thead><tr>
-							<th>{{ _("Item") }}</th><th>{{ _("Qty") }}</th>
-							<th>{{ _("Cost rate") }}</th><th>{{ _("Selling price") }}</th>
-							<th>{{ _("IMEI") }}</th><th>{{ _("Amount") }}</th><th></th>
+							<th class="col-no">{{ _("No.") }}</th>
+							<th>{{ _("Item") }}</th>
+							<th class="col-qty">{{ _("Qty") }}</th>
+							<th class="col-rate">{{ _("Purchase rate") }}</th>
+							<th class="col-rate">{{ _("Selling price") }}</th>
+							<th class="col-imei">{{ _("IMEI") }}</th>
+							<th class="col-amt">{{ _("Amount") }}</th>
+							<th class="col-x"></th>
 						</tr></thead>
 						<tbody></tbody>
 					</table>
 					<p class="muted" id="empty-note">{{ _("Nothing added yet.") }}</p>
+
+					{#- The way a bill is actually built: open the picker, find the lines,
+					    add them in one go. The gun goes to the same place — a scan is
+					    the same act as a search that matched exactly once. -#}
+					<div class="pe-add">
+						<button class="add-row" id="open-pick">+ {{ _("Add Item") }}</button>
+						<button class="btn btn-quiet btn-scan" id="open-scan">
+							<span class="scan-glyph" aria-hidden="true"></span>{{ _("Scan Barcode") }}</button>
+					</div>
 				</section>
 			</div>
 
@@ -186,27 +156,339 @@ window.addEventListener("DOMContentLoaded", function () {
 	PURCHASE_ENTRY.start({ branch: {{ me.branch|tojson }} });
 });
 </script>
+{#- ------------------------------------------------- Add Items to Bill -#}
+{#- Reps arrive with a dozen lines, and the question on each one is the same:
+    what does it cost, what do we sell it for, how many are on the shelf. Asked
+    side by side in a list you can run down, rather than one search at a time. -#}
+<div class="modal" id="pick-modal" hidden>
+	<div class="modal-card">
+		<header class="modal-head">
+			<h3>{{ _("Add Items to Bill") }}</h3>
+			<button class="modal-x" data-close aria-label="{{ _('Close') }}">&times;</button>
+		</header>
+
+		<div class="pick-tools">
+			<div class="pick-search">
+				<span class="pick-glyph" aria-hidden="true">&#9906;</span>
+				<input id="pick-q" type="search" autocomplete="off"
+				       placeholder="{{ _('Search by item, IMEI, HSN code or barcode') }}">
+				<button class="pick-gun" id="pick-gun" type="button"
+				        title="{{ _('Put the cursor here and scan') }}">
+					<span class="scan-glyph" aria-hidden="true"></span></button>
+			</div>
+			<select id="pick-group" aria-label="{{ _('Category') }}">
+				<option value="">{{ _("All categories") }}</option>
+			</select>
+			<button class="btn btn-quiet" id="pick-new">+ {{ _("Create New Item") }}</button>
+		</div>
+
+		<div class="pick-scroll">
+			<table class="pick-table">
+				<thead><tr>
+					<th>{{ _("Item Name") }}</th>
+					<th>{{ _("Item Code") }}</th>
+					<th class="num">{{ _("Stock") }}</th>
+					<th class="num">{{ _("Sales Price") }}</th>
+					<th class="num">{{ _("Purchase Price") }}</th>
+					<th class="num col-pickqty">{{ _("Quantity") }}</th>
+				</tr></thead>
+				<tbody id="pick-rows"></tbody>
+			</table>
+			<p class="pick-empty" id="pick-empty" hidden></p>
+		</div>
+
+		<footer class="pick-foot">
+			<button class="pick-count" id="pick-count" type="button">
+				{{ _("0 items selected") }}</button>
+			<div class="pick-sums">
+				<span id="pick-qty">0 {{ _("pcs") }}</span>
+				<strong id="pick-total">&#8377;0.00</strong>
+			</div>
+		</footer>
+
+		<div class="modal-bar">
+			<p class="keys">{{ _("Shortcuts") }}:
+				<kbd>&uarr;</kbd><kbd>&darr;</kbd> {{ _("move") }} &middot;
+				<kbd>Enter</kbd> {{ _("add one") }} &middot;
+				<kbd>Esc</kbd> {{ _("close") }}</p>
+			<div class="modal-actions">
+				<button class="btn btn-quiet" data-close>{{ _("Cancel") }} <kbd>Esc</kbd></button>
+				<button class="btn btn-primary" id="pick-done">
+					{{ _("Add to Bill") }} <kbd>F7</kbd></button>
+			</div>
+		</div>
+	</div>
+</div>
+
+{#- ----------------------------------------------- Add Serial Numbers -#}
 {#- A phone comes in with its IMEI on the box, and the number has to be on the
-    bill or the handset cannot be sold later. They are scanned in here rather
-    than typed into the line, because a delivery is twenty of them at a time. -#}
+    bill or the handset cannot be sold later. They go in one row at a time, the
+    way they come off the cartons — twenty of them in a delivery, each one read,
+    visible and correctable on its own line rather than buried in a paragraph. -#}
 <div class="modal" id="imei-modal" hidden>
 	<div class="modal-card">
-		<h3 id="imei-title">{{ _("IMEI numbers") }}</h3>
-		<p class="modal-note" id="imei-wanted"></p>
-		{#- The gun stays in the box: scan each carton and the number drops into
-		    the list below, which stays open for typing, pasting or correcting. -#}
+		<header class="modal-head">
+			<h3>{{ _("Add Serial Numbers") }}</h3>
+			<button class="modal-x" data-close aria-label="{{ _('Close') }}">&times;</button>
+		</header>
+
+		<div class="field-row">
+			<div class="field">
+				<label for="imei-item">{{ _("Item Name") }}</label>
+				<input id="imei-item" type="text" readonly>
+			</div>
+			<div class="field">
+				<label for="imei-qty">{{ _("Quantity") }}</label>
+				<div class="suffixed">
+					<input id="imei-qty" inputmode="numeric" autocomplete="off">
+					<span class="suffix" id="imei-uom">{{ _("PCS") }}</span>
+				</div>
+			</div>
+		</div>
+
 		<div class="imei-scan-row">
+			<span class="scan-glyph" aria-hidden="true"></span>
 			<input id="imei-scan" autocomplete="off" inputmode="numeric"
-			       placeholder="{{ _('Scan the IMEI barcode on the box') }}">
+			       placeholder="{{ _('Scan the IMEI on the box, or type it and press Enter') }}">
 			<span class="imei-tally" id="imei-tally">0</span>
 		</div>
 		<div class="imei-flash" id="imei-flash" hidden></div>
-		<textarea id="imei-box" rows="5" spellcheck="false" autocomplete="off"
-		          placeholder="{{ _('…or type them here, one per line') }}"></textarea>
-		<div class="modal-note" id="imei-note"></div>
-		<div class="modal-actions">
-			<button class="btn btn-quiet" data-close>{{ _("Close") }}</button>
-			<button class="btn btn-primary" id="imei-done">{{ _("Done") }}</button>
+
+		<div class="serial-scroll">
+			<table class="serial-table">
+				<thead><tr>
+					<th>{{ _("IMEI/Serial No") }}</th>
+					<th class="col-when">{{ _("Date Created") }}</th>
+					<th class="col-x"></th>
+				</tr></thead>
+				<tbody id="imei-rows"></tbody>
+			</table>
+			<p class="serial-empty" id="imei-empty">{{ _("Please add Serial Numbers") }}</p>
+		</div>
+
+		<div class="serial-adders">
+			<button class="add-row" id="imei-add">+ {{ _("Add New Serial Number") }}
+				<kbd>Enter</kbd></button>
+			<button class="btn btn-quiet btn-scan" id="imei-gun">
+				<span class="scan-glyph" aria-hidden="true"></span>{{ _("Scan Barcode") }}</button>
+		</div>
+
+		<div class="modal-bar">
+			<p class="modal-note" id="imei-note"></p>
+			<div class="modal-actions">
+				<button class="btn btn-quiet" data-close>{{ _("Cancel") }} <kbd>Esc</kbd></button>
+				<button class="btn btn-primary" id="imei-done">{{ _("Add") }} <kbd>F7</kbd></button>
+			</div>
+		</div>
+	</div>
+</div>
+
+{#- -------------------------------------------------- Create New Item -#}
+{#- A handset launched last week is not in the catalogue yet, and the rep is
+    standing at the counter. Name, price and rate are all it takes to get the
+    line on the bill; the code, the HSN and the opening count are there for
+    whoever has them to hand, behind their own headings rather than in the way. -#}
+<div class="modal" id="ni-modal" hidden>
+	<div class="modal-card">
+		<header class="modal-head">
+			<h3>{{ _("Create New Item") }}</h3>
+			<button class="modal-x" data-close aria-label="{{ _('Close') }}">&times;</button>
+		</header>
+
+		<div class="ni-body">
+			<nav class="ni-rail">
+				<button class="ni-tab is-on" data-tab="basic">
+					{{ _("Basic Details") }} <span class="req">*</span></button>
+				<p class="ni-rail-head">{{ _("More Details") }}</p>
+				<button class="ni-tab" data-tab="stock">{{ _("Stock Details") }}</button>
+				<button class="ni-tab" data-tab="pricing">{{ _("Pricing Details") }}</button>
+			</nav>
+
+			<div class="ni-panes">
+				<!-- ------------------------------------------------ basic -->
+				<section class="ni-pane" data-pane="basic">
+					<div class="ni-card">
+						<div class="field">
+							<label>{{ _("Item Type") }}</label>
+							<div class="radio-row">
+								<label><input type="radio" name="ni-type" value="product" checked>
+									{{ _("Product") }}</label>
+								<label><input type="radio" name="ni-type" value="service">
+									{{ _("Service") }}</label>
+							</div>
+						</div>
+						<div class="field-row">
+							<div class="field">
+								<label for="ni-name">{{ _("Item Name") }} <span class="req">*</span></label>
+								<input id="ni-name" type="text" autocomplete="off"
+								       placeholder="{{ _('ex: REDMI 13C 4/128 MIDNIGHT BLACK') }}">
+							</div>
+							<div class="field">
+								<label for="ni-group">{{ _("Category") }}</label>
+								<select id="ni-group"></select>
+							</div>
+						</div>
+						<div class="field-row">
+							<div class="field">
+								<label for="ni-cost">{{ _("Purchase Price") }}</label>
+								<div class="priced">
+									<span class="rupee">&#8377;</span>
+									<input id="ni-cost" data-bind="cost" inputmode="decimal"
+									       placeholder="{{ _('ex: 9,200') }}">
+									<select id="ni-cost-tax" data-bind="cost-tax">
+										<option value="without">{{ _("Without Tax") }}</option>
+										<option value="with">{{ _("With Tax") }}</option>
+									</select>
+								</div>
+							</div>
+							<div class="field">
+								<label for="ni-price">{{ _("Sales Price") }}</label>
+								<div class="priced">
+									<span class="rupee">&#8377;</span>
+									<input id="ni-price" data-bind="price" inputmode="decimal"
+									       placeholder="{{ _('ex: 10,999') }}">
+									<select id="ni-price-tax" data-bind="price-tax">
+										<option value="with">{{ _("With Tax") }}</option>
+										<option value="without">{{ _("Without Tax") }}</option>
+									</select>
+								</div>
+							</div>
+						</div>
+						<div class="field-row">
+							<div class="field">
+								<label for="ni-gst">{{ _("GST Tax Rate (%)") }}</label>
+								<select id="ni-gst" data-bind="gst"></select>
+							</div>
+							<div class="field">
+								<label for="ni-uom">{{ _("Measuring Unit") }}</label>
+								<select id="ni-uom" data-bind="uom"></select>
+							</div>
+						</div>
+						<div class="field-row">
+							<div class="field">
+								<label for="ni-open">{{ _("Opening Stock") }}</label>
+								<div class="suffixed">
+									<input id="ni-open" data-bind="open" inputmode="numeric"
+									       placeholder="{{ _('ex: 10') }}">
+									<span class="suffix" data-uom-label>{{ _("PCS") }}</span>
+								</div>
+							</div>
+							<div class="field check">
+								<label class="toggle">
+									<input id="ni-serial" type="checkbox">
+									<span>{{ _("Enable Serialisation") }}</span>
+								</label>
+								<p class="muted">{{ _("Every piece carries its own IMEI.") }}</p>
+							</div>
+						</div>
+					</div>
+				</section>
+
+				<!-- ------------------------------------------------ stock -->
+				<section class="ni-pane" data-pane="stock" hidden>
+					<div class="ni-card">
+						<div class="field-row">
+							<div class="field">
+								<label for="ni-code">{{ _("Item Code") }}</label>
+								<div class="coded">
+									<input id="ni-code" autocomplete="off"
+									       placeholder="{{ _('Scan the barcode on the box') }}">
+									<button class="link" id="ni-gen" type="button">
+										{{ _("Generate") }}</button>
+								</div>
+								<p class="muted">{{ _("What the till scans to find this item.") }}</p>
+							</div>
+							<div class="field">
+								<label for="ni-hsn">{{ _("HSN Code") }}</label>
+								<input id="ni-hsn" autocomplete="off" placeholder="85171300">
+							</div>
+						</div>
+						<div class="field-row">
+							<div class="field">
+								<label for="ni-uom2">{{ _("Measuring Unit") }}</label>
+								<select id="ni-uom2" data-bind="uom"></select>
+							</div>
+							<div class="field">
+								<label for="ni-reorder">{{ _("Low stock warning below") }}</label>
+								<div class="suffixed">
+									<input id="ni-reorder" inputmode="numeric" placeholder="{{ _('ex: 5') }}">
+									<span class="suffix" data-uom-label>{{ _("PCS") }}</span>
+								</div>
+							</div>
+						</div>
+						<div class="field-row">
+							<div class="field">
+								<label for="ni-wh">{{ _("Godown") }}</label>
+								<select id="ni-wh"></select>
+							</div>
+							<div class="field">
+								<label for="ni-open2">{{ _("Opening Stock") }}</label>
+								<div class="suffixed">
+									<input id="ni-open2" data-bind="open" inputmode="numeric"
+									       placeholder="{{ _('ex: 10') }}">
+									<span class="suffix" data-uom-label>{{ _("PCS") }}</span>
+								</div>
+							</div>
+						</div>
+						<div class="field">
+							<label for="ni-desc">{{ _("Description") }}</label>
+							<input id="ni-desc" type="text" maxlength="200"
+							       placeholder="{{ _('Anything the counter should know') }}">
+						</div>
+					</div>
+				</section>
+
+				<!-- ---------------------------------------------- pricing -->
+				<section class="ni-pane" data-pane="pricing" hidden>
+					<div class="ni-card">
+						<div class="field-row">
+							<div class="field">
+								<label for="ni-price2">{{ _("Sales Price") }}</label>
+								<div class="priced">
+									<span class="rupee">&#8377;</span>
+									<input id="ni-price2" data-bind="price" inputmode="decimal"
+									       placeholder="{{ _('ex: 10,999') }}">
+									<select id="ni-price-tax2" data-bind="price-tax">
+										<option value="with">{{ _("With Tax") }}</option>
+										<option value="without">{{ _("Without Tax") }}</option>
+									</select>
+								</div>
+							</div>
+							<div class="field">
+								<label for="ni-cost2">{{ _("Purchase Price") }}</label>
+								<div class="priced">
+									<span class="rupee">&#8377;</span>
+									<input id="ni-cost2" data-bind="cost" inputmode="decimal"
+									       placeholder="{{ _('ex: 9,200') }}">
+									<select id="ni-cost-tax2" data-bind="cost-tax">
+										<option value="without">{{ _("Without Tax") }}</option>
+										<option value="with">{{ _("With Tax") }}</option>
+									</select>
+								</div>
+							</div>
+						</div>
+						<div class="field-row">
+							<div class="field">
+								<label for="ni-gst2">{{ _("GST Tax Rate (%)") }}</label>
+								<select id="ni-gst2" data-bind="gst"></select>
+							</div>
+							<div class="field">
+								<label for="ni-margin">{{ _("Margin") }}</label>
+								<p class="ni-margin" id="ni-margin">&mdash;</p>
+							</div>
+						</div>
+						<p class="muted" id="ni-exgst"></p>
+					</div>
+				</section>
+			</div>
+		</div>
+
+		<div class="modal-bar">
+			<p class="modal-note" id="ni-note"></p>
+			<div class="modal-actions">
+				<button class="btn btn-quiet" data-close>{{ _("Cancel") }}</button>
+				<button class="btn btn-primary" id="ni-save">{{ _("Save Item") }}</button>
+			</div>
 		</div>
 	</div>
 </div>

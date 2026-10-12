@@ -44,6 +44,76 @@ def bootstrap() -> dict:
 
 
 @frappe.whitelist()
+def catalogue(query: str = "", item_group: str | None = None, limit: int = 40) -> list[dict]:
+	"""The catalogue as the buyer needs to see it, for the add-items picker.
+
+	Buying asks a different question of the same item master than selling does.
+	At the till you want the price and whether there is one left; with a rep at
+	the counter you want what it costs, what it sells for and how many are on the
+	shelf, all three at once — that is the comparison that decides whether this
+	line goes on the bill. So the row carries both prices rather than one.
+
+	The search is the one the rep's own paperwork uses: a name, the code on the
+	box, an HSN, or an IMEI off a carton.
+	"""
+	employee = _me()
+	require_permission("Item", "read")
+	profile = _profile(employee.branch)
+
+	conditions = ["i.disabled = 0", "ifnull(i.is_purchase_item, 1) = 1",
+	              "ifnull(i.is_fixed_asset, 0) = 0"]
+	values = {"branch": employee.branch, "limit": min(cint(limit) or 40, 100),
+	          "selling": profile.default_price_list or "Standard Selling"}
+
+	if query:
+		from a3_retail.utils.compatibility import serial_clause
+
+		conditions.append(
+			"(i.name like %(query)s or i.item_name like %(query)s or i.brand like %(query)s"
+			" or i.gst_hsn_code like %(query)s"
+			" or exists (select 1 from `tabItem Barcode` bc"
+			"            where bc.parent = i.name and bc.barcode like %(query)s)"
+			f" or {serial_clause('i', 'query', 'branch')})"
+		)
+		values["query"] = f"%{query}%"
+	if item_group:
+		conditions.append("i.item_group = %(item_group)s")
+		values["item_group"] = item_group
+
+	rows = frappe.db.sql(
+		f"""
+		select i.name as item_code, i.item_name, i.item_group, i.gst_hsn_code as hsn,
+		       ifnull(i.has_serial_no, 0) as has_serial, i.stock_uom as uom,
+		       ifnull(mine.qty, 0) as stock,
+		       ifnull(sell.price_list_rate, i.standard_rate) as sales_price,
+		       ifnull(buy.price_list_rate, i.last_purchase_rate) as purchase_price,
+		       (select bc.barcode from `tabItem Barcode` bc
+		        where bc.parent = i.name order by bc.idx limit 1) as barcode
+		from `tabItem` i
+		left join (
+			select b.item_code, sum(b.actual_qty) qty
+			from `tabBin` b join `tabWarehouse` w on w.name = b.warehouse
+			where w.custom_branch = %(branch)s group by b.item_code
+		) mine on mine.item_code = i.name
+		left join `tabItem Price` sell on sell.item_code = i.name
+			and sell.price_list = %(selling)s and ifnull(sell.selling, 1) = 1
+		left join `tabItem Price` buy on buy.item_code = i.name
+			and buy.price_list = 'Standard Buying' and ifnull(buy.buying, 1) = 1
+		where {" and ".join(conditions)}
+		order by (ifnull(mine.qty, 0) > 0) desc, i.item_name
+		limit %(limit)s
+		""",
+		values,
+		as_dict=True,
+	)
+	for row in rows:
+		row["stock"] = flt(row.stock)
+		row["sales_price"] = flt(row.sales_price)
+		row["purchase_price"] = flt(row.purchase_price)
+	return rows
+
+
+@frappe.whitelist()
 def search_suppliers(query: str = "", limit: int = 10) -> list[dict]:
 	"""Find the distributor by name or phone."""
 	_me()

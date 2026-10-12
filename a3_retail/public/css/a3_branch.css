@@ -2004,19 +2004,19 @@ input.is-locked { background: rgba(42, 51, 66, .04); color: var(--muted);
    stay quiet until the cursor is in them — the row reads as a row of figures,
    not as a row of boxes. */
 #lines { table-layout: fixed; }
-#lines th:nth-child(1) { width: auto; }
-#lines th:nth-child(2) { width: 64px; }
-#lines th:nth-child(3) { width: 96px; }
-#lines th:nth-child(4) { width: 100px; }
-#lines th:nth-child(5) { width: 78px; }
-#lines th:nth-child(6) { width: 96px; }
-#lines th:nth-child(7) { width: 34px; }
-#lines th:nth-child(2), #lines th:nth-child(3), #lines th:nth-child(4),
-#lines th:nth-child(6) { text-align: right; }
+#lines th.col-no { width: 38px; text-align: left; }
+#lines th.col-qty { width: 66px; text-align: right; }
+#lines th.col-rate { width: 104px; text-align: right; }
 /* The count sits in the middle of its column, so its heading does too. */
-#lines th:nth-child(5) { text-align: center; }
-#lines td:nth-child(1) { white-space: normal; font-weight: 600; }
-#lines td:nth-child(6) { text-align: right; font-weight: 700;
+#lines th.col-imei { width: 82px; text-align: center; }
+#lines th.col-amt { width: 100px; text-align: right; }
+#lines th.col-x { width: 32px; }
+#lines td.cell-no { color: var(--faint); font-variant-numeric: tabular-nums;
+	font-size: 11.5px; }
+#lines td.cell-item { white-space: normal; font-weight: 600; }
+#lines td.cell-item small { display: block; font-weight: 500; color: var(--faint);
+	font-size: 10.5px; letter-spacing: .03em; }
+#lines td.cell-amt { text-align: right; font-weight: 700;
 	font-variant-numeric: tabular-nums; }
 
 /* A resting border, unlike the cart line at the till: there the figure is always
@@ -2033,7 +2033,6 @@ input.is-locked { background: rgba(42, 51, 66, .04); color: var(--muted);
 #lines input.qty:focus, #lines input.rate:focus, #lines input.sell:focus {
 	outline: none; border-color: var(--sky); background: var(--card);
 	box-shadow: 0 0 0 3px rgba(41, 171, 226, .14); }
-
 /* The IMEI count is a reading, not an alarm. A line that still needs its numbers
    is work to do, not a mistake — red belongs on a bill that will not save, and
    this one just has not been filled in yet. */
@@ -2046,6 +2045,7 @@ input.is-locked { background: rgba(42, 51, 66, .04); color: var(--muted);
 #lines .drop { border: 0; background: none; color: var(--faint); font-size: 15px;
 	line-height: 1; padding: 0; cursor: pointer; }
 #lines .drop:hover { color: var(--danger-dark, #c0392b); }
+
 /* Picking handsets inside the Move stock dialog, under the line they belong to. */
 .w-imei-box { margin: -4px 0 10px; }
 .w-imei-head { display: flex; justify-content: space-between; align-items: baseline;
@@ -2055,9 +2055,6 @@ input.is-locked { background: rgba(42, 51, 66, .04); color: var(--muted);
 .w-imei-box .imei-list li label { display: flex; align-items: center; gap: 9px;
 	cursor: pointer; width: 100%; }
 .w-imei-none { margin: -4px 0 10px; font-size: 12px; }
-/* The IMEI list on a purchase: one number per line, read off the cartons. */
-#imei-box { width: 100%; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-	font-size: 13px; line-height: 1.7; letter-spacing: .02em; resize: vertical; }
 /* Scanning cartons into a purchase line. The gun gets a box of its own above
    the list, with a running tally, so the counter can keep both hands on the
    stock and still see where they are. */
@@ -2087,3 +2084,244 @@ input.is-locked { background: rgba(42, 51, 66, .04); color: var(--muted);
 .w-hit:hover { background: #f5f8fc; }
 .w-hit small { color: var(--muted); font-size: 10px; letter-spacing: .04em; }
 .w-hit b { flex: 0 0 auto; font-variant-numeric: tabular-nums; color: var(--muted); }
+
+
+/* ==========================================================================
+   Recording a purchase — the picker, the serial list and the new item
+   A rep stands at the counter with a dozen lines and the shop has to keep up.
+   Everything a line needs is asked for in one place and closed again, so the
+   bill underneath stays whole and readable while it is being written.
+   ========================================================================== */
+
+/* --- the dashed row that opens the picker, and the gun beside it --------- */
+.pe-add { display: flex; align-items: stretch; gap: 10px; margin-top: 12px; }
+.add-row { flex: 1 1 auto; padding: 11px; border: 1px dashed #bfdcf5;
+	border-radius: var(--radius-sm); background: var(--card); color: var(--sky-dark);
+	font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.add-row:hover { background: #f2f8fe; border-color: var(--sky); }
+.btn-scan { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 8px; }
+/* Drawn rather than fetched: three bars read as a barcode at this size, and an
+   icon file for it would be one more request on a counter's broadband. */
+.scan-glyph { display: inline-block; width: 13px; height: 13px;
+	background: repeating-linear-gradient(90deg, currentColor 0 2px,
+		transparent 2px 4px); opacity: .75; }
+
+/* --- Add Items to Bill --------------------------------------------------- */
+#pick-modal .modal-card { max-width: 980px; width: 96vw; display: flex;
+	flex-direction: column; max-height: 92vh; padding: 0; }
+.modal-head { display: flex; align-items: center; justify-content: space-between;
+	padding: 16px 20px; border-bottom: 1px solid var(--line); }
+.modal-head h3 { margin: 0; }
+.modal-x { border: 0; background: rgba(42, 51, 66, .05); border-radius: var(--radius-sm);
+	width: 30px; height: 30px; font-size: 18px; line-height: 1; color: var(--muted);
+	cursor: pointer; }
+.modal-x:hover { background: rgba(42, 51, 66, .1); color: var(--ink); }
+
+.pick-tools { display: flex; align-items: center; gap: 10px; padding: 14px 20px;
+	border-bottom: 1px solid var(--line); }
+.pick-search { position: relative; flex: 1 1 auto; min-width: 0; display: flex;
+	align-items: center; }
+.pick-search input { width: 100%; padding: 10px 42px 10px 34px; font-family: inherit;
+	font-size: 13.5px; border: 1px solid var(--line); border-radius: var(--radius-sm);
+	background: var(--card); color: var(--ink); }
+.pick-search input:focus { outline: none; border-color: var(--sky);
+	box-shadow: 0 0 0 3px rgba(41, 171, 226, .14); }
+.pick-glyph { position: absolute; left: 11px; color: var(--faint); font-size: 14px;
+	pointer-events: none; }
+.pick-gun { position: absolute; right: 8px; border: 0; background: none;
+	color: var(--muted); cursor: pointer; padding: 4px; line-height: 0; }
+.pick-gun:hover { color: var(--sky-dark); }
+.pick-tools select { flex: 0 0 170px; padding: 10px; font-family: inherit;
+	font-size: 13px; border: 1px solid var(--line); border-radius: var(--radius-sm);
+	background: var(--card); color: var(--ink); }
+
+.pick-scroll { flex: 1 1 auto; overflow-y: auto; min-height: 220px; }
+.pick-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.pick-table th { position: sticky; top: 0; z-index: 1; background: #fafbfd;
+	text-align: left; padding: 9px 14px; font-size: 10.5px; font-weight: 700;
+	color: var(--muted); text-transform: uppercase; letter-spacing: .06em;
+	border-bottom: 1px solid var(--line); }
+.pick-table td { padding: 9px 14px; border-bottom: 1px solid var(--line);
+	vertical-align: middle; }
+.pick-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+/* The name gets whatever is left; every other column is a known shape, so
+   fixing them keeps a handset's name on one line. */
+.pick-table th:nth-child(2) { width: 150px; }
+.pick-table th:nth-child(3) { width: 80px; }
+.pick-table th:nth-child(4), .pick-table th:nth-child(5) { width: 128px; }
+.pick-table .col-pickqty { width: 150px; }
+.pick-table tbody tr:hover, .pick-table tbody tr.is-cursor { background: #f5f8fc; }
+/* The row you are on is the row Enter will add, so it is marked down the edge
+   rather than by colour alone — a shop screen is often read at an angle. */
+.pick-table tbody tr.is-cursor td:first-child { box-shadow: inset 3px 0 0 var(--sky); }
+.pick-table tbody tr.is-picked { background: #f3fbf6; }
+.pick-table tbody tr.is-picked:hover { background: #ecf8f1; }
+.pick-name { font-weight: 600; }
+.pick-code { color: var(--muted); font-size: 12px;
+	font-variant-numeric: tabular-nums; }
+.pick-serial { display: inline-block; margin-left: 7px; padding: 1px 7px;
+	border-radius: var(--radius-pill); background: #eaf4fd; color: var(--sky-dark);
+	font-size: 10px; font-weight: 700; letter-spacing: .04em; vertical-align: 1px; }
+.pick-stock { font-weight: 600; }
+.pick-stock.is-out { color: var(--faint); font-weight: 500; }
+.pick-nil { color: var(--faint); }
+
+/* The quantity cell is a stepper until the line is on the bill, because the
+   commonest case is one handset and the next commonest is a round carton. */
+.pick-add { display: inline-flex; align-items: center; justify-content: flex-end;
+	gap: 6px; }
+.pick-add .btn-add1 { padding: 5px 13px; border: 1px solid #bfdcf5; background: var(--card);
+	color: var(--sky-dark); border-radius: 6px; font-family: inherit; font-size: 12px;
+	font-weight: 700; cursor: pointer; }
+.pick-add .btn-add1:hover { background: #f2f8fe; }
+.pick-step { display: inline-flex; align-items: center; border: 1px solid var(--line);
+	border-radius: 6px; overflow: hidden; background: var(--card); }
+.pick-step button { border: 0; background: none; width: 26px; height: 28px;
+	font-size: 14px; line-height: 1; color: var(--muted); cursor: pointer; }
+.pick-step button:hover { background: #f2f8fe; color: var(--sky-dark); }
+.pick-step input { width: 44px; border: 0; border-left: 1px solid var(--line);
+	border-right: 1px solid var(--line); padding: 5px 2px; text-align: center;
+	font-family: inherit; font-size: 12.5px; font-weight: 700; color: var(--ink);
+	font-variant-numeric: tabular-nums; background: var(--card); }
+.pick-step input:focus { outline: none; background: #f5faff; }
+
+.pick-empty { margin: 0; padding: 38px 20px; text-align: center; color: var(--muted);
+	font-size: 13px; }
+.pick-foot { display: flex; align-items: center; justify-content: space-between;
+	padding: 11px 20px; border-top: 1px solid var(--line); background: #fafbfd; }
+.pick-count { border: 0; background: none; padding: 0; font-family: inherit;
+	font-size: 12.5px; font-weight: 600; color: var(--sky-dark); cursor: pointer; }
+.pick-count:disabled { color: var(--faint); cursor: default; }
+.pick-sums { display: flex; align-items: baseline; gap: 14px; font-size: 12.5px;
+	color: var(--muted); font-variant-numeric: tabular-nums; }
+.pick-sums strong { font-size: 15px; color: var(--ink); }
+
+/* --- the bar every one of these dialogs ends on -------------------------- */
+.modal-bar { display: flex; align-items: center; justify-content: space-between;
+	gap: 14px; padding: 13px 20px; border-top: 1px solid var(--line); }
+.modal-bar .modal-actions { margin: 0; }
+.modal-bar .modal-note { margin: 0; }
+.keys { margin: 0; font-size: 11.5px; color: var(--faint); }
+kbd { display: inline-block; min-width: 17px; padding: 1px 5px; margin: 0 1px;
+	border: 1px solid var(--line-strong); border-bottom-width: 2px;
+	border-radius: 4px; background: #fbfcfe; color: var(--muted);
+	font-family: inherit; font-size: 10px; font-weight: 700; text-align: center;
+	line-height: 1.5; }
+.btn-primary kbd { border-color: rgba(255, 255, 255, .45); background: rgba(255, 255, 255, .18);
+	color: #fff; }
+
+/* --- Add Serial Numbers -------------------------------------------------- */
+#imei-modal .modal-card { max-width: 560px; display: flex; flex-direction: column;
+	max-height: 92vh; padding: 0; }
+#imei-modal .field-row, #imei-modal .imei-scan-row, #imei-modal .imei-flash,
+#imei-modal .serial-adders { margin-left: 20px; margin-right: 20px; }
+#imei-modal .field-row { margin-top: 16px; }
+#imei-modal input[readonly] { background: #f7f9fc; color: var(--muted); }
+.suffixed { display: flex; align-items: stretch; }
+.suffixed input { flex: 1 1 auto; min-width: 0;
+	border-top-right-radius: 0 !important; border-bottom-right-radius: 0 !important; }
+.suffix { flex: 0 0 auto; display: flex; align-items: center; padding: 0 11px;
+	border: 1px solid var(--line); border-left: 0;
+	border-radius: 0 var(--radius-sm) var(--radius-sm) 0; background: #f7f9fc;
+	font-size: 11.5px; font-weight: 700; color: var(--muted); letter-spacing: .04em; }
+
+.serial-scroll { flex: 1 1 auto; overflow-y: auto; margin: 4px 20px 0;
+	border: 1px solid var(--line); border-radius: var(--radius-sm); min-height: 120px; }
+.serial-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.serial-table th { position: sticky; top: 0; background: #fafbfd; text-align: left;
+	padding: 8px 12px; font-size: 10.5px; font-weight: 700; color: var(--muted);
+	text-transform: uppercase; letter-spacing: .06em;
+	border-bottom: 1px solid var(--line); }
+.serial-table td { padding: 7px 12px; border-bottom: 1px solid var(--line);
+	font-variant-numeric: tabular-nums; }
+.serial-table tbody tr:last-child td { border-bottom: 0; }
+.serial-table .col-when { width: 132px; }
+.serial-table .col-x { width: 34px; }
+.serial-table td.col-when { color: var(--muted); font-size: 12px; }
+/* A number typed in place rather than in a box: it is being corrected, not
+   entered, and the row it belongs to should stay where it is. */
+.serial-table input.sn { width: 100%; border: 1px solid transparent; background: none;
+	padding: 2px 5px; margin: -2px -5px; border-radius: 5px; font-family: inherit;
+	font-size: 13px; font-weight: 600; color: var(--ink);
+	font-variant-numeric: tabular-nums; letter-spacing: .02em; }
+.serial-table input.sn:hover { border-color: var(--line); }
+.serial-table input.sn:focus { outline: none; border-color: var(--sky);
+	background: var(--card); box-shadow: 0 0 0 3px rgba(41, 171, 226, .14); }
+.serial-table .drop { border: 0; background: none; color: var(--faint);
+	font-size: 15px; line-height: 1; padding: 0; cursor: pointer; }
+.serial-table .drop:hover { color: var(--danger-dark, #c0392b); }
+.serial-empty { margin: 0; padding: 34px 16px; text-align: center;
+	color: var(--muted); font-size: 13px; }
+.serial-adders { display: flex; gap: 10px; margin-top: 12px; margin-bottom: 4px; }
+.serial-adders .add-row { text-align: center; }
+
+/* --- Create New Item ----------------------------------------------------- */
+#ni-modal .modal-card { max-width: 880px; width: 96vw; display: flex;
+	flex-direction: column; max-height: 92vh; padding: 0; }
+.ni-body { flex: 1 1 auto; display: grid; grid-template-columns: 216px 1fr;
+	overflow: hidden; }
+/* Name and price get a line on the bill; the rest is for whoever has it to
+   hand. Putting them behind headings is what keeps the first screen short
+   enough to fill in with a rep waiting. */
+.ni-rail { border-right: 1px solid var(--line); background: #fafbfd; padding: 16px 12px;
+	overflow-y: auto; }
+.ni-tab { display: block; width: 100%; text-align: left; padding: 9px 12px;
+	margin-bottom: 2px; border: 0; border-radius: var(--radius-sm); background: none;
+	font-family: inherit; font-size: 13px; font-weight: 600; color: var(--muted);
+	cursor: pointer; }
+.ni-tab:hover { background: rgba(42, 51, 66, .05); color: var(--ink); }
+.ni-tab.is-on { background: #eef1fd; color: #4a46c9; }
+.ni-tab.has-gap { color: var(--danger-dark, #b03a3a); }
+.ni-rail-head { margin: 16px 0 6px; padding: 0 12px; font-size: 10.5px;
+	font-weight: 700; color: var(--faint); text-transform: uppercase;
+	letter-spacing: .06em; }
+.req { color: var(--danger, #c0392b); }
+
+.ni-panes { overflow-y: auto; padding: 18px 20px; }
+.ni-card { border: 1px solid var(--line); border-radius: var(--radius);
+	padding: 16px 16px 4px; background: var(--card); }
+.ni-pane[hidden] { display: none; }
+.radio-row { display: flex; gap: 18px; padding-top: 2px; }
+.radio-row label { display: inline-flex; align-items: center; gap: 7px;
+	font-size: 13.5px; font-weight: 500; cursor: pointer; }
+.radio-row input { width: auto !important; margin: 0; }
+
+/* A price is a figure with a rupee on one side and a question on the other:
+   is this the number before tax or after it. myBillBook asks it beside the
+   box, and the shop answers differently for buying and for selling. */
+.priced { display: flex; align-items: stretch; }
+.priced .rupee { flex: 0 0 auto; display: flex; align-items: center; padding: 0 10px;
+	border: 1px solid var(--line); border-right: 0;
+	border-radius: var(--radius-sm) 0 0 var(--radius-sm); background: #f7f9fc;
+	font-size: 13px; color: var(--muted); }
+.priced input { flex: 1 1 auto; min-width: 0; border-radius: 0 !important; }
+.priced select { flex: 0 0 128px; border-left: 0 !important;
+	border-radius: 0 var(--radius-sm) var(--radius-sm) 0 !important;
+	background: #f7f9fc; font-size: 12px; color: var(--muted); }
+.coded { display: flex; align-items: stretch; gap: 8px; }
+.coded input { flex: 1 1 auto; min-width: 0; }
+.coded .link { flex: 0 0 auto; }
+.link { border: 0; background: none; padding: 0 2px; font-family: inherit;
+	font-size: 12.5px; font-weight: 700; color: var(--sky-dark); cursor: pointer; }
+.link:hover { text-decoration: underline; }
+.field label.toggle { display: inline-flex; align-items: center; gap: 9px;
+	margin-bottom: 0; font-size: 13.5px; font-weight: 500; cursor: pointer; }
+.field label.toggle input { width: auto !important; margin: 0; }
+.field.check { display: block; }
+.field.check .muted { margin: 4px 0 0; font-size: 11.5px; }
+.ni-margin { margin: 0; padding: 9px 0 0; font-size: 15px; font-weight: 700;
+	font-variant-numeric: tabular-nums; }
+.ni-margin.is-thin { color: var(--warn, #b45309); }
+.ni-margin.is-loss { color: var(--danger-dark, #b03a3a); }
+
+@media (max-width: 860px) {
+	.ni-body { grid-template-columns: 1fr; }
+	.ni-rail { display: flex; gap: 6px; overflow-x: auto; border-right: 0;
+		border-bottom: 1px solid var(--line); padding: 10px 12px; }
+	.ni-rail-head { display: none; }
+	.ni-tab { width: auto; white-space: nowrap; margin: 0; }
+	.pick-tools { flex-wrap: wrap; }
+	.pick-tools select { flex: 1 1 140px; }
+	.modal-bar { flex-wrap: wrap; }
+	.keys { display: none; }
+}
