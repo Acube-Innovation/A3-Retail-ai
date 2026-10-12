@@ -1991,3 +1991,7 @@ input.is-locked { background: rgba(42, 51, 66, .04); color: var(--muted);
 .w-imei-box .imei-list li label { display: flex; align-items: center; gap: 9px;
 	cursor: pointer; width: 100%; }
 .w-imei-none { margin: -4px 0 10px; font-size: 12px; }
+/* The IMEI list on a purchase: one number per line, read off the cartons. */
+#imei-box { width: 100%; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+	font-size: 13px; line-height: 1.7; letter-spacing: .02em; resize: vertical; }
+.btn.imei.warn { border-color: var(--danger, #c0392b); color: var(--danger, #c0392b); }
