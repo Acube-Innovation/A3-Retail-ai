@@ -127,7 +127,7 @@ window.POS = (function () {
 			         title="${esc(item.item_name)}${item.is_stock_item
 					? " · " + (item.branch_qty > 0 ? item.branch_qty + " in stock here" : "none here")
 					: ""}">
-				${badge(item)}
+				${badge(item) ? `<div class="card-flags">${badge(item)}</div>` : ""}
 				<div class="card-main">
 					<div class="card-thumb">${thumb(item)}</div>
 					<div class="card-body">${cardLines(item)}</div>

@@ -528,8 +528,14 @@ body.side-collapsed .side-nav a, body.side-collapsed .side-soon { justify-conten
 	background: var(--card); border-radius: 7px; font-size: 16px; line-height: 1; color: #6b7688;
 	cursor: pointer; }
 .card-add:hover { background: var(--brand); border-color: var(--brand); color: #fff; }
-.badge-new, .badge-low { position: absolute; top: 8px; right: 8px; font-size: 9px; font-weight: 700;
-	letter-spacing: .05em; border-radius: var(--radius-pill); padding: 3px 9px; }
+/* The badge sits in a row of its own, not over the card. Absolutely positioned
+   it covered the first line of every name long enough to wrap — "AC+IPAD PRO 13
+   INCH M5" read as "PRO 13 INCH M5", which is a different product to anyone
+   glancing at the grid. */
+.card-flags { display: flex; justify-content: flex-end; margin-bottom: 4px; }
+.badge-new, .badge-low { font-size: 9px; font-weight: 700;
+	letter-spacing: .05em; border-radius: var(--radius-pill); padding: 3px 9px;
+	white-space: nowrap; }
 .badge-new { background: #22c55e; color: #fff; }
 .badge-low { background: #fde3a7; color: #c2660a; }
 
@@ -537,6 +543,7 @@ body.side-collapsed .side-nav a, body.side-collapsed .side-soon { justify-conten
 .pos-grid.is-list .card { flex-direction: row; align-items: center; min-height: 0;
 	gap: 14px; padding: 10px 14px; }
 .pos-grid.is-list .card-main { flex: 1; align-items: center; }
+.pos-grid.is-list .card-flags { order: 3; margin: 0; }
 .pos-grid.is-list .card-thumb { align-items: center; }
 .pos-grid.is-list .card-thumb img { max-height: 40px; }
 .pos-grid.is-list .thumb-fallback { height: 40px; }
