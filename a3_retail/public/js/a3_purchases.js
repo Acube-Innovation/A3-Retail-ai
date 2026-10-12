@@ -63,12 +63,29 @@
 						<td>${money(r.grand_total)}</td>
 						<td>${r.outstanding_amount > 0 ? money(r.outstanding_amount) : "—"}</td>
 						<td><span class="pill">${esc(r.docstatus === 0 ? "Draft" : r.status)}</span></td>
-						<td>${r.outstanding_amount > 0 && r.docstatus === 1
+						<td class="row-actions">${r.docstatus === 1
+							? `<button class="btn btn-quiet btn-sm print-bill"
+							           data-name="${esc(r.name)}">Bill</button>` : ""}${
+							r.outstanding_amount > 0 && r.docstatus === 1
 							? `<button class="btn btn-outline btn-sm pay-bill"
 							           data-supplier="${esc(r.supplier)}">Pay</button>` : ""}</td>
 					</tr>`).join("")}
 				</tbody>
 			</table>`;
+
+		$("rows").querySelectorAll(".print-bill").forEach((node) => {
+			node.addEventListener("click", async () => {
+				// The sheet the shop files: same shape as the distributor's own,
+				// so the two sit together in the folder.
+				try {
+					const url = await A3.call("a3_retail.api.stock_control.print_url",
+						{ doctype: "Purchase Invoice", name: node.dataset.name });
+					window.open(url, "_blank");
+				} catch (error) {
+					say(error.message || "Could not open that bill.", "error");
+				}
+			});
+		});
 
 		$("rows").querySelectorAll(".pay-bill").forEach((node) => {
 			node.addEventListener("click", () => {
@@ -84,11 +101,6 @@
 		state.branch = options.branch;
 
 		$("refresh").addEventListener("click", load);
-
-		$("item-hits").addEventListener("click", (event) => {
-			const pick = event.target.closest(".pick");
-			if (pick) addLine(pick.dataset.code, pick.dataset.label);
-		});
 
 		load();
 	}

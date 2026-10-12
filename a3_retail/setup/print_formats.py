@@ -46,6 +46,8 @@ FORMATS = [
 	("A3 Salary Slip", "Salary Slip", "salary_slip", "A4"),
 	("Asset Custody Acknowledgement", "Asset Movement", "asset_custody_acknowledgement", "A4"),
 	("RCM Self Invoice", "Purchase Invoice", "rcm_self_invoice", "A4"),
+	# The distributor's bill, in the shape the shop files them in.
+	("A3 Purchase Invoice", "Purchase Invoice", "purchase_invoice", "A4"),
 	("Courier Manifest", "Courier Dispatch", "courier_manifest", "A4"),
 ]
 

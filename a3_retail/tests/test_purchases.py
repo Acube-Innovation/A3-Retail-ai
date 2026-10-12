@@ -40,6 +40,11 @@ class TestPurchasesPage(FrappeTestCase):
 		self.assertIn('id="ni-modal"', entry)
 		self.assertIn('id="s-gstin"', entry)
 
+		# and the list hands off to it rather than opening a dialog
+		listing = open(os.path.join(folder, "purchases.html")).read()
+		self.assertIn("/retail/purchase_entry", listing)
+		self.assertNotIn('id="purchase-modal"', listing)
+
 	def test_the_three_dialogs_a_line_needs(self):
 		"""Items, their IMEIs and an item nobody has catalogued yet.
 
@@ -69,10 +74,109 @@ class TestPurchasesPage(FrappeTestCase):
 		              "ni-hsn", "ni-serial"):
 			self.assertIn(f'id="{field}"', entry)
 
-		# and the list hands off to it rather than opening a dialog
-		listing = open(os.path.join(folder, "purchases.html")).read()
-		self.assertIn("/retail/purchase_entry", listing)
-		self.assertNotIn('id="purchase-modal"', listing)
+	def test_the_bill_prints_in_the_shape_the_shop_files(self):
+		"""The distributor's bill, rendered without ever reaching the database.
+
+		`frappe.get_print` takes the document object, so the whole sheet can be
+		exercised against a bill built in memory — which matters here, because
+		`get_print` commits and a rollback would not take a real one back.
+		"""
+		if not frappe.db.exists("Print Format", "A3 Purchase Invoice"):
+			self.skipTest("print formats have not been installed on this site")
+
+		supplier = frappe.db.get_value("Supplier", {"disabled": 0}, "name")
+		if not supplier:
+			self.skipTest("needs a supplier")
+
+		doc = frappe.new_doc("Purchase Invoice")
+		doc.name = "_T-PINV-PRINT"
+		doc.company = frappe.db.get_single_value("Global Defaults", "default_company")
+		doc.supplier = supplier
+		doc.supplier_name = "A3 Probe Distributors"
+		doc.posting_date = "2026-10-10"
+		doc.bill_no = "APL2627E01034"
+		doc.currency = "INR"
+		doc.conversion_rate = 1
+		row = doc.append("items", {})
+		row.item_code = row.item_name = "A3 Probe Handset"
+		row.gst_hsn_code = "85171300"
+		row.qty = 2
+		row.uom = row.stock_uom = "PCS"
+		row.rate = row.net_rate = 10000
+		row.amount = row.net_amount = row.base_net_amount = 20000
+		row.use_serial_batch_fields = 1
+		row.serial_no = "860123456789011\n860123456789029"
+		doc.total_qty = 2
+		doc.total = doc.net_total = doc.base_net_total = 20000
+		for head in ("Input Tax CGST - PT", "Input Tax SGST - PT"):
+			tax = doc.append("taxes", {})
+			tax.charge_type = "On Net Total"
+			tax.account_head = head
+			tax.description = head
+			tax.rate = 9
+			tax.tax_amount = tax.base_tax_amount_after_discount_amount = 1800
+		doc.total_taxes_and_charges = 3600
+		doc.grand_total = doc.rounded_total = 23600
+		doc.outstanding_amount = 23600
+
+		html = frappe.get_print("Purchase Invoice", doc.name,
+		                        print_format="A3 Purchase Invoice", doc=doc)
+
+		self.assertFalse(frappe.db.exists("Purchase Invoice", doc.name),
+		                 "rendering must not put a bill on the ledger")
+
+		# it says what kind of document it is, and whose numbers are on it
+		self.assertIn("PURCHASE", html)
+		self.assertIn("BILL FROM", html)
+		self.assertIn("SHIP FROM", html)
+		self.assertIn("A3 Probe Distributors", html)
+		# the supplier's own number, which is what their ledger calls this
+		self.assertIn("Original Invoice No.", html)
+		self.assertIn("APL2627E01034", html)
+		# the handsets, under the line they arrived on
+		self.assertIn("860123456789011", html)
+		self.assertIn("860123456789029", html)
+		self.assertIn("85171300", html)
+		# the input credit this bill carries
+		self.assertIn("HSN/SAC", html)
+		self.assertIn("CGST", html)
+		self.assertIn("Total Amount (in words)", html)
+		# and what is still owed on it
+		self.assertIn("PAID AMOUNT", html)
+		self.assertIn("BALANCE AMOUNT", html)
+
+	def test_a_settled_bill_does_not_print_a_balance(self):
+		"""A bill with nothing owing is filed, not chased — a bold zero reads
+		like a demand."""
+		if not frappe.db.exists("Print Format", "A3 Purchase Invoice"):
+			self.skipTest("print formats have not been installed on this site")
+		supplier = frappe.db.get_value("Supplier", {"disabled": 0}, "name")
+		if not supplier:
+			self.skipTest("needs a supplier")
+
+		doc = frappe.new_doc("Purchase Invoice")
+		doc.name = "_T-PINV-PAID"
+		doc.company = frappe.db.get_single_value("Global Defaults", "default_company")
+		doc.supplier = supplier
+		doc.supplier_name = "A3 Probe Distributors"
+		doc.posting_date = "2026-10-10"
+		doc.currency = "INR"
+		doc.conversion_rate = 1
+		row = doc.append("items", {})
+		row.item_code = row.item_name = "A3 Probe Handset"
+		row.qty = 1
+		row.uom = row.stock_uom = "PCS"
+		row.rate = row.net_rate = 1000
+		row.amount = row.net_amount = row.base_net_amount = 1000
+		doc.total_qty = 1
+		doc.total = doc.net_total = doc.base_net_total = 1000
+		doc.grand_total = doc.rounded_total = 1000
+		doc.outstanding_amount = 0
+
+		html = frappe.get_print("Purchase Invoice", doc.name,
+		                        print_format="A3 Purchase Invoice", doc=doc)
+		self.assertIn("PAID AMOUNT", html)
+		self.assertNotIn("BALANCE AMOUNT", html)
 
 	def test_the_menu_offers_it(self):
 		sidebar = open(frappe.get_app_path(

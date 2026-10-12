@@ -351,7 +351,10 @@ def create(payload) -> dict:
 		"supplier": frappe.db.get_value("Supplier", supplier, "supplier_name"),
 		"grand_total": flt(doc.grand_total),
 		"outstanding": flt(doc.outstanding_amount),
-		"print_url": f"/printview?doctype=Purchase%20Invoice&name={doc.name}",
+		# Named, or the browser falls back to ERPNext's standard sheet rather
+		# than the one the shop files.
+		"print_url": f"/printview?doctype=Purchase%20Invoice&name={doc.name}"
+		             f"&format=A3%20Purchase%20Invoice&no_letterhead=0",
 	}
 
 
