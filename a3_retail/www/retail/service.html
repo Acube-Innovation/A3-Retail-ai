@@ -321,6 +321,34 @@
 </div>
 
 <!-- ------------------------------------------------------------- dialogs -->
+{#- A shop services handsets it has never sold, so the make and the model both
+    have to be nameable at the counter with the device in hand. -#}
+<div class="modal" id="model-modal" hidden>
+	<div class="modal-card">
+		<h3>{{ _("Add a model") }}</h3>
+		<p class="modal-note">{{ _("Name it the way the box does — the make, then the model on its own.") }}</p>
+
+		<label class="field"><span>{{ _("Make") }}</span>
+			<select id="dm-make"></select></label>
+		<label class="field" id="dm-newmake-field" hidden>
+			<span>{{ _("New make") }}</span>
+			<input id="dm-newmake" placeholder="{{ _('ex: Honor') }}"></label>
+
+		<div class="field-grid">
+			<label class="field"><span>{{ _("Model") }}</span>
+				<input id="dm-model" placeholder="{{ _('ex: Galaxy A15 — without the make') }}"></label>
+			<label class="field"><span>{{ _("Kind of device") }}</span>
+				<select id="dm-type"></select></label>
+		</div>
+
+		<div class="msg" id="dm-msg"></div>
+		<div class="modal-actions">
+			<button class="btn btn-quiet" data-close>{{ _("Cancel") }}</button>
+			<button class="btn btn-primary" id="dm-save">{{ _("Add the model") }}</button>
+		</div>
+	</div>
+</div>
+
 {#- A new customer is a record the shop keeps, so it is made on purpose rather
     than by typing over whoever was on screen last. -#}
 <div class="modal" id="cust-modal" hidden>

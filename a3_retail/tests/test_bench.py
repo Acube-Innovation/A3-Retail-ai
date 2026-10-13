@@ -282,6 +282,48 @@ class TestHandingItBack(FrappeTestCase):
 		self.assertIn("(the customer)", script)
 
 
+class TestNamingADevice(FrappeTestCase):
+	"""A shop services handsets it has never sold."""
+
+	def test_the_make_and_the_model_are_both_nameable_at_the_counter(self):
+		markup = open(frappe.get_app_path(
+			"a3_retail", "www", "retail", "service.html")).read()
+		self.assertIn('id="model-modal"', markup)
+		for field in ("dm-make", "dm-newmake", "dm-model", "dm-type"):
+			self.assertIn(f'id="{field}"', markup, field)
+		script = open(frappe.get_app_path(
+			"a3_retail", "public", "js", "a3_service.js")).read()
+		self.assertNotIn("window.prompt", script,
+		                 "a model is named in the dialog, not a browser prompt")
+
+	def test_an_existing_make_is_matched_however_it_is_typed(self):
+		"""Otherwise the catalogue fills up with Vivo, VIVO and vivo, and the
+		models underneath them stop adding up."""
+		import inspect
+
+		from a3_retail.api import service_pos
+
+		source = inspect.getsource(service_pos.create_device_model)
+		self.assertIn("lower(name) = lower(", source)
+
+	def test_a_make_is_only_created_when_it_is_asked_for(self):
+		"""A typo in the make should not quietly mint a brand."""
+		import inspect
+
+		from a3_retail.api import service_pos
+
+		source = inspect.getsource(service_pos.create_device_model)
+		self.assertIn("cint(new_make)", source)
+		self.assertIn('require_permission("Brand", "create")', source)
+
+	def test_the_counter_may_name_a_make(self):
+		from a3_retail.setup.permissions import PERMISSION_MATRIX
+
+		for role in ("Service Manager", "Reception Executive"):
+			self.assertIn("C", PERMISSION_MATRIX["Brand"][role],
+			              f"{role} must be able to name a make it is servicing")
+
+
 class TestTakingACustomerIn(FrappeTestCase):
 	def test_the_counter_reads_a_customer_rather_than_retyping_one(self):
 		"""Editing someone's details on the way past a repair is how two

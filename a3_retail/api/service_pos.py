@@ -68,6 +68,7 @@ def bootstrap() -> dict:
 		"device_types": (frappe.get_meta("Service Job Card")
 		                 .get_field("device_type").options or "").split("\n"),
 		"can_add_model": bool(frappe.has_permission("Device Model", "create")),
+		"can_add_make": bool(frappe.has_permission("Brand", "create")),
 		# What this shop insists on before it takes someone's device in. The
 		# screen asks for these up front rather than at the end of the booking.
 		"require_photos": bool(frappe.db.get_single_value("A3 Retail Settings",
@@ -234,7 +235,8 @@ def device_models(query: str = "", limit: int = 40) -> list[dict]:
 
 
 @frappe.whitelist()
-def create_device_model(brand: str, model_name: str, device_type: str = "Mobile") -> dict:
+def create_device_model(brand: str, model_name: str, device_type: str = "Mobile",
+                        new_make: int = 0) -> dict:
 	"""Name a model the shop has never sold, so it can service one.
 
 	Deliberately thin: a brand, a name and what kind of thing it is. Everything
@@ -249,8 +251,24 @@ def create_device_model(brand: str, model_name: str, device_type: str = "Mobile"
 	if not brand or not model_name:
 		frappe.throw(_("A model needs a brand and a name."), title=_("Not enough to go on"))
 
-	if not frappe.db.exists("Brand", brand):
-		frappe.throw(_("{0} is not a brand this shop carries.").format(brand))
+	# However it was typed, an existing make is that make. Without this the
+	# catalogue fills up with Vivo, VIVO and vivo, and the models underneath
+	# them stop adding up.
+	known = frappe.db.sql(
+		"select name from `tabBrand` where lower(name) = lower(%s) limit 1", brand)
+	if known:
+		brand = known[0][0]
+	elif cint(new_make):
+		require_permission("Brand", "create")
+		doc = frappe.new_doc("Brand")
+		doc.brand = brand
+		doc.insert()
+	else:
+		frappe.throw(
+			_("{0} is not a make this shop carries. Tick “a make we do not have "
+			  "yet” if it really is new.").format(brand),
+			title=_("Unknown make"),
+		)
 
 	name = f"{brand} {model_name}"
 	if frappe.db.exists("Device Model", name):
@@ -265,7 +283,7 @@ def create_device_model(brand: str, model_name: str, device_type: str = "Mobile"
 	doc.insert()
 
 	return {"name": doc.name, "created": True, "brand": brand,
-	        "device_type": doc.device_type}
+	        "model_name": model_name, "device_type": doc.device_type}
 
 
 def _device_type(item_code: str) -> str:

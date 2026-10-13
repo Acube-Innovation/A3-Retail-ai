@@ -234,25 +234,70 @@ window.SVC = (function () {
 		};
 	}
 
-	async function askNewModel() {
-		const brand = ($("d-brand") && $("d-brand").value) || "";
-		if (!brand) return say("Pick the make first, then add the model under it.", "error");
+	/** A shop services handsets it has never sold, so the make and the model
+	 *  both have to be nameable with the device in hand. */
+	function askNewModel() {
+		const picked = ($("d-brand") && $("d-brand").value) || "";
+		$("dm-make").innerHTML =
+			(state.brands || []).map((brand) =>
+				`<option value="${esc(brand)}"${brand === picked ? " selected" : ""}
+					>${esc(brand)}</option>`).join("")
+			+ (state.canAddMake
+				? '<option value="__new">+ A make we do not have yet</option>' : "");
+		$("dm-type").innerHTML = (state.deviceTypes || ["Mobile"]).map((kind) =>
+			`<option value="${esc(kind)}">${esc(kind)}</option>`).join("");
+		$("dm-newmake-field").hidden = true;
+		$("dm-newmake").value = "";
+		$("dm-model").value = "";
+		$("dm-msg").textContent = "";
+		$("model-modal").hidden = false;
+		$("dm-model").focus();
+	}
 
-		const model = window.prompt("Model name, without the make (e.g. Galaxy A15)");
-		if (!model) return;
-
+	async function saveNewModel() {
+		const isNew = $("dm-make").value === "__new";
+		const make = isNew ? $("dm-newmake").value.trim() : $("dm-make").value;
+		const model = $("dm-model").value.trim();
+		const msg = $("dm-msg");
+		if (!make || !model) {
+			msg.textContent = isNew && !make
+				? "Name the make as well." : "A make and a model, please.";
+			msg.className = "msg error";
+			return;
+		}
+		$("dm-save").disabled = true;
+		msg.textContent = "Saving…";
+		msg.className = "msg";
 		try {
-			const created = await A3.call("a3_retail.api.service_pos.create_device_model",
-				{ brand, model_name: model.trim(), device_type: "Mobile" });
-			state.models.push({ name: created.name, model_name: model.trim(),
+			const created = await A3.call("a3_retail.api.service_pos.create_device_model", {
+				brand: make,
+				model_name: model,
+				device_type: $("dm-type").value || "Mobile",
+				new_make: isNew ? 1 : 0,
+			});
+			// The make may have come back spelled the way it is already on file.
+			const brand = created.brand || make;
+			if (!(state.brands || []).includes(brand)) {
+				state.brands.push(brand);
+				state.brands.sort();
+			}
+			state.models.push({ name: created.name,
+			                    model_name: created.model_name || model,
 			                    brand, device_type: created.device_type || "Mobile" });
+			state.device = state.device || {};
 			state.device.brand = brand;
 			state.device.device_model = created.name;
 			state.device.device_type = created.device_type || "Mobile";
-			fillModels(brand, created.name);
-			say(created.created ? created.name + " added." : created.name + " was already listed.", "ok");
+			$("model-modal").hidden = true;
+			paintDevice();
+			say(created.created === false
+				? created.name + " was already listed."
+				: created.name + " added.", "ok");
 		} catch (error) {
-			say(error.message, "error", error.title);
+			msg.textContent = error.message || "Could not add it.";
+			msg.className = "msg error";
+		} finally {
+			$("dm-save").disabled = false;
 		}
 	}
 
@@ -934,6 +979,8 @@ window.SVC = (function () {
 		state.technicians = boot.technicians;
 		state.brands = boot.brands || [];
 		state.canAddModel = !!boot.can_add_model;
+		state.canAddMake = !!boot.can_add_make;
+		state.deviceTypes = boot.device_types || ["Mobile"];
 		state.requirePhotos = !!boot.require_photos;
 		state.minPhotos = boot.min_photos || 1;
 		state.requireDeliveryOtp = boot.require_delivery_otp !== false;
@@ -981,6 +1028,12 @@ window.SVC = (function () {
 		$("mobile").addEventListener("keydown", (e) => { if (e.key === "Enter") findCustomer(); });
 		$("new-customer").addEventListener("click", newCustomer);
 		$("nc-save").addEventListener("click", saveNewCustomer);
+		$("dm-save").addEventListener("click", saveNewModel);
+		$("dm-make").addEventListener("change", () => {
+			const isNew = $("dm-make").value === "__new";
+			$("dm-newmake-field").hidden = !isNew;
+			if (isNew) $("dm-newmake").focus();
+		});
 		$("another-device").addEventListener("click", () => {
 			state.device = null; paintDevice(); $("scan").focus();
 		});
