@@ -1301,8 +1301,21 @@ input.is-locked { background: rgba(42, 51, 66, .04); color: var(--muted);
 .inv { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px;
 	padding: 14px 20px 40px; align-items: start; }
 .inv-sheet { padding: 22px 24px; }
-.inv-side { display: flex; flex-direction: column; gap: 16px; position: sticky; top: 76px; }
-.inv-actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 10px;
+/* The rail sticks, so it must never grow taller than the window: a long
+   history made it 1500px, and a sticky box that tall runs straight past its own
+   row and sits on top of the buttons underneath. Capped to the viewport it
+   scrolls on its own instead. */
+.inv-side { display: flex; flex-direction: column; gap: 16px; position: sticky;
+	top: 76px; max-height: calc(100vh - 92px); overflow-y: auto;
+	overscroll-behavior: contain; }
+/* Room for the scrollbar so it never sits on the cards' edge. */
+.inv-side > * { flex: 0 0 auto; }
+/* Positioned, so it paints above the sticky rail beside it. Chrome holds a
+   sticky grid item inside the grid *container*, not its own row, so a tall rail
+   slides down over whatever follows — and a static row loses, because anything
+   positioned paints on top of it. */
+.inv-actions { grid-column: 1 / -1; position: relative; z-index: 1;
+	display: flex; flex-wrap: wrap; gap: 10px;
 	background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
 .inv-error { text-align: center; padding: 40px; }
 
@@ -2329,3 +2342,186 @@ kbd { display: inline-block; min-width: 17px; padding: 1px 5px; margin: 0 1px;
 /* Two small buttons in the last column of a list, side by side. */
 .row-actions { display: flex; gap: 6px; justify-content: flex-end; }
 .row-actions:empty { display: none; }
+
+/* ==========================================================================
+   Importing a catalogue from a spreadsheet (/retail/stock)
+   The preview is the screen: a tally first, then only the rows that need
+   fixing, because the ones that are fine need no attention.
+   ========================================================================== */
+.imp-start { display: flex; align-items: center; flex-wrap: wrap; gap: 10px;
+	padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid var(--line); }
+.imp-or { font-size: 12px; color: var(--faint); }
+.imp-pick { cursor: pointer; }
+.imp-chosen { font-size: 12.5px; color: var(--muted); }
+.imp-sheet { margin-bottom: 12px; }
+.imp-sheet summary, .imp-help summary { cursor: pointer; font-size: 12.5px;
+	font-weight: 600; color: var(--sky-dark); }
+.imp-sheet-row { display: flex; gap: 8px; margin: 8px 0 4px; }
+.imp-sheet-row input { flex: 1 1 auto; min-width: 0; padding: 9px 11px;
+	font-family: inherit; font-size: 13px; border: 1px solid var(--line);
+	border-radius: var(--radius-sm); }
+.imp-sheet .muted, .imp-help .muted { font-size: 11.5px; margin: 4px 0 0; }
+.imp-store { margin-bottom: 12px; }
+
+.imp-tally { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px;
+	padding: 10px 12px; border-radius: var(--radius-sm); background: #fafbfd;
+	font-size: 13px; font-weight: 600; }
+.imp-ok { color: var(--success, #047857); }
+.imp-no { color: var(--danger-dark, #b91c1c); }
+.imp-note { color: var(--muted); font-weight: 500; }
+.imp-tally .link { margin-left: auto; }
+.imp-warn { margin: 8px 0 0; padding: 8px 11px; border-radius: var(--radius-sm);
+	background: var(--warn-soft, #fffbeb); color: var(--warn, #b45309); font-size: 12.5px; }
+.imp-bad { margin: 0; padding: 10px 12px; border-radius: var(--radius-sm);
+	background: var(--danger-soft, #fef2f2); color: var(--danger-dark, #b91c1c);
+	font-size: 13px; }
+.imp-clean { margin: 10px 0 0; font-size: 13px; color: var(--success, #047857); }
+
+/* Only the rows that need work are listed. A four hundred row sheet with nine
+   problems should show nine lines, not four hundred. */
+.imp-rows { max-height: 300px; overflow-y: auto; margin-top: 10px;
+	border: 1px solid var(--line); border-radius: var(--radius-sm); }
+.imp-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.imp-table th { position: sticky; top: 0; background: #fafbfd; text-align: left;
+	padding: 7px 11px; font-size: 10.5px; font-weight: 700; color: var(--muted);
+	text-transform: uppercase; letter-spacing: .05em;
+	border-bottom: 1px solid var(--line); }
+.imp-table td { padding: 7px 11px; border-bottom: 1px solid var(--line);
+	vertical-align: top; }
+.imp-table tr:last-child td { border-bottom: 0; }
+.imp-rowno { width: 48px; color: var(--faint); font-variant-numeric: tabular-nums; }
+.imp-why { color: var(--danger-dark, #b91c1c); }
+.imp-help { margin-top: 12px; }
+.imp-cols { width: 100%; border-collapse: collapse; margin-top: 6px; font-size: 12.5px; }
+.imp-cols td { padding: 4px 8px 4px 0; vertical-align: top; }
+.imp-cols td:first-child { white-space: nowrap; width: 150px; }
+
+/* ==========================================================================
+   The bench (/retail/booking) — working a repair without opening the desk
+   The rail says where the job stands; the buttons under it are only the steps
+   the job card itself allows from there.
+   ========================================================================== */
+/* The booking page is a two-column grid — the sheet, then a 340px rail. The
+   bench is a third child, so without this it took the sheet's column and the
+   whole sheet was squeezed into the rail, where the sticky totals then sat on
+   top of everything behind them. It belongs across the top, above both. */
+.wb { grid-column: 1 / -1; margin-bottom: 0; }
+.wb-head { display: flex; align-items: center; justify-content: space-between;
+	margin-bottom: 14px; }
+.wb-head h2 { margin: 0; }
+
+.wb-rail { display: flex; list-style: none; margin: 0 0 16px; padding: 0;
+	counter-reset: stage; }
+.wb-rail li { flex: 1 1 0; display: flex; flex-direction: column; align-items: center;
+	gap: 6px; position: relative; font-size: 11.5px; color: var(--faint);
+	text-align: center; }
+/* The line between the dots, drawn behind them so it never crosses one. */
+.wb-rail li::before { content: ""; position: absolute; top: 13px; left: -50%;
+	width: 100%; height: 2px; background: var(--line); z-index: 0; }
+.wb-rail li:first-child::before { display: none; }
+.wb-rail .dot { position: relative; z-index: 1; display: flex; align-items: center;
+	justify-content: center; width: 26px; height: 26px; border-radius: 50%;
+	background: var(--card); border: 2px solid var(--line); font-size: 11px;
+	font-weight: 700; color: var(--faint); }
+.wb-rail li.is-done { color: var(--muted); }
+.wb-rail li.is-done .dot { border-color: var(--success, #047857);
+	background: var(--success, #047857); color: #fff; }
+.wb-rail li.is-done::before { background: var(--success, #047857); }
+.wb-rail li.is-now { color: var(--ink); font-weight: 700; }
+.wb-rail li.is-now .dot { border-color: var(--brand); background: var(--brand); color: #fff;
+	box-shadow: 0 0 0 4px rgba(247, 148, 30, .18); }
+
+.wb-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+	padding-bottom: 14px; margin-bottom: 14px; border-bottom: 1px solid var(--line); }
+.wb-pair { display: flex; gap: 8px; }
+.wb-pair select, .wb-pair input { flex: 1 1 auto; min-width: 0; }
+.wb-pair .btn { flex: 0 0 auto; }
+
+/* One button per step the card may take. The sentence under each is what it
+   means on the floor, because "QC Passed" is not how anybody says it. */
+.wb-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+	gap: 10px; }
+.wb-step { display: flex; flex-direction: column; gap: 3px; padding: 11px 13px;
+	text-align: left; border: 1px solid var(--line-strong); border-radius: var(--radius-sm);
+	background: var(--card); font-family: inherit; cursor: pointer; }
+.wb-step:hover { border-color: var(--brand); background: #fffaf3; }
+.wb-step b { font-size: 13.5px; color: var(--ink); }
+.wb-step span { font-size: 11.5px; color: var(--muted); }
+.wb-none { margin: 0; font-size: 13px; }
+
+.wb-acc { display: flex; align-items: center; justify-content: space-between; gap: 12px;
+	margin-top: 14px; padding: 10px 13px; border-radius: var(--radius-sm);
+	background: var(--warn-soft, #fffbeb); color: var(--warn, #b45309); font-size: 12.5px; }
+.wb-finish { display: flex; align-items: center; flex-wrap: wrap; gap: 12px;
+	margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
+.wb-finish .muted { font-size: 12px; }
+/* `.btn-invoice` is sized for the till's full-width column; here it sits in a
+   row beside the hand-over, so it takes its own width. */
+.wb-finish .btn { width: auto; display: inline-flex; align-items: center; gap: 7px; }
+.wb-bad { margin: 0; padding: 10px 12px; border-radius: var(--radius-sm);
+	background: var(--danger-soft, #fef2f2); color: var(--danger-dark, #b91c1c);
+	font-size: 13px; }
+
+@media (max-width: 860px) {
+	.wb-grid { grid-template-columns: 1fr; }
+	.wb-rail li span:not(.dot) { display: none; }
+}
+
+/* --- the bench: who has it, and what it is being charged for ------------- */
+.wb-bar { display: flex; flex-wrap: wrap; gap: 12px; align-items: end;
+	padding-bottom: 14px; margin-bottom: 14px; border-bottom: 1px solid var(--line); }
+.wb-bench { flex: 0 1 380px; margin: 0; }
+
+.wb-lines-head { display: flex; align-items: baseline; justify-content: space-between;
+	gap: 12px; margin-bottom: 8px; }
+.wb-lines-head h3 { margin: 0; font-size: 13.5px; font-weight: 700; }
+.wb-sum { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+.wb-table { width: 100%; border-collapse: collapse; font-size: 12.5px;
+	border: 1px solid var(--line); border-radius: var(--radius-sm); overflow: hidden; }
+.wb-table th { background: #fafbfd; text-align: left; padding: 7px 10px;
+	font-size: 10.5px; font-weight: 700; color: var(--muted);
+	text-transform: uppercase; letter-spacing: .05em; border-bottom: 1px solid var(--line); }
+.wb-table td { padding: 6px 10px; border-bottom: 1px solid var(--line);
+	vertical-align: middle; }
+.wb-table tbody tr:last-child td { border-bottom: 0; }
+.wb-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.wb-table th:nth-child(3), .wb-table th:nth-child(4) { width: 92px; }
+.wb-table th:nth-child(5) { width: 104px; }
+.wb-table th:last-child { width: 34px; }
+/* Figures typed in place: the row is being corrected, not entered. */
+.wb-table input { width: 100%; padding: 4px 7px; font-family: inherit; font-size: 12.5px;
+	font-weight: 600; text-align: right; color: var(--ink);
+	border: 1px solid var(--line); border-radius: 6px; background: var(--card);
+	font-variant-numeric: tabular-nums; }
+.wb-table input:focus { outline: none; border-color: var(--sky);
+	box-shadow: 0 0 0 3px rgba(41, 171, 226, .14); }
+.wb-drop { border: 0; background: none; color: var(--faint); font-size: 16px;
+	line-height: 1; padding: 0 2px; cursor: pointer; }
+.wb-drop:hover { color: var(--danger-dark, #b91c1c); }
+
+.wb-add { position: relative; margin-top: 10px; }
+.wb-add input { width: 100%; padding: 9px 11px; font-family: inherit; font-size: 13px;
+	border: 1px dashed #bfdcf5; border-radius: var(--radius-sm); background: var(--card); }
+.wb-add input:focus { outline: none; border-style: solid; border-color: var(--sky);
+	box-shadow: 0 0 0 3px rgba(41, 171, 226, .14); }
+.wb-add .w-hits { margin: 6px 0 0; }
+
+/* --- a stage, asked for in one place ------------------------------------ */
+#stage-modal .modal-card { max-width: 640px; padding: 0; display: flex;
+	flex-direction: column; max-height: 92vh; }
+#stage-modal .modal-note { margin: 0 20px; }
+.stage-body { flex: 1 1 auto; overflow-y: auto; padding: 4px 20px 0; }
+.stage-lines { padding: 12px 0; margin: 12px 0; border-top: 1px solid var(--line);
+	border-bottom: 1px solid var(--line); }
+.stage-lines .wb-lines-head h3 { font-size: 12.5px; }
+#stage-modal .msg { margin: 0 20px; }
+#stage-modal .modal-actions { padding: 12px 20px; border-top: 1px solid var(--line);
+	margin: 0; }
+
+/* Making a line that is not in the catalogue yet, from the bench or a step. */
+.wb-newline { display: block; margin-top: 8px; }
+.wb-newform { margin-top: 10px; padding: 12px; border: 1px solid var(--line);
+	border-radius: var(--radius-sm); background: #fafbfd; }
+.wb-newform .field { margin-bottom: 8px; }
+.wb-newform .modal-actions { margin-top: 4px; }

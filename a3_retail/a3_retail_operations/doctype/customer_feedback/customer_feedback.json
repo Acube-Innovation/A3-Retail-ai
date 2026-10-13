@@ -182,7 +182,8 @@
    "fieldname": "attended_employee",
    "fieldtype": "Link",
    "label": "Attended By",
-   "options": "Employee"
+   "options": "Employee",
+   "ignore_user_permissions": 1
   }
  ],
  "index_web_pages_for_search": 1,

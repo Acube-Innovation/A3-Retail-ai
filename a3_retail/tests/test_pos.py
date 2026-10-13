@@ -157,6 +157,36 @@ class TestCatalogue(FrappeTestCase):
 				frappe.db.get_value("Warehouse", row["warehouse"], "custom_branch"), "Kochi"
 			)
 
+	def test_the_imeis_still_list_before_the_migration_lands(self):
+		"""A deploy and its migration do not always arrive together.
+
+		The live site took the new `serials()` and an old database, so every
+		attempt to sell a handset came back 500 — "Unknown column
+		's.a3_received_on'" — and the till simply could not bill a phone. The
+		per-piece date and price are worth having, but not at the price of the
+		counter being unable to sell; without the columns the list still comes
+		back, dated from the serial's own creation.
+		"""
+		real = frappe.db.has_column
+		missing = ("a3_received_on", "a3_selling_price")
+
+		def without(doctype, column, *args, **kwargs):
+			if doctype == "Serial No" and column in missing:
+				return False
+			return real(doctype, column, *args, **kwargs)
+
+		frappe.db.has_column = without
+		try:
+			rows = pos.serials("MOB-APL-15-128-BLK")
+		finally:
+			frappe.db.has_column = real
+
+		self.assertTrue(rows, "the IMEIs must still list without those columns")
+		for row in rows:
+			self.assertIn("received_on", row)
+			self.assertIsNotNone(row["received_on"])
+			self.assertEqual(flt(row["selling_price"]), 0)
+
 	def test_stock_elsewhere_marks_my_own_branch(self):
 		rows = pos.stock_elsewhere("MOB-SAM-A55-8-128-BLU")
 		self.assertTrue(rows)

@@ -363,8 +363,12 @@ def deliver_job_card(job_card: str, otp: str, receiver: str | None = None,
 	if doc.status != st.READY_FOR_DELIVERY:
 		frappe.throw(_("Only a job card that is Ready for Delivery can be delivered."))
 
-	if not doc.delivery_otp or str(otp).strip() != str(doc.delivery_otp):
-		frappe.throw(_("The delivery OTP does not match."), title=_("OTP Mismatch"))
+	# The code proves the person collecting is the person who left the device.
+	# A counter that knows its customers by face can switch it off, and then the
+	# signature on the job card is what the hand-over rests on.
+	if frappe.db.get_single_value("A3 Retail Settings", "require_delivery_otp"):
+		if not doc.delivery_otp or str(otp).strip() != str(doc.delivery_otp):
+			frappe.throw(_("The delivery OTP does not match."), title=_("OTP Mismatch"))
 
 	if not cint(accessories_returned):
 		frappe.throw(_("Return the customer's accessories before completing delivery."))

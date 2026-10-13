@@ -287,13 +287,15 @@
    "fieldtype": "Link",
    "label": "Branch Manager",
    "options": "Employee",
-   "reqd": 1
+   "reqd": 1,
+   "ignore_user_permissions": 1
   },
   {
    "fieldname": "service_manager",
    "fieldtype": "Link",
    "label": "Service Manager",
-   "options": "Employee"
+   "options": "Employee",
+   "ignore_user_permissions": 1
   },
   {
    "fieldname": "default_tat_hours",

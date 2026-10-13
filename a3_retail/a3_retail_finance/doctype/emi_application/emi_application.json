@@ -340,7 +340,8 @@
    "fieldtype": "Link",
    "label": "Verified By",
    "options": "Employee",
-   "allow_on_submit": 1
+   "allow_on_submit": 1,
+   "ignore_user_permissions": 1
   },
   {
    "fieldname": "response_section",
@@ -454,7 +455,8 @@
    "fieldname": "coordinator",
    "fieldtype": "Link",
    "label": "EMI Coordinator",
-   "options": "Employee"
+   "options": "Employee",
+   "ignore_user_permissions": 1
   },
   {
    "fieldname": "amended_from",

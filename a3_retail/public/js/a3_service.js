@@ -234,25 +234,70 @@ window.SVC = (function () {
 		};
 	}
 
-	async function askNewModel() {
-		const brand = ($("d-brand") && $("d-brand").value) || "";
-		if (!brand) return say("Pick the make first, then add the model under it.", "error");
+	/** A shop services handsets it has never sold, so the make and the model
+	 *  both have to be nameable with the device in hand. */
+	function askNewModel() {
+		const picked = ($("d-brand") && $("d-brand").value) || "";
+		$("dm-make").innerHTML =
+			(state.brands || []).map((brand) =>
+				`<option value="${esc(brand)}"${brand === picked ? " selected" : ""}
+					>${esc(brand)}</option>`).join("")
+			+ (state.canAddMake
+				? '<option value="__new">+ A make we do not have yet</option>' : "");
+		$("dm-type").innerHTML = (state.deviceTypes || ["Mobile"]).map((kind) =>
+			`<option value="${esc(kind)}">${esc(kind)}</option>`).join("");
+		$("dm-newmake-field").hidden = true;
+		$("dm-newmake").value = "";
+		$("dm-model").value = "";
+		$("dm-msg").textContent = "";
+		$("model-modal").hidden = false;
+		$("dm-model").focus();
+	}
 
-		const model = window.prompt("Model name, without the make (e.g. Galaxy A15)");
-		if (!model) return;
-
+	async function saveNewModel() {
+		const isNew = $("dm-make").value === "__new";
+		const make = isNew ? $("dm-newmake").value.trim() : $("dm-make").value;
+		const model = $("dm-model").value.trim();
+		const msg = $("dm-msg");
+		if (!make || !model) {
+			msg.textContent = isNew && !make
+				? "Name the make as well." : "A make and a model, please.";
+			msg.className = "msg error";
+			return;
+		}
+		$("dm-save").disabled = true;
+		msg.textContent = "Saving…";
+		msg.className = "msg";
 		try {
-			const created = await A3.call("a3_retail.api.service_pos.create_device_model",
-				{ brand, model_name: model.trim(), device_type: "Mobile" });
-			state.models.push({ name: created.name, model_name: model.trim(),
+			const created = await A3.call("a3_retail.api.service_pos.create_device_model", {
+				brand: make,
+				model_name: model,
+				device_type: $("dm-type").value || "Mobile",
+				new_make: isNew ? 1 : 0,
+			});
+			// The make may have come back spelled the way it is already on file.
+			const brand = created.brand || make;
+			if (!(state.brands || []).includes(brand)) {
+				state.brands.push(brand);
+				state.brands.sort();
+			}
+			state.models.push({ name: created.name,
+			                    model_name: created.model_name || model,
 			                    brand, device_type: created.device_type || "Mobile" });
+			state.device = state.device || {};
 			state.device.brand = brand;
 			state.device.device_model = created.name;
 			state.device.device_type = created.device_type || "Mobile";
-			fillModels(brand, created.name);
-			say(created.created ? created.name + " added." : created.name + " was already listed.", "ok");
+			$("model-modal").hidden = true;
+			paintDevice();
+			say(created.created === false
+				? created.name + " was already listed."
+				: created.name + " added.", "ok");
 		} catch (error) {
-			say(error.message, "error", error.title);
+			msg.textContent = error.message || "Could not add it.";
+			msg.className = "msg error";
+		} finally {
+			$("dm-save").disabled = false;
 		}
 	}
 
@@ -311,19 +356,113 @@ window.SVC = (function () {
 		});
 	}
 
+	/** A new customer is made in its own dialog, not by typing over whoever was
+	 *  on screen. The panel behind only ever shows what is on file. */
 	function newCustomer() {
-		state.customer = null;
-		["mobile", "customer-name", "customer-email", "customer-address",
-		 "customer-city", "customer-pin"].forEach((id) => { $(id).value = ""; });
-		$("mobile").focus();
+		$("nc-mobile").value = $("mobile").value.trim();
+		["nc-name", "nc-email", "nc-address", "nc-city", "nc-pin"].forEach((id) => {
+			$(id).value = "";
+		});
+		$("nc-msg").textContent = "";
+		$("cust-modal").hidden = false;
+		($("nc-mobile").value ? $("nc-name") : $("nc-mobile")).focus();
+	}
+
+	async function saveNewCustomer() {
+		const mobile = $("nc-mobile").value.trim();
+		const name = $("nc-name").value.trim();
+		if (!mobile || !name) {
+			$("nc-msg").textContent = "A phone number and a name, at least.";
+			$("nc-msg").className = "msg error";
+			return;
+		}
+		$("nc-save").disabled = true;
+		$("nc-msg").textContent = "Saving…";
+		$("nc-msg").className = "msg";
+		try {
+			// The counter's own saver: it files the address alongside the
+			// customer, which `get_or_create` on its own does not.
+			await A3.call("a3_retail.api.pos.save_customer", {
+				mobile_no: mobile,
+				customer_name: name,
+				email: $("nc-email").value.trim() || null,
+				address_line1: $("nc-address").value.trim() || null,
+				city: $("nc-city").value.trim() || null,
+				state: $("nc-state").value.trim() || null,
+				pincode: $("nc-pin").value.trim() || null,
+			});
+			$("cust-modal").hidden = true;
+			$("mobile").value = mobile;
+			await findCustomer();
+			say(name + " added.", "ok");
+		} catch (error) {
+			$("nc-msg").textContent = error.message || "Could not add the customer.";
+			$("nc-msg").className = "msg error";
+		} finally {
+			$("nc-save").disabled = false;
+		}
 	}
 
 	// -------------------------------------------------------------- lines
 	async function openLinePicker() {
 		$("line-modal").hidden = false;
 		$("line-q").value = "";
+		showLineForm(false);
 		$("line-q").focus();
 		await paintLineResults("");
+	}
+
+	/** The picker and the little form share the dialog, one at a time. */
+	function showLineForm(on) {
+		$("line-new-form").hidden = !on;
+		$("line-q").hidden = on;
+		$("line-results").hidden = on;
+		$("line-close-row").hidden = on;
+		$("line-new").hidden = on || !state.canCreateLineItem;
+		if (on) {
+			$("ln-name").value = $("line-q").value.trim();
+			$("ln-rate").value = "";
+			$("ln-hsn").value = "";
+			$("ln-msg").textContent = "";
+			$("ln-name").focus();
+		}
+	}
+
+	async function saveLineItem() {
+		const name = $("ln-name").value.trim();
+		if (!name) {
+			$("ln-msg").textContent = "Give it a name.";
+			$("ln-msg").className = "msg error";
+			return;
+		}
+		$("ln-save").disabled = true;
+		$("ln-msg").textContent = "Saving…";
+		$("ln-msg").className = "msg";
+		try {
+			const made = await A3.call("a3_retail.api.service_pos.create_line_item", {
+				item_name: name,
+				kind: $("ln-kind").value,
+				rate: Number($("ln-rate").value) || 0,
+				hsn_code: $("ln-hsn").value.trim(),
+			});
+			// Straight onto the repair: it was catalogued because it is needed now.
+			addLine({
+				item_code: made.item_code,
+				item_name: made.item_name || name,
+				kind: made.kind,
+				rate: made.rate,
+				is_stock_item: made.is_stock_item,
+				branch_qty: 0,
+				hsn: $("ln-hsn").value.trim(),
+			});
+			$("line-modal").hidden = true;
+			say(name + " added to the catalogue and to this repair.", "ok");
+		} catch (error) {
+			$("ln-msg").textContent = error.message || "Could not add it.";
+			$("ln-msg").className = "msg error";
+		} finally {
+			$("ln-save").disabled = false;
+		}
 	}
 
 	async function paintLineResults(query) {
@@ -336,7 +475,8 @@ window.SVC = (function () {
 							row.is_stock_item ? " · " + row.branch_qty + " in stock" : ""}</small></span>
 					<span>${money(row.rate)}</span>
 				</button></li>`).join("")
-			: '<li class="pos-loading">Nothing matches that.</li>';
+			: `<li class="pos-loading">Nothing matches that.${
+				state.canCreateLineItem ? " Create it below." : ""}</li>`;
 
 		$("line-results").querySelectorAll("button").forEach((node) => {
 			node.addEventListener("click", () => {
@@ -620,7 +760,10 @@ window.SVC = (function () {
 			return addPhoto();
 		}
 
-		if (!state.signed) return askSignature();
+		// The pad is offered when the shop wants one. It was asked for here no
+		// matter what the setting said, so turning the setting off changed
+		// nothing — the counter never got as far as the server.
+		if (state.requireSignature && !state.signed) return askSignature();
 
 		$("save-booking").disabled = true;
 
@@ -703,9 +846,16 @@ window.SVC = (function () {
 	function askDelivery() {
 		if (!state.jobCard) return stop("Save the booking first — there is no job card to work on yet.",
 			"Nothing booked in yet", "save-booking");
+		// A shop that does not use a collection code should not be asked for one.
+		const wanted = state.requireDeliveryOtp;
+		$("otp").hidden = !wanted;
+		$("resend-otp").hidden = !wanted;
+		$("otp-modal").querySelector(".modal-note").textContent = wanted
+			? "Type the OTP the customer received. It is their signature on the hand-over."
+			: "Check who is collecting, then hand it back.";
 		$("otp-modal").hidden = false;
 		$("otp").value = "";
-		$("otp").focus();
+		(wanted ? $("otp") : $("receiver")).focus();
 	}
 
 	async function confirmDelivery() {
@@ -829,8 +979,23 @@ window.SVC = (function () {
 		state.technicians = boot.technicians;
 		state.brands = boot.brands || [];
 		state.canAddModel = !!boot.can_add_model;
+		state.canAddMake = !!boot.can_add_make;
+		state.deviceTypes = boot.device_types || ["Mobile"];
 		state.requirePhotos = !!boot.require_photos;
 		state.minPhotos = boot.min_photos || 1;
+		state.requireDeliveryOtp = boot.require_delivery_otp !== false;
+		state.requireSignature = !!boot.require_signature;
+
+		// Cataloguing a part from the bench is not every counter's job, so the
+		// button only appears for whoever the permission matrix allows.
+		try {
+			const line = await A3.call("a3_retail.api.service_pos.line_item_defaults");
+			state.canCreateLineItem = !!line.can_create && (line.kinds || []).length > 0;
+			$("ln-kind").innerHTML = (line.kinds || []).map((kind) =>
+				`<option value="${esc(kind)}">${esc(kind)}</option>`).join("");
+		} catch (error) {
+			state.canCreateLineItem = false;
+		}
 		state.models = await A3.call("a3_retail.api.service_pos.device_models", { limit: 500 });
 
 		// The tiles themselves are server-rendered so they carry the real icons.
@@ -862,6 +1027,13 @@ window.SVC = (function () {
 		$("find-customer").addEventListener("click", findCustomer);
 		$("mobile").addEventListener("keydown", (e) => { if (e.key === "Enter") findCustomer(); });
 		$("new-customer").addEventListener("click", newCustomer);
+		$("nc-save").addEventListener("click", saveNewCustomer);
+		$("dm-save").addEventListener("click", saveNewModel);
+		$("dm-make").addEventListener("change", () => {
+			const isNew = $("dm-make").value === "__new";
+			$("dm-newmake-field").hidden = !isNew;
+			if (isNew) $("dm-newmake").focus();
+		});
 		$("another-device").addEventListener("click", () => {
 			state.device = null; paintDevice(); $("scan").focus();
 		});
@@ -877,6 +1049,9 @@ window.SVC = (function () {
 			clearTimeout(lineTimer);
 			lineTimer = setTimeout(() => paintLineResults($("line-q").value.trim()), 220);
 		});
+		$("line-new").addEventListener("click", () => showLineForm(true));
+		$("ln-cancel").addEventListener("click", () => showLineForm(false));
+		$("ln-save").addEventListener("click", saveLineItem);
 
 		$("warranty-type").addEventListener("change", paintTotals);
 		$("discount-type").addEventListener("change", paintTotals);

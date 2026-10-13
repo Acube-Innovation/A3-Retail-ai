@@ -233,5 +233,6 @@
  "title_field": "model_name",
  "search_fields": "brand,device_type",
  "track_changes": 1,
- "naming_rule": "Set by user"
+ "naming_rule": "Set by user",
+ "allow_import": 1
 }

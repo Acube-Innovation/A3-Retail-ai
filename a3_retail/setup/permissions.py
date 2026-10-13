@@ -33,7 +33,14 @@ PERMISSION_MATRIX: dict[str, dict[str, str]] = {
 		"Service Manager": "CRUDS",
 		"Sales Executive": "R",
 		"Reception Executive": "CRUS",
-		"Technician": "RU",
+		# Submit, because that is what Frappe calls changing a submitted
+		# document. Sixty-six fields on this doctype are marked allow_on_submit
+		# — status, diagnosis, the assigned technician, the accessory
+		# checklist — so the whole repair is meant to happen after the card is
+		# submitted, and without this a technician cannot move their own job
+		# card a single step. They still cannot create one: reception books,
+		# the bench works.
+		"Technician": "RUS",
 		"Store Keeper": "R",
 		"Accounts Manager": "R",
 		"Telecaller": "R",
@@ -111,10 +118,15 @@ PERMISSION_MATRIX: dict[str, dict[str, str]] = {
 	},
 	"Brand": {
 		"A3 Retail Admin": "CRUD",
-		"Branch Manager": "R",
-		"Service Manager": "R",
+		"Branch Manager": "CR",
+		# The same reasoning as Device Model below: a shop services makes it has
+		# never sold, and a counter that can name the model but not the make
+		# cannot book the handset in front of it. `create_device_model` matches
+		# an existing make however it was typed, so this does not open the door
+		# to Vivo, VIVO and vivo.
+		"Service Manager": "CR",
 		"Sales Executive": "R",
-		"Reception Executive": "R",
+		"Reception Executive": "CR",
 		"Store Keeper": "R",
 		"Technician": "R",
 	},

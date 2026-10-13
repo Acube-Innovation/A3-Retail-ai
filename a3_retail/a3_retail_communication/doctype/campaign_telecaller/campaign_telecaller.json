@@ -19,7 +19,8 @@
    "label": "Telecaller",
    "options": "Employee",
    "reqd": 1,
-   "in_list_view": 1
+   "in_list_view": 1,
+   "ignore_user_permissions": 1
   },
   {
    "fieldname": "employee_name",

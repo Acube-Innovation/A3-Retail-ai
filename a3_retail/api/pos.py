@@ -210,21 +210,31 @@ def serials(item_code: str, limit: int = 60) -> list[dict]:
 	employee = _me()
 	require_permission("Serial No", "read")
 
+	# What this particular piece was received on and is priced at. The same
+	# handset is bought at different costs through the year and priced
+	# accordingly, so the counter is told which one it is holding.
+	#
+	# Asked for only where the columns exist. A deploy and its migration do not
+	# always land together, and a counter that cannot sell a phone because a
+	# column has not been added yet is a worse failure than one that cannot see
+	# which batch it came from — the IMEIs still list, without the extra two.
+	dated = frappe.db.has_column("Serial No", "a3_received_on")
+	priced = frappe.db.has_column("Serial No", "a3_selling_price")
+	received = "coalesce(s.a3_received_on, date(s.creation))" if dated else "date(s.creation)"
+	selling = "ifnull(s.a3_selling_price, 0)" if priced else "0"
+
 	return frappe.db.sql(
-		"""
+		f"""
 		select s.name as serial_no, coalesce(nullif(s.a3_imei_1, ''), s.name) as imei,
 		       s.warehouse,
 		       datediff(curdate(), date(s.creation)) as age_days,
-		       -- What this particular piece cost and is priced at. The same
-		       -- handset is bought at different costs through the year and
-		       -- priced accordingly, so the counter is told which one it holds.
-		       coalesce(s.a3_received_on, date(s.creation)) as received_on,
-		       ifnull(s.a3_selling_price, 0) as selling_price
+		       {received} as received_on,
+		       {selling} as selling_price
 		from `tabSerial No` s
 		join `tabWarehouse` w on w.name = s.warehouse
 		where s.item_code = %(item_code)s and s.status = 'Active'
 		  and w.custom_branch = %(branch)s
-		order by coalesce(s.a3_received_on, date(s.creation)), s.creation
+		order by {received}, s.creation
 		limit %(limit)s
 		""",
 		{"item_code": item_code, "branch": employee.branch, "limit": cint(limit) or 60},

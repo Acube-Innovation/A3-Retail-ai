@@ -113,7 +113,10 @@ class ServiceJobCard(A3BranchMixin, Document):
 			# A timestamp already on the document wins — back-dated history keeps
 			# the date it actually happened.
 			self.ready_on = self.ready_on or now
-			self.generate_delivery_otp()
+			# No code where the shop does not ask for one: generating it would
+			# text the customer a number nobody is ever going to want.
+			if _require_delivery_otp():
+				self.generate_delivery_otp()
 		if current == st.DELIVERED:
 			self.delivered_on = self.delivered_on or now
 		# Accumulate paused time so the TAT clock excludes it (scope 3.11).
@@ -441,6 +444,10 @@ def get_item_rate(item_code: str | None, price_list: str | None = None) -> float
 
 def _require_signature() -> bool:
 	return bool(frappe.db.get_single_value("A3 Retail Settings", "require_signature"))
+
+
+def _require_delivery_otp() -> bool:
+	return bool(frappe.db.get_single_value("A3 Retail Settings", "require_delivery_otp"))
 
 
 def _require_photos() -> bool:
