@@ -221,6 +221,44 @@ class TestEveryStepIsAsked(FrappeTestCase):
 		script = self._script()
 		self.assertIn("needsReason && !remarks", script)
 
+	def test_a_part_can_be_catalogued_from_inside_the_step(self):
+		"""A bench meets a connector the shop has never bought. Sending somebody
+		to the stock screen to name it and back here to add it is how the line
+		ends up in the notes instead."""
+		script = self._script()
+		self.assertIn("function adderMarkup", script)
+		self.assertIn("function wireAdder", script)
+		# the same block serves the bench and the step dialog
+		self.assertIn('wireAdder("wb"', script)
+		self.assertIn('wireAdder("sg"', script)
+		self.assertIn('"a3_retail.api.service_pos.create_line_item"', script)
+
+	def test_what_the_bench_may_offer_is_known_before_it_paints(self):
+		"""Otherwise the buttons that depend on it are drawn once, without it,
+		and never drawn again."""
+		script = self._script()
+		self.assertIn("loadBench().then(load, load)", script)
+
+
+class TestTheBookingPageFooter(FrappeTestCase):
+	def test_the_action_row_is_not_buried_by_the_rail(self):
+		"""Chrome holds a sticky grid item inside the grid container, not its own
+		row, so a tall rail slides down over whatever follows — and a static row
+		loses, because anything positioned paints on top of it.
+		"""
+		css = open(frappe.get_app_path(
+			"a3_retail", "public", "css", "a3_branch.css")).read()
+		block = css.split(".inv-actions {")[1].split("}")[0]
+		self.assertIn("position: relative", block)
+		self.assertIn("z-index", block)
+
+	def test_the_rail_never_grows_taller_than_the_window(self):
+		css = open(frappe.get_app_path(
+			"a3_retail", "public", "css", "a3_branch.css")).read()
+		block = css.split(".inv-side {")[1].split("}")[0]
+		self.assertIn("max-height", block)
+		self.assertIn("overflow-y", block)
+
 
 class TestHandingItBack(FrappeTestCase):
 	def test_no_code_is_generated_where_none_is_wanted(self):

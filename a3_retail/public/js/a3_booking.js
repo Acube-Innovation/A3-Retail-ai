@@ -70,6 +70,16 @@ window.BOOKING = (function () {
 		} catch (error) {
 			state.technicians = [];   // not permitted to list them: the field stays empty
 		}
+		// Cataloguing a part is not every counter's job, so the button only
+		// appears for whoever the permission matrix allows.
+		try {
+			const line = await A3.call("a3_retail.api.service_pos.line_item_defaults");
+			state.lineKinds = line.kinds || [];
+			state.canCreateLineItem = !!line.can_create && state.lineKinds.length > 0;
+		} catch (error) {
+			state.canCreateLineItem = false;
+			state.lineKinds = [];
+		}
 	}
 
 	async function load() {
@@ -417,24 +427,12 @@ window.BOOKING = (function () {
 						           title="Take it off">&times;</button>` : ""}</td>
 				</tr>`).join("")}</tbody></table>`
 				: '<p class="muted wb-none">Nothing charged on this repair yet.</p>'}
-			${data.can_edit ? `
-				<div class="wb-add">
-					<input id="wb-find" placeholder="Search a part, a charge or an accessory…"
-					       autocomplete="off">
-					<div class="w-hits" id="wb-hits"></div>
-				</div>`
+			${data.can_edit ? adderMarkup("wb")
 				: data.invoiced
 					? '<p class="muted wb-none">Billed — the lines are what the customer was charged.</p>'
 					: ""}`;
 
-		const find = $("wb-find");
-		if (find) {
-			let timer = null;
-			find.addEventListener("input", () => {
-				clearTimeout(timer);
-				timer = setTimeout(() => findLineItem(find.value.trim()), 220);
-			});
-		}
+		wireAdder("wb", findLineItem, reload);
 		host.querySelectorAll(".wb-drop").forEach((node) =>
 			node.addEventListener("click", () => dropLine(node.dataset.row)));
 		// Typing must not redraw the row out from under the caret, so the change
@@ -595,21 +593,9 @@ window.BOOKING = (function () {
 						? `<button class="wb-drop sg-drop" data-row="${esc(row.row)}"
 						           title="Take it off">&times;</button>` : ""}</td>
 				</tr>`).join("")}</tbody></table>` : ""}
-			${data.can_edit ? `
-				<div class="wb-add">
-					<input id="sg-find" placeholder="Add a part, a charge or an accessory…"
-					       autocomplete="off">
-					<div class="w-hits" id="sg-hits"></div>
-				</div>` : ""}`;
+			${data.can_edit ? adderMarkup("sg") : ""}`;
 
-		const find = $("sg-find");
-		if (find) {
-			let timer = null;
-			find.addEventListener("input", () => {
-				clearTimeout(timer);
-				timer = setTimeout(() => findStageItem(find.value.trim()), 220);
-			});
-		}
+		wireAdder("sg", findStageItem, paintStageLines);
 		host.querySelectorAll(".sg-drop").forEach((node) =>
 			node.addEventListener("click", async () => {
 				await dropLine(node.dataset.row, true);
@@ -622,6 +608,101 @@ window.BOOKING = (function () {
 					                                  : { rate: Number(node.value) }, true);
 				paintStageLines();
 			}));
+	}
+
+	/** Search for a line, or make one that does not exist yet.
+	 *
+	 *  A bench meets a connector or a flex the shop has never bought, and a
+	 *  charge nobody wrote down. Sending someone to the stock screen to name it
+	 *  and back here to add it is how the line ends up in the notes instead.
+	 */
+	function adderMarkup(prefix) {
+		return `
+			<div class="wb-add">
+				<input id="${prefix}-find" placeholder="Add a part, a charge or an accessory…"
+				       autocomplete="off">
+				<div class="w-hits" id="${prefix}-hits"></div>
+				${state.canCreateLineItem ? `
+				<button class="link wb-newline" id="${prefix}-new" type="button"
+					>+ Create a new part or service</button>
+				<div class="wb-newform" id="${prefix}-form" hidden>
+					<div class="field-grid three">
+						<label class="field"><span>What is it</span>
+							<input id="${prefix}-name" placeholder="ex: Display Flex Cable"></label>
+						<label class="field"><span>Kind</span>
+							<select id="${prefix}-kind">${(state.lineKinds || []).map((k) =>
+								`<option value="${esc(k)}">${esc(k)}</option>`).join("")}</select></label>
+						<label class="field"><span>Price</span>
+							<input id="${prefix}-rate" inputmode="decimal" placeholder="0.00"></label>
+					</div>
+					<label class="field"><span>HSN / SAC code</span>
+						<input id="${prefix}-hsn"
+						       placeholder="85177090 for a part, 998716 for repair work"></label>
+					<div class="msg" id="${prefix}-msg"></div>
+					<div class="modal-actions">
+						<button class="btn btn-quiet" id="${prefix}-back" type="button">Back</button>
+						<button class="btn btn-primary" id="${prefix}-save" type="button"
+							>Add it to the repair</button>
+					</div>
+				</div>` : ""}
+			</div>`;
+	}
+
+	/** Wire one of those blocks. `after` is what to redraw when it succeeds. */
+	function wireAdder(prefix, search, after) {
+		const find = $(prefix + "-find");
+		if (find) {
+			let timer = null;
+			find.addEventListener("input", () => {
+				clearTimeout(timer);
+				timer = setTimeout(() => search(find.value.trim()), 220);
+			});
+		}
+		const open = $(prefix + "-new");
+		if (!open) return;
+		const form = $(prefix + "-form");
+		open.addEventListener("click", () => {
+			form.hidden = false;
+			open.hidden = true;
+			$(prefix + "-name").value = find ? find.value.trim() : "";
+			$(prefix + "-msg").textContent = "";
+			$(prefix + "-name").focus();
+		});
+		$(prefix + "-back").addEventListener("click", () => {
+			form.hidden = true;
+			open.hidden = false;
+		});
+		$(prefix + "-save").addEventListener("click", async () => {
+			const name = $(prefix + "-name").value.trim();
+			const msg = $(prefix + "-msg");
+			if (!name) {
+				msg.textContent = "Give it a name.";
+				msg.className = "msg error";
+				return;
+			}
+			$(prefix + "-save").disabled = true;
+			msg.textContent = "Saving…";
+			msg.className = "msg";
+			try {
+				const made = await A3.call("a3_retail.api.service_pos.create_line_item", {
+					item_name: name,
+					kind: $(prefix + "-kind").value,
+					rate: Number($(prefix + "-rate").value) || 0,
+					hsn_code: $(prefix + "-hsn").value.trim(),
+				});
+				await A3.call("a3_retail.api.bookings.add_line", {
+					name: state.name, item_code: made.item_code,
+					kind: made.kind, qty: 1, rate: made.rate,
+				});
+				toast(name + " added to the catalogue and to this repair.", "ok");
+				after();
+			} catch (error) {
+				msg.textContent = error.message || "Could not add it.";
+				msg.className = "msg error";
+			} finally {
+				$(prefix + "-save").disabled = false;
+			}
+		});
 	}
 
 	async function findStageItem(query) {
@@ -988,7 +1069,6 @@ window.BOOKING = (function () {
 			$("hand-other-field").hidden = !other;
 			if (other) $("hand-receiver").focus();
 		});
-		loadBench();
 		document.querySelectorAll("[data-close]").forEach((node) => {
 			node.addEventListener("click", () => { node.closest(".modal").hidden = true; });
 		});
@@ -998,7 +1078,9 @@ window.BOOKING = (function () {
 			}
 		});
 
-		load();
+		// What the bench may offer has to be known before the page paints, or
+		// the buttons that depend on it are drawn and then never redrawn.
+		loadBench().then(load, load);
 	}
 
 	return { start, state };

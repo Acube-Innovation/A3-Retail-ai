@@ -1301,8 +1301,21 @@ input.is-locked { background: rgba(42, 51, 66, .04); color: var(--muted);
 .inv { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px;
 	padding: 14px 20px 40px; align-items: start; }
 .inv-sheet { padding: 22px 24px; }
-.inv-side { display: flex; flex-direction: column; gap: 16px; position: sticky; top: 76px; }
-.inv-actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 10px;
+/* The rail sticks, so it must never grow taller than the window: a long
+   history made it 1500px, and a sticky box that tall runs straight past its own
+   row and sits on top of the buttons underneath. Capped to the viewport it
+   scrolls on its own instead. */
+.inv-side { display: flex; flex-direction: column; gap: 16px; position: sticky;
+	top: 76px; max-height: calc(100vh - 92px); overflow-y: auto;
+	overscroll-behavior: contain; }
+/* Room for the scrollbar so it never sits on the cards' edge. */
+.inv-side > * { flex: 0 0 auto; }
+/* Positioned, so it paints above the sticky rail beside it. Chrome holds a
+   sticky grid item inside the grid *container*, not its own row, so a tall rail
+   slides down over whatever follows — and a static row loses, because anything
+   positioned paints on top of it. */
+.inv-actions { grid-column: 1 / -1; position: relative; z-index: 1;
+	display: flex; flex-wrap: wrap; gap: 10px;
 	background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
 .inv-error { text-align: center; padding: 40px; }
 
@@ -2505,3 +2518,10 @@ kbd { display: inline-block; min-width: 17px; padding: 1px 5px; margin: 0 1px;
 #stage-modal .msg { margin: 0 20px; }
 #stage-modal .modal-actions { padding: 12px 20px; border-top: 1px solid var(--line);
 	margin: 0; }
+
+/* Making a line that is not in the catalogue yet, from the bench or a step. */
+.wb-newline { display: block; margin-top: 8px; }
+.wb-newform { margin-top: 10px; padding: 12px; border: 1px solid var(--line);
+	border-radius: var(--radius-sm); background: #fafbfd; }
+.wb-newform .field { margin-bottom: 8px; }
+.wb-newform .modal-actions { margin-top: 4px; }
