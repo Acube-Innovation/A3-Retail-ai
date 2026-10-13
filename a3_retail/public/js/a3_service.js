@@ -703,9 +703,16 @@ window.SVC = (function () {
 	function askDelivery() {
 		if (!state.jobCard) return stop("Save the booking first — there is no job card to work on yet.",
 			"Nothing booked in yet", "save-booking");
+		// A shop that does not use a collection code should not be asked for one.
+		const wanted = state.requireDeliveryOtp;
+		$("otp").hidden = !wanted;
+		$("resend-otp").hidden = !wanted;
+		$("otp-modal").querySelector(".modal-note").textContent = wanted
+			? "Type the OTP the customer received. It is their signature on the hand-over."
+			: "Check who is collecting, then hand it back.";
 		$("otp-modal").hidden = false;
 		$("otp").value = "";
-		$("otp").focus();
+		(wanted ? $("otp") : $("receiver")).focus();
 	}
 
 	async function confirmDelivery() {
@@ -831,6 +838,7 @@ window.SVC = (function () {
 		state.canAddModel = !!boot.can_add_model;
 		state.requirePhotos = !!boot.require_photos;
 		state.minPhotos = boot.min_photos || 1;
+		state.requireDeliveryOtp = boot.require_delivery_otp !== false;
 		state.models = await A3.call("a3_retail.api.service_pos.device_models", { limit: 500 });
 
 		// The tiles themselves are server-rendered so they carry the real icons.

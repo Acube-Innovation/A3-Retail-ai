@@ -418,10 +418,17 @@ window.BOOKING = (function () {
 	}
 
 	function askHandOver() {
+		// Where the shop does not use a collection code, asking for one and then
+		// ignoring whatever is typed is worse than not asking.
+		const wanted = !state.work || state.work.require_otp !== false;
+		$("hand-otp").closest(".field").hidden = !wanted;
+		$("hand-modal").querySelector(".modal-note").textContent = wanted
+			? "Ask the customer for the code sent to their phone."
+			: "Check who is collecting, then hand it over.";
 		$("hand-modal").hidden = false;
 		$("hand-otp").value = "";
 		$("hand-msg").textContent = "";
-		$("hand-otp").focus();
+		(wanted ? $("hand-otp") : $("hand-receiver")).focus();
 	}
 
 	async function confirmHandOver() {

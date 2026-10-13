@@ -635,6 +635,8 @@ def steps(name: str) -> dict:
 		"root_causes": [choice for choice in (
 			frappe.get_meta("Service Job Card").get_field("root_cause").options or ""
 		).split("\n")],
+		"require_otp": bool(frappe.db.get_single_value(
+			"A3 Retail Settings", "require_delivery_otp")),
 		"accessories_out": [
 			row.accessory for row in doc.get("device_condition_checklist") or []
 			if cint(row.received) and not cint(row.returned)

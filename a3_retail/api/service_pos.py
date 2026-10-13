@@ -75,6 +75,8 @@ def bootstrap() -> dict:
 		"min_photos": cint(frappe.db.get_single_value("A3 Retail Settings", "min_photos")) or 1,
 		"require_signature": bool(frappe.db.get_single_value("A3 Retail Settings",
 		                                                     "require_signature")),
+		"require_delivery_otp": bool(frappe.db.get_single_value(
+			"A3 Retail Settings", "require_delivery_otp")),
 		"lead_sources": ["Walk-in", "Phone Call", "WhatsApp", "Website", "Referral"],
 		"warranty_types": ["Brand Warranty", "Extended Warranty", "Screen Protection Plan",
 		                   "Insurance Claim", "Out of Warranty", "Goodwill/Free"],
@@ -105,7 +107,15 @@ def issue_types() -> list[dict]:
 
 @frappe.whitelist()
 def technicians() -> list[dict]:
-	"""Technicians who work at this branch, for the optional assignment."""
+	"""Technicians who work at this branch, for the optional assignment.
+
+	A Technician Profile is the proper record — it carries the skills, the level
+	and how many jobs the person can hold at once. But a shop that has not
+	filled them in yet still has technicians, and an empty dropdown with no
+	explanation is how a repair ends up assigned to nobody. So where there are
+	no profiles at this branch, the people who hold the Technician role are
+	offered instead.
+	"""
 	employee = _me()
 	rows = frappe.get_all(
 		"Technician Profile",
@@ -113,7 +123,24 @@ def technicians() -> list[dict]:
 		fields=["employee", "employee_name"],
 		order_by="employee_name",
 	)
-	return [{"employee": row.employee, "employee_name": row.employee_name} for row in rows]
+	if rows:
+		return [{"employee": row.employee, "employee_name": row.employee_name}
+		        for row in rows]
+
+	return frappe.db.sql(
+		"""
+		select e.name as employee, e.employee_name
+		from `tabEmployee` e
+		where e.status = 'Active' and e.branch = %(branch)s
+		  and ifnull(e.a3_is_counter_terminal, 0) = 0
+		  and exists (select 1 from `tabHas Role` r
+		              where r.parent = e.user_id and r.parenttype = 'User'
+		                and r.role = 'Technician')
+		order by e.employee_name
+		""",
+		{"branch": employee.branch},
+		as_dict=True,
+	)
 
 
 # ---------------------------------------------------------------------------

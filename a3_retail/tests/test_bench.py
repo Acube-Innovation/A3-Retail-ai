@@ -72,6 +72,55 @@ class TestWhoMayTakeAStep(FrappeTestCase):
 		self.assertNotIn("C", flags)
 
 
+class TestWhatTheCounterIsMadeToDo(FrappeTestCase):
+	"""Checks a shop can switch off, because not every shop works the same way."""
+
+	def _setting(self, field, value):
+		before = frappe.db.get_single_value("A3 Retail Settings", field)
+		frappe.db.set_single_value("A3 Retail Settings", field, value)
+		self.addCleanup(frappe.db.set_single_value, "A3 Retail Settings", field, before)
+
+	def test_the_collection_code_can_be_switched_off(self):
+		"""A counter that knows its customers by face should not be made to type
+		a code it never sent. With it off, the signature on the job card is what
+		the hand-over rests on."""
+		import inspect
+
+		from a3_retail.api import service
+
+		source = inspect.getsource(service.deliver_job_card)
+		self.assertIn("require_delivery_otp", source,
+		              "the OTP check has to be behind the setting")
+		# and the screens have to know, or they ask for something nobody wants
+		from a3_retail.api import bookings, service_pos
+
+		self.assertIn("require_delivery_otp", inspect.getsource(service_pos.bootstrap))
+		self.assertIn("require_otp", inspect.getsource(bookings.steps))
+
+	def test_the_signature_is_already_a_setting(self):
+		from a3_retail.a3_retail_service.doctype.service_job_card import service_job_card
+
+		self.assertTrue(hasattr(service_job_card, "_require_signature"))
+		self._setting("require_signature", 0)
+		self.assertFalse(service_job_card._require_signature())
+
+
+class TestWhoIsOnTheBench(FrappeTestCase):
+	def test_the_list_is_never_silently_empty(self):
+		"""A Technician Profile is the proper record, but a shop that has not
+		filled them in still has technicians — and a dropdown with nothing in it
+		is how a repair ends up assigned to nobody."""
+		import inspect
+
+		from a3_retail.api import service_pos
+
+		source = inspect.getsource(service_pos.technicians)
+		self.assertIn("Technician Profile", source)
+		self.assertIn("tabHas Role", source, "it must fall back to the role")
+		self.assertIn("a3_is_counter_terminal", source,
+		              "a till is not a person who repairs things")
+
+
 class TestWhoMaySeeACard(FrappeTestCase):
 	def test_an_unassigned_card_is_not_hidden_from_the_bench(self):
 		"""A job card carries three Employee links — who took it in, whose bench
