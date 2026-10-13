@@ -87,22 +87,28 @@
 								<button class="btn btn-find" id="find-customer">{{ _("Find") }}</button>
 							</div>
 
+							{#- Read back, not typed into. A customer is a record, and
+							    editing their details on the way past a repair is how two
+							    spellings of the same person end up on the ledger. New
+							    ones are made deliberately, in their own dialog. -#}
 							<div class="field-grid">
 								<label class="field"><span>{{ _("Customer name") }}</span>
-									<input id="customer-name"></label>
-								<label class="field"><span>{{ _("Email (optional)") }}</span>
-									<input id="customer-email" type="email"></label>
+									<input id="customer-name" readonly></label>
+								<label class="field"><span>{{ _("Email") }}</span>
+									<input id="customer-email" type="email" readonly></label>
 							</div>
 							<label class="field"><span>{{ _("Address") }}</span>
-								<input id="customer-address"></label>
+								<input id="customer-address" readonly></label>
 							<div class="field-grid three">
 								<label class="field"><span>{{ _("City") }}</span>
-									<input id="customer-city"></label>
+									<input id="customer-city" readonly></label>
 								<label class="field"><span>{{ _("State") }}</span>
-									<input id="customer-state" value="{{ profile.state or '' }}"></label>
+									<input id="customer-state" readonly></label>
 								<label class="field"><span>{{ _("PIN") }}</span>
-									<input id="customer-pin" inputmode="numeric" maxlength="6"></label>
+									<input id="customer-pin" inputmode="numeric" maxlength="6" readonly></label>
 							</div>
+							<p class="muted svc-cust-hint" id="customer-hint">
+								{{ _("Find the customer by phone, or add a new one.") }}</p>
 						</div>
 
 						<div class="svc-device" id="device-card">
@@ -315,6 +321,40 @@
 </div>
 
 <!-- ------------------------------------------------------------- dialogs -->
+{#- A new customer is a record the shop keeps, so it is made on purpose rather
+    than by typing over whoever was on screen last. -#}
+<div class="modal" id="cust-modal" hidden>
+	<div class="modal-card">
+		<h3>{{ _("New customer") }}</h3>
+		<p class="modal-note">{{ _("Only the phone and a name are needed; the rest can follow.") }}</p>
+		<div class="field-grid">
+			<label class="field"><span>{{ _("Mobile") }}</span>
+				<input id="nc-mobile" inputmode="numeric" maxlength="10"></label>
+			<label class="field"><span>{{ _("Customer name") }}</span>
+				<input id="nc-name"></label>
+		</div>
+		<div class="field-grid">
+			<label class="field"><span>{{ _("Email (optional)") }}</span>
+				<input id="nc-email" type="email"></label>
+			<label class="field"><span>{{ _("City") }}</span>
+				<input id="nc-city"></label>
+		</div>
+		<label class="field"><span>{{ _("Address (optional)") }}</span>
+			<input id="nc-address"></label>
+		<div class="field-grid">
+			<label class="field"><span>{{ _("State") }}</span>
+				<input id="nc-state" value="{{ profile.state or '' }}"></label>
+			<label class="field"><span>{{ _("PIN") }}</span>
+				<input id="nc-pin" inputmode="numeric" maxlength="6"></label>
+		</div>
+		<div class="msg" id="nc-msg"></div>
+		<div class="modal-actions">
+			<button class="btn btn-quiet" data-close>{{ _("Cancel") }}</button>
+			<button class="btn btn-primary" id="nc-save">{{ _("Add the customer") }}</button>
+		</div>
+	</div>
+</div>
+
 <div class="modal" id="line-modal" hidden>
 	<div class="modal-card">
 		<h3>{{ _("Add item, part or service") }}</h3>

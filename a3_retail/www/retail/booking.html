@@ -74,16 +74,50 @@
 	</div>
 </div>
 
+{#- Every move the repair makes, asked for in one place: who did it, what it
+    cost, and anything that has to be said about it. A step is rarely just a
+    status — it is a technician finishing a job and the parts they used. -#}
+<div class="modal" id="stage-modal" hidden>
+	<div class="modal-card">
+		<header class="modal-head">
+			<h3 id="stage-title"></h3>
+			<button class="modal-x" data-close aria-label="{{ _('Close') }}">&times;</button>
+		</header>
+		<p class="modal-note" id="stage-note"></p>
+
+		<div class="stage-body">
+			<label class="field"><span>{{ _("Who is doing it") }}</span>
+				<select id="stage-tech"></select></label>
+
+			<div class="stage-lines" id="stage-lines"></div>
+
+			<label class="field" id="stage-reason-field">
+				<span id="stage-reason-label">{{ _("Note") }}</span>
+				<textarea id="stage-reason" rows="2"
+					placeholder="{{ _('Anything the next person should know') }}"></textarea></label>
+		</div>
+
+		<div class="msg" id="stage-msg"></div>
+		<div class="modal-actions">
+			<button class="btn btn-quiet" data-close>{{ _("Cancel") }}</button>
+			<button class="btn btn-primary" id="stage-go"></button>
+		</div>
+	</div>
+</div>
+
 {#- Handing the device back. The code on the customer's phone is the signature
     — a repair is given to whoever can produce it, not to whoever asks. -#}
 <div class="modal" id="hand-modal" hidden>
 	<div class="modal-card">
 		<h3>{{ _("Hand over the device") }}</h3>
 		<p class="modal-note">{{ _("Ask the customer for the code sent to their phone.") }}</p>
-		<label class="field"><span>{{ _("Collection code") }}</span>
+		<label class="field" id="hand-otp-field"><span>{{ _("Collection code") }}</span>
 			<input id="hand-otp" inputmode="numeric" autocomplete="off" maxlength="8"></label>
-		<label class="field"><span>{{ _("Collected by") }}</span>
-			<input id="hand-receiver" placeholder="{{ _('Name, if not the customer') }}"></label>
+		<label class="field"><span>{{ _("Who is collecting it") }}</span>
+			<select id="hand-who"></select></label>
+		<label class="field" id="hand-other-field" hidden>
+			<span>{{ _("Their name") }}</span>
+			<input id="hand-receiver" placeholder="{{ _('Who is picking it up') }}"></label>
 		<div class="msg" id="hand-msg"></div>
 		<div class="modal-actions">
 			<button class="btn btn-quiet" data-close>{{ _("Cancel") }}</button>

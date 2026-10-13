@@ -473,34 +473,36 @@ window.BOOKING = (function () {
 			}));
 	}
 
-	async function addLineItem(itemCode, kind) {
+	// `inDialog` keeps the page still: the step dialog repaints its own list,
+	// and reloading the whole booking underneath would close it.
+	async function addLineItem(itemCode, kind, inDialog) {
 		try {
 			await A3.call("a3_retail.api.bookings.add_line",
 			              { name: state.name, item_code: itemCode, kind, qty: 1 });
 			toast("Added.", "ok");
-			reload();
+			if (!inDialog) reload();
 		} catch (error) {
 			toast(error.message || "Could not add it.", "error");
 		}
 	}
 
-	async function editLine(row, change) {
+	async function editLine(row, change, inDialog) {
 		try {
 			await A3.call("a3_retail.api.bookings.update_line",
 			              Object.assign({ name: state.name, row }, change));
-			reload();
+			if (!inDialog) reload();
 		} catch (error) {
 			toast(error.message || "Could not change it.", "error");
-			paintLines();
+			if (!inDialog) paintLines();
 		}
 	}
 
-	async function dropLine(row) {
+	async function dropLine(row, inDialog) {
 		try {
 			await A3.call("a3_retail.api.bookings.remove_line",
 			              { name: state.name, row });
 			toast("Taken off.", "ok");
-			reload();
+			if (!inDialog) reload();
 		} catch (error) {
 			toast(error.message || "Could not remove it.", "error");
 		}
@@ -524,20 +526,160 @@ window.BOOKING = (function () {
 		}
 	}
 
-	async function takeStep(status, needsReason) {
-		let remarks = null;
-		if (needsReason) {
-			remarks = window.prompt(`Why is it going to “${status}”?`);
-			if (remarks == null) return;
-			if (!remarks.trim()) return toast("A reason is needed for that step.", "error");
-		}
+	/**
+	 * Every move the repair makes, asked for in one place.
+	 *
+	 * A step is rarely just a status: it is a technician finishing a piece of
+	 * work and the parts they used on it. Advancing straight off the button
+	 * meant the parts were remembered afterwards, or not at all.
+	 */
+	function takeStep(status, needsReason) {
+		const step = ((state.work && state.work.steps) || [])
+			.find((s) => s.status === status) || { label: status, hint: "" };
+		state.stage = { status, needsReason };
+
+		$("stage-title").textContent = step.label;
+		$("stage-note").textContent = step.hint || "";
+		$("stage-go").textContent = step.label;
+
+		const bench = (state.technicians || []).map((row) =>
+			`<option value="${esc(row.employee)}"${
+				row.employee === (state.work && state.work.technician) ? " selected" : ""
+			}>${esc(row.employee_name)}</option>`).join("");
+		$("stage-tech").innerHTML =
+			'<option value="">Nobody in particular</option>' + bench;
+
+		$("stage-reason-label").textContent = needsReason ? "Why" : "Note (optional)";
+		$("stage-reason").value = "";
+		$("stage-reason").placeholder = needsReason
+			? "The reason this is stopping — the customer will be asked"
+			: "Anything the next person should know";
+		$("stage-msg").textContent = "";
+		$("stage-modal").hidden = false;
+		paintStageLines();
+		$("stage-reason").focus();
+	}
+
+	/** The same parts and work, inside the step dialog. */
+	async function paintStageLines() {
+		const host = $("stage-lines");
+		host.innerHTML = '<p class="muted">Reading what is on it…</p>';
+		let data;
 		try {
+			data = await A3.call("a3_retail.api.bookings.lines", { name: state.name });
+		} catch (error) {
+			host.innerHTML = `<p class="wb-bad">${esc(error.message || "Could not read it.")}</p>`;
+			return;
+		}
+		host.innerHTML = `
+			<div class="wb-lines-head">
+				<h3>Parts and work</h3>
+				<span class="wb-sum">${data.rows.length
+					? money(data.totals.parts + data.totals.labour) : "nothing on it yet"}</span>
+			</div>
+			${data.rows.length ? `
+			<table class="wb-table"><thead><tr>
+				<th>What</th><th class="num">Qty</th><th class="num">Rate</th>
+				<th class="num">Amount</th><th></th>
+			</tr></thead><tbody>${data.rows.map((row) => `
+				<tr>
+					<td>${esc(row.item_name)} <span class="pill">${esc(row.kind)}</span></td>
+					<td class="num">${data.can_edit
+						? `<input class="sg-qty" data-row="${esc(row.row)}" inputmode="decimal"
+						          value="${row.qty}">` : row.qty}</td>
+					<td class="num">${data.can_edit
+						? `<input class="sg-rate" data-row="${esc(row.row)}" inputmode="decimal"
+						          value="${row.rate}">` : money(row.rate)}</td>
+					<td class="num">${money(row.amount)}</td>
+					<td>${data.can_edit
+						? `<button class="wb-drop sg-drop" data-row="${esc(row.row)}"
+						           title="Take it off">&times;</button>` : ""}</td>
+				</tr>`).join("")}</tbody></table>` : ""}
+			${data.can_edit ? `
+				<div class="wb-add">
+					<input id="sg-find" placeholder="Add a part, a charge or an accessory…"
+					       autocomplete="off">
+					<div class="w-hits" id="sg-hits"></div>
+				</div>` : ""}`;
+
+		const find = $("sg-find");
+		if (find) {
+			let timer = null;
+			find.addEventListener("input", () => {
+				clearTimeout(timer);
+				timer = setTimeout(() => findStageItem(find.value.trim()), 220);
+			});
+		}
+		host.querySelectorAll(".sg-drop").forEach((node) =>
+			node.addEventListener("click", async () => {
+				await dropLine(node.dataset.row, true);
+				paintStageLines();
+			}));
+		host.querySelectorAll(".sg-qty, .sg-rate").forEach((node) =>
+			node.addEventListener("change", async () => {
+				await editLine(node.dataset.row,
+					node.classList.contains("sg-qty") ? { qty: Number(node.value) }
+					                                  : { rate: Number(node.value) }, true);
+				paintStageLines();
+			}));
+	}
+
+	async function findStageItem(query) {
+		const box = $("sg-hits");
+		if (!box) return;
+		if (query.length < 2) return (box.innerHTML = "");
+		let rows = [];
+		try {
+			rows = await A3.call("a3_retail.api.service_pos.search_items",
+			                     { query, limit: 8 });
+		} catch (error) {
+			box.innerHTML = `<p class="muted">${esc(error.message || "Could not search.")}</p>`;
+			return;
+		}
+		box.innerHTML = rows.length
+			? rows.map((row) => `
+				<button type="button" class="w-hit" data-code="${esc(row.item_code)}"
+				        data-kind="${esc(row.kind)}">
+					<span>${esc(row.item_name)} <small>${esc(row.kind)}</small></span>
+					<b>${money(row.rate)}</b>
+				</button>`).join("")
+			: '<p class="muted">Nothing by that name.</p>';
+		box.querySelectorAll(".w-hit").forEach((node) =>
+			node.addEventListener("mousedown", async (event) => {
+				event.preventDefault();
+				await addLineItem(node.dataset.code, node.dataset.kind, true);
+				$("sg-find").value = "";
+				paintStageLines();
+			}));
+	}
+
+	async function confirmStage() {
+		const { status, needsReason } = state.stage || {};
+		const remarks = $("stage-reason").value.trim();
+		if (needsReason && !remarks) {
+			$("stage-msg").textContent = "Say why — whoever picks this up next will ask.";
+			$("stage-msg").className = "msg error";
+			return;
+		}
+		$("stage-go").disabled = true;
+		try {
+			// Whoever did the work goes on the card before the step is taken, so
+			// the history reads in the right order.
+			const who = $("stage-tech").value;
+			if (who && who !== (state.work && state.work.technician)) {
+				await A3.call("a3_retail.api.bookings.assign",
+				              { name: state.name, technician: who });
+			}
 			await A3.call("a3_retail.api.bookings.advance",
-			              { name: state.name, status, remarks });
+			              { name: state.name, status, remarks: remarks || null });
+			$("stage-modal").hidden = true;
 			toast(`Moved to ${status}.`, "ok");
 			reload();
 		} catch (error) {
-			toast(error.message || "Could not move it.", "error");
+			$("stage-msg").textContent = error.message || "Could not move it.";
+			$("stage-msg").className = "msg error";
+		} finally {
+			$("stage-go").disabled = false;
 		}
 	}
 
@@ -569,14 +711,24 @@ window.BOOKING = (function () {
 		// Where the shop does not use a collection code, asking for one and then
 		// ignoring whatever is typed is worse than not asking.
 		const wanted = !state.work || state.work.require_otp !== false;
-		$("hand-otp").closest(".field").hidden = !wanted;
+		$("hand-otp-field").hidden = !wanted;
 		$("hand-modal").querySelector(".modal-note").textContent = wanted
 			? "Ask the customer for the code sent to their phone."
 			: "Check who is collecting, then hand it over.";
+
+		// The customer collects their own device far more often than anybody
+		// else does, so their name is the first thing offered rather than an
+		// empty box to retype it into.
+		const owner = (state.data && state.data.customer.customer_name) || "";
+		$("hand-who").innerHTML =
+			`<option value="owner">${esc(owner)} (the customer)</option>`
+			+ '<option value="other">Somebody else</option>';
+		$("hand-other-field").hidden = true;
+		$("hand-receiver").value = "";
 		$("hand-modal").hidden = false;
 		$("hand-otp").value = "";
 		$("hand-msg").textContent = "";
-		(wanted ? $("hand-otp") : $("hand-receiver")).focus();
+		(wanted ? $("hand-otp") : $("hand-who")).focus();
 	}
 
 	async function confirmHandOver() {
@@ -584,7 +736,9 @@ window.BOOKING = (function () {
 			await A3.call("a3_retail.api.bookings.hand_over", {
 				name: state.name,
 				otp: $("hand-otp").value.trim(),
-				receiver: $("hand-receiver").value.trim() || null,
+				receiver: $("hand-who").value === "other"
+					? ($("hand-receiver").value.trim() || null)
+					: ((state.data && state.data.customer.customer_name) || null),
 			});
 			$("hand-modal").hidden = true;
 			toast("Handed over. The job is closed.", "ok");
@@ -828,6 +982,12 @@ window.BOOKING = (function () {
 		$("pay-save").addEventListener("click", takePayment);
 		$("note-save").addEventListener("click", saveNote);
 		$("hand-go").addEventListener("click", confirmHandOver);
+		$("stage-go").addEventListener("click", confirmStage);
+		$("hand-who").addEventListener("change", () => {
+			const other = $("hand-who").value === "other";
+			$("hand-other-field").hidden = !other;
+			if (other) $("hand-receiver").focus();
+		});
 		loadBench();
 		document.querySelectorAll("[data-close]").forEach((node) => {
 			node.addEventListener("click", () => { node.closest(".modal").hidden = true; });

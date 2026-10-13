@@ -311,11 +311,51 @@ window.SVC = (function () {
 		});
 	}
 
+	/** A new customer is made in its own dialog, not by typing over whoever was
+	 *  on screen. The panel behind only ever shows what is on file. */
 	function newCustomer() {
-		state.customer = null;
-		["mobile", "customer-name", "customer-email", "customer-address",
-		 "customer-city", "customer-pin"].forEach((id) => { $(id).value = ""; });
-		$("mobile").focus();
+		$("nc-mobile").value = $("mobile").value.trim();
+		["nc-name", "nc-email", "nc-address", "nc-city", "nc-pin"].forEach((id) => {
+			$(id).value = "";
+		});
+		$("nc-msg").textContent = "";
+		$("cust-modal").hidden = false;
+		($("nc-mobile").value ? $("nc-name") : $("nc-mobile")).focus();
+	}
+
+	async function saveNewCustomer() {
+		const mobile = $("nc-mobile").value.trim();
+		const name = $("nc-name").value.trim();
+		if (!mobile || !name) {
+			$("nc-msg").textContent = "A phone number and a name, at least.";
+			$("nc-msg").className = "msg error";
+			return;
+		}
+		$("nc-save").disabled = true;
+		$("nc-msg").textContent = "Saving…";
+		$("nc-msg").className = "msg";
+		try {
+			// The counter's own saver: it files the address alongside the
+			// customer, which `get_or_create` on its own does not.
+			await A3.call("a3_retail.api.pos.save_customer", {
+				mobile_no: mobile,
+				customer_name: name,
+				email: $("nc-email").value.trim() || null,
+				address_line1: $("nc-address").value.trim() || null,
+				city: $("nc-city").value.trim() || null,
+				state: $("nc-state").value.trim() || null,
+				pincode: $("nc-pin").value.trim() || null,
+			});
+			$("cust-modal").hidden = true;
+			$("mobile").value = mobile;
+			await findCustomer();
+			say(name + " added.", "ok");
+		} catch (error) {
+			$("nc-msg").textContent = error.message || "Could not add the customer.";
+			$("nc-msg").className = "msg error";
+		} finally {
+			$("nc-save").disabled = false;
+		}
 	}
 
 	// -------------------------------------------------------------- lines
@@ -940,6 +980,7 @@ window.SVC = (function () {
 		$("find-customer").addEventListener("click", findCustomer);
 		$("mobile").addEventListener("keydown", (e) => { if (e.key === "Enter") findCustomer(); });
 		$("new-customer").addEventListener("click", newCustomer);
+		$("nc-save").addEventListener("click", saveNewCustomer);
 		$("another-device").addEventListener("click", () => {
 			state.device = null; paintDevice(); $("scan").focus();
 		});

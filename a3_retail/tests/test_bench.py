@@ -191,6 +191,78 @@ class TestTheProblemsOnOffer(FrappeTestCase):
 		self.assertEqual(missing, [], "these have no category: " + ", ".join(missing))
 
 
+class TestEveryStepIsAsked(FrappeTestCase):
+	"""A step is rarely just a status.
+
+	It is a technician finishing a piece of work and the parts they used on it.
+	Advancing straight off the button meant the parts were remembered
+	afterwards, or not at all.
+	"""
+
+	def _script(self):
+		return open(frappe.get_app_path(
+			"a3_retail", "public", "js", "a3_booking.js")).read()
+
+	def test_a_step_opens_a_dialog_rather_than_moving_the_card(self):
+		script = self._script()
+		self.assertIn("stage-modal", script)
+		self.assertIn("function confirmStage", script)
+		# the move only happens on confirm, never on the step button itself
+		self.assertIn("async function confirmStage", script)
+		self.assertIn('"a3_retail.api.bookings.advance"', script)
+
+	def test_the_dialog_carries_who_did_it_and_what_it_cost(self):
+		markup = open(frappe.get_app_path(
+			"a3_retail", "www", "retail", "booking.html")).read()
+		for field in ("stage-tech", "stage-lines", "stage-reason"):
+			self.assertIn(f'id="{field}"', markup, field)
+
+	def test_a_step_that_stalls_the_job_still_insists_on_a_reason(self):
+		script = self._script()
+		self.assertIn("needsReason && !remarks", script)
+
+
+class TestHandingItBack(FrappeTestCase):
+	def test_no_code_is_generated_where_none_is_wanted(self):
+		"""Generating it would text the customer a number nobody will ask for."""
+		import inspect
+
+		from a3_retail.a3_retail_service.doctype.service_job_card import service_job_card
+
+		source = inspect.getsource(service_job_card.ServiceJobCard)
+		self.assertIn("_require_delivery_otp()", source,
+		              "the code must only be made where the shop asks for one")
+
+	def test_who_is_collecting_is_offered_not_typed(self):
+		"""The customer collects their own device far more often than anybody
+		else, so their name is the first thing offered."""
+		markup = open(frappe.get_app_path(
+			"a3_retail", "www", "retail", "booking.html")).read()
+		self.assertIn('id="hand-who"', markup)
+		script = open(frappe.get_app_path(
+			"a3_retail", "public", "js", "a3_booking.js")).read()
+		self.assertIn("(the customer)", script)
+
+
+class TestTakingACustomerIn(FrappeTestCase):
+	def test_the_counter_reads_a_customer_rather_than_retyping_one(self):
+		"""Editing someone's details on the way past a repair is how two
+		spellings of the same person end up on the ledger."""
+		markup = open(frappe.get_app_path(
+			"a3_retail", "www", "retail", "service.html")).read()
+		for field in ("customer-name", "customer-email", "customer-address",
+		              "customer-city", "customer-state", "customer-pin"):
+			block = markup.split(f'id="{field}"')[1].split(">")[0]
+			self.assertIn("readonly", block, f"{field} must not be typed into")
+
+	def test_a_new_customer_is_made_in_its_own_dialog(self):
+		markup = open(frappe.get_app_path(
+			"a3_retail", "www", "retail", "service.html")).read()
+		self.assertIn('id="cust-modal"', markup)
+		for field in ("nc-mobile", "nc-name", "nc-city", "nc-pin"):
+			self.assertIn(f'id="{field}"', markup, field)
+
+
 class TestWhoIsOnTheBench(FrappeTestCase):
 	def test_the_list_is_never_silently_empty(self):
 		"""A Technician Profile is the proper record, but a shop that has not

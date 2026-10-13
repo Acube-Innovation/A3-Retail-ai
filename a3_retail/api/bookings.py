@@ -343,7 +343,10 @@ def booking(name: str) -> dict:
 			"mode": doc.delivery_mode,
 			"ready_on": str(doc.ready_on or ""),
 			"otp_verified": bool(cint(doc.otp_verified)),
-			"otp_pending": doc.status == st.READY_FOR_DELIVERY and not cint(doc.otp_verified),
+			# Only pending where the shop actually sends one.
+			"otp_pending": bool(
+				doc.status == st.READY_FOR_DELIVERY and not cint(doc.otp_verified)
+				and frappe.db.get_single_value("A3 Retail Settings", "require_delivery_otp")),
 			"receiver": doc.receiver_name,
 			"delivered_by": _employee_name(doc.delivered_by),
 			"accessories_returned": bool(cint(doc.accessories_returned)),
