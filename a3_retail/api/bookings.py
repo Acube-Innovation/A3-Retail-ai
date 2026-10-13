@@ -751,6 +751,147 @@ def hand_over(name: str, otp: str, receiver: str | None = None) -> dict:
 
 
 @frappe.whitelist()
+def lines(name: str) -> dict:
+	"""What is on the repair, and whether it can still be changed."""
+	doc = _open_booking(name)
+	rows = []
+	for row in doc.get("parts") or []:
+		rows.append({
+			"row": row.name, "kind": "Part", "item_code": row.item_code,
+			"item_name": row.item_name or row.item_code, "qty": flt(row.qty),
+			"rate": flt(row.rate), "amount": flt(row.amount),
+			"status": row.part_status or "",
+			"warranty": bool(cint(row.is_warranty_covered)),
+		})
+	for row in doc.get("labour") or []:
+		rows.append({
+			"row": row.name, "kind": "Service", "item_code": row.service_item,
+			"item_name": row.description or row.service_item, "qty": flt(row.qty),
+			"rate": flt(row.rate), "amount": flt(row.amount),
+			"status": "", "warranty": bool(cint(row.is_warranty_covered)),
+		})
+
+	# Once the bill is raised the lines are what the customer was charged, so
+	# they stop being editable here — a change then belongs on a credit note.
+	return {
+		"rows": rows,
+		"can_edit": bool(frappe.has_permission("Service Job Card", "write", doc))
+		and not doc.sales_invoice and doc.status not in st.TERMINAL_STATUSES,
+		"invoiced": bool(doc.sales_invoice),
+		"totals": {"parts": flt(doc.parts_total), "labour": flt(doc.labour_total),
+		           "grand_total": flt(doc.grand_total)},
+	}
+
+
+@frappe.whitelist()
+def add_line(name: str, item_code: str, kind: str = "Part", qty: float = 1,
+             rate: float | None = None) -> dict:
+	"""Put a part or a charge on a repair that is already open.
+
+	What a device needs is not known when it is booked in — the fault is found
+	at the bench, and the part is chosen after that. Making the counter guess at
+	intake is how a repair gets billed for the wrong thing.
+	"""
+	doc = _open_booking(name)
+	require_permission("Service Job Card", "write", doc)
+	_editable(doc)
+
+	if not frappe.db.exists("Item", item_code):
+		frappe.throw(_("{0} is not an item we carry.").format(item_code))
+
+	item = frappe.db.get_value("Item", item_code, ["item_name", "is_stock_item"],
+	                           as_dict=True)
+	if rate is None:
+		from a3_retail.api.service_pos import _selling_rate
+
+		rate = _selling_rate(item_code)
+
+	if (kind or "Part").strip().title() == "Service":
+		doc.append("labour", {
+			"service_item": item_code, "description": item.item_name,
+			"technician": doc.assigned_technician,
+			"qty": flt(qty) or 1, "rate": flt(rate)})
+	else:
+		doc.append("parts", {
+			"item_code": item_code, "item_name": item.item_name,
+			"qty": flt(qty) or 1, "rate": flt(rate)})
+	doc.save()
+	return lines(name)
+
+
+@frappe.whitelist()
+def update_line(name: str, row: str, qty: float | None = None,
+                rate: float | None = None) -> dict:
+	"""Change how many, or what it costs."""
+	doc = _open_booking(name)
+	require_permission("Service Job Card", "write", doc)
+	_editable(doc)
+
+	line = _find_line(doc, row)
+	if qty is not None:
+		if flt(qty) <= 0:
+			frappe.throw(_("A line needs a quantity. Remove it instead."))
+		line.qty = flt(qty)
+	if rate is not None:
+		if flt(rate) < 0:
+			frappe.throw(_("A price cannot be less than nothing."))
+		line.rate = flt(rate)
+	doc.save()
+	return lines(name)
+
+
+@frappe.whitelist()
+def remove_line(name: str, row: str) -> dict:
+	"""Take a part or a charge off the repair."""
+	doc = _open_booking(name)
+	require_permission("Service Job Card", "write", doc)
+	_editable(doc)
+
+	line = _find_line(doc, row)
+	# A part already taken off the shelf has to be put back before it leaves the
+	# bill, or the stock and the paperwork stop agreeing.
+	if line.parentfield == "parts" and (line.get("part_status") or "") in (
+			"Issued", "Consumed"):
+		frappe.throw(
+			_("{0} has already been issued from the store. Return it first.").format(
+				line.item_name or line.item_code),
+			title=_("Already issued"),
+		)
+	doc.remove(line)
+	doc.save()
+	return lines(name)
+
+
+def _editable(doc) -> None:
+	if doc.sales_invoice:
+		frappe.throw(
+			_("This repair has been billed on {0}. What the customer was charged "
+			  "cannot be changed here.").format(doc.sales_invoice),
+			title=_("Already billed"),
+		)
+	if doc.status in st.TERMINAL_STATUSES:
+		frappe.throw(_("This job is finished."), title=_("Closed"))
+
+
+def _find_line(doc, row: str):
+	for field in ("parts", "labour"):
+		for line in doc.get(field) or []:
+			if line.name == row:
+				return line
+	frappe.throw(_("That line is no longer on this repair."), title=_("Not found"))
+
+
+@frappe.whitelist()
+def invoice_now(name: str) -> dict:
+	"""Bill the repair from the bench, and hand back something to print."""
+	_open_booking(name)   # branch guard
+
+	from a3_retail.api.service_pos import generate_invoice
+
+	return generate_invoice(name)
+
+
+@frappe.whitelist()
 def technicians() -> list[dict]:
 	"""Who can be put on a repair at this branch."""
 	_me()

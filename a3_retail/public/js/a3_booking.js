@@ -312,23 +312,15 @@ window.BOOKING = (function () {
 			</ol>
 
 			${work.can_work ? `
-			<div class="wb-grid">
-				<label class="field"><span>On the bench of</span>
+			<div class="wb-bar">
+				<label class="field wb-bench"><span>On the bench of</span>
 					<div class="wb-pair">
 						<select id="wb-tech">${bench || '<option value="">No technicians listed</option>'}</select>
 						<button class="btn btn-quiet" id="wb-assign" type="button">Assign</button>
 					</div></label>
-				<label class="field"><span>What was found</span>
-					<textarea id="wb-diag" rows="2"
-						placeholder="The fault, in a sentence">${esc(work.diagnosis)}</textarea></label>
-				<label class="field"><span>Why it failed</span>
-					<div class="wb-pair">
-						<select id="wb-cause">${(work.root_causes || []).map((cause) =>
-							`<option value="${esc(cause)}"${cause === work.root_cause
-								? " selected" : ""}>${esc(cause) || "—"}</option>`).join("")}</select>
-						<button class="btn btn-quiet" id="wb-save-diag" type="button">Save</button>
-					</div></label>
 			</div>
+
+			<div id="wb-lines"></div>
 
 			${work.steps.length ? `
 				<div class="wb-steps">${work.steps.map((step) => `
@@ -345,22 +337,191 @@ window.BOOKING = (function () {
 					<button class="btn btn-quiet" id="wb-acc-back" type="button">Handed back</button>
 				</div>` : ""}
 
-			${data.can.deliver ? `
+			${(data.can.deliver || data.can.invoice || data.sales_invoice) ? `
 				<div class="wb-finish">
-					<button class="btn btn-primary btn-icon" id="wb-deliver">${
-						icon("wrench")} Hand over to the customer</button>
-					<span class="muted">Needs the code sent to their phone.</span>
+					${data.can.invoice
+						? `<button class="btn btn-invoice btn-icon" id="wb-invoice">${
+							icon("print")} Generate the bill</button>` : ""}
+					${data.sales_invoice
+						? `<a class="btn btn-outline btn-icon" target="_blank"
+						      href="${esc(data.invoice_url || "#")}">${
+							icon("print")} Print ${esc(data.sales_invoice)}</a>` : ""}
+					${data.can.deliver
+						? `<button class="btn btn-primary btn-icon" id="wb-deliver">${
+							icon("wrench")} Hand over to the customer</button>` : ""}
+					<span class="muted">${data.can.deliver
+						? (work.require_otp === false
+							? "Check who is collecting."
+							: "Needs the code sent to their phone.")
+						: "Bill it before it goes out."}</span>
 				</div>` : ""}
 			` : '<p class="muted wb-none">You can see this repair but not work on it.</p>'}`;
 
 		if ($("wb-assign")) $("wb-assign").addEventListener("click", assignBench);
-		if ($("wb-save-diag")) $("wb-save-diag").addEventListener("click", saveDiagnosis);
 		if ($("wb-acc-back")) $("wb-acc-back").addEventListener("click", accessoriesBack);
 		if ($("wb-deliver")) $("wb-deliver").addEventListener("click", askHandOver);
+		if ($("wb-invoice")) $("wb-invoice").addEventListener("click", billNow);
 		host.querySelectorAll(".wb-step").forEach((node) => {
 			node.addEventListener("click", () => takeStep(node.dataset.step,
 			                                             node.dataset.reason === "1"));
 		});
+
+		if (work.can_work) paintLines();
+	}
+
+	/**
+	 * What the repair is being charged for, changed as the work goes.
+	 *
+	 * What a device needs is not known when it is booked in — the fault is
+	 * found at the bench and the part chosen after that. Once the bill is
+	 * raised the lines stop being editable: they are what the customer was
+	 * charged, and a change then belongs on a credit note.
+	 */
+	async function paintLines() {
+		const host = $("wb-lines");
+		if (!host) return;
+		let data;
+		try {
+			data = await A3.call("a3_retail.api.bookings.lines", { name: state.name });
+		} catch (error) {
+			host.innerHTML = `<p class="wb-bad">${esc(error.message || "Could not read the lines.")}</p>`;
+			return;
+		}
+		state.lines = data;
+
+		host.innerHTML = `
+			<div class="wb-lines-head">
+				<h3>Parts and work</h3>
+				<span class="wb-sum">${data.rows.length
+					? `${money(data.totals.parts)} parts · ${money(data.totals.labour)} work`
+					: "nothing on it yet"}</span>
+			</div>
+			${data.rows.length ? `
+			<table class="wb-table"><thead><tr>
+				<th>What</th><th>Type</th><th class="num">Qty</th>
+				<th class="num">Rate</th><th class="num">Amount</th><th></th>
+			</tr></thead><tbody>${data.rows.map((row) => `
+				<tr>
+					<td>${esc(row.item_name)}${row.status
+						? ` <span class="pill pill-sky">${esc(row.status)}</span>` : ""}</td>
+					<td><span class="pill">${esc(row.kind)}</span></td>
+					<td class="num">${data.can_edit
+						? `<input class="wb-qty" data-row="${esc(row.row)}" inputmode="decimal"
+						          value="${row.qty}">` : row.qty}</td>
+					<td class="num">${data.can_edit
+						? `<input class="wb-rate" data-row="${esc(row.row)}" inputmode="decimal"
+						          value="${row.rate}">` : money(row.rate)}</td>
+					<td class="num">${money(row.amount)}</td>
+					<td>${data.can_edit
+						? `<button class="wb-drop" data-row="${esc(row.row)}"
+						           title="Take it off">&times;</button>` : ""}</td>
+				</tr>`).join("")}</tbody></table>`
+				: '<p class="muted wb-none">Nothing charged on this repair yet.</p>'}
+			${data.can_edit ? `
+				<div class="wb-add">
+					<input id="wb-find" placeholder="Search a part, a charge or an accessory…"
+					       autocomplete="off">
+					<div class="w-hits" id="wb-hits"></div>
+				</div>`
+				: data.invoiced
+					? '<p class="muted wb-none">Billed — the lines are what the customer was charged.</p>'
+					: ""}`;
+
+		const find = $("wb-find");
+		if (find) {
+			let timer = null;
+			find.addEventListener("input", () => {
+				clearTimeout(timer);
+				timer = setTimeout(() => findLineItem(find.value.trim()), 220);
+			});
+		}
+		host.querySelectorAll(".wb-drop").forEach((node) =>
+			node.addEventListener("click", () => dropLine(node.dataset.row)));
+		// Typing must not redraw the row out from under the caret, so the change
+		// is sent when the box is left rather than on every keystroke.
+		host.querySelectorAll(".wb-qty, .wb-rate").forEach((node) =>
+			node.addEventListener("change", () => editLine(
+				node.dataset.row,
+				node.classList.contains("wb-qty") ? { qty: Number(node.value) }
+				                                  : { rate: Number(node.value) })));
+	}
+
+	async function findLineItem(query) {
+		const box = $("wb-hits");
+		if (!box) return;
+		if (query.length < 2) return (box.innerHTML = "");
+		let rows = [];
+		try {
+			rows = await A3.call("a3_retail.api.service_pos.search_items",
+			                     { query, limit: 8 });
+		} catch (error) {
+			box.innerHTML = `<p class="muted">${esc(error.message || "Could not search.")}</p>`;
+			return;
+		}
+		box.innerHTML = rows.length
+			? rows.map((row) => `
+				<button type="button" class="w-hit" data-code="${esc(row.item_code)}"
+				        data-kind="${esc(row.kind)}">
+					<span>${esc(row.item_name)} <small>${esc(row.kind)}</small></span>
+					<b>${money(row.rate)}</b>
+				</button>`).join("")
+			: '<p class="muted">Nothing by that name.</p>';
+		box.querySelectorAll(".w-hit").forEach((node) =>
+			node.addEventListener("mousedown", (event) => {
+				event.preventDefault();
+				addLineItem(node.dataset.code, node.dataset.kind);
+			}));
+	}
+
+	async function addLineItem(itemCode, kind) {
+		try {
+			await A3.call("a3_retail.api.bookings.add_line",
+			              { name: state.name, item_code: itemCode, kind, qty: 1 });
+			toast("Added.", "ok");
+			reload();
+		} catch (error) {
+			toast(error.message || "Could not add it.", "error");
+		}
+	}
+
+	async function editLine(row, change) {
+		try {
+			await A3.call("a3_retail.api.bookings.update_line",
+			              Object.assign({ name: state.name, row }, change));
+			reload();
+		} catch (error) {
+			toast(error.message || "Could not change it.", "error");
+			paintLines();
+		}
+	}
+
+	async function dropLine(row) {
+		try {
+			await A3.call("a3_retail.api.bookings.remove_line",
+			              { name: state.name, row });
+			toast("Taken off.", "ok");
+			reload();
+		} catch (error) {
+			toast(error.message || "Could not remove it.", "error");
+		}
+	}
+
+	async function billNow() {
+		const button = $("wb-invoice");
+		if (button) button.disabled = true;
+		try {
+			const made = await A3.call("a3_retail.api.bookings.invoice_now",
+			                           { name: state.name });
+			toast(made.created === false
+				? "Already billed on " + made.sales_invoice
+				: "Billed — " + made.sales_invoice, "ok");
+			if (made.print_url) window.open(made.print_url, "_blank");
+			reload();
+		} catch (error) {
+			toast(error.message || "Could not bill it.", "error");
+		} finally {
+			if (button) button.disabled = false;
+		}
 	}
 
 	async function takeStep(status, needsReason) {
@@ -390,19 +551,6 @@ window.BOOKING = (function () {
 			reload();
 		} catch (error) {
 			toast(error.message || "Could not assign it.", "error");
-		}
-	}
-
-	async function saveDiagnosis() {
-		try {
-			await A3.call("a3_retail.api.bookings.diagnose", {
-				name: state.name,
-				diagnosis: $("wb-diag").value,
-				root_cause: $("wb-cause").value,
-			});
-			toast("Written down.", "ok");
-		} catch (error) {
-			toast(error.message || "Could not save that.", "error");
 		}
 	}
 

@@ -134,6 +134,63 @@ class TestWhatTheCounterIsMadeToDo(FrappeTestCase):
 		self.assertFalse(service_job_card._require_signature())
 
 
+class TestChangingWhatIsCharged(FrappeTestCase):
+	"""What a device needs is found at the bench, not guessed at intake."""
+
+	def test_the_lines_can_be_changed_while_the_job_is_open(self):
+		import inspect
+
+		from a3_retail.api import bookings
+
+		for name in ("lines", "add_line", "update_line", "remove_line"):
+			self.assertTrue(hasattr(bookings, name), f"bookings.{name} is missing")
+		# every one of them has to check the job is still open
+		for name in ("add_line", "update_line", "remove_line"):
+			self.assertIn("_editable(doc)", inspect.getsource(getattr(bookings, name)),
+			              f"{name} must refuse a billed or closed job")
+
+	def test_a_billed_repair_stops_being_editable(self):
+		"""The lines are what the customer was charged. A change after that
+		belongs on a credit note, not here."""
+		import inspect
+
+		from a3_retail.api import bookings
+
+		source = inspect.getsource(bookings._editable)
+		self.assertIn("sales_invoice", source)
+		self.assertIn("TERMINAL_STATUSES", source)
+
+	def test_an_issued_part_cannot_just_be_deleted(self):
+		"""It is off the shelf already — taking it off the bill without putting
+		it back leaves the stock and the paperwork disagreeing."""
+		import inspect
+
+		from a3_retail.api import bookings
+
+		source = inspect.getsource(bookings.remove_line)
+		self.assertIn("Issued", source)
+		self.assertIn("Consumed", source)
+
+	def test_the_bench_can_bill_the_repair(self):
+		from a3_retail.api import bookings
+
+		self.assertTrue(hasattr(bookings, "invoice_now"))
+
+
+class TestTheProblemsOnOffer(FrappeTestCase):
+	def test_a_counter_has_problems_to_pick_from(self):
+		"""The dropdown reads Service Issue Type, and an empty one gives the
+		counter nothing to choose — the complaint then goes in free text only."""
+		live = frappe.db.count("Service Issue Type", {"is_active": 1})
+		self.assertGreater(live, 0, "no problems are set up for the counter to pick")
+
+	def test_each_problem_says_what_kind_it_is(self):
+		rows = frappe.get_all("Service Issue Type", filters={"is_active": 1},
+		                      fields=["name", "category"])
+		missing = [r.name for r in rows if not r.category]
+		self.assertEqual(missing, [], "these have no category: " + ", ".join(missing))
+
+
 class TestWhoIsOnTheBench(FrappeTestCase):
 	def test_the_list_is_never_silently_empty(self):
 		"""A Technician Profile is the proper record, but a shop that has not

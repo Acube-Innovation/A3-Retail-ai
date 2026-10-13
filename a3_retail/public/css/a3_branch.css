@@ -2439,9 +2439,12 @@ kbd { display: inline-block; min-width: 17px; padding: 1px 5px; margin: 0 1px;
 .wb-acc { display: flex; align-items: center; justify-content: space-between; gap: 12px;
 	margin-top: 14px; padding: 10px 13px; border-radius: var(--radius-sm);
 	background: var(--warn-soft, #fffbeb); color: var(--warn, #b45309); font-size: 12.5px; }
-.wb-finish { display: flex; align-items: center; gap: 12px; margin-top: 14px;
-	padding-top: 14px; border-top: 1px solid var(--line); }
+.wb-finish { display: flex; align-items: center; flex-wrap: wrap; gap: 12px;
+	margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
 .wb-finish .muted { font-size: 12px; }
+/* `.btn-invoice` is sized for the till's full-width column; here it sits in a
+   row beside the hand-over, so it takes its own width. */
+.wb-finish .btn { width: auto; display: inline-flex; align-items: center; gap: 7px; }
 .wb-bad { margin: 0; padding: 10px 12px; border-radius: var(--radius-sm);
 	background: var(--danger-soft, #fef2f2); color: var(--danger-dark, #b91c1c);
 	font-size: 13px; }
@@ -2450,3 +2453,43 @@ kbd { display: inline-block; min-width: 17px; padding: 1px 5px; margin: 0 1px;
 	.wb-grid { grid-template-columns: 1fr; }
 	.wb-rail li span:not(.dot) { display: none; }
 }
+
+/* --- the bench: who has it, and what it is being charged for ------------- */
+.wb-bar { display: flex; flex-wrap: wrap; gap: 12px; align-items: end;
+	padding-bottom: 14px; margin-bottom: 14px; border-bottom: 1px solid var(--line); }
+.wb-bench { flex: 0 1 380px; margin: 0; }
+
+.wb-lines-head { display: flex; align-items: baseline; justify-content: space-between;
+	gap: 12px; margin-bottom: 8px; }
+.wb-lines-head h3 { margin: 0; font-size: 13.5px; font-weight: 700; }
+.wb-sum { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+.wb-table { width: 100%; border-collapse: collapse; font-size: 12.5px;
+	border: 1px solid var(--line); border-radius: var(--radius-sm); overflow: hidden; }
+.wb-table th { background: #fafbfd; text-align: left; padding: 7px 10px;
+	font-size: 10.5px; font-weight: 700; color: var(--muted);
+	text-transform: uppercase; letter-spacing: .05em; border-bottom: 1px solid var(--line); }
+.wb-table td { padding: 6px 10px; border-bottom: 1px solid var(--line);
+	vertical-align: middle; }
+.wb-table tbody tr:last-child td { border-bottom: 0; }
+.wb-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.wb-table th:nth-child(3), .wb-table th:nth-child(4) { width: 92px; }
+.wb-table th:nth-child(5) { width: 104px; }
+.wb-table th:last-child { width: 34px; }
+/* Figures typed in place: the row is being corrected, not entered. */
+.wb-table input { width: 100%; padding: 4px 7px; font-family: inherit; font-size: 12.5px;
+	font-weight: 600; text-align: right; color: var(--ink);
+	border: 1px solid var(--line); border-radius: 6px; background: var(--card);
+	font-variant-numeric: tabular-nums; }
+.wb-table input:focus { outline: none; border-color: var(--sky);
+	box-shadow: 0 0 0 3px rgba(41, 171, 226, .14); }
+.wb-drop { border: 0; background: none; color: var(--faint); font-size: 16px;
+	line-height: 1; padding: 0 2px; cursor: pointer; }
+.wb-drop:hover { color: var(--danger-dark, #b91c1c); }
+
+.wb-add { position: relative; margin-top: 10px; }
+.wb-add input { width: 100%; padding: 9px 11px; font-family: inherit; font-size: 13px;
+	border: 1px dashed #bfdcf5; border-radius: var(--radius-sm); background: var(--card); }
+.wb-add input:focus { outline: none; border-style: solid; border-color: var(--sky);
+	box-shadow: 0 0 0 3px rgba(41, 171, 226, .14); }
+.wb-add .w-hits { margin: 6px 0 0; }
