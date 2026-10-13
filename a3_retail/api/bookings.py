@@ -630,6 +630,11 @@ def steps(name: str) -> dict:
 		"technician_name": _employee_name(doc.assigned_technician),
 		"diagnosis": doc.diagnosis_notes or "",
 		"root_cause": doc.root_cause or "",
+		# A Select on the doctype, not free text — the screen has to offer the
+		# same list the document will accept, or every save is refused.
+		"root_causes": [choice for choice in (
+			frappe.get_meta("Service Job Card").get_field("root_cause").options or ""
+		).split("\n")],
 		"accessories_out": [
 			row.accessory for row in doc.get("device_condition_checklist") or []
 			if cint(row.received) and not cint(row.returned)
@@ -698,8 +703,15 @@ def diagnose(name: str, diagnosis: str | None = None, root_cause: str | None = N
 	doc = _open_booking(name)
 	require_permission("Service Job Card", "write", doc)
 
+	cause = (root_cause or "").strip()
+	allowed = (frappe.get_meta("Service Job Card").get_field("root_cause").options
+	           or "").split("\n")
+	if cause and cause not in allowed:
+		frappe.throw(_("{0} is not one of the causes this form offers.").format(cause),
+		             title=_("Pick a cause"))
+
 	doc.diagnosis_notes = (diagnosis or "").strip()[:2000] or None
-	doc.root_cause = (root_cause or "").strip()[:500] or None
+	doc.root_cause = cause or None
 	doc.save()
 	return {"job_card": doc.name, "diagnosis": doc.diagnosis_notes or "",
 	        "root_cause": doc.root_cause or ""}

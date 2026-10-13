@@ -323,7 +323,9 @@ window.BOOKING = (function () {
 						placeholder="The fault, in a sentence">${esc(work.diagnosis)}</textarea></label>
 				<label class="field"><span>Why it failed</span>
 					<div class="wb-pair">
-						<input id="wb-cause" value="${esc(work.root_cause)}" placeholder="Root cause">
+						<select id="wb-cause">${(work.root_causes || []).map((cause) =>
+							`<option value="${esc(cause)}"${cause === work.root_cause
+								? " selected" : ""}>${esc(cause) || "—"}</option>`).join("")}</select>
 						<button class="btn btn-quiet" id="wb-save-diag" type="button">Save</button>
 					</div></label>
 			</div>
