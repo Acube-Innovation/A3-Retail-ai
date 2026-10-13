@@ -132,6 +132,39 @@ class TestPreview(FrappeTestCase):
 		self.assertIn("not a number", " ".join(by_row[6]["problems"]))
 		self.assertIn("Yes or a No", " ".join(by_row[7]["problems"]))
 
+	def test_a_service_is_brought_in_as_a_service(self):
+		"""A labour charge is bought and sold but never counted."""
+		url = self._sheet([
+			["Item Type", "Item Name", "Category", "HSN Code", "Unit", "Sales Price"],
+			["Service", "_T Import Fitting", self.group, self.hsn, "Nos", "250"],
+			["Product", "_T Import Charger", self.group, self.hsn, "Nos", "250"],
+		])
+		got = item_import.preview(file_url=url)
+		by_row = {row["row"]: row for row in got["rows"]}
+		self.assertTrue(by_row[2]["ok"])
+		self.assertEqual(by_row[2]["is_service"], 1)
+		self.assertEqual(by_row[3]["is_service"], 0)
+
+	def test_a_service_cannot_be_counted(self):
+		"""Nothing stops somebody putting a quantity against a labour charge in
+		a spreadsheet, so the preview does."""
+		url = self._sheet([
+			["Item Type", "Item Name", "Category", "HSN Code", "Unit", "Opening Stock"],
+			["Service", "_T Import Counted Service", self.group, self.hsn, "Nos", "5"],
+		])
+		got = item_import.preview(file_url=url)
+		self.assertEqual(got["ready"], 0)
+		self.assertIn("not counted", " ".join(got["rows"][0]["problems"]))
+
+	def test_anything_else_in_the_type_column_is_queried(self):
+		url = self._sheet([
+			["Item Type", "Item Name", "Category", "HSN Code", "Unit"],
+			["Widget", "_T Import Odd Type", self.group, self.hsn, "Nos"],
+		])
+		got = item_import.preview(file_url=url)
+		self.assertEqual(got["ready"], 0)
+		self.assertIn("Product or Service", " ".join(got["rows"][0]["problems"]))
+
 	def test_an_imei_item_cannot_be_given_opening_stock_here(self):
 		"""Six handsets need six IMEIs, and a spreadsheet column has nowhere to
 		put them — those come in on a purchase."""

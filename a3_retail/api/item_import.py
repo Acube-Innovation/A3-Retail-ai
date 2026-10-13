@@ -35,6 +35,13 @@ ROW_LIMIT = 2000
 #: distributor's say "Description"; both mean the name on the shelf.
 COLUMNS = (
 	{
+		"field": "item_type",
+		"label": "Item Type",
+		"help": "Product for anything counted on a shelf, Service for labour",
+		"example": "Product",
+		"aliases": ("item type", "type", "kind", "product or service", "goods or service"),
+	},
+	{
 		"field": "item_name",
 		"label": "Item Name",
 		"required": True,
@@ -358,12 +365,27 @@ def _check_row(row, mapping, lists, seen, needs_hsn, line_no) -> dict:
 			figure = 0.0
 		item[field] = figure
 
+	# A labour charge is bought and sold but never counted, and ERPNext will not
+	# let a non-stock item near a warehouse — which is exactly right.
+	kind = _norm(_cell(row, mapping, "item_type"))
+	if kind in ("service", "services", "labour", "labor", "charge"):
+		item["is_service"] = 1
+	elif kind in ("", "product", "goods", "item", "stock"):
+		item["is_service"] = 0
+	else:
+		problems.append(f"\u201c{_cell(row, mapping, 'item_type')}\u201d is not "
+		                "Product or Service")
+		item["is_service"] = 0
+
 	serial_cell = _cell(row, mapping, "has_serial")
 	serial = _truthy(serial_cell)
 	if serial is None:
 		problems.append(f"“{serial_cell}” is not a Yes or a No for Has IMEI")
 		serial = 0
 	item["has_serial"] = serial
+
+	if item["is_service"] and (serial or item["opening_qty"]):
+		problems.append("A service is not counted — leave Has IMEI and Opening Stock empty")
 
 	# A handset's own number comes in on a purchase, not here: an opening count
 	# of six would need six IMEIs, and a spreadsheet column has nowhere to put
@@ -467,6 +489,7 @@ def preview(file_url: str | None = None, sheet_url: str | None = None) -> dict:
 			"selling_rate": checked["item"].get("selling_rate") or 0,
 			"opening_qty": checked["item"].get("opening_qty") or 0,
 			"has_serial": checked["item"].get("has_serial") or 0,
+			"is_service": checked["item"].get("is_service") or 0,
 			"problems": checked["problems"],
 			"ok": not checked["problems"],
 		})
