@@ -2329,3 +2329,56 @@ kbd { display: inline-block; min-width: 17px; padding: 1px 5px; margin: 0 1px;
 /* Two small buttons in the last column of a list, side by side. */
 .row-actions { display: flex; gap: 6px; justify-content: flex-end; }
 .row-actions:empty { display: none; }
+
+/* ==========================================================================
+   Importing a catalogue from a spreadsheet (/retail/stock)
+   The preview is the screen: a tally first, then only the rows that need
+   fixing, because the ones that are fine need no attention.
+   ========================================================================== */
+.imp-start { display: flex; align-items: center; flex-wrap: wrap; gap: 10px;
+	padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid var(--line); }
+.imp-or { font-size: 12px; color: var(--faint); }
+.imp-pick { cursor: pointer; }
+.imp-chosen { font-size: 12.5px; color: var(--muted); }
+.imp-sheet { margin-bottom: 12px; }
+.imp-sheet summary, .imp-help summary { cursor: pointer; font-size: 12.5px;
+	font-weight: 600; color: var(--sky-dark); }
+.imp-sheet-row { display: flex; gap: 8px; margin: 8px 0 4px; }
+.imp-sheet-row input { flex: 1 1 auto; min-width: 0; padding: 9px 11px;
+	font-family: inherit; font-size: 13px; border: 1px solid var(--line);
+	border-radius: var(--radius-sm); }
+.imp-sheet .muted, .imp-help .muted { font-size: 11.5px; margin: 4px 0 0; }
+.imp-store { margin-bottom: 12px; }
+
+.imp-tally { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px;
+	padding: 10px 12px; border-radius: var(--radius-sm); background: #fafbfd;
+	font-size: 13px; font-weight: 600; }
+.imp-ok { color: var(--success, #047857); }
+.imp-no { color: var(--danger-dark, #b91c1c); }
+.imp-note { color: var(--muted); font-weight: 500; }
+.imp-tally .link { margin-left: auto; }
+.imp-warn { margin: 8px 0 0; padding: 8px 11px; border-radius: var(--radius-sm);
+	background: var(--warn-soft, #fffbeb); color: var(--warn, #b45309); font-size: 12.5px; }
+.imp-bad { margin: 0; padding: 10px 12px; border-radius: var(--radius-sm);
+	background: var(--danger-soft, #fef2f2); color: var(--danger-dark, #b91c1c);
+	font-size: 13px; }
+.imp-clean { margin: 10px 0 0; font-size: 13px; color: var(--success, #047857); }
+
+/* Only the rows that need work are listed. A four hundred row sheet with nine
+   problems should show nine lines, not four hundred. */
+.imp-rows { max-height: 300px; overflow-y: auto; margin-top: 10px;
+	border: 1px solid var(--line); border-radius: var(--radius-sm); }
+.imp-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.imp-table th { position: sticky; top: 0; background: #fafbfd; text-align: left;
+	padding: 7px 11px; font-size: 10.5px; font-weight: 700; color: var(--muted);
+	text-transform: uppercase; letter-spacing: .05em;
+	border-bottom: 1px solid var(--line); }
+.imp-table td { padding: 7px 11px; border-bottom: 1px solid var(--line);
+	vertical-align: top; }
+.imp-table tr:last-child td { border-bottom: 0; }
+.imp-rowno { width: 48px; color: var(--faint); font-variant-numeric: tabular-nums; }
+.imp-why { color: var(--danger-dark, #b91c1c); }
+.imp-help { margin-top: 12px; }
+.imp-cols { width: 100%; border-collapse: collapse; margin-top: 6px; font-size: 12.5px; }
+.imp-cols td { padding: 4px 8px 4px 0; vertical-align: top; }
+.imp-cols td:first-child { white-space: nowrap; width: 150px; }
