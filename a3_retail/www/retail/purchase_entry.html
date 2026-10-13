@@ -120,14 +120,21 @@
 					<h2>{{ _("Bill") }}</h2>
 
 					<div class="field-row">
-						<div class="field"><label for="bill-no">{{ _("Supplier bill no.") }}</label>
+						<div class="field"><label for="bill-no">{{ _("Supplier bill no.") }}
+								<span class="req" id="bill-no-req" hidden>*</span></label>
 							<input id="bill-no" type="text"></div>
 						<div class="field"><label for="p-date">{{ _("Date") }}</label>
 							<input id="p-date" type="date"></div>
 					</div>
 
+					{#- The rep's own bill reads the rate before tax and the total
+					    after it, so the screen shows both and the GST between. -#}
 					<div class="bill-totals">
 						<div class="tr"><span>{{ _("Lines") }}</span><span id="p-lines">0</span></div>
+						<div class="tr"><span>{{ _("Taxable Amount") }}</span>
+							<span id="p-taxable">₹0.00</span></div>
+						<div class="tr"><span>{{ _("GST") }} (<span id="p-gst-rate">18</span>%)</span>
+							<span id="p-gst">₹0.00</span></div>
 						<div class="tr tr-grand"><span>{{ _("Bill total") }}</span>
 							<span id="p-total">₹0.00</span></div>
 					</div>
