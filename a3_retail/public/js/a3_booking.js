@@ -64,6 +64,14 @@ window.BOOKING = (function () {
 	}
 
 	// ---------------------------------------------------------------- load
+	async function loadBench() {
+		try {
+			state.technicians = await A3.call("a3_retail.api.bookings.technicians");
+		} catch (error) {
+			state.technicians = [];   // not permitted to list them: the field stays empty
+		}
+	}
+
 	async function load() {
 		try {
 			state.data = await A3.call("a3_retail.api.bookings.booking", { name: state.name });
@@ -94,6 +102,7 @@ window.BOOKING = (function () {
 		$("print-top").addEventListener("click", print);
 
 		$("body").innerHTML = `
+			<section class="svc-panel wb" id="wb"></section>
 			<section class="svc-panel inv-sheet">
 				<header class="inv-head">
 					<div class="inv-brand">
@@ -231,6 +240,8 @@ window.BOOKING = (function () {
 					: ""}
 			</section>`;
 
+		paintWork();
+
 		$("print-bottom").addEventListener("click", print);
 		if ($("collect")) $("collect").addEventListener("click", askPayment);
 		if ($("add-note")) $("add-note").addEventListener("click", askNote);
@@ -247,6 +258,184 @@ window.BOOKING = (function () {
 				$("photo-modal").hidden = false;
 			});
 		});
+	}
+
+	/**
+	 * The bench: where a repair is actually worked.
+	 *
+	 * Everything between booking a device in and handing it back used to need
+	 * the desk, which the people doing the work are not meant to open. The steps
+	 * offered here are whatever the job card's own state machine allows from
+	 * where it stands — the screen never invents a path of its own, it only
+	 * shows the ones that exist and says what each one means.
+	 */
+	const STAGES = ["Booked in", "Being looked at", "Under repair", "Ready", "Handed over"];
+	const STAGE_OF = {
+		"Draft": 0, "Open": 0,
+		"Under Diagnosis": 1, "Estimate Pending": 1, "Estimate Sent": 1,
+		"Estimate Approved": 1, "Estimate Rejected": 1,
+		"In Progress": 2, "Awaiting Parts": 2, "On Hold": 2, "Repair Completed": 2,
+		"QC Failed": 2, "QC Passed": 2, "Not Repairable": 2,
+		"Ready for Delivery": 3,
+		"Delivered": 4, "Closed": 4, "Cancelled": 4,
+	};
+
+	async function paintWork() {
+		const host = $("wb");
+		if (!host) return;
+		host.innerHTML = '<p class="muted">Reading where this repair stands…</p>';
+
+		let work;
+		try {
+			work = await A3.call("a3_retail.api.bookings.steps", { name: state.name });
+		} catch (error) {
+			host.innerHTML = `<p class="wb-bad">${esc(error.message || "Could not read the job card.")}</p>`;
+			return;
+		}
+		state.work = work;
+
+		const data = state.data;
+		const stage = STAGE_OF[work.status] == null ? 0 : STAGE_OF[work.status];
+		const bench = (state.technicians || []).map((row) =>
+			`<option value="${esc(row.employee)}"${row.employee === work.technician
+				? " selected" : ""}>${esc(row.employee_name)}</option>`).join("");
+
+		host.innerHTML = `
+			<div class="wb-head">
+				<h2>The repair</h2>
+				<span class="pill ${esc(work.tone)}">${esc(work.status)}</span>
+			</div>
+
+			<ol class="wb-rail">${STAGES.map((label, index) => `
+				<li class="${index < stage ? "is-done" : index === stage ? "is-now" : ""}">
+					<span class="dot">${index + 1}</span><span>${label}</span></li>`).join("")}
+			</ol>
+
+			${work.can_work ? `
+			<div class="wb-grid">
+				<label class="field"><span>On the bench of</span>
+					<div class="wb-pair">
+						<select id="wb-tech">${bench || '<option value="">No technicians listed</option>'}</select>
+						<button class="btn btn-quiet" id="wb-assign" type="button">Assign</button>
+					</div></label>
+				<label class="field"><span>What was found</span>
+					<textarea id="wb-diag" rows="2"
+						placeholder="The fault, in a sentence">${esc(work.diagnosis)}</textarea></label>
+				<label class="field"><span>Why it failed</span>
+					<div class="wb-pair">
+						<input id="wb-cause" value="${esc(work.root_cause)}" placeholder="Root cause">
+						<button class="btn btn-quiet" id="wb-save-diag" type="button">Save</button>
+					</div></label>
+			</div>
+
+			${work.steps.length ? `
+				<div class="wb-steps">${work.steps.map((step) => `
+					<button class="wb-step" data-step="${esc(step.status)}"
+					        data-reason="${step.needs_reason ? 1 : 0}">
+						<b>${esc(step.label)}</b><span>${esc(step.hint)}</span></button>`).join("")}
+				</div>`
+				: `<p class="muted wb-none">${esc(work.waiting_on
+					|| "Nothing more to do here — this job is finished.")}</p>`}
+
+			${work.accessories_out.length ? `
+				<div class="wb-acc">
+					<span>Still holding the customer's ${work.accessories_out.map(esc).join(", ")}.</span>
+					<button class="btn btn-quiet" id="wb-acc-back" type="button">Handed back</button>
+				</div>` : ""}
+
+			${data.can.deliver ? `
+				<div class="wb-finish">
+					<button class="btn btn-primary btn-icon" id="wb-deliver">${
+						icon("wrench")} Hand over to the customer</button>
+					<span class="muted">Needs the code sent to their phone.</span>
+				</div>` : ""}
+			` : '<p class="muted wb-none">You can see this repair but not work on it.</p>'}`;
+
+		if ($("wb-assign")) $("wb-assign").addEventListener("click", assignBench);
+		if ($("wb-save-diag")) $("wb-save-diag").addEventListener("click", saveDiagnosis);
+		if ($("wb-acc-back")) $("wb-acc-back").addEventListener("click", accessoriesBack);
+		if ($("wb-deliver")) $("wb-deliver").addEventListener("click", askHandOver);
+		host.querySelectorAll(".wb-step").forEach((node) => {
+			node.addEventListener("click", () => takeStep(node.dataset.step,
+			                                             node.dataset.reason === "1"));
+		});
+	}
+
+	async function takeStep(status, needsReason) {
+		let remarks = null;
+		if (needsReason) {
+			remarks = window.prompt(`Why is it going to “${status}”?`);
+			if (remarks == null) return;
+			if (!remarks.trim()) return toast("A reason is needed for that step.", "error");
+		}
+		try {
+			await A3.call("a3_retail.api.bookings.advance",
+			              { name: state.name, status, remarks });
+			toast(`Moved to ${status}.`, "ok");
+			reload();
+		} catch (error) {
+			toast(error.message || "Could not move it.", "error");
+		}
+	}
+
+	async function assignBench() {
+		const technician = $("wb-tech").value;
+		if (!technician) return toast("Pick who is doing the work.", "error");
+		try {
+			await A3.call("a3_retail.api.bookings.assign",
+			              { name: state.name, technician });
+			toast("On the bench.", "ok");
+			reload();
+		} catch (error) {
+			toast(error.message || "Could not assign it.", "error");
+		}
+	}
+
+	async function saveDiagnosis() {
+		try {
+			await A3.call("a3_retail.api.bookings.diagnose", {
+				name: state.name,
+				diagnosis: $("wb-diag").value,
+				root_cause: $("wb-cause").value,
+			});
+			toast("Written down.", "ok");
+		} catch (error) {
+			toast(error.message || "Could not save that.", "error");
+		}
+	}
+
+	async function accessoriesBack() {
+		try {
+			const done = await A3.call("a3_retail.api.bookings.return_accessories",
+			                           { name: state.name });
+			toast(`${done.returned} handed back.`, "ok");
+			reload();
+		} catch (error) {
+			toast(error.message || "Could not record that.", "error");
+		}
+	}
+
+	function askHandOver() {
+		$("hand-modal").hidden = false;
+		$("hand-otp").value = "";
+		$("hand-msg").textContent = "";
+		$("hand-otp").focus();
+	}
+
+	async function confirmHandOver() {
+		try {
+			await A3.call("a3_retail.api.bookings.hand_over", {
+				name: state.name,
+				otp: $("hand-otp").value.trim(),
+				receiver: $("hand-receiver").value.trim() || null,
+			});
+			$("hand-modal").hidden = true;
+			toast("Handed over. The job is closed.", "ok");
+			reload();
+		} catch (error) {
+			$("hand-msg").textContent = error.message || "Could not complete the hand over.";
+			$("hand-msg").className = "msg error";
+		}
 	}
 
 	function stripTags(value) {
@@ -466,6 +655,8 @@ window.BOOKING = (function () {
 
 		$("pay-save").addEventListener("click", takePayment);
 		$("note-save").addEventListener("click", saveNote);
+		$("hand-go").addEventListener("click", confirmHandOver);
+		loadBench();
 		document.querySelectorAll("[data-close]").forEach((node) => {
 			node.addEventListener("click", () => { node.closest(".modal").hidden = true; });
 		});

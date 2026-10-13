@@ -74,6 +74,24 @@
 	</div>
 </div>
 
+{#- Handing the device back. The code on the customer's phone is the signature
+    — a repair is given to whoever can produce it, not to whoever asks. -#}
+<div class="modal" id="hand-modal" hidden>
+	<div class="modal-card">
+		<h3>{{ _("Hand over the device") }}</h3>
+		<p class="modal-note">{{ _("Ask the customer for the code sent to their phone.") }}</p>
+		<label class="field"><span>{{ _("Collection code") }}</span>
+			<input id="hand-otp" inputmode="numeric" autocomplete="off" maxlength="8"></label>
+		<label class="field"><span>{{ _("Collected by") }}</span>
+			<input id="hand-receiver" placeholder="{{ _('Name, if not the customer') }}"></label>
+		<div class="msg" id="hand-msg"></div>
+		<div class="modal-actions">
+			<button class="btn btn-quiet" data-close>{{ _("Cancel") }}</button>
+			<button class="btn btn-primary" id="hand-go">{{ _("Hand it over") }}</button>
+		</div>
+	</div>
+</div>
+
 <div class="modal" id="photo-modal" hidden>
 	<div class="modal-card modal-wide">
 		<h3 id="photo-title">{{ _("Device photo") }}</h3>

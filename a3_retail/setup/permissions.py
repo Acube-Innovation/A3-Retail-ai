@@ -33,7 +33,14 @@ PERMISSION_MATRIX: dict[str, dict[str, str]] = {
 		"Service Manager": "CRUDS",
 		"Sales Executive": "R",
 		"Reception Executive": "CRUS",
-		"Technician": "RU",
+		# Submit, because that is what Frappe calls changing a submitted
+		# document. Sixty-six fields on this doctype are marked allow_on_submit
+		# — status, diagnosis, the assigned technician, the accessory
+		# checklist — so the whole repair is meant to happen after the card is
+		# submitted, and without this a technician cannot move their own job
+		# card a single step. They still cannot create one: reception books,
+		# the bench works.
+		"Technician": "RUS",
 		"Store Keeper": "R",
 		"Accounts Manager": "R",
 		"Telecaller": "R",

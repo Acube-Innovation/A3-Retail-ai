@@ -547,6 +547,204 @@ def _invoice_url(invoice: str) -> str:
 	return invoice_print_url(invoice)
 
 
+# ---------------------------------------------------------------------------
+# Working the repair
+# ---------------------------------------------------------------------------
+#: What each step means to the person pressing it. The state machine decides
+#: which are offered; this only decides how they read on a button.
+STEP_WORDS = {
+	st.UNDER_DIAGNOSIS: ("Start diagnosis", "Look at the device and find the fault"),
+	st.ESTIMATE_PENDING: ("Needs an estimate", "The repair has to be quoted first"),
+	st.ESTIMATE_SENT: ("Estimate sent", "The customer has been given the figure"),
+	st.ESTIMATE_APPROVED: ("Customer approved", "Go ahead with the repair"),
+	st.ESTIMATE_REJECTED: ("Customer refused", "Hand the device back unrepaired"),
+	st.AWAITING_PARTS: ("Waiting for parts", "The part is not on the shelf"),
+	st.IN_PROGRESS: ("Start the repair", "Work is under way"),
+	st.ON_HOLD: ("Put on hold", "Stopped for now — say why"),
+	st.REPAIR_COMPLETED: ("Repair done", "Ready to be checked"),
+	st.QC_PASSED: ("Checked and passed", "The repair holds up"),
+	st.QC_FAILED: ("Failed the check", "Back to the bench"),
+	st.NOT_REPAIRABLE: ("Cannot be repaired", "Hand it back unrepaired"),
+	st.READY_FOR_DELIVERY: ("Ready for the customer", "Sends the collection code"),
+	st.DELIVERED: ("Handed over", "Use the Hand over button — it needs the code"),
+	st.CLOSED: ("Close the job", "Nothing further to do"),
+	st.CANCELLED: ("Cancel the job", "Say why"),
+}
+
+#: Steps that must say why. A card that stalls with no reason is the one nobody
+#: can answer the customer about.
+NEEDS_REASON = (st.ON_HOLD, st.CANCELLED, st.NOT_REPAIRABLE, st.QC_FAILED)
+
+#: Delivery is its own action — it needs the customer's code, the accessories
+#: back and the balance settled, so it is never just a status button.
+NOT_A_BUTTON = (st.DELIVERED,)
+
+
+@frappe.whitelist()
+def steps(name: str) -> dict:
+	"""Where this job card is, and the steps it may take from here."""
+	doc = _open_booking(name)
+	may_write = bool(frappe.has_permission("Service Job Card", "write", doc))
+
+	# Some steps are somebody else's to take — a technician does not pass QC on
+	# their own repair. The state machine refuses those anyway; offering a
+	# button that is going to be refused is the thing worth avoiding.
+	mine = set(frappe.get_roles())
+	offered = []
+	for status in st.next_statuses(doc.status):
+		if status in NOT_A_BUTTON:
+			continue
+		needed = st.TRANSITION_ROLES.get(status)
+		if needed and frappe.session.user != "Administrator" \
+				and not (set(needed) | {"System Manager"}) & mine:
+			continue
+		label, hint = STEP_WORDS.get(status, (status, ""))
+		offered.append({
+			"status": status,
+			"label": label,
+			"hint": hint,
+			"needs_reason": status in NEEDS_REASON,
+			"tone": tone_of(status),
+		})
+
+	# When every way forward belongs to someone else, say whose — otherwise the
+	# bench sees an empty panel and no reason for it.
+	waiting_on = ""
+	if may_write and not offered:
+		others = []
+		for status in st.next_statuses(doc.status):
+			for role in st.TRANSITION_ROLES.get(status, ()):
+				if role not in others:
+					others.append(role)
+		if others:
+			waiting_on = _("The next step on this repair is for {0}.").format(
+				" or ".join(others[:3]))
+
+	return {
+		"status": doc.status,
+		"tone": tone_of(doc.status),
+		"can_work": may_write,
+		"steps": offered if may_write else [],
+		"waiting_on": waiting_on,
+		"technician": doc.assigned_technician,
+		"technician_name": _employee_name(doc.assigned_technician),
+		"diagnosis": doc.diagnosis_notes or "",
+		"root_cause": doc.root_cause or "",
+		"accessories_out": [
+			row.accessory for row in doc.get("device_condition_checklist") or []
+			if cint(row.received) and not cint(row.returned)
+		],
+	}
+
+
+@frappe.whitelist()
+def advance(name: str, status: str, remarks: str | None = None) -> dict:
+	"""Move the job card one step, through the same rules the desk obeys.
+
+	The branch app is where the work actually happens, so the whole repair has
+	to be drivable from it. What it must not do is invent its own path through
+	the states — `set_status` on the doctype owns that, and this only decides
+	whether the person is allowed to ask.
+	"""
+	doc = _open_booking(name)
+	require_permission("Service Job Card", "write", doc)
+
+	status = (status or "").strip()
+	if status in NOT_A_BUTTON:
+		frappe.throw(_("Use Hand over to deliver — it needs the customer's code."),
+		             title=_("Not this way"))
+	if status not in st.next_statuses(doc.status):
+		frappe.throw(
+			_("A job card at {0} cannot go straight to {1}.").format(doc.status, status),
+			title=_("Not the next step"),
+		)
+	reason = (remarks or "").strip()
+	if status in NEEDS_REASON and not reason:
+		frappe.throw(_("Say why, so whoever picks this up next knows."),
+		             title=_("A reason is needed"))
+
+	from a3_retail.a3_retail_service.doctype.service_job_card.service_job_card import set_status
+
+	moved = set_status(name, status, reason or None)
+	if reason:
+		doc.reload()
+		doc.add_comment("Comment", text=f"{status}: {reason}")
+	return moved
+
+
+@frappe.whitelist()
+def assign(name: str, technician: str) -> dict:
+	"""Put the card on a technician's bench."""
+	doc = _open_booking(name)
+	require_permission("Service Job Card", "write", doc)
+
+	if not frappe.db.exists("Employee", {"name": technician, "branch": doc.branch,
+	                                     "status": "Active"}):
+		frappe.throw(_("That technician does not work at {0}.").format(doc.branch),
+		             title=_("Not this branch"))
+
+	from a3_retail.a3_retail_service.doctype.service_job_card.service_job_card import assign_technician
+
+	return assign_technician(name, technician)
+
+
+@frappe.whitelist()
+def diagnose(name: str, diagnosis: str | None = None, root_cause: str | None = None) -> dict:
+	"""What was found when the device was opened.
+
+	Kept apart from the status buttons because it is written while the card sits
+	at Under Diagnosis, often over a couple of visits to the bench.
+	"""
+	doc = _open_booking(name)
+	require_permission("Service Job Card", "write", doc)
+
+	doc.diagnosis_notes = (diagnosis or "").strip()[:2000] or None
+	doc.root_cause = (root_cause or "").strip()[:500] or None
+	doc.save()
+	return {"job_card": doc.name, "diagnosis": doc.diagnosis_notes or "",
+	        "root_cause": doc.root_cause or ""}
+
+
+@frappe.whitelist()
+def return_accessories(name: str) -> dict:
+	"""Everything that came in with the device, handed back.
+
+	Delivery refuses while anything is outstanding, so this is the step that
+	unblocks it — and it is a real check, not a formality: the charger left in
+	the drawer is the commonest complaint after a repair.
+	"""
+	doc = _open_booking(name)
+	require_permission("Service Job Card", "write", doc)
+
+	handed = 0
+	for row in doc.get("device_condition_checklist") or []:
+		if cint(row.received) and not cint(row.returned):
+			row.returned = 1
+			handed += 1
+	doc.accessories_returned = 1
+	doc.save()
+	return {"job_card": doc.name, "returned": handed}
+
+
+@frappe.whitelist()
+def hand_over(name: str, otp: str, receiver: str | None = None) -> dict:
+	"""Give the device back, against the customer's code."""
+	_open_booking(name)   # branch guard
+
+	from a3_retail.api.service import deliver_job_card
+
+	return deliver_job_card(name, otp=otp, receiver=receiver)
+
+
+@frappe.whitelist()
+def technicians() -> list[dict]:
+	"""Who can be put on a repair at this branch."""
+	_me()
+	from a3_retail.api.service_pos import technicians as bench
+
+	return bench()
+
+
 @frappe.whitelist()
 def add_note(name: str, text: str) -> dict:
 	"""A line in the booking's own timeline — a Comment, like anywhere else."""
