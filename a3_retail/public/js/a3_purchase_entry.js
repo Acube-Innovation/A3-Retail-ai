@@ -35,7 +35,7 @@
 		lines: [],
 		saving: false,
 		meta: { groups: [], uoms: [], taxes: [], warehouses: [], warehouse: "",
-		        canCreateItem: false },
+		        canCreateItem: false, billNoRequired: false },
 		pick: { hits: [], chosen: new Map(), cursor: -1 },
 		imei: { row: -1, rows: [] },
 	};
@@ -81,10 +81,18 @@
 		// An unregistered dealer cannot charge GST, so the bill carries none and
 		// the screen should not pretend otherwise.
 		state.supplierRegistered = registered !== false;
+		markBillNo();
 		$("supplier-picked").textContent = "Buying from " + label;
 		$("supplier-hits").innerHTML = "";
 		$("supplier-q").value = label;
 		$("supplier-new").hidden = true;
+	}
+
+	// Only a registered dealer's bill number is compulsory, so the asterisk
+	// appears once we know who we are buying from.
+	function markBillNo() {
+		$("bill-no-req").hidden = !state.meta.billNoRequired
+			|| state.supplierRegistered === false;
 	}
 
 	async function fetchGstin() {
@@ -693,6 +701,12 @@
 		if (state.saving) return;
 		if (!state.supplier) return note("Choose who the stock was bought from.", "error");
 		if (!state.lines.length) return note("Add what came in.", "error");
+		if (state.meta.billNoRequired && state.supplierRegistered !== false
+				&& !$("bill-no").value.trim()) {
+			$("bill-no").focus();
+			return note("Put the number from the distributor's own bill in"
+				+ " — the input GST is claimed against it.", "error");
+		}
 		if (state.lines.some((l) => l.qty <= 0)) return note("Every line needs a quantity.", "error");
 		const short = state.lines.find((l) => l.has_serial && l.serials.length !== l.qty);
 		if (short) return note(
@@ -745,6 +759,8 @@
 			]);
 			state.meta.warehouse = boot.warehouse || "";
 			state.meta.canCreateItem = !!(stock.can && stock.can.create_item);
+			state.meta.billNoRequired = !!boot.bill_no_required;
+			markBillNo();
 
 			$("p-mode").innerHTML = (boot.modes || [])
 				.map((m) => `<option value="${esc(m)}">${esc(m)}</option>`).join("");

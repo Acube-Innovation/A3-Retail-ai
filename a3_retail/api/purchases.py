@@ -40,6 +40,10 @@ def bootstrap() -> dict:
 		"modes": frappe.get_all(
 			"Mode of Payment", filters={"enabled": 1}, pluck="name", order_by="name"
 		),
+		# Whether the distributor's own bill number has to be on the document.
+		# It is a GST setting, so the screen asks rather than assumes.
+		"bill_no_required": bool(
+			frappe.db.get_single_value("GST Settings", "require_supplier_invoice_no")),
 	}
 
 
@@ -285,6 +289,19 @@ def create(payload) -> dict:
 	if len(items) > LINE_LIMIT:
 		frappe.throw(_("That is more lines than one bill should carry."), title=_("Items"))
 
+	bill_no = (data.get("bill_no") or "").strip()
+	# The supplier's own invoice number is what the input credit is claimed
+	# against, so GST Settings makes it compulsory for a registered dealer.
+	# Saying so here beats the document refusing it afterwards in the compliance
+	# app's words. An unregistered dealer is exempt — there is no credit to claim
+	# and the slip they hand over often has no number on it at all.
+	if not bill_no and _bill_no_required(supplier):
+		frappe.throw(
+			_("Put the number from the distributor's own bill in — the input GST "
+			  "is claimed against it."),
+			title=_("Supplier bill number"),
+		)
+
 	posting = getdate(data.get("date") or nowdate())
 	if posting > getdate(nowdate()):
 		frappe.throw(_("A purchase cannot be dated in the future."), title=_("Date"))
@@ -300,7 +317,7 @@ def create(payload) -> dict:
 	doc.supplier = supplier
 	doc.posting_date = posting
 	doc.set_posting_time = 1
-	doc.bill_no = (data.get("bill_no") or "").strip() or None
+	doc.bill_no = bill_no or None
 	doc.bill_date = posting
 	# One document, not three: the goods are standing in the shop, so the bill
 	# brings them into stock as it is entered.
@@ -309,6 +326,7 @@ def create(payload) -> dict:
 	if doc.meta.has_field("branch"):
 		doc.branch = employee.branch
 
+	stock_account = _stock_account(doc.company, warehouse)
 	priced: dict[str, float] = {}
 	for row in items:
 		code = row["item_code"]
@@ -322,6 +340,12 @@ def create(payload) -> dict:
 		})
 		if cost_center:
 			line.cost_center = cost_center
+		# The goods come straight into stock on this document, so the other side
+		# is the stock account. Left alone, ERPNext fills in "Stock Received But
+		# Not Billed", corrects itself on save and tells the counter about it in
+		# a sentence nobody at a counter can act on.
+		if stock_account:
+			line.expense_account = stock_account
 		serials = [s for s in (row.get("serials") or []) if s]
 		if serials:
 			line.use_serial_batch_fields = 1
@@ -366,6 +390,25 @@ def create(payload) -> dict:
 		"print_url": f"/printview?doctype=Purchase%20Invoice&name={doc.name}"
 		             f"&format=A3%20Purchase%20Invoice&no_letterhead=0",
 	}
+
+
+def _bill_no_required(supplier: str) -> bool:
+	"""Whether this supplier's own bill number has to be recorded."""
+	if not frappe.db.get_single_value("GST Settings", "require_supplier_invoice_no"):
+		return False
+	return frappe.db.get_value("Supplier", supplier, "gst_category") != "Unregistered"
+
+
+def _stock_account(company: str, warehouse: str) -> str | None:
+	"""Where the value of the goods lands when they come in.
+
+	The warehouse's own account if it has one, otherwise the company's — which
+	is the same account here, since this chain keeps one Stock In Hand.
+	"""
+	if not frappe.get_cached_value("Company", company, "enable_perpetual_inventory"):
+		return None
+	return frappe.db.get_value("Warehouse", warehouse, "account") \
+		or frappe.get_cached_value("Company", company, "default_inventory_account")
 
 
 def _apply_tax(doc, employee) -> None:
