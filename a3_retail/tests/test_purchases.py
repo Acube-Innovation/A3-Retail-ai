@@ -184,6 +184,69 @@ class TestPurchasesPage(FrappeTestCase):
 		self.assertIn("/retail/purchases", sidebar)
 
 
+class TestWhatTheSupplierIsOwed(FrappeTestCase):
+	"""A purchase rate is quoted before tax.
+
+	The rep's invoice reads 81,271.19 a handset and 95,900 to pay. A bill
+	entered without GST understates what the supplier is owed, and claims no
+	input credit at all.
+	"""
+
+	def test_the_bill_carries_gst(self):
+		import inspect
+
+		source = inspect.getsource(purchases.create)
+		self.assertIn("_apply_tax(doc, employee)", source,
+		              "a purchase has to be taxed before it posts")
+
+	def test_the_rate_comes_off_the_items(self):
+		import inspect
+
+		source = inspect.getsource(purchases._bill_gst_rate)
+		self.assertIn("tax.item_rate", source)
+		# a mixed bill takes the highest rate its lines carry
+		self.assertIn("max(rates)", source)
+
+	def test_an_unregistered_supplier_charges_nothing(self):
+		"""A dealer with no GSTIN cannot charge it, and india_compliance refuses
+		the document outright if the bill tries to."""
+		import inspect
+
+		source = inspect.getsource(purchases._tax_template)
+		self.assertIn("if not theirs:", source)
+		self.assertIn("return None", source)
+
+	def test_in_state_splits_and_out_of_state_does_not(self):
+		"""Buying inside Kerala is CGST and SGST; from outside it is one IGST
+		line. Which it is comes off the supplier's own GSTIN."""
+		import inspect
+
+		source = inspect.getsource(purchases._tax_template)
+		self.assertIn("Out-state", source)
+		self.assertIn("In-state", source)
+		self.assertIn("startswith(str(ours))", source)
+
+	def test_the_templates_it_asks_for_exist(self):
+		company = frappe.db.get_single_value("Global Defaults", "default_company")
+		if not company:
+			self.skipTest("no company on this site")
+		for rate in (5, 12, 18, 28):
+			for kind in ("In-state", "Out-state"):
+				title = f"Input GST {kind} {rate}%"
+				self.assertTrue(
+					frappe.db.exists("Purchase Taxes and Charges Template",
+					                 {"title": title, "company": company}),
+					f"{title} is missing — a purchase at {rate}% could not be taxed")
+
+	def test_the_counter_is_shown_the_tax_before_it_saves(self):
+		"""The rep reads a total off their own bill; the screen has to agree with
+		it before anybody presses save."""
+		markup = open(frappe.get_app_path(
+			"a3_retail", "www", "retail", "purchase_entry.html")).read()
+		for field in ("p-taxable", "p-gst-rate", "p-gst", "p-total"):
+			self.assertIn(f'id="{field}"', markup, field)
+
+
 class TestBranchPurchases(FrappeTestCase):
 	@classmethod
 	def setUpClass(cls):

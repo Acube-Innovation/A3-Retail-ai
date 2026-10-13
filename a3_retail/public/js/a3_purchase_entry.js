@@ -69,13 +69,18 @@
 			{ query: q, limit: 8 });
 		$("supplier-hits").innerHTML = hits.length
 			? hits.map((s) => `<button class="pick" data-name="${esc(s.name)}"
-				data-label="${esc(s.supplier_name)}">${esc(s.supplier_name)}${
-				s.mobile_no ? " · " + esc(s.mobile_no) : ""}</button>`).join("")
+				data-label="${esc(s.supplier_name)}" data-registered="${s.registered ? 1 : 0}"
+				>${esc(s.supplier_name)}${
+				s.mobile_no ? " · " + esc(s.mobile_no) : ""}${
+				s.registered ? "" : ' <small>no GST number</small>'}</button>`).join("")
 			: '<p class="muted">No supplier by that name — use “New supplier”.</p>';
 	}
 
-	function pickSupplier(name, label) {
+	function pickSupplier(name, label, registered) {
 		state.supplier = name;
+		// An unregistered dealer cannot charge GST, so the bill carries none and
+		// the screen should not pretend otherwise.
+		state.supplierRegistered = registered !== false;
 		$("supplier-picked").textContent = "Buying from " + label;
 		$("supplier-hits").innerHTML = "";
 		$("supplier-q").value = label;
@@ -116,7 +121,8 @@
 				state: $("s-state").value.trim(),
 				pincode: $("s-pin").value.trim(),
 			});
-			pickSupplier(made.name, made.supplier_name);
+			pickSupplier(made.name, made.supplier_name,
+			             !!$("s-gstin").value.trim());
 			say(made.created ? made.supplier_name + " added."
 				: made.supplier_name + " was already on file — using that.", "ok");
 		} catch (error) {
@@ -283,6 +289,7 @@
 			rate: item.purchase_price || 0,
 			sell: 0,
 			sell_hint: item.sales_price || 0,
+			gst_rate: item.gst_rate == null ? 18 : Number(item.gst_rate),
 			has_serial: !!item.has_serial,
 			serials: [],
 		});
@@ -362,10 +369,22 @@
 			const cell = body.querySelector(`tr[data-row="${index}"] .cell-amt`);
 			if (cell) cell.textContent = money(line.qty * line.rate);
 		}
+		const taxable = total();
+		// The bill is taxed at the highest rate its lines carry, which is what
+		// the document posts; a single-rate bill is the normal case anyway.
+		const rate = state.supplierRegistered === false ? 0
+			: state.lines.reduce((top, l) => Math.max(top, Number(l.gst_rate) || 0), 0);
+		const gst = taxable * rate / 100;
+
 		$("p-lines").textContent = state.lines.length;
-		$("p-total").textContent = money(total());
+		$("p-taxable").textContent = money(taxable);
+		$("p-gst-rate").textContent = rate || 0;
+		$("p-gst").textContent = money(gst);
+		$("p-gst").closest(".tr").hidden = !rate;
+		$("p-total").textContent = money(Math.round(taxable + gst));
 	}
 
+	/** What the goods cost before tax — the figure the rep quotes per piece. */
 	const total = () => state.lines.reduce((sum, l) => sum + l.qty * l.rate, 0);
 
 	// ===================================================== Add Serial Numbers
@@ -777,7 +796,8 @@
 		});
 		$("supplier-hits").addEventListener("click", (event) => {
 			const pick = event.target.closest(".pick");
-			if (pick) pickSupplier(pick.dataset.name, pick.dataset.label);
+			if (pick) pickSupplier(pick.dataset.name, pick.dataset.label,
+			                       pick.dataset.registered === "1");
 		});
 
 		// --- the picker

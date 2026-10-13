@@ -126,8 +126,14 @@
 							<input id="p-date" type="date"></div>
 					</div>
 
+					{#- The rep's own bill reads the rate before tax and the total
+					    after it, so the screen shows both and the GST between. -#}
 					<div class="bill-totals">
 						<div class="tr"><span>{{ _("Lines") }}</span><span id="p-lines">0</span></div>
+						<div class="tr"><span>{{ _("Taxable Amount") }}</span>
+							<span id="p-taxable">₹0.00</span></div>
+						<div class="tr"><span>{{ _("GST") }} (<span id="p-gst-rate">18</span>%)</span>
+							<span id="p-gst">₹0.00</span></div>
 						<div class="tr tr-grand"><span>{{ _("Bill total") }}</span>
 							<span id="p-total">₹0.00</span></div>
 					</div>
