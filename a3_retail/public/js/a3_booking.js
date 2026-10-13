@@ -133,8 +133,8 @@ window.BOOKING = (function () {
 					</div>
 					<div class="inv-party">
 						<h3>Device</h3>
-						<div class="inv-party-name">${esc([data.device.brand, data.device.model]
-							.filter(Boolean).join(" ") || data.device.device_type || "—")}</div>
+						<div class="inv-party-name">${esc(
+							deviceTitle(data.device) || data.device.device_type || "—")}</div>
 						${data.device.imei_1 ? line("IMEI: " + data.device.imei_1) : ""}
 						${data.device.serial_no ? line("Serial: " + data.device.serial_no) : ""}
 						${data.device.purchase_date
@@ -445,6 +445,21 @@ window.BOOKING = (function () {
 			$("hand-msg").textContent = error.message || "Could not complete the hand over.";
 			$("hand-msg").className = "msg error";
 		}
+	}
+
+	/** Brand and model, without saying the brand twice.
+	 *
+	 *  Some products carry the maker's name — "Apple Watch SE 3", "Galaxy Tab" —
+	 *  so pasting the brand in front of every model gave "Apple Apple Watch SE 3"
+	 *  on the face of the booking.
+	 */
+	function deviceTitle(device) {
+		const brand = (device.brand || "").trim();
+		const model = (device.model || "").trim();
+		if (!model) return brand;
+		if (!brand) return model;
+		return model.toLowerCase().startsWith(brand.toLowerCase())
+			? model : `${brand} ${model}`;
 	}
 
 	function stripTags(value) {

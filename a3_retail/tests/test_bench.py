@@ -72,6 +72,35 @@ class TestWhoMayTakeAStep(FrappeTestCase):
 		self.assertNotIn("C", flags)
 
 
+class TestTheBookingPageLayout(FrappeTestCase):
+	def test_the_bench_spans_the_page(self):
+		"""The booking page is a two-column grid — the sheet, then a 340px rail.
+
+		The bench is a third child of that grid, so without an explicit span it
+		took the sheet's column and pushed the whole sheet into the rail, where
+		the sticky totals then sat on top of the content behind them.
+		"""
+		css = open(frappe.get_app_path(
+			"a3_retail", "public", "css", "a3_branch.css")).read()
+		self.assertIn(".wb { grid-column: 1 / -1;", css,
+		              "the bench has to span both columns of the booking page")
+
+	def test_a_device_does_not_say_its_brand_twice(self):
+		"""Some products carry the maker's name — Apple Watch, Galaxy Tab — so
+		pasting the brand in front of every model read "Apple Apple Watch SE 3"
+		on the face of the booking."""
+		script = open(frappe.get_app_path(
+			"a3_retail", "public", "js", "a3_booking.js")).read()
+		self.assertIn("function deviceTitle", script)
+		self.assertIn("startsWith(brand.toLowerCase())", script)
+
+		repeats = frappe.db.sql("""
+			select name from `tabDevice Model`
+			where lower(model_name) like concat(lower(brand), ' %')""", pluck=True)
+		self.assertEqual(repeats, [],
+		                 "these models repeat their own brand: " + ", ".join(repeats))
+
+
 class TestWhatTheCounterIsMadeToDo(FrappeTestCase):
 	"""Checks a shop can switch off, because not every shop works the same way."""
 

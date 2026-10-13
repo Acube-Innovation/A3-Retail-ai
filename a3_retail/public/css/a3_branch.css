@@ -2388,7 +2388,11 @@ kbd { display: inline-block; min-width: 17px; padding: 1px 5px; margin: 0 1px;
    The rail says where the job stands; the buttons under it are only the steps
    the job card itself allows from there.
    ========================================================================== */
-.wb { margin-bottom: 16px; }
+/* The booking page is a two-column grid — the sheet, then a 340px rail. The
+   bench is a third child, so without this it took the sheet's column and the
+   whole sheet was squeezed into the rail, where the sticky totals then sat on
+   top of everything behind them. It belongs across the top, above both. */
+.wb { grid-column: 1 / -1; margin-bottom: 0; }
 .wb-head { display: flex; align-items: center; justify-content: space-between;
 	margin-bottom: 14px; }
 .wb-head h2 { margin: 0; }
