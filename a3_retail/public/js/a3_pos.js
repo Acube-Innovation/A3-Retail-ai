@@ -191,7 +191,19 @@ window.POS = (function () {
 		modal.hidden = false;
 		$("serial-scan").focus();
 
-		const available = await A3.call("a3_retail.api.pos.serials", { item_code: item.item_code });
+		// Without this the dialog sat on "Loading IMEIs…" for ever whenever the
+		// call failed: the throw left the function, and the only thing the
+		// counter could see was the word Loading. A refusal has to say so, or
+		// the till looks broken and the sale stops with no reason given.
+		let available;
+		try {
+			available = await A3.call("a3_retail.api.pos.serials",
+			                          { item_code: item.item_code });
+		} catch (error) {
+			$("serial-list").innerHTML = `<li class="pos-loading">${
+				esc(error.message || "Could not read the IMEIs for this model.")}</li>`;
+			return;
+		}
 		const taken = new Set(state.cart.flatMap((line) => line.serials));
 		const free = available.filter((row) => !taken.has(row.serial_no));
 

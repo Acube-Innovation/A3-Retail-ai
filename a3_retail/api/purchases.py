@@ -406,14 +406,23 @@ def _stamp_serials(invoice, priced: dict) -> None:
 		if not serials:
 			continue
 		selling = flt(priced.get(row.item_code)) or _current_selling(row.item_code)
+		# Only the columns the site actually has. A deploy can land before its
+		# migration, and a purchase that will not save because a field has not
+		# been added yet is a worse outcome than one recorded without the
+		# per-piece figures — the stock still comes in either way.
+		wanted = {
+			"a3_purchase_cost": flt(row.rate),
+			"a3_selling_price": selling,
+			"a3_received_on": invoice.posting_date,
+		}
+		stamp = {field: value for field, value in wanted.items()
+		         if frappe.db.has_column("Serial No", field)}
+		if not stamp:
+			continue
 		for serial in serials:
 			if not frappe.db.exists("Serial No", serial):
 				continue
-			frappe.db.set_value("Serial No", serial, {
-				"a3_purchase_cost": flt(row.rate),
-				"a3_selling_price": selling,
-				"a3_received_on": invoice.posting_date,
-			}, update_modified=False)
+			frappe.db.set_value("Serial No", serial, stamp, update_modified=False)
 
 
 def _current_selling(item_code: str) -> float:
