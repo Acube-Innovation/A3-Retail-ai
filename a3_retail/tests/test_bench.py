@@ -137,6 +137,41 @@ class TestWhoMaySeeACard(FrappeTestCase):
 			self.assertTrue(field.ignore_user_permissions,
 			                f"{fieldname} must not gate access to the card")
 
+	def test_no_employee_link_anywhere_can_lock_a_document(self):
+		"""The same trap, across the whole app.
+
+		Every Employee user permission turns every Employee link into a lock:
+		strict mode denies the document when the link is blank or points at
+		somebody else. It cost the bench its job cards, and then the counter its
+		bookings — "not allowed to access this Job Card Labour record because it
+		is linked to Employee HR-EMP-00022 in row 1, field Technician" — for the
+		ordinary act of putting a colleague's name on a labour line.
+
+		Branch is what scopes this app. Employee never should.
+		"""
+		import glob
+		import json
+		import os
+
+		app = frappe.get_app_path("a3_retail")
+		offenders = []
+		for path in glob.glob(os.path.join(app, "a3_retail_*", "doctype", "*", "*.json")):
+			stem = os.path.basename(path).replace(".json", "")
+			if stem != os.path.basename(os.path.dirname(path)):
+				continue
+			with open(path) as handle:
+				doc = json.load(handle)
+			for field in doc.get("fields", []):
+				if field.get("fieldtype") == "Link" \
+						and field.get("options") == "Employee" \
+						and not field.get("ignore_user_permissions"):
+					offenders.append(f"{doc.get('name')}.{field['fieldname']}")
+
+		self.assertEqual(
+			offenders, [],
+			"these Employee links will deny the whole document to anyone who is "
+			"not that employee: " + ", ".join(sorted(offenders)))
+
 	def test_branch_still_scopes_the_card(self):
 		"""The fix must not open another shop's repairs."""
 		meta = frappe.get_meta("Service Job Card")

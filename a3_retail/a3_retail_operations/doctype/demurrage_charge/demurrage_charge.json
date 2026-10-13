@@ -223,7 +223,8 @@
    "fieldname": "responsible_employee",
    "fieldtype": "Link",
    "label": "Employee",
-   "options": "Employee"
+   "options": "Employee",
+   "ignore_user_permissions": 1
   },
   {
    "fieldname": "remarks",

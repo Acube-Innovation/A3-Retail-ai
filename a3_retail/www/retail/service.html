@@ -321,7 +321,34 @@
 		<p class="modal-note">{{ _("Search the spare parts, labour charges and accessories this branch sells.") }}</p>
 		<input id="line-q" placeholder="{{ _('Search…') }}" autocomplete="off">
 		<ul class="serial-list" id="line-results"></ul>
-		<div class="modal-actions"><button class="btn btn-quiet" data-close>{{ _("Close") }}</button></div>
+
+		{#- The bench meets parts the shop has never bought and charges nobody
+		    wrote down. Sending somebody to the stock screen and back is how the
+		    line ends up typed into the complaint box instead. -#}
+		<button class="btn btn-add btn-block" id="line-new" type="button" hidden>
+			+ {{ _("Create a new part or service") }}</button>
+
+		<div id="line-new-form" hidden>
+			<div class="field-grid three">
+				<label class="field"><span>{{ _("What is it") }}</span>
+					<input id="ln-name" placeholder="{{ _('ex: Display Flex Cable') }}"></label>
+				<label class="field"><span>{{ _("Kind") }}</span>
+					<select id="ln-kind"></select></label>
+				<label class="field"><span>{{ _("Price") }}</span>
+					<input id="ln-rate" inputmode="decimal" placeholder="0.00"></label>
+			</div>
+			<label class="field"><span>{{ _("HSN / SAC code") }}</span>
+				<input id="ln-hsn" placeholder="{{ _('85177090 for a part, 998716 for repair work') }}"></label>
+			<div class="msg" id="ln-msg"></div>
+			<div class="modal-actions">
+				<button class="btn btn-quiet" id="ln-cancel" type="button">{{ _("Back") }}</button>
+				<button class="btn btn-primary" id="ln-save" type="button">
+					{{ _("Add it to the repair") }}</button>
+			</div>
+		</div>
+
+		<div class="modal-actions" id="line-close-row">
+			<button class="btn btn-quiet" data-close>{{ _("Close") }}</button></div>
 	</div>
 </div>
 

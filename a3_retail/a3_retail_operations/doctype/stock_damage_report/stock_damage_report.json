@@ -109,7 +109,8 @@
    "fieldname": "reported_by",
    "fieldtype": "Link",
    "label": "Reported By",
-   "options": "Employee"
+   "options": "Employee",
+   "ignore_user_permissions": 1
   },
   {
    "fieldname": "what_section",
@@ -205,7 +206,8 @@
    "fieldtype": "Link",
    "label": "Employee",
    "options": "Employee",
-   "depends_on": "eval:doc.responsibility=='Employee'"
+   "depends_on": "eval:doc.responsibility=='Employee'",
+   "ignore_user_permissions": 1
   },
   {
    "fieldname": "responsible_party_type",

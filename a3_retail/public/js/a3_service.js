@@ -322,8 +322,62 @@ window.SVC = (function () {
 	async function openLinePicker() {
 		$("line-modal").hidden = false;
 		$("line-q").value = "";
+		showLineForm(false);
 		$("line-q").focus();
 		await paintLineResults("");
+	}
+
+	/** The picker and the little form share the dialog, one at a time. */
+	function showLineForm(on) {
+		$("line-new-form").hidden = !on;
+		$("line-q").hidden = on;
+		$("line-results").hidden = on;
+		$("line-close-row").hidden = on;
+		$("line-new").hidden = on || !state.canCreateLineItem;
+		if (on) {
+			$("ln-name").value = $("line-q").value.trim();
+			$("ln-rate").value = "";
+			$("ln-hsn").value = "";
+			$("ln-msg").textContent = "";
+			$("ln-name").focus();
+		}
+	}
+
+	async function saveLineItem() {
+		const name = $("ln-name").value.trim();
+		if (!name) {
+			$("ln-msg").textContent = "Give it a name.";
+			$("ln-msg").className = "msg error";
+			return;
+		}
+		$("ln-save").disabled = true;
+		$("ln-msg").textContent = "Saving…";
+		$("ln-msg").className = "msg";
+		try {
+			const made = await A3.call("a3_retail.api.service_pos.create_line_item", {
+				item_name: name,
+				kind: $("ln-kind").value,
+				rate: Number($("ln-rate").value) || 0,
+				hsn_code: $("ln-hsn").value.trim(),
+			});
+			// Straight onto the repair: it was catalogued because it is needed now.
+			addLine({
+				item_code: made.item_code,
+				item_name: made.item_name || name,
+				kind: made.kind,
+				rate: made.rate,
+				is_stock_item: made.is_stock_item,
+				branch_qty: 0,
+				hsn: $("ln-hsn").value.trim(),
+			});
+			$("line-modal").hidden = true;
+			say(name + " added to the catalogue and to this repair.", "ok");
+		} catch (error) {
+			$("ln-msg").textContent = error.message || "Could not add it.";
+			$("ln-msg").className = "msg error";
+		} finally {
+			$("ln-save").disabled = false;
+		}
 	}
 
 	async function paintLineResults(query) {
@@ -336,7 +390,8 @@ window.SVC = (function () {
 							row.is_stock_item ? " · " + row.branch_qty + " in stock" : ""}</small></span>
 					<span>${money(row.rate)}</span>
 				</button></li>`).join("")
-			: '<li class="pos-loading">Nothing matches that.</li>';
+			: `<li class="pos-loading">Nothing matches that.${
+				state.canCreateLineItem ? " Create it below." : ""}</li>`;
 
 		$("line-results").querySelectorAll("button").forEach((node) => {
 			node.addEventListener("click", () => {
@@ -620,7 +675,10 @@ window.SVC = (function () {
 			return addPhoto();
 		}
 
-		if (!state.signed) return askSignature();
+		// The pad is offered when the shop wants one. It was asked for here no
+		// matter what the setting said, so turning the setting off changed
+		// nothing — the counter never got as far as the server.
+		if (state.requireSignature && !state.signed) return askSignature();
 
 		$("save-booking").disabled = true;
 
@@ -839,6 +897,18 @@ window.SVC = (function () {
 		state.requirePhotos = !!boot.require_photos;
 		state.minPhotos = boot.min_photos || 1;
 		state.requireDeliveryOtp = boot.require_delivery_otp !== false;
+		state.requireSignature = !!boot.require_signature;
+
+		// Cataloguing a part from the bench is not every counter's job, so the
+		// button only appears for whoever the permission matrix allows.
+		try {
+			const line = await A3.call("a3_retail.api.service_pos.line_item_defaults");
+			state.canCreateLineItem = !!line.can_create && (line.kinds || []).length > 0;
+			$("ln-kind").innerHTML = (line.kinds || []).map((kind) =>
+				`<option value="${esc(kind)}">${esc(kind)}</option>`).join("");
+		} catch (error) {
+			state.canCreateLineItem = false;
+		}
 		state.models = await A3.call("a3_retail.api.service_pos.device_models", { limit: 500 });
 
 		// The tiles themselves are server-rendered so they carry the real icons.
@@ -885,6 +955,9 @@ window.SVC = (function () {
 			clearTimeout(lineTimer);
 			lineTimer = setTimeout(() => paintLineResults($("line-q").value.trim()), 220);
 		});
+		$("line-new").addEventListener("click", () => showLineForm(true));
+		$("ln-cancel").addEventListener("click", () => showLineForm(false));
+		$("ln-save").addEventListener("click", saveLineItem);
 
 		$("warranty-type").addEventListener("change", paintTotals);
 		$("discount-type").addEventListener("change", paintTotals);

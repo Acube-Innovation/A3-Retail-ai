@@ -418,6 +418,68 @@ def _selling_rate(item_code: str) -> float:
 # ---------------------------------------------------------------------------
 # Intake
 # ---------------------------------------------------------------------------
+#: Where a new line item belongs, by what the counter says it is.
+LINE_GROUPS = {
+	"Part": "Spare Parts",
+	"Service": "Service Charges",
+	"Accessory": "Accessories",
+}
+
+
+@frappe.whitelist()
+def create_line_item(item_name: str, kind: str = "Part", rate: float = 0,
+                     hsn_code: str | None = None) -> dict:
+	"""Catalogue a part or a charge without leaving the repair.
+
+	A bench meets a part the shop has never bought before — a connector, a
+	flex — and a charge nobody wrote down. Sending the technician to the stock
+	screen to name it, then back here to add it, is how the line ends up typed
+	into the complaint box instead.
+
+	The item itself is made by `stock_control.create_item`, so one catalogued
+	here and one catalogued at the counter are the same kind of record.
+	"""
+	employee = _me()
+	require_permission("Item", "create")
+
+	kind = (kind or "Part").strip().title()
+	group = LINE_GROUPS.get(kind)
+	if not group:
+		frappe.throw(_("A line is a part, a service or an accessory."), title=_("Which kind?"))
+	if not frappe.db.exists("Item Group", group):
+		frappe.throw(
+			_("This site has no {0} group yet, so there is nowhere to put it. "
+			  "Ask whoever sets up the catalogue.").format(group),
+			title=_("Nowhere to file it"),
+		)
+
+	from a3_retail.api.stock import _hsn
+	from a3_retail.api.stock_control import create_item
+
+	is_service = kind == "Service"
+	return create_item({
+		"item_name": (item_name or "").strip(),
+		"item_group": group,
+		"hsn_code": _hsn(hsn_code) or "",
+		"uom": "Nos",
+		# A charge is work, not a thing on a shelf.
+		"is_service": 1 if is_service else 0,
+		"selling_rate": flt(rate),
+		"opening_qty": 0,
+	}) | {"kind": kind, "rate": flt(rate), "is_stock_item": 0 if is_service else 1}
+
+
+@frappe.whitelist()
+def line_item_defaults() -> dict:
+	"""What the new-line form offers, and whether it may be used at all."""
+	_me()
+	return {
+		"can_create": bool(frappe.has_permission("Item", "create")),
+		"kinds": [k for k, g in LINE_GROUPS.items() if frappe.db.exists("Item Group", g)],
+		"needs_hsn": bool(frappe.db.get_single_value("GST Settings", "validate_hsn_code")),
+	}
+
+
 @frappe.whitelist()
 def save_booking(payload) -> dict:
 	"""Book the device in. One call, the way a counter works (scope 3.9)."""
