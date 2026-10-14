@@ -7,9 +7,10 @@ service — and until now had to ask head office to enter every one. This is the
 counter's own screen for them.
 
 A category is an expense Account under the company's indirect expenses, so the
-spend lands in the P&L where the accountant expects it. The posting itself is a
-Journal Entry: debit the category, credit whatever it was paid from. Nothing here
-writes a ledger entry by hand.
+spend lands in the P&L where the accountant expects it. The spend itself is a
+Branch Expense — what was bought, how many, at what rate, who it went to and what
+is still owed — and submitting one posts the Journal Entry: debit each line,
+credit whatever it was paid from. Nothing here writes a ledger entry by hand.
 """
 
 import frappe
@@ -100,46 +101,32 @@ def _branch_cost_centres(branch: str) -> list[str]:
 def recent(limit: int = 40) -> dict:
 	"""This branch's spend, newest first, with what it adds up to this month."""
 	employee = _me()
-	require_permission("Journal Entry", "read")
+	require_permission("Branch Expense", "read")
 
-	# Journal Entry carries no branch field — the Branch dimension does not reach
-	# it — so the branch is read from the cost centre the spend was booked to.
-	centres = _branch_cost_centres(employee.branch)
-	if not centres:
-		return {"branch": employee.branch, "rows": [], "month_total": 0.0}
-
-	rows = frappe.db.sql(
-		"""
-		select je.name, je.posting_date, je.total_debit as amount, je.user_remark,
-		       je.docstatus,
-		       (select gle.account from `tabJournal Entry Account` gle
-		         where gle.parent = je.name and gle.debit_in_account_currency > 0
-		         limit 1) as category
-		from `tabJournal Entry` je
-		where je.docstatus < 2 and ifnull(je.a3_is_branch_expense, 0) = 1
-		  and exists (select 1 from `tabJournal Entry Account` c
-		              where c.parent = je.name and c.cost_center in %(centres)s)
-		order by je.posting_date desc, je.creation desc
-		limit %(limit)s
-		""",
-		{"centres": centres, "limit": int(limit) or 40},
-		as_dict=True,
+	rows = frappe.get_all(
+		"Branch Expense",
+		filters={"branch": employee.branch, "docstatus": ["<", 2]},
+		fields=["name", "posting_date", "category", "grand_total as amount",
+		        "paid_to", "supplier", "notes", "outstanding_amount", "docstatus"],
+		order_by="posting_date desc, creation desc",
+		limit=int(limit) or 40,
 	)
 	for r in rows:
 		r["category_label"] = frappe.db.get_value("Account", r["category"], "account_name") \
 			if r.get("category") else ""
+		r["paid_to_label"] = r.get("paid_to") or (
+			frappe.db.get_value("Supplier", r["supplier"], "supplier_name")
+			if r.get("supplier") else "")
 		r["amount"] = flt(r["amount"])
 
 	month = frappe.db.sql(
 		"""
-		select coalesce(sum(je.total_debit), 0) from `tabJournal Entry` je
-		where je.docstatus = 1 and ifnull(je.a3_is_branch_expense, 0) = 1
-		  and month(je.posting_date) = month(curdate())
-		  and year(je.posting_date) = year(curdate())
-		  and exists (select 1 from `tabJournal Entry Account` c
-		              where c.parent = je.name and c.cost_center in %(centres)s)
+		select coalesce(sum(grand_total), 0) from `tabBranch Expense`
+		where docstatus = 1 and branch = %(branch)s
+		  and month(posting_date) = month(curdate())
+		  and year(posting_date) = year(curdate())
 		""",
-		{"centres": centres},
+		{"branch": employee.branch},
 	)[0][0]
 
 	return {"branch": employee.branch, "rows": rows, "month_total": flt(month)}
@@ -147,55 +134,49 @@ def recent(limit: int = 40) -> dict:
 
 @frappe.whitelist()
 def create(payload) -> dict:
-	"""Record a spend. Debit the category, credit what it was paid from."""
+	"""Record a spend. The document works out the posting."""
 	employee = _me()
-	require_permission("Journal Entry", "create")
+	require_permission("Branch Expense", "create")
 
 	data = frappe.parse_json(payload) if isinstance(payload, str) else (payload or {})
-	amount = flt(data.get("amount"))
-	if amount <= 0:
-		frappe.throw(_("Enter how much was spent."), title=_("Amount"))
 
-	category = (data.get("category") or "").strip()
-	if not category or not frappe.db.exists("Account", category):
-		frappe.throw(_("Choose what this was spent on."), title=_("Category"))
+	lines = [row for row in (data.get("items") or [])
+	         if flt(row.get("rate")) or flt(row.get("qty"))]
+	if not lines:
+		frappe.throw(_("Add what the money went on."), title=_("Nothing to record"))
 
-	source = (data.get("paid_from") or "").strip()
-	if not source or not frappe.db.exists("Account", source):
-		frappe.throw(_("Choose where the money came from."), title=_("Paid from"))
+	doc = frappe.new_doc("Branch Expense")
+	doc.branch = employee.branch
+	doc.posting_date = getdate(data.get("date") or nowdate())
+	doc.category = (data.get("category") or "").strip()
+	doc.reference_no = (data.get("reference_no") or "").strip() or None
+	doc.supplier = (data.get("supplier") or "").strip() or None
+	doc.paid_to = (data.get("paid_to") or "").strip() or None
+	doc.due_date = getdate(data["due_date"]) if data.get("due_date") else None
+	doc.mode_of_payment = (data.get("mode_of_payment") or "").strip() or None
+	doc.paid_from = (data.get("paid_from") or "").strip() or None
+	doc.discount_amount = flt(data.get("discount"))
+	doc.notes = (data.get("note") or "").strip() or None
 
-	company = _company()
-	for account in (category, source):
-		if frappe.db.get_value("Account", account, "company") != company:
-			frappe.throw(_("{0} does not belong to this company.").format(account))
+	for row in lines:
+		doc.append("items", {
+			"item_code": (row.get("item_code") or "").strip() or None,
+			"description": (row.get("description") or "").strip() or None,
+			"qty": flt(row.get("qty")) or 1,
+			"rate": flt(row.get("rate")),
+		})
 
-	posting = getdate(data.get("date") or nowdate())
-	if posting > getdate(nowdate()):
-		frappe.throw(_("An expense cannot be dated in the future."), title=_("Date"))
+	# Blank means it was all paid, which is what a shop means unless it says so.
+	if data.get("paid_amount") not in (None, ""):
+		doc.paid_amount = flt(data.get("paid_amount"))
 
-	profile = frappe.db.get_value(
-		"Branch Profile", {"branch": employee.branch},
-		["cost_center", "sales_cost_center"], as_dict=True
-	) or frappe._dict()
-	cost_center = profile.sales_cost_center or profile.cost_center
-
-	note = (data.get("note") or "").strip()
-	remark = note or frappe.db.get_value("Account", category, "account_name")
-
-	doc = frappe.new_doc("Journal Entry")
-	doc.voucher_type = "Journal Entry"
-	doc.company = company
-	doc.posting_date = posting
-	doc.user_remark = f"{remark} — {employee.employee_name}, {employee.branch}"
-	if doc.meta.has_field("branch"):
-		doc.branch = employee.branch
-	if doc.meta.has_field("a3_is_branch_expense"):
-		doc.a3_is_branch_expense = 1
-
-	doc.append("accounts", {"account": category, "debit_in_account_currency": amount,
-	                        "cost_center": cost_center})
-	doc.append("accounts", {"account": source, "credit_in_account_currency": amount,
-	                        "cost_center": cost_center})
+	# A balance has to be owed to somebody: ERPNext keeps payables against a
+	# party, and a typed name cannot hold one. Rather than refuse the entry over
+	# a record the counter has no way to create, make the supplier from the name
+	# they gave — which is what their old software did with a contact.
+	if doc.paid_to and not doc.supplier and _owes(doc):
+		doc.supplier = _supplier_named(doc.paid_to)
+		doc.paid_to = None
 
 	doc.flags.ignore_permissions = True
 	doc.insert(ignore_permissions=True)
@@ -203,11 +184,125 @@ def create(payload) -> dict:
 
 	return {
 		"expense": doc.name,
-		"amount": amount,
-		"category": frappe.db.get_value("Account", category, "account_name"),
-		"paid_from": frappe.db.get_value("Account", source, "account_name"),
-		"date": str(posting),
+		"amount": flt(doc.grand_total),
+		"outstanding": flt(doc.outstanding_amount),
+		"category": frappe.db.get_value("Account", doc.category, "account_name"),
+		"date": str(doc.posting_date),
 	}
+
+
+def _owes(doc) -> bool:
+	"""Whether this expense will leave something unpaid."""
+	total = sum(flt(row.get("qty") or 1) * flt(row.get("rate")) for row in doc.items)
+	grand = flt(total - flt(doc.discount_amount))
+	paid = grand if doc.paid_amount is None else flt(doc.paid_amount)
+	return flt(grand - paid) > 0
+
+
+def _supplier_named(name: str) -> str:
+	"""The supplier by that name, made if this is the first time it is owed money."""
+	existing = frappe.db.get_value("Supplier", {"supplier_name": name}, "name")
+	if existing:
+		return existing
+	doc = frappe.new_doc("Supplier")
+	doc.supplier_name = name
+	doc.supplier_group = frappe.db.get_value(
+		"Supplier Group", {"is_group": 0}, "name") or "All Supplier Groups"
+	doc.flags.ignore_permissions = True
+	doc.insert(ignore_permissions=True)
+	return doc.name
+
+
+@frappe.whitelist()
+def search_items(query: str = "", limit: int = 20) -> list[dict]:
+	"""The things a shop buys that are not stock — tea, a service call, a sheet.
+
+	Serialised handsets and accessories are bought on a purchase bill, not here,
+	so this only ever offers what carries no stock.
+	"""
+	_me()
+	like = f"%{(query or '').strip()}%"
+	rows = frappe.get_all(
+		"Item",
+		filters={"disabled": 0, "is_stock_item": 0},
+		or_filters={"item_name": ["like", like], "item_code": ["like", like]},
+		fields=["name as item_code", "item_name", "item_group", "stock_uom"],
+		order_by="item_name",
+		limit=int(limit) or 20,
+	)
+	for r in rows:
+		r["expense_account"] = frappe.db.get_value(
+			"Item Default", {"parent": r["item_code"]}, "expense_account")
+	return rows
+
+
+@frappe.whitelist()
+def create_item(payload) -> dict:
+	"""Add something the shop buys but does not stock."""
+	_me()
+	require_permission("Item", "create")
+
+	data = frappe.parse_json(payload) if isinstance(payload, str) else (payload or {})
+	name = (data.get("item_name") or "").strip()
+	if not name:
+		frappe.throw(_("Give it a name."), title=_("Item name"))
+
+	existing = frappe.db.get_value("Item", {"item_name": name, "is_stock_item": 0}, "name")
+	if existing:
+		return {"item_code": existing, "item_name": name, "created": False}
+
+	doc = frappe.new_doc("Item")
+	doc.item_code = name
+	doc.item_name = name
+	doc.item_group = _expense_item_group()
+	doc.stock_uom = (data.get("uom") or "Nos").strip() or "Nos"
+	doc.is_stock_item = 0
+	# Bought, never sold: it has no business turning up in the till's search.
+	doc.is_purchase_item = 1
+	doc.is_sales_item = 0
+	account = (data.get("expense_account") or "").strip()
+	if account and frappe.db.exists("Account", account):
+		doc.append("item_defaults", {
+			"company": _company(), "expense_account": account})
+	doc.flags.ignore_permissions = True
+	doc.insert(ignore_permissions=True)
+	return {"item_code": doc.name, "item_name": doc.item_name, "created": True}
+
+
+def _expense_item_group() -> str:
+	"""Where bought-not-sold things live, made once if it is not there yet."""
+	name = "Expense Items"
+	if frappe.db.exists("Item Group", name):
+		return name
+	parent = frappe.db.get_value("Item Group", {"is_group": 1, "parent_item_group": ""},
+	                             "name") or "All Item Groups"
+	group = frappe.new_doc("Item Group")
+	group.item_group_name = name
+	group.parent_item_group = parent
+	group.is_group = 0
+	group.flags.ignore_permissions = True
+	group.insert(ignore_permissions=True)
+	return group.name
+
+
+@frappe.whitelist()
+def modes() -> list[str]:
+	"""How the money left the drawer."""
+	_me()
+	return frappe.get_all("Mode of Payment", filters={"enabled": 1}, pluck="name",
+	                      order_by="name")
+
+
+@frappe.whitelist()
+def search_suppliers(query: str = "", limit: int = 10) -> list[dict]:
+	"""Who it was paid to, when that is somebody already on file."""
+	_me()
+	like = f"%{(query or '').strip()}%"
+	return frappe.get_all(
+		"Supplier", filters={"disabled": 0},
+		or_filters={"supplier_name": ["like", like], "name": ["like", like]},
+		fields=["name", "supplier_name"], order_by="supplier_name",
+		limit=int(limit) or 10)
 
 
 @frappe.whitelist()

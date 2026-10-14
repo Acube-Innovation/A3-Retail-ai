@@ -1,0 +1,221 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "naming_series:",
+ "creation": "2026-10-14 10:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "is_submittable": 1,
+ "track_changes": 1,
+ "field_order": [
+  "naming_series",
+  "branch",
+  "branch_code",
+  "posting_date",
+  "category",
+  "col_break_head",
+  "company",
+  "cost_center",
+  "reference_no",
+  "sec_party",
+  "supplier",
+  "paid_to",
+  "col_break_party",
+  "due_date",
+  "sec_items",
+  "items",
+  "sec_totals",
+  "total",
+  "discount_amount",
+  "grand_total",
+  "col_break_pay",
+  "mode_of_payment",
+  "paid_from",
+  "paid_amount",
+  "outstanding_amount",
+  "sec_more",
+  "notes",
+  "journal_entry",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "EXP-.branch_code.-.YY.-.#####",
+   "default": "EXP-.branch_code.-.YY.-.#####",
+   "reqd": 1,
+   "no_copy": 1,
+   "print_hide": 1
+  },
+  {
+   "fieldname": "branch",
+   "fieldtype": "Link",
+   "label": "Branch",
+   "options": "Branch",
+   "reqd": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "branch_code",
+   "fieldtype": "Data",
+   "label": "Branch Code",
+   "hidden": 1,
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "posting_date",
+   "fieldtype": "Date",
+   "label": "Date",
+   "reqd": 1,
+   "default": "Today",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "category",
+   "fieldtype": "Link",
+   "label": "Spent On",
+   "options": "Account",
+   "reqd": 1,
+   "in_list_view": 1,
+   "description": "Where this spend lands in the P&L unless a line says otherwise."
+  },
+  {"fieldname": "col_break_head", "fieldtype": "Column Break"},
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "reqd": 1,
+   "print_hide": 1
+  },
+  {
+   "fieldname": "cost_center",
+   "fieldtype": "Link",
+   "label": "Cost Center",
+   "options": "Cost Center",
+   "print_hide": 1
+  },
+  {
+   "fieldname": "reference_no",
+   "fieldtype": "Data",
+   "label": "Bill / Slip No."
+  },
+  {"fieldname": "sec_party", "fieldtype": "Section Break", "label": "Paid To"},
+  {
+   "fieldname": "supplier",
+   "fieldtype": "Link",
+   "label": "Supplier",
+   "options": "Supplier",
+   "description": "Needed only when something is still owed."
+  },
+  {
+   "fieldname": "paid_to",
+   "fieldtype": "Data",
+   "label": "Paid To",
+   "description": "A name, when the money did not go to a supplier on file."
+  },
+  {"fieldname": "col_break_party", "fieldtype": "Column Break"},
+  {
+   "fieldname": "due_date",
+   "fieldtype": "Date",
+   "label": "Due Date",
+   "depends_on": "eval:doc.outstanding_amount > 0"
+  },
+  {"fieldname": "sec_items", "fieldtype": "Section Break", "label": "Items"},
+  {
+   "fieldname": "items",
+   "fieldtype": "Table",
+   "label": "Items",
+   "options": "Branch Expense Item",
+   "reqd": 1
+  },
+  {"fieldname": "sec_totals", "fieldtype": "Section Break"},
+  {
+   "fieldname": "total",
+   "fieldtype": "Currency",
+   "label": "Total",
+   "read_only": 1
+  },
+  {
+   "fieldname": "discount_amount",
+   "fieldtype": "Currency",
+   "label": "Discount"
+  },
+  {
+   "fieldname": "grand_total",
+   "fieldtype": "Currency",
+   "label": "Grand Total",
+   "read_only": 1,
+   "in_list_view": 1,
+   "bold": 1
+  },
+  {"fieldname": "col_break_pay", "fieldtype": "Column Break"},
+  {
+   "fieldname": "mode_of_payment",
+   "fieldtype": "Link",
+   "label": "Payment Mode",
+   "options": "Mode of Payment"
+  },
+  {
+   "fieldname": "paid_from",
+   "fieldtype": "Link",
+   "label": "Paid From",
+   "options": "Account",
+   "description": "The drawer or bank the money left."
+  },
+  {
+   "fieldname": "paid_amount",
+   "fieldtype": "Currency",
+   "label": "Paid Now"
+  },
+  {
+   "fieldname": "outstanding_amount",
+   "fieldtype": "Currency",
+   "label": "Still Owed",
+   "read_only": 1
+  },
+  {"fieldname": "sec_more", "fieldtype": "Section Break", "label": "More"},
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "journal_entry",
+   "fieldtype": "Link",
+   "label": "Journal Entry",
+   "options": "Journal Entry",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "options": "Branch Expense",
+   "read_only": 1,
+   "no_copy": 1,
+   "print_hide": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-10-14 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "A3 Retail Finance",
+ "name": "Branch Expense",
+ "owner": "Administrator",
+ "permissions": [
+  {"role": "System Manager", "permlevel": 0, "read": 1, "write": 1, "create": 1,
+   "delete": 1, "submit": 1, "cancel": 1, "amend": 1, "report": 1, "export": 1,
+   "print": 1, "email": 1, "share": 1}
+ ],
+ "sort_field": "posting_date",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "category"
+}

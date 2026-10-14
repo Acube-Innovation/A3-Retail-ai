@@ -357,6 +357,15 @@ PERMISSION_MATRIX: dict[str, dict[str, str]] = {
 		"Store Keeper": "R",
 	},
 	# ---------------------------------------------------------------- finance
+	"Branch Expense": {
+		"A3 Retail Admin": "CRUDS",
+		"Accounts Manager": "CRUDS",
+		"Branch Manager": "CRUS",
+		"Service Manager": "CRUS",
+		"Sales Executive": "CR",
+		"Reception Executive": "CR",
+		"Store Keeper": "CR",
+	},
 	"EMI Application": {
 		"A3 Retail Admin": "CRUDS",
 		"Branch Manager": "CRUDS",

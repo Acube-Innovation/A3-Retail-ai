@@ -2532,3 +2532,30 @@ kbd { display: inline-block; min-width: 17px; padding: 1px 5px; margin: 0 1px;
 	border-radius: var(--radius-sm); background: #fafbfd; }
 .wb-newform .field { margin-bottom: 8px; }
 .wb-newform .modal-actions { margin-top: 4px; }
+
+
+/* ==========================================================================
+   Recording an expense — the line table and what it comes to
+   The shop thinks of a spend the way its old software showed it: a few lines
+   with a quantity and a rate, then what is owed after the discount.
+   ========================================================================== */
+.exp-lines { margin: 4px 0 12px; }
+.exp-table { width: 100%; }
+.exp-table th { font-size: 11px; letter-spacing: .04em; color: var(--muted); }
+.exp-table td { vertical-align: top; padding: 4px 6px; }
+.exp-table input { width: 100%; }
+/* The suggestion list hangs under its own cell, so it must not stretch the row. */
+.exp-table td { position: relative; }
+.exp-table .w-hits { position: absolute; z-index: 3; left: 6px; right: 6px; margin: 0; }
+.exp-table .num input { text-align: right; }
+.exp-table td:nth-child(2), .exp-table td:nth-child(3) { width: 92px; }
+.exp-table td:nth-child(4) { width: 110px; text-align: right;
+	font-variant-numeric: tabular-nums; padding-top: 12px; }
+.exp-table td:last-child { width: 34px; }
+.exp-line-actions { display: flex; gap: 8px; margin-top: 6px; }
+
+.exp-totals { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
+.exp-totals .tr { display: flex; justify-content: space-between; gap: 16px;
+	padding: 3px 0; font-size: 13px; font-variant-numeric: tabular-nums; }
+.exp-totals .grand { font-weight: 700; font-size: 15px; }
+.exp-totals .owed { color: var(--danger, #c0392b); }
