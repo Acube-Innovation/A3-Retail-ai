@@ -16,7 +16,7 @@
 		return n.innerHTML;
 	}
 
-	const state = { categories: [], sources: [], work: null };
+	const state = { categories: [], sources: [], work: null, canAddCategory: false };
 
 	function say(text, kind) {
 		$("work-msg").textContent = text || "";
@@ -25,13 +25,15 @@
 
 	async function load() {
 		try {
-			const [data, cats, srcs] = await Promise.all([
+			const [data, cats, srcs, mayAdd] = await Promise.all([
 				A3.call("a3_retail.api.expenses.recent", { limit: 40 }),
 				A3.call("a3_retail.api.expenses.categories"),
 				A3.call("a3_retail.api.expenses.paid_from"),
+				A3.call("a3_retail.api.expenses.can_add_category"),
 			]);
 			state.categories = cats || [];
 			state.sources = srcs || [];
+			state.canAddCategory = !!mayAdd;
 			paint(data);
 		} catch (error) {
 			$("rows").innerHTML =
@@ -71,6 +73,28 @@
 			</tr>`).join("");
 	}
 
+	const categoryOptions = (selected) => state.categories.map((c) =>
+		`<option value="${esc(c.account)}"${c.account === selected ? " selected" : ""}>${
+			esc(c.label)}</option>`).join("");
+
+	/** A shop has its own words for what it spends on. Managers may add one. */
+	async function askCategory() {
+		const label = (window.prompt("What should the new category be called?") || "").trim();
+		if (!label) return;
+		try {
+			const made = await A3.call("a3_retail.api.expenses.add_category", { label });
+			if (made.created) {
+				state.categories.push({ account: made.account, label: made.label });
+				state.categories.sort((a, b) => a.label.localeCompare(b.label));
+			}
+			$("e-category").innerHTML = categoryOptions(made.account);
+			A3.toast(made.created ? `Added ${made.label}.`
+				: `${made.label} was already there.`, "ok");
+		} catch (error) {
+			say(error.message || "Could not add that category.", "error");
+		}
+	}
+
 	function openForm() {
 		if (!state.categories.length) {
 			return A3.toast("No expense categories exist yet. Ask head office to add one.", "error");
@@ -87,8 +111,12 @@
 			</div>
 			<div class="field-grid">
 				<label class="field"><span>Spent on</span>
-					<select id="e-category">${state.categories.map((c) =>
-						`<option value="${esc(c.account)}">${esc(c.label)}</option>`).join("")}</select></label>
+					<div class="field-with-add">
+						<select id="e-category">${categoryOptions()}</select>
+						${state.canAddCategory
+							? '<button type="button" class="btn btn-quiet" id="e-newcat"'
+							  + ' title="Add a category">+</button>' : ""}
+					</div></label>
 				<label class="field"><span>Paid from</span>
 					<select id="e-source">${state.sources.map((s) =>
 						`<option value="${esc(s.account)}">${esc(s.label)}</option>`).join("")}</select></label>
@@ -97,6 +125,7 @@
 				<input id="e-note" placeholder="What it was for"></label>`;
 
 		say("");
+		if (state.canAddCategory) $("e-newcat").addEventListener("click", askCategory);
 		$("work-modal").hidden = false;
 		state.work = async () => {
 			const amount = Number($("e-amount").value) || 0;

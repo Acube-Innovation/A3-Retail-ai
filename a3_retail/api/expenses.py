@@ -63,6 +63,14 @@ def categories() -> list[dict]:
 
 
 @frappe.whitelist()
+def can_add_category() -> bool:
+	"""Whether this person may invent a category, so the screen can say so."""
+	_me()
+	return bool({"Branch Manager", "Service Manager", "System Manager",
+	             "A3 Retail Admin"} & set(frappe.get_roles()))
+
+
+@frappe.whitelist()
 def paid_from() -> list[dict]:
 	"""The drawer, or a bank account the branch actually pays from."""
 	_me()

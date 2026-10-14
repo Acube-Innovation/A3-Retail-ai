@@ -896,6 +896,11 @@ input.is-locked { background: rgba(42, 51, 66, .04); color: var(--muted);
 .field input:focus, .field textarea:focus, .field select:focus, .svc-col select:focus {
 	outline: none; border-color: var(--sky); box-shadow: 0 0 0 3px rgba(41, 171, 226, .16); }
 .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+/* A select with a small add button beside it. `min-width: 0` because a flex item
+   will not shrink below its content, which would push the button off the card. */
+.field-with-add { display: flex; gap: 6px; align-items: stretch; }
+.field-with-add > select { flex: 1; min-width: 0; }
+.field-with-add > .btn { padding: 0 12px; font-size: 16px; line-height: 1; }
 .field-grid.three { grid-template-columns: repeat(3, 1fr); }
 /* The GSTIN sits beside its own Fetch button. `min-width: 0` because a flex item
    defaults to `auto` and will not shrink below its content, which pushed the
