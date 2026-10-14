@@ -151,5 +151,64 @@
 	</div>
 </div>
 
+{#- Creating one, with the same questions the old software asked. -#}
+<div class="modal" id="x-newitem-modal" hidden>
+	<div class="modal-card">
+		<h3>{{ _("Create New Expense Item") }}</h3>
+		<div class="field-grid">
+			<label class="field"><span>{{ _("Item Name") }} <span class="req">*</span></span>
+				<input id="ni-name" autocomplete="off"></label>
+			<div class="field"><span>{{ _("Item Type") }}</span>
+				<div class="radio-row">
+					<label><input type="radio" name="ni-kind" value="Product" checked>
+						{{ _("Product") }}</label>
+					<label><input type="radio" name="ni-kind" value="Service">
+						{{ _("Service") }}</label>
+				</div></div>
+		</div>
+		<div class="field-grid">
+			<label class="field"><span>{{ _("Purchase Price") }}</span>
+				<div class="rate-with-tax">
+					<input id="ni-rate" type="number" min="0" step="0.01" value="0">
+					<select id="ni-taxincl">
+						<option value="0">{{ _("Without Tax") }}</option>
+						<option value="1">{{ _("With Tax") }}</option>
+					</select>
+				</div></label>
+			<label class="field"><span>{{ _("Measuring Unit") }}</span>
+				<select id="ni-uom"></select></label>
+		</div>
+		<div class="field-grid">
+			<label class="field"><span>{{ _("HSN") }}</span>
+				<input id="ni-hsn" placeholder="{{ _('Optional') }}"></label>
+			<label class="field"><span>{{ _("GST Tax rate %") }}</span>
+				<select id="ni-gst"></select></label>
+		</div>
+		<label class="field"><span>{{ _("ITC Applicable") }}</span>
+			<select id="ni-itc"></select></label>
+		<div class="msg" id="ni-msg"></div>
+		<div class="modal-actions">
+			<button class="btn btn-quiet" data-close-item>{{ _("Cancel") }}</button>
+			<button class="btn btn-primary" id="ni-save">{{ _("Save Item") }}</button>
+		</div>
+	</div>
+</div>
+
+{#- And a category, which is where the spend lands in the books. -#}
+<div class="modal" id="x-newcat-modal" hidden>
+	<div class="modal-card modal-narrow">
+		<h3>{{ _("New Expense Category") }}</h3>
+		<p class="modal-note">
+			{{ _("Becomes a heading in the books, so everyone's spending on it adds up in one place.") }}</p>
+		<label class="field"><span>{{ _("Category Name") }} <span class="req">*</span></span>
+			<input id="nc-name" autocomplete="off" placeholder="{{ _('Tea, Route, KSFE…') }}"></label>
+		<div class="msg" id="nc-msg"></div>
+		<div class="modal-actions">
+			<button class="btn btn-quiet" data-close-cat>{{ _("Cancel") }}</button>
+			<button class="btn btn-primary" id="nc-save">{{ _("Save Category") }}</button>
+		</div>
+	</div>
+</div>
+
 </body>
 </html>

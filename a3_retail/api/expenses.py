@@ -23,6 +23,17 @@ from a3_retail.api.staff import _me
 
 EXPENSE_PARENT_HINTS = ("Indirect Expenses", "Expenses")
 
+# The rates GST actually comes in, so the form offers a list rather than a box.
+GST_RATES = [0, 0.25, 3, 5, 12, 18, 28]
+
+# Whether the input credit on this spend can be claimed. The wording is the
+# department's; the reasons matter at return time.
+ITC_OPTIONS = [
+	{"value": "eligible", "label": "Eligible"},
+	{"value": "ineligible_17_5", "label": "Ineligible — Section 17(5)"},
+	{"value": "ineligible_other", "label": "Ineligible — other"},
+]
+
 
 def _company():
 	return frappe.db.get_single_value("Global Defaults", "default_company")
@@ -73,7 +84,12 @@ def bootstrap() -> dict:
 		"sources": paid_from(),
 		"modes": modes(),
 		"can_add_category": can_add_category(),
+		"can_create_item": bool(frappe.has_permission("Item", "create")),
 		"series": next_number(),
+		"uoms": frappe.get_all("UOM", filters={"enabled": 1}, pluck="name",
+		                       order_by="name", limit_page_length=0),
+		"gst_rates": GST_RATES,
+		"itc_options": ITC_OPTIONS,
 	}
 
 
@@ -101,10 +117,16 @@ def next_number() -> dict:
 
 @frappe.whitelist()
 def can_add_category() -> bool:
-	"""Whether this person may invent a category, so the screen can say so."""
+	"""Whether this person may invent a category, so the screen can say so.
+
+	Anyone who records a spend here may add one. It was managers only, on the
+	reasoning that a counter inventing a category a week leaves the accountant
+	with forty ways to say tea — but the shop asked for it, and a spend filed
+	under the wrong heading because the right one could not be made is worse
+	than a long list.
+	"""
 	_me()
-	return bool({"Branch Manager", "Service Manager", "System Manager",
-	             "A3 Retail Admin"} & set(frappe.get_roles()))
+	return bool(frappe.has_permission("Branch Expense", "create"))
 
 
 @frappe.whitelist()
@@ -278,12 +300,18 @@ def search_items(query: str = "", limit: int = 20) -> list[dict]:
 
 @frappe.whitelist()
 def create_item(payload) -> dict:
-	"""Add something the shop buys but does not stock."""
+	"""Add something the shop buys but does not stock.
+
+	The same questions their old software asked, because the people filling it
+	in learned the form there: a name, whether it is a thing or a job, what it
+	cost last time and whether that figure had the tax in it, the unit, the HSN
+	and the rate, and whether the credit can be claimed.
+	"""
 	_me()
 	require_permission("Item", "create")
 
 	data = frappe.parse_json(payload) if isinstance(payload, str) else (payload or {})
-	name = (data.get("item_name") or "").strip()
+	name = " ".join((data.get("item_name") or "").split())
 	if not name:
 		frappe.throw(_("Give it a name."), title=_("Item name"))
 
@@ -291,22 +319,56 @@ def create_item(payload) -> dict:
 	if existing:
 		return {"item_code": existing, "item_name": name, "created": False}
 
+	rate = flt(data.get("rate"))
+	gst = flt(data.get("gst_rate"))
+	# A price quoted with the tax in it is not what the expense line costs, so
+	# it is taken back out before the rate is stored.
+	if data.get("tax_included") and gst:
+		rate = flt(rate * 100 / (100 + gst), 2)
+
 	doc = frappe.new_doc("Item")
 	doc.item_code = name
 	doc.item_name = name
 	doc.item_group = _expense_item_group()
-	doc.stock_uom = (data.get("uom") or "Nos").strip() or "Nos"
+	uom = (data.get("uom") or "").strip()
+	doc.stock_uom = uom if uom and frappe.db.exists("UOM", uom) else "Nos"
 	doc.is_stock_item = 0
 	# Bought, never sold: it has no business turning up in the till's search.
 	doc.is_purchase_item = 1
 	doc.is_sales_item = 0
+	doc.valuation_rate = rate
+
+	hsn = (data.get("hsn") or "").strip()
+	if hsn and doc.meta.has_field("gst_hsn_code") and frappe.db.exists("GST HSN Code", hsn):
+		doc.gst_hsn_code = hsn
+	if data.get("itc") and data["itc"] != "eligible" \
+			and doc.meta.has_field("is_ineligible_for_itc"):
+		doc.is_ineligible_for_itc = 1
+
 	account = (data.get("expense_account") or "").strip()
 	if account and frappe.db.exists("Account", account):
-		doc.append("item_defaults", {
-			"company": _company(), "expense_account": account})
+		doc.append("item_defaults", {"company": _company(), "expense_account": account})
+
 	doc.flags.ignore_permissions = True
 	doc.insert(ignore_permissions=True)
-	return {"item_code": doc.name, "item_name": doc.item_name, "created": True}
+
+	if gst:
+		_set_item_gst(doc.name, gst)
+
+	return {"item_code": doc.name, "item_name": doc.item_name, "created": True,
+	        "rate": rate, "gst_rate": gst}
+
+
+def _set_item_gst(item_code: str, rate: float) -> None:
+	"""Point the item at the tax template for its rate, when one exists."""
+	template = frappe.db.get_value(
+		"Item Tax Template", {"name": ("like", f"%{rate:g}%")}, "name")
+	if not template:
+		return
+	item = frappe.get_doc("Item", item_code)
+	item.append("taxes", {"item_tax_template": template})
+	item.flags.ignore_permissions = True
+	item.save(ignore_permissions=True)
 
 
 def _expense_item_group() -> str:
@@ -353,10 +415,8 @@ def add_category(label: str) -> dict:
 	counter inventing one per week leaves the accountant with forty ways to say
 	tea.
 	"""
-	from a3_retail.api import require_role
-
 	_me()
-	require_role("Branch Manager", "Service Manager")
+	require_permission("Branch Expense", "create")
 
 	label = (label or "").strip()
 	if not label:

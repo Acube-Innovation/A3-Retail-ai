@@ -24,7 +24,8 @@
 	const today = () => new Date().toLocaleDateString("en-CA");
 
 	const state = {
-		categories: [], sources: [], modes: [], canAddCategory: false,
+		categories: [], sources: [], modes: [], uoms: [], gstRates: [], itc: [],
+		canAddCategory: false, canCreateItem: false,
 		lines: [], supplier: null, catalogue: [], chosen: new Set(), saving: false,
 	};
 
@@ -43,6 +44,10 @@
 			state.sources = boot.sources || [];
 			state.modes = boot.modes || [];
 			state.canAddCategory = !!boot.can_add_category;
+			state.canCreateItem = !!boot.can_create_item;
+			state.uoms = boot.uoms || [];
+			state.gstRates = boot.gst_rates || [];
+			state.itc = boot.itc_options || [];
 
 			$("x-category").innerHTML = categoryOptions();
 			$("x-source").innerHTML = state.sources.map((s) =>
@@ -53,6 +58,15 @@
 			$("x-prefix").value = boot.series.prefix;
 			$("x-number").value = boot.series.number;
 			$("x-newcat").hidden = !state.canAddCategory;
+			$("x-newitem").hidden = !state.canCreateItem;
+			$("ni-uom").innerHTML = state.uoms.map((u) =>
+				`<option value="${esc(u)}"${u === "Nos" ? " selected" : ""}>${esc(u)}</option>`)
+				.join("");
+			$("ni-gst").innerHTML = '<option value="">None</option>'
+				+ state.gstRates.filter((r) => r).map((r) =>
+					`<option value="${r}">${r}%</option>`).join("");
+			$("ni-itc").innerHTML = state.itc.map((o) =>
+				`<option value="${esc(o.value)}">${esc(o.label)}</option>`).join("");
 		} catch (error) {
 			say(error.message || "Could not open this screen.", "error");
 		}
@@ -232,9 +246,17 @@
 	}
 
 	// -------------------------------------------------------------- new records
-	async function askCategory() {
-		const label = (window.prompt("What should the new category be called?") || "").trim();
-		if (!label) return;
+	function askCategory() {
+		$("nc-name").value = "";
+		$("nc-msg").textContent = "";
+		$("x-newcat-modal").hidden = false;
+		setTimeout(() => $("nc-name").focus(), 60);
+	}
+
+	async function saveCategory() {
+		const label = $("nc-name").value.trim();
+		if (!label) return ($("nc-msg").textContent = "Give the category a name.");
+		$("nc-save").disabled = true;
 		try {
 			const made = await A3.call("a3_retail.api.expenses.add_category", { label });
 			if (made.created) {
@@ -242,26 +264,55 @@
 				state.categories.sort((a, b) => a.label.localeCompare(b.label));
 			}
 			$("x-category").innerHTML = categoryOptions(made.account);
+			$("x-newcat-modal").hidden = true;
 			A3.toast(made.created ? `Added ${made.label}.`
 				: `${made.label} was already there.`, "ok");
 		} catch (error) {
-			say(error.message || "Could not add that category.", "error");
+			$("nc-msg").textContent = error.message || "Could not add that category.";
+		} finally {
+			$("nc-save").disabled = false;
 		}
 	}
 
-	async function askItem() {
-		const name = (window.prompt("What is the new item called?") || "").trim();
-		if (!name) return;
+	function askItem() {
+		$("ni-name").value = $("x-q").value.trim();
+		$("ni-rate").value = 0;
+		$("ni-hsn").value = "";
+		$("ni-gst").value = "";
+		$("ni-taxincl").value = "0";
+		$("ni-msg").textContent = "";
+		document.querySelector('input[name="ni-kind"][value="Product"]').checked = true;
+		$("x-newitem-modal").hidden = false;
+		setTimeout(() => $("ni-name").focus(), 60);
+	}
+
+	async function saveItem() {
+		const name = $("ni-name").value.trim();
+		if (!name) return ($("ni-msg").textContent = "Give it a name.");
+		$("ni-save").disabled = true;
 		try {
 			const made = await A3.call("a3_retail.api.expenses.create_item", {
-				payload: { item_name: name, expense_account: $("x-category").value },
+				payload: {
+					item_name: name,
+					kind: document.querySelector('input[name="ni-kind"]:checked').value,
+					rate: Number($("ni-rate").value) || 0,
+					tax_included: $("ni-taxincl").value === "1" ? 1 : 0,
+					uom: $("ni-uom").value,
+					hsn: $("ni-hsn").value.trim(),
+					gst_rate: Number($("ni-gst").value) || 0,
+					itc: $("ni-itc").value,
+					expense_account: $("x-category").value,
+				},
 			});
+			$("x-newitem-modal").hidden = true;
 			state.chosen.add(made.item_code);
 			await search(name);
 			A3.toast(made.created ? `Added ${made.item_name}.`
 				: `${made.item_name} was already there.`, "ok");
 		} catch (error) {
-			A3.toast(error.message || "Could not add that item.", "error");
+			$("ni-msg").textContent = error.message || "Could not add that item.";
+		} finally {
+			$("ni-save").disabled = false;
 		}
 	}
 
@@ -313,6 +364,12 @@
 		$("x-additem").addEventListener("click", openPicker);
 		$("x-newcat").addEventListener("click", askCategory);
 		$("x-newitem").addEventListener("click", askItem);
+		$("nc-save").addEventListener("click", saveCategory);
+		$("ni-save").addEventListener("click", saveItem);
+		document.querySelectorAll("[data-close-item]").forEach((n) =>
+			n.addEventListener("click", () => { $("x-newitem-modal").hidden = true; }));
+		document.querySelectorAll("[data-close-cat]").forEach((n) =>
+			n.addEventListener("click", () => { $("x-newcat-modal").hidden = true; }));
 		$("x-pick-add").addEventListener("click", addChosen);
 		$("x-gst").addEventListener("change", paintLines);
 		$("x-discount").addEventListener("input", paintTotals);
