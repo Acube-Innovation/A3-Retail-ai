@@ -15,7 +15,7 @@ the bill (scope 2.5, step 12 P1–P9).
 
 import frappe
 from frappe import _
-from frappe.utils import cint, flt, fmt_money, getdate, nowdate
+from frappe.utils import cint, flt, fmt_money, formatdate, getdate, nowdate
 
 from a3_retail.api import require_permission
 from a3_retail.api.customer import normalize_mobile
@@ -630,7 +630,7 @@ def checkout(payload) -> dict:
 
 	_stamp_cost_center(invoice, cost_center)
 	invoice.save(ignore_permissions=True)
-	invoice.submit()
+	_submit_invoice(invoice)
 
 	if from_split:
 		# What the bill actually owes, read back from the submitted invoice rather
@@ -1077,6 +1077,46 @@ def _basket_gst_rate(invoice) -> int | None:
 			)
 		rates.add(cint(item_rate) or 18)
 	return max(rates) if rates else None
+
+
+def _submit_invoice(invoice) -> None:
+	"""Complete the bill, and translate the one refusal a counter actually meets.
+
+	A bill held from an earlier day cannot be completed once the handset on it
+	has been moved between branches since, because on the day of the bill the
+	handset was somewhere else. ERPNext says so in a paragraph about stock
+	reconciliation with a link into the desk, which the counter cannot open and
+	could not act on anyway. The fix is always the same, so say that instead.
+	"""
+	try:
+		invoice.submit()
+	except frappe.exceptions.ValidationError as error:
+		if "SerialNoExistsInFutureTransaction" not in error.__class__.__name__:
+			raise
+		moved = _moved_since(invoice)
+		# The screen shows every message the request logged, titled by the first,
+		# so ERPNext's paragraph has to go or it arrives alongside ours.
+		frappe.clear_messages()
+		frappe.throw(
+			_("This bill is dated {0}, but the handset on it only reached this "
+			  "branch on {1}. Change the bill's date to {1} or later, then take "
+			  "the payment again.").format(
+				formatdate(invoice.posting_date), formatdate(moved or nowdate())),
+			title=_("Bill is dated too early"),
+		)
+
+
+def _moved_since(invoice) -> str | None:
+	"""The day the last handset on this bill was moved, if one was."""
+	serials = [s for row in invoice.items
+	           for s in (row.get("serial_no") or "").split("\n") if s.strip()]
+	if not serials:
+		return None
+	return frappe.db.get_value(
+		"Stock Ledger Entry",
+		{"serial_no": ("in", serials), "is_cancelled": 0,
+		 "posting_date": (">", invoice.posting_date)},
+		"posting_date", order_by="posting_date desc")
 
 
 def _stamp_cost_center(invoice, cost_center: str | None):

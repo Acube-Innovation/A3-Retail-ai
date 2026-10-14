@@ -22,6 +22,11 @@
 				<p class="topbar-sub" id="subtitle"></p>
 			</div>
 			<div class="topbar-right" id="top-actions">
+				{#- What you can do to this invoice depends on its state, so the
+				    screen fills this in and refills it on every save. It is its
+				    own box: the buttons beside it belong to the page, not the
+				    document, and must survive the repaint. -#}
+				<div class="topbar-docactions" id="doc-actions"></div>
 				<a class="btn btn-quiet" href="/retail/bills">← {{ _("Back to Bills") }}</a>
 				<div class="who">
 					<div class="name">{{ me.employee_name }}</div>
