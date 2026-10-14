@@ -36,7 +36,11 @@ function ask(frm) {
 			{
 				fieldname: "posting_date", fieldtype: "Date", reqd: 1,
 				label: __("New Posting Date"), default: frm.doc.posting_date,
-				max_date: frappe.datetime.get_today(),
+				// A Date, not a string: Frappe hands max_date straight to the
+				// datepicker, which calls getFullYear on it. Given "2026-10-14"
+				// it throws while building, and the dialog never opens — so the
+				// button looked dead rather than broken.
+				max_date: new Date(),
 			},
 			{
 				fieldname: "posting_time", fieldtype: "Time",
