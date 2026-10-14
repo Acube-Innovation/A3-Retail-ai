@@ -896,6 +896,11 @@ input.is-locked { background: rgba(42, 51, 66, .04); color: var(--muted);
 .field input:focus, .field textarea:focus, .field select:focus, .svc-col select:focus {
 	outline: none; border-color: var(--sky); box-shadow: 0 0 0 3px rgba(41, 171, 226, .16); }
 .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+/* A select with a small add button beside it. `min-width: 0` because a flex item
+   will not shrink below its content, which would push the button off the card. */
+.field-with-add { display: flex; gap: 6px; align-items: stretch; }
+.field-with-add > select { flex: 1; min-width: 0; }
+.field-with-add > .btn { padding: 0 12px; font-size: 16px; line-height: 1; }
 .field-grid.three { grid-template-columns: repeat(3, 1fr); }
 /* The GSTIN sits beside its own Fetch button. `min-width: 0` because a flex item
    defaults to `auto` and will not shrink below its content, which pushed the
@@ -2527,3 +2532,94 @@ kbd { display: inline-block; min-width: 17px; padding: 1px 5px; margin: 0 1px;
 	border-radius: var(--radius-sm); background: #fafbfd; }
 .wb-newform .field { margin-bottom: 8px; }
 .wb-newform .modal-actions { margin-top: 4px; }
+
+
+/* ==========================================================================
+   Recording an expense — the line table and what it comes to
+   The shop thinks of a spend the way its old software showed it: a few lines
+   with a quantity and a rate, then what is owed after the discount.
+   ========================================================================== */
+.exp-lines { margin: 4px 0 12px; }
+.exp-table { width: 100%; }
+.exp-table th { font-size: 11px; letter-spacing: .04em; color: var(--muted); }
+.exp-table td { vertical-align: top; padding: 4px 6px; }
+.exp-table input { width: 100%; }
+/* The suggestion list hangs under its own cell, so it must not stretch the row. */
+.exp-table td { position: relative; }
+.exp-table .w-hits { position: absolute; z-index: 3; left: 6px; right: 6px; margin: 0; }
+.exp-table .num input { text-align: right; }
+.exp-table td:nth-child(2), .exp-table td:nth-child(3) { width: 92px; }
+.exp-table td:nth-child(4) { width: 110px; text-align: right;
+	font-variant-numeric: tabular-nums; padding-top: 12px; }
+.exp-table td:last-child { width: 34px; }
+.exp-line-actions { display: flex; gap: 8px; margin-top: 6px; }
+
+.exp-totals { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
+.exp-totals .tr { display: flex; justify-content: space-between; gap: 16px;
+	padding: 3px 0; font-size: 13px; font-variant-numeric: tabular-nums; }
+.exp-totals .grand { font-weight: 700; font-size: 15px; }
+.exp-totals .owed { color: var(--danger, #c0392b); }
+
+/* ==========================================================================
+   Create Expense — the page
+   Two cards side by side, then the items and what it comes to, which is how
+   the shop's old software laid it out and how the counter reads it.
+   ========================================================================== */
+.xp-page { display: block; }
+.xp-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.xp-card { display: flex; flex-direction: column; gap: 12px; }
+.toggle-row { flex-direction: row; align-items: center; justify-content: space-between;
+	gap: 12px; padding: 10px 12px; border: 1px solid var(--line);
+	border-radius: var(--radius-sm); background: var(--bg-soft, #f7f9fc); }
+.toggle-row > span { font-size: 13px; font-weight: 600; }
+/* Outranks the generic `.field input { width: 100% }`, which stretched the
+   switch into a bar the width of the card. */
+.toggle-row .switch,
+.switch { width: 38px; min-width: 38px; flex: 0 0 38px;
+	height: 20px; appearance: none; cursor: pointer;
+	border-radius: 999px; background: #cfd6e0; position: relative;
+	transition: background .15s; flex: 0 0 auto; }
+.switch::after { content: ""; position: absolute; top: 2px; left: 2px;
+	width: 16px; height: 16px; border-radius: 50%; background: #fff;
+	transition: transform .15s; }
+.switch:checked { background: var(--brand, #4f46e5); }
+.switch:checked::after { transform: translateX(18px); }
+
+.xp-items { margin-top: 14px; }
+.xp-add { width: 100%; padding: 14px; border: 1px dashed var(--brand, #4f46e5);
+	border-radius: var(--radius-sm); background: transparent; cursor: pointer;
+	color: var(--brand, #4f46e5); font-size: 13.5px; font-weight: 600; }
+.xp-add:hover { background: #f4f5ff; }
+
+.xp-foot { display: grid; grid-template-columns: 1fr 320px; gap: 24px;
+	align-items: start; margin-top: 14px; padding-top: 14px;
+	border-top: 1px solid var(--line); }
+.xp-extra { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+	align-content: start; }
+.xp-totals .tr { display: flex; justify-content: space-between; gap: 16px;
+	padding: 4px 0; font-size: 13px; font-variant-numeric: tabular-nums; }
+.xp-totals .grand { font-weight: 700; font-size: 15px; padding-top: 8px;
+	border-top: 1px solid var(--line); }
+.xp-totals .owed { color: var(--danger, #c0392b); }
+
+.pick-bar { display: flex; gap: 10px; margin-bottom: 10px; }
+.pick-bar > input { flex: 1; min-width: 0; }
+
+@media (max-width: 900px) {
+	.xp-cards, .xp-foot { grid-template-columns: 1fr; }
+	.xp-extra { grid-template-columns: 1fr 1fr; }
+}
+
+/* Product or Service, side by side as the old software asked it. */
+.radio-row { display: flex; gap: 8px; }
+.radio-row label { flex: 1; display: flex; align-items: center; gap: 8px;
+	padding: 9px 12px; border: 1px solid var(--line); border-radius: var(--radius-sm);
+	font-size: 13px; cursor: pointer; background: var(--card); }
+.radio-row input { width: auto; margin: 0; }
+/* A price and whether the tax is already inside it, read as one figure. */
+.rate-with-tax { display: flex; gap: 0; }
+.rate-with-tax > input { flex: 1; min-width: 0;
+	border-radius: var(--radius-sm) 0 0 var(--radius-sm); }
+.rate-with-tax > select { flex: 0 0 132px; border-left: 0;
+	border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
+.modal-narrow .modal-card, .modal-card.modal-narrow { max-width: 420px; }
