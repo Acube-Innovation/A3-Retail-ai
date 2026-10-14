@@ -99,6 +99,10 @@ def bootstrap() -> dict:
 	return {
 		"branch": branch,
 		"warehouses": _warehouses(branch),
+		# A shop that is supplied rather than supplying opens Move Stock pointing
+		# the way its stock actually travels. Unset for the branches that send.
+		"receives_from": frappe.db.get_value(
+			"Branch Profile", {"branch": branch}, "receives_stock_from"),
 		"item_groups": frappe.get_all("Item Group", filters={"is_group": 0}, pluck="name",
 		                              order_by="name"),
 		"brands": [brand for brand in frappe.get_all("Brand", pluck="name", order_by="name")

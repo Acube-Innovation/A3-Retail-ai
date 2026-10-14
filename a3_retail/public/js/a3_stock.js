@@ -935,12 +935,22 @@ window.STOCK = (function () {
 		// this it opened on whichever branch sorts first — and the item search,
 		// which only offers what is actually on the shelf it is pointed at,
 		// then found nothing for stock the counter can see in front of them.
-		// Stock moves out of your own shop far more often than into it.
 		const mine = (state.boot.warehouses || [])[0];
-		if (mine) $("w-source").value = mine;
-		const elsewhere = (state.network || []).find(
-			(w) => w.warehouse !== $("w-source").value);
-		if (elsewhere) $("w-target").value = elsewhere.warehouse;
+		const supplier = state.boot.receives_from;
+		const known = (name) => (state.network || []).some((w) => w.warehouse === name);
+
+		if (supplier && known(supplier) && mine) {
+			// A branch that is supplied opens the way its stock travels: in from
+			// the shelf that feeds it, onto its own.
+			$("w-source").value = supplier;
+			$("w-target").value = mine;
+		} else {
+			// Otherwise stock moves out of your own shop far more often than into it.
+			if (mine) $("w-source").value = mine;
+			const elsewhere = (state.network || []).find(
+				(w) => w.warehouse !== $("w-source").value);
+			if (elsewhere) $("w-target").value = elsewhere.warehouse;
+		}
 	}
 
 	function openAdjust() {

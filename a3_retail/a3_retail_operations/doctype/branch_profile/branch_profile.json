@@ -34,6 +34,7 @@
   "damaged_warehouse",
   "used_device_warehouse",
   "transit_warehouse",
+  "receives_stock_from",
   "sales_section",
   "pos_profile",
   "default_price_list",
@@ -237,6 +238,13 @@
    "label": "Goods In Transit",
    "options": "Warehouse",
    "description": "Shared company-level in-transit warehouse"
+  },
+  {
+   "fieldname": "receives_stock_from",
+   "fieldtype": "Link",
+   "label": "Usually Receives Stock From",
+   "options": "Warehouse",
+   "description": "The shelf this branch is normally supplied from. Move Stock opens pointing here, into this branch's own warehouse. Leave empty for a branch that mostly sends rather than receives."
   },
   {
    "fieldname": "sales_section",
