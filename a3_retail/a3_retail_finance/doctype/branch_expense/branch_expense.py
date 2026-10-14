@@ -52,6 +52,10 @@ class BranchExpense(A3BranchMixin, Document):
 		for row in self.items:
 			row.qty = flt(row.qty) or 1
 			row.amount = flt(row.qty) * flt(row.rate)
+			# The rate on the line is what was paid before tax, so the tax is on
+			# top of it rather than inside it — an expense bill reads that way.
+			row.gst_rate = flt(row.gst_rate) if self.with_gst else 0
+			row.tax_amount = flt(row.amount * row.gst_rate / 100, 2)
 			if not row.description:
 				row.description = frappe.db.get_value("Item", row.item_code, "item_name") \
 					if row.item_code else None
@@ -64,11 +68,12 @@ class BranchExpense(A3BranchMixin, Document):
 
 	def set_totals(self):
 		self.total = flt(sum(flt(row.amount) for row in self.items))
+		self.tax_amount = flt(sum(flt(row.tax_amount) for row in self.items))
 		self.discount_amount = flt(self.discount_amount)
 		if self.discount_amount > self.total:
 			frappe.throw(
 				_("The discount is more than the expense itself."), title=_("Discount"))
-		self.grand_total = flt(self.total - self.discount_amount)
+		self.grand_total = flt(self.total - self.discount_amount + self.tax_amount)
 
 		# Nothing entered means it was all paid, which is what a shop means by an
 		# expense unless it says otherwise.
@@ -133,6 +138,16 @@ class BranchExpense(A3BranchMixin, Document):
 				"user_remark": row.description,
 			})
 
+		# Input tax is money back from the department, not a cost, so it is its
+		# own debit rather than part of what the shop spent. Kerala to Kerala, so
+		# it splits in half the way every other local bill here does.
+		for account, share in self.tax_debits():
+			doc.append("accounts", {
+				"account": account,
+				"debit_in_account_currency": share,
+				"cost_center": self.cost_center,
+			})
+
 		if flt(self.paid_amount):
 			doc.append("accounts", {
 				"account": self.paid_from,
@@ -153,15 +168,30 @@ class BranchExpense(A3BranchMixin, Document):
 		doc.submit()
 		return doc.name
 
+	def tax_debits(self) -> list[tuple[str, float]]:
+		"""The input GST, split so the two halves still add up to the whole."""
+		if not flt(self.tax_amount):
+			return []
+		abbr = frappe.get_cached_value("Company", self.company, "abbr")
+		central, state = f"Input Tax CGST - {abbr}", f"Input Tax SGST - {abbr}"
+		for account in (central, state):
+			if not frappe.db.exists("Account", account):
+				frappe.throw(
+					_("{0} is missing, so the input tax has nowhere to go.")
+					.format(account), title=_("Input GST"))
+		half = flt(flt(self.tax_amount) / 2, 2)
+		return [(central, half), (state, flt(self.tax_amount - half, 2))]
+
 	def discounted_amounts(self) -> list[float]:
 		"""Each line's share of the total after the discount, adding up exactly."""
 		amounts = [flt(row.amount) for row in self.items]
 		if not flt(self.discount_amount) or not self.total:
 			return amounts
 
-		scale = flt(self.grand_total) / flt(self.total)
+		net = flt(self.total - self.discount_amount)
+		scale = net / flt(self.total)
 		shares = [flt(a * scale, 2) for a in amounts]
-		drift = flt(self.grand_total - sum(shares), 2)
+		drift = flt(net - sum(shares), 2)
 		if drift:
 			biggest = amounts.index(max(amounts))
 			shares[biggest] = flt(shares[biggest] + drift, 2)

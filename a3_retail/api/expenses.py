@@ -18,6 +18,7 @@ from frappe import _
 from frappe.utils import flt, getdate, nowdate
 
 from a3_retail.api import require_permission
+from a3_retail.utils import tax
 from a3_retail.api.staff import _me
 
 EXPENSE_PARENT_HINTS = ("Indirect Expenses", "Expenses")
@@ -61,6 +62,41 @@ def categories() -> list[dict]:
 		order_by="account_name",
 	)
 	return [{"account": r.name, "label": r.account_name} for r in rows]
+
+
+@frappe.whitelist()
+def bootstrap() -> dict:
+	"""Everything the Create Expense page needs before the first keystroke."""
+	_me()
+	return {
+		"categories": categories(),
+		"sources": paid_from(),
+		"modes": modes(),
+		"can_add_category": can_add_category(),
+		"series": next_number(),
+	}
+
+
+@frappe.whitelist()
+def next_number() -> dict:
+	"""The prefix and the number this expense will get.
+
+	Shown the way the old software showed them, in two boxes. They are not typed
+	into: the number has to be the next one and has to be unique, so it is read
+	rather than chosen.
+	"""
+	employee = _me()
+	from a3_retail.utils.branch import get_branch_code
+
+	code = get_branch_code(employee.branch) or "HO"
+	year = frappe.utils.nowdate()[2:4]
+	prefix = f"EXP-{code}-{year}-"
+	last = frappe.db.sql(
+		"""select name from `tabBranch Expense`
+		   where name like %(like)s order by name desc limit 1""",
+		{"like": prefix + "%"})
+	nxt = (int(last[0][0].rsplit("-", 1)[1]) + 1) if last else 1
+	return {"prefix": prefix, "number": f"{nxt:05d}"}
 
 
 @frappe.whitelist()
@@ -155,6 +191,7 @@ def create(payload) -> dict:
 	doc.due_date = getdate(data["due_date"]) if data.get("due_date") else None
 	doc.mode_of_payment = (data.get("mode_of_payment") or "").strip() or None
 	doc.paid_from = (data.get("paid_from") or "").strip() or None
+	doc.with_gst = 1 if data.get("with_gst") else 0
 	doc.discount_amount = flt(data.get("discount"))
 	doc.notes = (data.get("note") or "").strip() or None
 
@@ -164,6 +201,7 @@ def create(payload) -> dict:
 			"description": (row.get("description") or "").strip() or None,
 			"qty": flt(row.get("qty")) or 1,
 			"rate": flt(row.get("rate")),
+			"gst_rate": flt(row.get("gst_rate")),
 		})
 
 	# Blank means it was all paid, which is what a shop means unless it says so.
@@ -226,13 +264,15 @@ def search_items(query: str = "", limit: int = 20) -> list[dict]:
 		"Item",
 		filters={"disabled": 0, "is_stock_item": 0},
 		or_filters={"item_name": ["like", like], "item_code": ["like", like]},
-		fields=["name as item_code", "item_name", "item_group", "stock_uom"],
+		fields=["name as item_code", "item_name", "item_group", "stock_uom",
+		        "gst_hsn_code as hsn", "valuation_rate as rate"],
 		order_by="item_name",
 		limit=int(limit) or 20,
 	)
 	for r in rows:
 		r["expense_account"] = frappe.db.get_value(
 			"Item Default", {"parent": r["item_code"]}, "expense_account")
+		r["gst_rate"] = tax.item_rate(r["item_code"])
 	return rows
 
 

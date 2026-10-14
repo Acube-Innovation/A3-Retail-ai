@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="csrf-token" content="{{ csrf_token }}">
+	<meta name="robots" content="noindex">
+	<title>{{ _("Create Expense") }} · {{ me.branch }} · {{ app_name }}</title>
+	<link rel="stylesheet" href="/assets/a3_retail/css/a3_branch.css?v={{ asset_v }}">
+	<script src="/assets/a3_retail/js/a3_branch.js?v={{ asset_v }}" defer></script>
+	<script src="/assets/a3_retail/js/a3_expense_entry.js?v={{ asset_v }}" defer></script>
+</head>
+<body class="pos-body">
+<div class="app">
+
+	{% include "a3_retail/www/retail/_sidebar.html" %}
+
+	<div class="main">
+		<header class="topbar">
+			<div class="topbar-branch topbar-title">
+				<h1>{{ _("Create Expense") }} <span class="chip">{{ me.branch }}</span></h1>
+				<p class="topbar-sub">{{ _("What the shop spent, and on what") }}</p>
+			</div>
+			<div class="topbar-right">
+				<a class="btn btn-quiet" href="/retail/expenses">{{ _("Cancel") }}</a>
+				<button class="btn btn-primary" id="x-save">{{ _("Save") }}</button>
+				<div class="who">
+					<div class="name">{{ me.employee_name }}</div>
+					<div class="role">{{ me.designation or "" }}</div>
+				</div>
+				<div class="avatar">{{ initials }}</div>
+				<a class="btn btn-quiet" href="/retail/logout">{{ _("Sign out") }}</a>
+			</div>
+		</header>
+
+		<main class="content xp-page">
+
+			{#- Two cards side by side, as the shop is used to reading them. -#}
+			<div class="xp-cards">
+				<section class="svc-panel xp-card">
+					<label class="field toggle-row">
+						<span>{{ _("Expense With GST") }}</span>
+						<input type="checkbox" id="x-gst" class="switch">
+					</label>
+
+					<label class="field"><span>{{ _("Expense Category") }}</span>
+						<div class="field-with-add">
+							<select id="x-category"></select>
+							<button type="button" class="btn btn-quiet" id="x-newcat"
+								title="{{ _('Add a category') }}" hidden>+</button>
+						</div></label>
+
+					<div class="field-grid">
+						<label class="field"><span>{{ _("Expense Prefix") }}</span>
+							<input id="x-prefix" readonly></label>
+						<label class="field"><span>{{ _("Expense Number") }}</span>
+							<input id="x-number" readonly></label>
+					</div>
+				</section>
+
+				<section class="svc-panel xp-card">
+					<div class="field-grid">
+						<label class="field"><span>{{ _("Original Invoice Number") }}</span>
+							<input id="x-ref" placeholder="{{ _('Optional') }}"></label>
+						<label class="field"><span>{{ _("Date") }}</span>
+							<input id="x-date" type="date"></label>
+					</div>
+
+					<div class="field-grid">
+						<label class="field"><span>{{ _("Payment Mode") }}</span>
+							<select id="x-mode"></select></label>
+						<label class="field"><span>{{ _("Paid From") }}</span>
+							<select id="x-source"></select></label>
+					</div>
+
+					<label class="field"><span>{{ _("Paid To") }}</span>
+						<input id="x-paidto" autocomplete="off"
+							placeholder="{{ _('Name, or search a supplier') }}">
+						<div class="w-hits" id="x-supplier-hits"></div></label>
+
+					<label class="field"><span>{{ _("Note") }}</span>
+						<textarea id="x-note" rows="3"
+							placeholder="{{ _('Enter Notes') }}"></textarea></label>
+				</section>
+			</div>
+
+			<section class="svc-panel xp-items">
+				<button type="button" class="xp-add" id="x-additem">
+					+ {{ _("Add Item") }}</button>
+
+				<div class="line-table" id="x-lines-wrap" hidden>
+					<table class="bill-table exp-table">
+						<thead><tr>
+							<th>{{ _("Item") }}</th>
+							<th class="num">{{ _("Qty") }}</th>
+							<th class="num">{{ _("Rate") }}</th>
+							<th class="num xp-gst-col" hidden>{{ _("GST %") }}</th>
+							<th class="num">{{ _("Amount") }}</th>
+							<th></th>
+						</tr></thead>
+						<tbody id="x-lines"></tbody>
+					</table>
+				</div>
+
+				<div class="xp-foot">
+					<div class="xp-extra">
+						<label class="field"><span>{{ _("Discount") }}</span>
+							<div class="input-rupee"><span>₹</span>
+								<input id="x-discount" type="number" min="0" step="0.01"
+									value="0"></div></label>
+						<label class="field"><span>{{ _("Paid Now") }}</span>
+							<div class="input-rupee"><span>₹</span>
+								<input id="x-paid" type="number" min="0" step="0.01"
+									placeholder="{{ _('All of it') }}"></div></label>
+						<label class="field" id="x-due-wrap" hidden>
+							<span>{{ _("Due Date") }}</span>
+							<input id="x-due" type="date"></label>
+					</div>
+					<div class="xp-totals" id="x-totals"></div>
+				</div>
+			</section>
+
+			<div class="msg" id="x-msg"></div>
+		</main>
+	</div>
+</div>
+
+{#- Picking what the money went on, the way the old software did it. -#}
+<div class="modal" id="x-pick" hidden>
+	<div class="modal-card modal-wide">
+		<h3>{{ _("Add Expense Items") }}</h3>
+		<div class="pick-bar">
+			<input id="x-q" placeholder="{{ _('Search') }}" autocomplete="off">
+			<button class="btn btn-outline" id="x-newitem">+ {{ _("Create New Item") }}</button>
+		</div>
+		<div class="line-table">
+			<table class="bill-table">
+				<thead><tr>
+					<th></th>
+					<th>{{ _("Item Name") }}</th>
+					<th>{{ _("HSN/SAC") }}</th>
+					<th class="num">{{ _("Price") }}</th>
+				</tr></thead>
+				<tbody id="x-results"><tr><td colspan="4">{{ _("Loading…") }}</td></tr></tbody>
+			</table>
+		</div>
+		<div class="modal-actions">
+			<button class="btn btn-quiet" data-close>{{ _("Cancel") }}</button>
+			<button class="btn btn-primary" id="x-pick-add">{{ _("Add") }}</button>
+		</div>
+	</div>
+</div>
+
+</body>
+</html>

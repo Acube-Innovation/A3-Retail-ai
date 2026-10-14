@@ -367,7 +367,9 @@
 	}
 
 	document.addEventListener("DOMContentLoaded", () => {
-		$("new-expense").addEventListener("click", openForm);
+		$("new-expense").addEventListener("click", () => {
+			window.location.href = "/retail/expense_entry";
+		});
 		document.querySelectorAll("[data-close]").forEach((n) =>
 			n.addEventListener("click", () => { $("work-modal").hidden = true; }));
 		$("work-go").addEventListener("click", async () => {

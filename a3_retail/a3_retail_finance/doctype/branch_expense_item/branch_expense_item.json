@@ -12,6 +12,8 @@
   "uom",
   "rate",
   "amount",
+  "gst_rate",
+  "tax_amount",
   "expense_account"
  ],
  "fields": [
@@ -59,6 +61,19 @@
    "read_only": 1,
    "in_list_view": 1,
    "columns": 2
+  },
+  {
+   "fieldname": "gst_rate",
+   "fieldtype": "Percent",
+   "label": "GST %",
+   "depends_on": "eval:parent.with_gst"
+  },
+  {
+   "fieldname": "tax_amount",
+   "fieldtype": "Currency",
+   "label": "GST",
+   "read_only": 1,
+   "depends_on": "eval:parent.with_gst"
   },
   {
    "fieldname": "expense_account",

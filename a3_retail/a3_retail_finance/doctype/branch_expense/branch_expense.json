@@ -13,6 +13,7 @@
   "branch",
   "branch_code",
   "posting_date",
+  "with_gst",
   "category",
   "col_break_head",
   "company",
@@ -27,6 +28,7 @@
   "items",
   "sec_totals",
   "total",
+  "tax_amount",
   "discount_amount",
   "grand_total",
   "col_break_pay",
@@ -75,6 +77,13 @@
    "in_list_view": 1
   },
   {
+   "fieldname": "with_gst",
+   "fieldtype": "Check",
+   "label": "Expense With GST",
+   "default": "0",
+   "description": "Claim the input tax on this spend."
+  },
+  {
    "fieldname": "category",
    "fieldtype": "Link",
    "label": "Spent On",
@@ -83,7 +92,10 @@
    "in_list_view": 1,
    "description": "Where this spend lands in the P&L unless a line says otherwise."
   },
-  {"fieldname": "col_break_head", "fieldtype": "Column Break"},
+  {
+   "fieldname": "col_break_head",
+   "fieldtype": "Column Break"
+  },
   {
    "fieldname": "company",
    "fieldtype": "Link",
@@ -104,7 +116,11 @@
    "fieldtype": "Data",
    "label": "Bill / Slip No."
   },
-  {"fieldname": "sec_party", "fieldtype": "Section Break", "label": "Paid To"},
+  {
+   "fieldname": "sec_party",
+   "fieldtype": "Section Break",
+   "label": "Paid To"
+  },
   {
    "fieldname": "supplier",
    "fieldtype": "Link",
@@ -118,14 +134,21 @@
    "label": "Paid To",
    "description": "A name, when the money did not go to a supplier on file."
   },
-  {"fieldname": "col_break_party", "fieldtype": "Column Break"},
+  {
+   "fieldname": "col_break_party",
+   "fieldtype": "Column Break"
+  },
   {
    "fieldname": "due_date",
    "fieldtype": "Date",
    "label": "Due Date",
    "depends_on": "eval:doc.outstanding_amount > 0"
   },
-  {"fieldname": "sec_items", "fieldtype": "Section Break", "label": "Items"},
+  {
+   "fieldname": "sec_items",
+   "fieldtype": "Section Break",
+   "label": "Items"
+  },
   {
    "fieldname": "items",
    "fieldtype": "Table",
@@ -133,12 +156,22 @@
    "options": "Branch Expense Item",
    "reqd": 1
   },
-  {"fieldname": "sec_totals", "fieldtype": "Section Break"},
+  {
+   "fieldname": "sec_totals",
+   "fieldtype": "Section Break"
+  },
   {
    "fieldname": "total",
    "fieldtype": "Currency",
    "label": "Total",
    "read_only": 1
+  },
+  {
+   "fieldname": "tax_amount",
+   "fieldtype": "Currency",
+   "label": "GST",
+   "read_only": 1,
+   "depends_on": "with_gst"
   },
   {
    "fieldname": "discount_amount",
@@ -153,7 +186,10 @@
    "in_list_view": 1,
    "bold": 1
   },
-  {"fieldname": "col_break_pay", "fieldtype": "Column Break"},
+  {
+   "fieldname": "col_break_pay",
+   "fieldtype": "Column Break"
+  },
   {
    "fieldname": "mode_of_payment",
    "fieldtype": "Link",
@@ -178,7 +214,11 @@
    "label": "Still Owed",
    "read_only": 1
   },
-  {"fieldname": "sec_more", "fieldtype": "Section Break", "label": "More"},
+  {
+   "fieldname": "sec_more",
+   "fieldtype": "Section Break",
+   "label": "More"
+  },
   {
    "fieldname": "notes",
    "fieldtype": "Small Text",
@@ -210,9 +250,22 @@
  "name": "Branch Expense",
  "owner": "Administrator",
  "permissions": [
-  {"role": "System Manager", "permlevel": 0, "read": 1, "write": 1, "create": 1,
-   "delete": 1, "submit": 1, "cancel": 1, "amend": 1, "report": 1, "export": 1,
-   "print": 1, "email": 1, "share": 1}
+  {
+   "role": "System Manager",
+   "permlevel": 0,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 1,
+   "cancel": 1,
+   "amend": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  }
  ],
  "sort_field": "posting_date",
  "sort_order": "DESC",
