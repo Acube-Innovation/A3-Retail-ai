@@ -173,6 +173,8 @@ a:hover { text-decoration: underline; }
 .topbar-branch .branch-picker:focus-visible { outline: 2px solid var(--brand, #f59e0b); outline-offset: 2px; }
 .topbar-branch .branch-picker:disabled { opacity: .55; cursor: progress; }
 .topbar-right { display: flex; align-items: center; gap: 12px; }
+/* Empty until the screen knows what the document allows, so it takes no room. */
+.topbar-docactions { display: contents; }
 .who { text-align: right; line-height: 1.25; }
 .who .name { font-size: 13.5px; font-weight: 600; }
 .who .role { font-size: 11.5px; color: var(--muted); }

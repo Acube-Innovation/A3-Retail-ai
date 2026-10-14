@@ -15,7 +15,7 @@ module calls it rather than restating it.
 
 import frappe
 from frappe import _
-from frappe.utils import cint, flt, getdate, nowdate
+from frappe.utils import cint, flt, formatdate, getdate, nowdate
 
 from a3_retail.api import require_permission
 from a3_retail.api.staff import _me
@@ -99,6 +99,10 @@ def bootstrap() -> dict:
 	return {
 		"branch": branch,
 		"warehouses": _warehouses(branch),
+		# A shop that is supplied rather than supplying opens Move Stock pointing
+		# the way its stock actually travels. Unset for the branches that send.
+		"receives_from": frappe.db.get_value(
+			"Branch Profile", {"branch": branch}, "receives_stock_from"),
 		"item_groups": frappe.get_all("Item Group", filters={"is_group": 0}, pluck="name",
 		                              order_by="name"),
 		"brands": [brand for brand in frappe.get_all("Brand", pluck="name", order_by="name")
@@ -948,6 +952,13 @@ def move_stock(payload) -> dict:
 	if not items:
 		frappe.throw(_("Nothing to move."))
 
+	# Stock does not always reach the screen the day it reaches the shelf, and a
+	# bill held from that day cannot be completed until the move is on the ledger
+	# before it. So the day can be named. It cannot be a day that has not happened.
+	posting = getdate(data.get("posting_date") or nowdate())
+	if posting > getdate(nowdate()):
+		frappe.throw(_("A move cannot be dated in the future."), title=_("Date"))
+
 	for row in items:
 		available = _available(row["item_code"], source)
 		if flt(row["qty"]) > available + 0.0001:
@@ -961,7 +972,8 @@ def move_stock(payload) -> dict:
 	entry.stock_entry_type = "Material Transfer"
 	entry.purpose = "Material Transfer"
 	entry.company = frappe.db.get_single_value("Global Defaults", "default_company")
-	entry.posting_date = getdate(nowdate())
+	entry.posting_date = posting
+	entry.set_posting_time = 1
 	entry.from_warehouse = source
 	entry.to_warehouse = target
 	if entry.meta.has_field("branch"):
@@ -980,10 +992,73 @@ def move_stock(payload) -> dict:
 		})
 
 	entry.flags.ignore_permissions = True
-	entry.insert(ignore_permissions=True)
-	entry.submit()
+	try:
+		entry.insert(ignore_permissions=True)
+		entry.submit()
+	except frappe.exceptions.ValidationError as error:
+		_explain_move(error, posting, source, items)
+		raise
 
 	return {"stock_entry": entry.name, "print_url": print_url("Stock Entry", entry.name)}
+
+
+def _explain_move(error, posting, source: str, items: list[dict]) -> None:
+	"""Put the refusals a backdated move meets into words for the shop.
+
+	The stock check above asks what is on the shelf now. Dated to an earlier day
+	the question is different — what was on that shelf *then* — and only the
+	ledger can answer it, at the point of writing. The answers arrive as
+	paragraphs about reconciliations and ledgers, with links into the desk that
+	nobody at a counter can open, so they are rewritten here. Too early is by far
+	the commonest, and it has a usable answer: the day the stock turned up.
+	"""
+	name = error.__class__.__name__
+	too_early = ("NegativeStock" in name
+	             or "SerialNoExistsInFutureTransaction" in name)
+	if too_early:
+		arrived = _first_seen(items, source)
+		frappe.clear_messages()
+		frappe.throw(
+			_("On {0} this stock was not yet in {1}.").format(
+				formatdate(posting), _shelf(source))
+			+ (" " + _("It first arrived there on {0} — pick that day or later.")
+			   .format(formatdate(arrived)) if arrived
+			   else " " + _("Pick a later date.")),
+			title=_("Not there on that date"),
+		)
+	if "StockFreeze" in name:
+		frappe.clear_messages()
+		frappe.throw(
+			_("The books are closed up to a date after {0}, so nothing can be "
+			  "moved on that day. Ask a manager.").format(formatdate(posting)),
+			title=_("Books closed"),
+		)
+
+
+def _shelf(warehouse: str) -> str:
+	"""A warehouse as the screen names it, not as the ledger does."""
+	row = frappe.db.get_value("Warehouse", warehouse,
+		["custom_branch", "warehouse_name"], as_dict=True)
+	if not row:
+		return warehouse
+	shelf = row.warehouse_name or warehouse
+	# Several shelves here are named after their own branch, and "PSLA · PSLA"
+	# reads worse than the bare name does.
+	if row.custom_branch and row.custom_branch not in shelf:
+		return f"{row.custom_branch} · {shelf}"
+	return shelf
+
+
+def _first_seen(items: list[dict], warehouse: str) -> str | None:
+	"""The day this stock first reached that shelf, as the ledger has it."""
+	codes = [row["item_code"] for row in items]
+	if not codes:
+		return None
+	return frappe.db.get_value(
+		"Stock Ledger Entry",
+		{"item_code": ("in", codes), "warehouse": warehouse,
+		 "actual_qty": (">", 0), "is_cancelled": 0},
+		"posting_date", order_by="posting_date asc")
 
 
 @frappe.whitelist()

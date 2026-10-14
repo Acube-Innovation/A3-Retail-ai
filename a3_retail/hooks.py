@@ -47,6 +47,12 @@ app_include_js = [
 	"/assets/a3_retail/js/pos_extension.js",
 ]
 
+# Desk forms this app adds to. The counter never sees these; they are for the
+# manager correcting something that has already been posted.
+doctype_js = {
+	"Stock Entry": "public/js/stock_entry.js",
+}
+
 # ---------------------------------------------------------------------------
 # Installation
 # ---------------------------------------------------------------------------

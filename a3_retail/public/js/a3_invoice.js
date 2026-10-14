@@ -196,13 +196,14 @@ window.INVOICE = (function () {
 		$("subtitle").innerHTML = `<span class="pill ${docTone(data.status)}">${esc(data.status)}</span>
 			<span class="pill ${payTone(data.payment_status)}">${esc(data.payment_status)}</span>`;
 
-		$("top-actions").insertAdjacentHTML("afterbegin", `
+		// Replaced, not added to: paint() runs again after every save.
+		$("doc-actions").innerHTML = `
 			${data.printable
 				? `<button class="btn btn-primary btn-icon" id="print-top">${
 					icon("print")} Print Invoice</button>` : ""}
 			${data.editable
 				? `<a class="btn btn-outline btn-icon" href="/retail/sales?invoice=${
-					encodeURIComponent(data.name)}">${icon("pencil")} Edit</a>` : ""}`);
+					encodeURIComponent(data.name)}">${icon("pencil")} Edit</a>` : ""}`;
 		if ($("print-top")) $("print-top").addEventListener("click", print);
 
 		$("body").innerHTML = `

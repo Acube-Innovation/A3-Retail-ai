@@ -885,6 +885,15 @@ window.STOCK = (function () {
 		.map((l) => ({ item_code: l.item_code, qty: l.qty,
 		               serials: l.serials ? l.picked : [] }));
 
+	/** Today in the shop's own day, as a date input writes it.
+	 *
+	 * Not toISOString(), which the other screens use: that is UTC, and IST runs
+	 * five and a half hours ahead of it, so before half past five in the morning
+	 * it hands back yesterday. Here that date is also the picker's ceiling, which
+	 * would leave an early opener unable to choose the day they are standing in.
+	 */
+	const today = () => new Date().toLocaleDateString("en-CA");
+
 	function openMove() {
 		const options = (state.network || []).map((w) =>
 			`<option value="${esc(w.warehouse)}">${esc(w.label)}</option>`).join("");
@@ -892,9 +901,11 @@ window.STOCK = (function () {
 		startLines(null);
 		openWork("Move stock",
 			"Any warehouse in the chain to any other. Creates a Stock Entry — Material Transfer.",
-			`<div class="field-grid">
+			`<div class="field-grid three">
 				<label class="field"><span>From</span><select id="w-source">${options}</select></label>
 				<label class="field"><span>To</span><select id="w-target">${options}</select></label>
+				<label class="field"><span>Moved on</span>
+					<input id="w-date" type="date" max="${today()}" value="${today()}"></label>
 			</div>
 			${linesMarkup()}
 			<label class="field"><span>Remarks</span><input id="w-remarks"></label>`,
@@ -907,11 +918,14 @@ window.STOCK = (function () {
 				const result = await A3.call("a3_retail.api.stock_control.move_stock", {
 					payload: {
 						source: $("w-source").value, target: $("w-target").value,
+						posting_date: $("w-date").value,
 						remarks: $("w-remarks").value.trim(),
 						items: linesPayload(),
 					},
 				});
-				toast(`Moved — ${result.stock_entry}.`, "ok");
+				toast(`Moved — ${result.stock_entry}.`
+					+ ($("w-date").value !== today() ? ` Dated ${$("w-date").value}.` : ""),
+					"ok");
 				loadStock();
 				loadKpis();
 				loadSide();
@@ -921,12 +935,22 @@ window.STOCK = (function () {
 		// this it opened on whichever branch sorts first — and the item search,
 		// which only offers what is actually on the shelf it is pointed at,
 		// then found nothing for stock the counter can see in front of them.
-		// Stock moves out of your own shop far more often than into it.
 		const mine = (state.boot.warehouses || [])[0];
-		if (mine) $("w-source").value = mine;
-		const elsewhere = (state.network || []).find(
-			(w) => w.warehouse !== $("w-source").value);
-		if (elsewhere) $("w-target").value = elsewhere.warehouse;
+		const supplier = state.boot.receives_from;
+		const known = (name) => (state.network || []).some((w) => w.warehouse === name);
+
+		if (supplier && known(supplier) && mine) {
+			// A branch that is supplied opens the way its stock travels: in from
+			// the shelf that feeds it, onto its own.
+			$("w-source").value = supplier;
+			$("w-target").value = mine;
+		} else {
+			// Otherwise stock moves out of your own shop far more often than into it.
+			if (mine) $("w-source").value = mine;
+			const elsewhere = (state.network || []).find(
+				(w) => w.warehouse !== $("w-source").value);
+			if (elsewhere) $("w-target").value = elsewhere.warehouse;
+		}
 	}
 
 	function openAdjust() {
