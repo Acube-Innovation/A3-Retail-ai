@@ -13,9 +13,13 @@
 			maximumFractionDigits: 2 }).format(v || 0);
 
 	function esc(v) {
-		const n = document.createElement("div");
-		n.textContent = v == null ? "" : String(v);
-		return n.innerHTML;
+		// `"` and `'` as well, not just the tag characters: almost every use of
+		// this is inside an attribute, and a name like `APPLE IPAD A16 "11"`
+		// would otherwise close the attribute at its first inner quote and the
+		// rest of the name would be parsed as stray attributes.
+		return String(v == null ? "" : v)
+			.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+			.replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 	}
 
 	const state = { branch: "", supplier: null, lines: [], saving: false };

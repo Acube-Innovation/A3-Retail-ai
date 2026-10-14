@@ -47,9 +47,13 @@ window.POS = (function () {
 		"₹" + new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(value || 0);
 
 	function esc(value) {
-		const node = document.createElement("div");
-		node.textContent = value == null ? "" : String(value);
-		return node.innerHTML;
+		// `"` and `'` as well, not just the tag characters: almost every use of
+		// this is inside an attribute, and a name like `APPLE IPAD A16 "11"`
+		// would otherwise close the attribute at its first inner quote and the
+		// rest of the name would be parsed as stray attributes.
+		return String(value == null ? "" : value)
+			.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+			.replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 	}
 
 	function say(text, kind) {
