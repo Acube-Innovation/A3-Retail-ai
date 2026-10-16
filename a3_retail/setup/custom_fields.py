@@ -566,6 +566,7 @@ def run():
 		create_custom_fields(_installed_only(group), ignore_validate=True, update=True)
 	_tag_module()
 	_add_indexes()
+	relax_cost_center_permissions()
 
 
 def _installed_only(group: dict) -> dict:
@@ -599,3 +600,38 @@ def _tag_module():
 		pluck="name",
 	):
 		frappe.db.set_value("Custom Field", name, "module", OPS_MODULE, update_modified=False)
+
+
+def relax_cost_center_permissions() -> None:
+	"""A cost center on a tax row must not decide who may open the document.
+
+	Branch is what scopes this app. ERPNext copies a tax template's rows onto a
+	document verbatim, and those rows carry the company's main cost center — so
+	with `apply_strict_user_permissions` on, a bill raised at a branch became
+	unreadable to the very counter that raised it: not permitted to read it back,
+	allocate against it, or print it.
+
+	The document's own `branch` and `cost_center` still gate access, and both are
+	the branch's. Only the dimension on the tax line stops being a lock.
+	"""
+	from frappe.custom.doctype.property_setter.property_setter import make_property_setter
+
+	# The child rows: a tax line's dimension, copied in from a template.
+	for doctype in ("Sales Taxes and Charges", "Purchase Taxes and Charges"):
+		if not frappe.db.exists("DocType", doctype):
+			continue
+		make_property_setter(doctype, "cost_center", "ignore_user_permissions", 1,
+		                     "Check", validate_fields_for_doctype=False)
+
+	# And the parent's second cost center, which is for writing off a short
+	# payment and is empty on every bill that was paid in full — which, under
+	# strict permissions, is itself the violation. The document's own
+	# `cost_center` is left gating: that one is the branch's and is what should
+	# decide.
+	for doctype in ("Sales Invoice", "Purchase Invoice"):
+		if not frappe.db.exists("DocType", doctype):
+			continue
+		if frappe.get_meta(doctype).get_field("write_off_cost_center"):
+			make_property_setter(doctype, "write_off_cost_center",
+			                     "ignore_user_permissions", 1, "Check",
+			                     validate_fields_for_doctype=False)
