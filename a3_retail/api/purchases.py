@@ -17,7 +17,7 @@ import frappe
 from frappe import _
 from frappe.utils import cint, flt, getdate, nowdate
 
-from a3_retail.api import require_permission
+from a3_retail.api import require_permission, stamp_cost_center
 from a3_retail.api.pos import _profile
 from a3_retail.api.staff import _me
 
@@ -358,6 +358,13 @@ def create(payload) -> dict:
 		doc.remarks = str(data["notes"])[:500]
 
 	_apply_tax(doc, employee)
+
+	# After the taxes, not before: get_taxes_and_charges copies the template's
+	# rows verbatim and they carry the company's main cost center. Left there,
+	# the GST misses the branch's own P&L — and, because a cost center outside
+	# the counter's allowed set makes the whole document unreadable to them,
+	# the bill they just raised cannot be read back or printed.
+	stamp_cost_center(doc, cost_center)
 
 	doc.flags.ignore_permissions = True
 	doc.insert(ignore_permissions=True)
