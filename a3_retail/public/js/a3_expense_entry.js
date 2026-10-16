@@ -42,6 +42,10 @@
 	async function start() {
 		$("x-date").value = today();
 		$("x-date").max = today();
+		// After the value and the ceiling, so the calendar opens on the right
+		// month and refuses the days that have not happened.
+		A3.datePicker($("x-date"));
+		A3.datePicker($("x-due"));
 		try {
 			const boot = await A3.call("a3_retail.api.expenses.bootstrap");
 			state.categories = boot.categories || [];
@@ -201,6 +205,7 @@
 	async function openPicker() {
 		state.chosen = new Set();
 		$("x-q").value = "";
+		paintCount();
 		$("x-pick").hidden = false;
 		$("x-q").focus();
 		await search("");
@@ -234,7 +239,17 @@
 			box.addEventListener("change", () => {
 				if (box.checked) state.chosen.add(box.dataset.code);
 				else state.chosen.delete(box.dataset.code);
+				paintCount();
 			}));
+		paintCount();
+	}
+
+	/** What is ticked, beside the heading — the Add button is up there now and
+	 *  the tick may be forty rows below it. */
+	function paintCount() {
+		const n = state.chosen.size;
+		$("x-count").textContent = n ? `${n} picked` : "";
+		$("x-pick-add").disabled = !n;
 	}
 
 	function addChosen() {
