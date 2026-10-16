@@ -288,8 +288,148 @@ window.A3 = (function () {
 		mountMobileNav();
 	});
 
+	/* ------------------------------------------------------------------ dates
+	 * A calendar the counter can drive with a thumb.
+	 *
+	 * The browser's own date box makes you walk a month at a time, which is a
+	 * long walk when a bill is dated last April. This is the calendar the shop
+	 * already knows from its old software: the month and the year step on their
+	 * own, nothing is committed until OK, and Cancel leaves the date alone.
+	 *
+	 * The real <input type="date"> stays in the form holding an ISO value, so
+	 * everything that reads `.value` keeps working; it is just not what the
+	 * counter touches any more.
+	 */
+	const MONTHS = ["January", "February", "March", "April", "May", "June",
+		"July", "August", "September", "October", "November", "December"];
+	const DAYS = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+
+	const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1)
+		.padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+	const parseIso = (v) => {
+		const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(v || ""));
+		return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null;
+	};
+	const pretty = (d) => d
+		? `${d.getDate()} ${MONTHS[d.getMonth()].slice(0, 3)} ${d.getFullYear()}`
+		: "";
+
+	function datePicker(input) {
+		if (!input || input.dataset.a3dp) return;
+		input.dataset.a3dp = "1";
+		input.hidden = true;
+
+		const face = document.createElement("button");
+		face.type = "button";
+		face.className = "dp-face";
+		input.parentNode.insertBefore(face, input.nextSibling);
+
+		const limit = input.max ? parseIso(input.max) : null;
+		const floor = input.min ? parseIso(input.min) : null;
+
+		const show = () => {
+			const d = parseIso(input.value);
+			face.textContent = d ? pretty(d) : "Choose a date";
+			face.classList.toggle("is-empty", !d);
+		};
+		show();
+
+		face.addEventListener("click", () => open(input, face, limit, floor, show));
+		// Something else set the date — keep the face honest.
+		input.addEventListener("change", show);
+	}
+
+	function open(input, face, limit, floor, show) {
+		const chosen = parseIso(input.value) || new Date();
+		let year = chosen.getFullYear();
+		let month = chosen.getMonth();
+		let picked = parseIso(input.value) || new Date();
+
+		const wrap = document.createElement("div");
+		wrap.className = "dp-backdrop";
+		wrap.innerHTML = `<div class="dp-card" role="dialog" aria-label="Pick a date">
+			<div class="dp-title"></div>
+			<div class="dp-steppers">
+				<div class="dp-step"><button type="button" data-m="-1">&lsaquo;</button>
+					<span class="dp-month"></span>
+					<button type="button" data-m="1">&rsaquo;</button></div>
+				<div class="dp-step"><button type="button" data-y="-1">&lsaquo;</button>
+					<span class="dp-year"></span>
+					<button type="button" data-y="1">&rsaquo;</button></div>
+			</div>
+			<div class="dp-grid dp-names">${DAYS.map((d) =>
+				`<span class="dp-name">${d}</span>`).join("")}</div>
+			<div class="dp-grid dp-days"></div>
+			<div class="dp-actions">
+				<button type="button" class="dp-flat" data-cancel>CANCEL</button>
+				<button type="button" class="dp-flat dp-ok" data-ok>OK</button>
+			</div>
+		</div>`;
+		document.body.appendChild(wrap);
+
+		const q = (sel) => wrap.querySelector(sel);
+		const close = () => wrap.remove();
+
+		function paint() {
+			q(".dp-title").textContent = pretty(picked);
+			q(".dp-month").textContent = MONTHS[month];
+			q(".dp-year").textContent = year;
+
+			const first = new Date(year, month, 1);
+			const start = first.getDay();
+			const cells = [];
+			// A month reads as a block of weeks, so the days either side of it
+			// are shown greyed rather than left as holes.
+			for (let i = 0; i < 42; i++) {
+				const d = new Date(year, month, 1 - start + i);
+				const out = d.getMonth() !== month;
+				const beyond = (limit && d > limit) || (floor && d < floor);
+				const on = picked && iso(d) === iso(picked);
+				cells.push(`<button type="button" class="dp-day${out ? " is-out" : ""}${
+					on ? " is-on" : ""}" data-iso="${iso(d)}"${
+					beyond ? " disabled" : ""}>${d.getDate()}</button>`);
+			}
+			q(".dp-days").innerHTML = cells.join("");
+		}
+		paint();
+
+		wrap.addEventListener("click", (event) => {
+			const step = event.target.closest("[data-m], [data-y]");
+			if (step) {
+				if (step.dataset.m) {
+					month += Number(step.dataset.m);
+					if (month < 0) { month = 11; year -= 1; }
+					if (month > 11) { month = 0; year += 1; }
+				} else {
+					year += Number(step.dataset.y);
+				}
+				return paint();
+			}
+			const day = event.target.closest(".dp-day");
+			if (day && !day.disabled) {
+				picked = parseIso(day.dataset.iso);
+				month = picked.getMonth();
+				year = picked.getFullYear();
+				return paint();
+			}
+			if (event.target.closest("[data-ok]")) {
+				input.value = iso(picked);
+				input.dispatchEvent(new Event("change", { bubbles: true }));
+				show();
+				return close();
+			}
+			// Cancel, and the backdrop itself, leave the date as it was.
+			if (event.target.closest("[data-cancel]") || event.target === wrap) close();
+		});
+		document.addEventListener("keydown", function esc(event) {
+			if (event.key !== "Escape") return;
+			document.removeEventListener("keydown", esc);
+			close();
+		});
+	}
+
 	return {
 		call, login, logout, money, shortTime, csrfToken, plain, toast,
-		mountBranchPicker,
+		mountBranchPicker, datePicker,
 	};
 })();

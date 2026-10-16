@@ -14,6 +14,8 @@
   "merchant_id",
   "is_active",
   "settlement_tat_days",
+  "print_hypothecation",
+  "hypothecation_note",
   "branch_merchant_ids",
   "commercials_section",
   "mode_of_payment",
@@ -85,6 +87,21 @@
    "fieldtype": "Int",
    "label": "Settlement TAT (days)",
    "default": "3"
+  },
+  {
+   "fieldname": "print_hypothecation",
+   "fieldtype": "Check",
+   "label": "Print Hypothecation On Invoice",
+   "default": "0",
+   "description": "The financier holds the goods as security, and wants that said on the face of the bill. Only some of them ask for it."
+  },
+  {
+   "fieldname": "hypothecation_note",
+   "fieldtype": "Data",
+   "label": "Hypothecation Note",
+   "depends_on": "print_hypothecation",
+   "mandatory_depends_on": "print_hypothecation",
+   "description": "Printed in brackets after the customer's name, exactly as typed \u2014 for example HYPO TO HDBFS."
   },
   {
    "fieldname": "branch_merchant_ids",

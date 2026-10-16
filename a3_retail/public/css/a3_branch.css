@@ -2623,3 +2623,65 @@ kbd { display: inline-block; min-width: 17px; padding: 1px 5px; margin: 0 1px;
 .rate-with-tax > select { flex: 0 0 132px; border-left: 0;
 	border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
 .modal-narrow .modal-card, .modal-card.modal-narrow { max-width: 420px; }
+
+/* ==========================================================================
+   A tall modal — heading and buttons stay, the list scrolls
+   The expense item list runs to sixty rows, and deciding should never mean
+   scrolling to the bottom to find Cancel.
+   ========================================================================== */
+.modal-card.modal-tall { display: flex; flex-direction: column;
+	max-height: 86vh; overflow: hidden; padding-bottom: 16px; }
+.modal-head { display: flex; align-items: center; justify-content: space-between;
+	gap: 16px; flex: 0 0 auto; }
+.modal-head h3 { margin: 0; }
+.modal-head .modal-actions { margin-top: 0; }
+.pick-count { font-size: 12px; font-weight: 600; color: var(--brand, #4f46e5);
+	margin-left: 6px; }
+.modal-scroll { flex: 1 1 auto; overflow-y: auto; margin-top: 10px;
+	border: 1px solid var(--line); border-radius: var(--radius-sm); }
+/* The head row has to stay readable while the body scrolls under it. */
+.modal-scroll thead th { position: sticky; top: 0; z-index: 1;
+	background: var(--card); box-shadow: inset 0 -1px 0 var(--line); }
+
+/* ==========================================================================
+   The date field — a calendar, not a walk through the months
+   ========================================================================== */
+.dp-face { width: 100%; padding: 10px 12px; text-align: left; cursor: pointer;
+	font-family: inherit; font-size: 14px; color: var(--ink, #1f2937);
+	background: var(--card); border: 1px solid var(--line-strong);
+	border-radius: var(--radius-sm); }
+.dp-face:hover { border-color: var(--brand, #4f46e5); }
+.dp-face.is-empty { color: var(--muted); }
+
+.dp-backdrop { position: fixed; inset: 0; z-index: 1200; display: flex;
+	align-items: center; justify-content: center; background: rgba(17, 24, 39, .45); }
+.dp-card { width: 320px; max-width: calc(100vw - 32px); padding: 16px;
+	background: var(--card); border-radius: var(--radius);
+	box-shadow: var(--shadow-pop); }
+.dp-title { text-align: center; font-size: 17px; font-weight: 600;
+	margin-bottom: 14px; }
+.dp-steppers { display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+	margin-bottom: 12px; }
+.dp-step { display: flex; align-items: center; justify-content: space-between;
+	border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 2px; }
+.dp-step button { width: 30px; height: 30px; border: 0; background: none;
+	cursor: pointer; font-size: 19px; line-height: 1; color: var(--muted);
+	border-radius: var(--radius-sm); }
+.dp-step button:hover { background: #eef2ff; color: var(--brand, #4f46e5); }
+.dp-step span { font-size: 13.5px; font-weight: 600; }
+
+.dp-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.dp-name { text-align: center; font-size: 10.5px; letter-spacing: .04em;
+	color: var(--muted); padding: 6px 0; }
+.dp-day { height: 36px; border: 0; background: none; cursor: pointer;
+	font-family: inherit; font-size: 13px; border-radius: 50%; color: var(--ink, #1f2937); }
+.dp-day:hover:not(:disabled) { background: #eef2ff; }
+.dp-day.is-out { color: #c3cad6; }
+.dp-day:disabled { color: #dde2ea; cursor: default; }
+.dp-day.is-on { background: var(--brand, #4f46e5); color: #fff; font-weight: 600; }
+.dp-actions { display: flex; justify-content: flex-end; gap: 6px; margin-top: 10px; }
+.dp-flat { border: 0; background: none; cursor: pointer; padding: 8px 14px;
+	font-family: inherit; font-size: 12.5px; font-weight: 700; letter-spacing: .04em;
+	color: var(--muted); border-radius: var(--radius-sm); }
+.dp-flat:hover { background: #f1f4f9; }
+.dp-ok { color: var(--brand, #4f46e5); }

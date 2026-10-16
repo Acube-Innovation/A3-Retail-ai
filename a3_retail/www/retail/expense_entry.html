@@ -127,13 +127,21 @@
 
 {#- Picking what the money went on, the way the old software did it. -#}
 <div class="modal" id="x-pick" hidden>
-	<div class="modal-card modal-wide">
-		<h3>{{ _("Add Expense Items") }}</h3>
+	{#- The list runs to sixty rows. Cancel and Add stay with the heading rather
+	    than below it, so deciding never means scrolling to the bottom first. -#}
+	<div class="modal-card modal-wide modal-tall">
+		<header class="modal-head">
+			<h3>{{ _("Add Expense Items") }} <span class="pick-count" id="x-count"></span></h3>
+			<div class="modal-actions">
+				<button class="btn btn-quiet" data-close>{{ _("Cancel") }}</button>
+				<button class="btn btn-primary" id="x-pick-add">{{ _("Add") }}</button>
+			</div>
+		</header>
 		<div class="pick-bar">
 			<input id="x-q" placeholder="{{ _('Search') }}" autocomplete="off">
 			<button class="btn btn-outline" id="x-newitem">+ {{ _("Create New Item") }}</button>
 		</div>
-		<div class="line-table">
+		<div class="modal-scroll">
 			<table class="bill-table">
 				<thead><tr>
 					<th></th>
@@ -144,10 +152,6 @@
 				<tbody id="x-results"><tr><td colspan="4">{{ _("Loading…") }}</td></tr></tbody>
 			</table>
 		</div>
-		<div class="modal-actions">
-			<button class="btn btn-quiet" data-close>{{ _("Cancel") }}</button>
-			<button class="btn btn-primary" id="x-pick-add">{{ _("Add") }}</button>
-		</div>
 	</div>
 </div>
 
@@ -155,9 +159,21 @@
 <div class="modal" id="x-newitem-modal" hidden>
 	<div class="modal-card">
 		<h3>{{ _("Create New Expense Item") }}</h3>
+		<label class="field"><span>{{ _("Item Name") }} <span class="req">*</span></span>
+			<input id="ni-name" autocomplete="off"></label>
+
+		{#- The price and whether the tax is already inside it are read as one
+		    figure, and the pair needs the room to be read at all. -#}
+		<label class="field"><span>{{ _("Purchase Price") }}</span>
+			<div class="rate-with-tax">
+				<input id="ni-rate" type="number" min="0" step="0.01" value="0">
+				<select id="ni-taxincl">
+					<option value="0">{{ _("Without Tax") }}</option>
+					<option value="1">{{ _("With Tax") }}</option>
+				</select>
+			</div></label>
+
 		<div class="field-grid">
-			<label class="field"><span>{{ _("Item Name") }} <span class="req">*</span></span>
-				<input id="ni-name" autocomplete="off"></label>
 			<div class="field"><span>{{ _("Item Type") }}</span>
 				<div class="radio-row">
 					<label><input type="radio" name="ni-kind" value="Product" checked>
@@ -165,16 +181,6 @@
 					<label><input type="radio" name="ni-kind" value="Service">
 						{{ _("Service") }}</label>
 				</div></div>
-		</div>
-		<div class="field-grid">
-			<label class="field"><span>{{ _("Purchase Price") }}</span>
-				<div class="rate-with-tax">
-					<input id="ni-rate" type="number" min="0" step="0.01" value="0">
-					<select id="ni-taxincl">
-						<option value="0">{{ _("Without Tax") }}</option>
-						<option value="1">{{ _("With Tax") }}</option>
-					</select>
-				</div></label>
 			<label class="field"><span>{{ _("Measuring Unit") }}</span>
 				<select id="ni-uom"></select></label>
 		</div>
