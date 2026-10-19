@@ -78,6 +78,12 @@
 							<div class="field"><label for="s-pin">{{ _("PIN") }}</label>
 								<input id="s-pin" type="text" maxlength="6"></div>
 						</div>
+						<div class="field-row">
+							<div class="field"><label for="s-pan">{{ _("PAN") }}</label>
+								<input id="s-pan" type="text" maxlength="10"
+								       autocapitalize="characters" spellcheck="false"
+								       placeholder="{{ _('Taken from the GSTIN if there is one') }}"></div>
+						</div>
 						<div class="modal-actions">
 							<button class="btn btn-quiet" id="s-cancel">{{ _("Cancel") }}</button>
 							<button class="btn btn-primary" id="s-save">{{ _("Save supplier") }}</button>

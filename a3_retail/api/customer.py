@@ -148,6 +148,26 @@ def gstin_info(gstin: str) -> dict:
 	return out
 
 
+PAN_RE = re.compile(r"^[A-Z]{5}[0-9]{4}[A-Z]$")
+
+
+def validate_pan(pan: str | None) -> str:
+	"""A PAN, or nothing. Ten characters in a shape the department fixed.
+
+	Taken rather than demanded: a walk-in buying a phone has no reason to give
+	one, and a business handing over a GSTIN has already given the PAN inside
+	it. It matters where the shop needs it on file — a financed sale, a
+	supplier it will file TDS against.
+	"""
+	pan = (pan or "").strip().upper()
+	if not pan:
+		return ""
+	if not PAN_RE.match(pan):
+		frappe.throw(_("{0} is not a PAN — it reads AAAAA0000A.").format(pan),
+		             title=_("PAN"))
+	return pan
+
+
 def validate_mobile(mobile_no: str) -> str:
 	mobile = normalize_mobile(mobile_no)
 	if not MOBILE_RE.match(mobile):
@@ -241,6 +261,7 @@ def get_or_create(
 	marketing_optin: int = 1,
 	customer_group: str | None = None,
 	gstin: str | None = None,
+	pan: str | None = None,
 ) -> dict:
 	"""Find a customer by mobile, or create one. Idempotent by mobile number.
 
@@ -256,10 +277,15 @@ def get_or_create(
 
 	mobile = validate_mobile(mobile_no)
 	gstin = validate_gstin(gstin)
+	pan = validate_pan(pan)
 	existing = frappe.db.get_value("Customer", {"a3_mobile_no": mobile}, "name")
 	if existing:
 		if gstin:
 			_apply_gstin(existing, gstin)
+		# Met as a walk-in first and only now handing a PAN over: fill it in
+		# rather than drop it, but never write over one already on file.
+		if pan and not frappe.db.get_value("Customer", existing, "pan"):
+			frappe.db.set_value("Customer", existing, "pan", pan)
 		return get_profile(existing)
 
 	require_permission("Customer", "create")
@@ -281,6 +307,8 @@ def get_or_create(
 	doc.a3_marketing_optin = 1 if int(marketing_optin or 0) else 0
 	if email:
 		doc.email_id = email
+	if pan:
+		doc.pan = pan
 	if gstin:
 		doc.gstin = gstin
 		doc.gst_category = _gst_category(gstin)

@@ -394,6 +394,7 @@ window.SVC = (function () {
 				city: $("nc-city").value.trim() || null,
 				state: $("nc-state").value.trim() || null,
 				pincode: $("nc-pin").value.trim() || null,
+				pan: $("nc-pan").value.trim().toUpperCase() || null,
 			});
 			$("cust-modal").hidden = true;
 			$("mobile").value = mobile;

@@ -99,6 +99,16 @@
 			|| state.supplierRegistered === false;
 	}
 
+
+	/** A GSTIN carries the PAN as characters three to twelve, so the box fills
+	 *  itself rather than asking for the same ten characters twice. */
+	function panFromGstin(gstinId, panId) {
+		const gstin = ($(gstinId).value || "").trim().toUpperCase();
+		const pan = $(panId);
+		if (!pan || pan.value.trim() || gstin.length !== 15) return;
+		pan.value = gstin.slice(2, 12);
+	}
+
 	async function fetchGstin() {
 		const gstin = $("s-gstin").value.trim().toUpperCase();
 		if (!gstin) return;
@@ -132,6 +142,7 @@
 				city: $("s-city").value.trim(),
 				state: $("s-state").value.trim(),
 				pincode: $("s-pin").value.trim(),
+				pan: $("s-pan").value.trim().toUpperCase(),
 			});
 			pickSupplier(made.name, made.supplier_name,
 			             !!$("s-gstin").value.trim());
@@ -809,6 +820,8 @@
 		$("s-cancel").addEventListener("click", () => { $("supplier-new").hidden = true; });
 		$("s-fetch").addEventListener("click", fetchGstin);
 		$("s-gstin").addEventListener("change", fetchGstin);
+		$("s-gstin").addEventListener("change",
+			() => panFromGstin("s-gstin", "s-pan"));
 		$("s-save").addEventListener("click", saveSupplier);
 		$("supplier-q").addEventListener("input", () => {
 			clearTimeout(supplierTimer);

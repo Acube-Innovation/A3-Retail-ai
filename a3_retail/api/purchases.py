@@ -18,6 +18,7 @@ from frappe import _
 from frappe.utils import cint, flt, getdate, nowdate
 
 from a3_retail.api import require_permission, stamp_cost_center
+from a3_retail.api.customer import validate_pan
 from a3_retail.api.pos import _profile
 from a3_retail.api.staff import _me
 
@@ -171,7 +172,7 @@ def gstin_info(gstin: str) -> dict:
 def create_supplier(supplier_name: str, mobile_no: str | None = None,
                     gstin: str | None = None, address_line1: str | None = None,
                     city: str | None = None, state: str | None = None,
-                    pincode: str | None = None) -> dict:
+                    pincode: str | None = None, pan: str | None = None) -> dict:
 	"""A rep the shop has not bought from before."""
 	_me()
 	require_permission("Supplier", "create")
@@ -201,6 +202,10 @@ def create_supplier(supplier_name: str, mobile_no: str | None = None,
 		doc.mobile_no = str(mobile_no).strip()
 	if gstin and doc.meta.has_field("gstin"):
 		doc.gstin = gstin
+	if doc.meta.has_field("pan"):
+		# A GSTIN carries the PAN as characters three to twelve, so a registered
+		# dealer never has to be asked for it twice.
+		doc.pan = validate_pan(pan) or (gstin[2:12] if gstin else "") or None
 	doc.flags.ignore_permissions = True
 	doc.flags.ignore_mandatory = True
 	doc.insert(ignore_permissions=True)
