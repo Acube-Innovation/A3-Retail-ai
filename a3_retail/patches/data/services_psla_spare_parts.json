@@ -1,0 +1,4912 @@
+[
+{
+"name": "Back Panel - Realme C31",
+"type": "Back Panel",
+"fits": "REALME C31",
+"qty": 3.0,
+"cost": 180.0,
+"price": 400.0,
+"hsn": "85177010",
+"loc": "RACK C1"
+},
+{
+"name": "423446AR",
+"type": "Battery",
+"fits": "SAMSUNG M30S",
+"qty": 1.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "432446AR",
+"type": "Battery",
+"fits": "SAMSUNG A10",
+"qty": 3.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "455348AR",
+"type": "Battery",
+"fits": "SAMSUNG M10",
+"qty": 1.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "456475AR",
+"type": "Battery",
+"fits": "SAMSUNG M20",
+"qty": 1.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "524295AR",
+"type": "Battery",
+"fits": "SAMSUNG A51",
+"qty": 1.0,
+"cost": 1200.0,
+"price": 1600.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "B 08",
+"type": "Battery",
+"fits": "ViVO Y51 2020,Y31 2021,Y52S,Y31S,Y72 5G",
+"qty": 2.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "B B2",
+"type": "Battery",
+"fits": "ViVO V5,V5S,Y66,Y66L,Y67,",
+"qty": 4.0,
+"cost": 900.0,
+"price": 1200.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "B D9",
+"type": "Battery",
+"fits": "ViVO V9,V9 PRO,V9 YOUTH,V9 6GB,Y85,Z1",
+"qty": 3.0,
+"cost": 900.0,
+"price": 1200.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "B S1",
+"type": "Battery",
+"fits": "ViVO Y21,V17 NEO,Y7S",
+"qty": 5.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "B-05",
+"type": "Battery",
+"fits": "ViVO Y20,Y20I,Y20S,Y12S",
+"qty": 2.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "B-06",
+"type": "Battery",
+"fits": "ViVO V20SE",
+"qty": 2.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "B-95",
+"type": "Battery",
+"fits": "ViVO Y51,Y51L,Y51S,Y51A",
+"qty": 3.0,
+"cost": 900.0,
+"price": 1200.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "B-B9",
+"type": "Battery",
+"fits": "ViVO V5+,X9,X9I,X9S,X9+",
+"qty": 1.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "B-C1",
+"type": "Battery",
+"fits": "ViVO Y53,Y53I",
+"qty": 5.0,
+"cost": 900.0,
+"price": 1200.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "B-C8",
+"type": "Battery",
+"fits": "ViVO Y69[OLD]",
+"qty": 1.0,
+"cost": 900.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "B-C9",
+"type": "Battery",
+"fits": "ViVO V7+,Y79",
+"qty": 1.0,
+"cost": 900.0,
+"price": 1200.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "B-D5",
+"type": "Battery",
+"fits": "ViVO V7,Y75,Y75A",
+"qty": 1.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "B-E5",
+"type": "Battery",
+"fits": "ViVO Y81,Y83,Y81I,Y81S,Y83 PRO",
+"qty": 3.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "B-E8",
+"type": "Battery",
+"fits": "ViVO V11,V11I,Y97",
+"qty": 3.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "B-F3",
+"type": "Battery",
+"fits": "ViVO Y95,Y93,Y93S,Y91,Y91I,Y91C,Y90,Y1S",
+"qty": 4.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "B-H0",
+"type": "Battery",
+"fits": "ViVO S1,V17 NEO,Y7S,V19",
+"qty": 2.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "B-H3",
+"type": "Battery",
+"fits": "ViVO Z1X",
+"qty": 2.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "B-K3",
+"type": "Battery",
+"fits": "ViVO S1 PRO,Y9S",
+"qty": 2.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "B-K6",
+"type": "Battery",
+"fits": "ViVO V17,V19",
+"qty": 1.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "B-M3",
+"type": "Battery",
+"fits": "ViVO Y50,Y30,Y30I",
+"qty": 3.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "B-N8",
+"type": "Battery",
+"fits": "ViVO V20,V20PRO,S7",
+"qty": 3.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "B-S2",
+"type": "Battery",
+"fits": "ViVO Y33S,Y21A",
+"qty": 1.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "B-S7",
+"type": "Battery",
+"fits": "ViVO Y01,Y15A,Y15S,Y16,Y02",
+"qty": 1.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "B-T6",
+"type": "Battery",
+"fits": "ViVO T1 5G,IQO Z6 5G,Z6 LITE 5G",
+"qty": 1.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "B-T7",
+"type": "Battery",
+"fits": "ViVO Y33T,Y33S,Y21T,Y21E,Y32",
+"qty": 1.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "B-W1",
+"type": "Battery",
+"fits": "ViVO Y02,Y02S,T2X 5G",
+"qty": 1.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "B-Z5",
+"type": "Battery",
+"fits": "ViVO Y36[4G,5G],Y27[4G,5G]",
+"qty": 2.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BG 2",
+"type": "Battery",
+"fits": "ViVO V15",
+"qty": 4.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BG 7",
+"type": "Battery",
+"fits": "ViVO Y12,Y15,Y17",
+"qty": 2.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BH 9",
+"type": "Battery",
+"fits": "ViVO Y19,U20",
+"qty": 6.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BL 234",
+"type": "Battery",
+"fits": "LENOVO A5000,VIBE P1M[P1MA40]P70[P70-A,P70T],P90",
+"qty": 2.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BL 242",
+"type": "Battery",
+"fits": "LENOVO A6000",
+"qty": 2.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BL 243",
+"type": "Battery",
+"fits": "LENOVO A7000",
+"qty": 1.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BL 256",
+"type": "Battery",
+"fits": "LENOVO K4 NOTE,VIBE X3 LITE,A7010",
+"qty": 2.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BL 261",
+"type": "Battery",
+"fits": "LENOVO VIBE K5 NOTE,K5 NOTE PRO",
+"qty": 1.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BL 270",
+"type": "Battery",
+"fits": "LENOVO K6 NOTE,K8 NOTE,VIBE K6 PLUS,E5,G6 PLAY",
+"qty": 6.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BL 295",
+"type": "Battery",
+"fits": "LENOVO K9,K5,K5S",
+"qty": 1.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BL 303",
+"type": "Battery",
+"fits": "LENOVO A6 NOTE",
+"qty": 1.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BL49 FX",
+"type": "Battery",
+"fits": "INFINIX HOT 8,HOT 9,HOT 9 PRO,HOT 10 LITE,SMART 5,SMART 5A,SMART 6, SMART 6 HD",
+"qty": 2.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BL49 PX",
+"type": "Battery",
+"fits": "INFINIX GT 10 PRO,ZERO 30 5G,NOTE 30 PRO NOTE 30 VIP",
+"qty": 1.0,
+"cost": 1200.0,
+"price": 1600.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BL51 BX",
+"type": "Battery",
+"fits": "INFINIX HOT 10,HOT 11,NOTE 8,NOTE 8i",
+"qty": 1.0,
+"cost": 1200.0,
+"price": 1600.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BL58 BX",
+"type": "Battery",
+"fits": "INFINIX HOT 10S,HOT 10 PLAY,HOT 12 PLAY,HOT 9PLAY,SMART 4 PLUS,SMART 5",
+"qty": 3.0,
+"cost": 1200.0,
+"price": 1600.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BL58 CX",
+"type": "Battery",
+"fits": "INFINIX HOT 30 5G,SMART 7,HOT 10i,SMART 8 PLUS",
+"qty": 1.0,
+"cost": 1200.0,
+"price": 1600.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BL9 697",
+"type": "Battery",
+"fits": "OPPO F11 PRO",
+"qty": 6.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BL9 989",
+"type": "Battery",
+"fits": "ONEPLUS NORD CE 3LITE,NORD N30 5G,OPPO A98 5G,F23 5G,A1",
+"qty": 2.0,
+"cost": 1200.0,
+"price": 1600.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BLP 601",
+"type": "Battery",
+"fits": "F1S,A59[OLD],A53,A59M,A59S",
+"qty": 4.0,
+"cost": 900.0,
+"price": 1200.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BLP 619",
+"type": "Battery",
+"fits": "OPPO A57",
+"qty": 2.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BLP 623",
+"type": "Battery",
+"fits": "OPPO F3+,R9S PLUS",
+"qty": 2.0,
+"cost": 900.0,
+"price": 1200.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BLP 631",
+"type": "Battery",
+"fits": "OPPO F3,F5,F5 YOUTH,F5+,A77,A73",
+"qty": 3.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BLP 637",
+"type": "Battery",
+"fits": "1+ 5,1+ 5T",
+"qty": 2.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BLP 649",
+"type": "Battery",
+"fits": "OPPO A83,A83T,A83M,A81",
+"qty": 1.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BLP 657",
+"type": "Battery",
+"fits": "1+ 6",
+"qty": 1.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BLP 665",
+"type": "Battery",
+"fits": "OPPO F7 YOUTH,RM 1",
+"qty": 3.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BLP 673",
+"type": "Battery",
+"fits": "OPPO A3S,A5,A5S[AX5s],A7,[2018],A8,A12,A12S,A31,A11K,AX7,RM 2,C1",
+"qty": 2.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BLP 681",
+"type": "Battery",
+"fits": "OPPO F9,F9 PRO,R17,U1,RM 2 PRO",
+"qty": 1.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BLP 683",
+"type": "Battery",
+"fits": "OPPO F9,F9 PRO,K1,A7X,A7S",
+"qty": 1.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BLP 697",
+"type": "Battery",
+"fits": "OPPO F11 PRO",
+"qty": 2.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BLP 707",
+"type": "Battery",
+"fits": "OPPO F11 PRO,F11, A9X",
+"qty": 4.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BLP 713",
+"type": "Battery",
+"fits": "RM 3PRO,RM X LITE",
+"qty": 2.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BLP 721",
+"type": "Battery",
+"fits": "OPPO a1k,RM C2,C2S",
+"qty": 2.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BLP 727",
+"type": "Battery",
+"fits": "OPPO A52020,A92020,RM 5,5S,5i,C3",
+"qty": 3.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BLP 729",
+"type": "Battery",
+"fits": "RM 5,5i,5S,C3,C11,C20,C21,C21Y",
+"qty": 1.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BLP 731",
+"type": "Battery",
+"fits": "RM 5 PR0",
+"qty": 2.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BLP 741",
+"type": "Battery",
+"fits": "REALME XT,X2",
+"qty": 6.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BLP 755",
+"type": "Battery",
+"fits": "OPPO RENO 3,RENO 3 PRO,RENO 3 5G,FINF X2 LITE,FIND X2 NEO",
+"qty": 2.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BLP 757",
+"type": "Battery",
+"fits": "RM 6,6 PRO,6S,6i",
+"qty": 1.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BLP 771",
+"type": "Battery",
+"fits": "RM 6i, C3,C25Y,NARZO 10",
+"qty": 2.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BLP 775",
+"type": "Battery",
+"fits": "RM X3,X3 SUPER ZOOM,RM X0 5G",
+"qty": 1.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BLP 781",
+"type": "Battery",
+"fits": "OPPO A52,A72,A92",
+"qty": 2.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BLP 783",
+"type": "Battery",
+"fits": "OPPO RENO ACE2",
+"qty": 2.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BLP 785",
+"type": "Battery",
+"fits": "1+ NORD 5G",
+"qty": 2.0,
+"cost": 1200.0,
+"price": 1600.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BLP 791",
+"type": "Battery",
+"fits": "OPPO F17,F17 PRO,RENO 4 4G,RENO 4 LITE, A73 4G",
+"qty": 2.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BLP 793",
+"type": "Battery",
+"fits": "C11,C12,C15,C25,7i,NARZO 20,,NARZO 30A,NARZO 50A",
+"qty": 1.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BLP 799",
+"type": "Battery",
+"fits": "REALME 7 PRO,X7 PRO,X3 PRO,NARZO 20 PRO",
+"qty": 2.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BLP 801",
+"type": "Battery",
+"fits": "ONEPLUS 8T, 9R",
+"qty": 2.0,
+"cost": 1200.0,
+"price": 1600.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BLP 803",
+"type": "Battery",
+"fits": "OPPO A53 2020,A73 2020,REALME7I,REALME 8 5G,REALME C17,V35G,Q3I,NARZO 30 5G",
+"qty": 5.0,
+"cost": 1100.0,
+"price": 1200.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BLP 807",
+"type": "Battery",
+"fits": "REALME 7,7 5G,V5 5G,Q2,",
+"qty": 5.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BLP 815",
+"type": "Battery",
+"fits": "ONEPLUS N10 5G",
+"qty": 1.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BLP 819",
+"type": "Battery",
+"fits": "OPPO F19 PRO+,RENO 5 4G,RENO 5LITE,RENO 5Z,RENO 6,RENO 6Z 5G",
+"qty": 1.0,
+"cost": 1200.0,
+"price": 1600.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BLP 835",
+"type": "Battery",
+"fits": "OPPO F19 PRO,A94,A94 4G,RENO 5F,RENO 5LITE",
+"qty": 2.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BLP 837",
+"type": "Battery",
+"fits": "RM 8 PRO,9 PRO +",
+"qty": 3.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BLP 841",
+"type": "Battery",
+"fits": "REALME 8 4G,8i",
+"qty": 2.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BLP 845",
+"type": "Battery",
+"fits": "1+ NORD CE 5G",
+"qty": 1.0,
+"cost": 1200.0,
+"price": 1600.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BLP 851",
+"type": "Battery",
+"fits": "OPPO A54 5G,A74 4G,A95 4G,F19,F19S,RENO 6 LITE",
+"qty": 2.0,
+"cost": 1200.0,
+"price": 1600.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BLP 855",
+"type": "Battery",
+"fits": "OPPO RENO 6 PRO 5G,RENO 7 5G,RENO 8 5G,X5 LITE",
+"qty": 1.0,
+"cost": 1200.0,
+"price": 1600.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BLP 875",
+"type": "Battery",
+"fits": "RM NARZO 50[5G,4G],C55,9 5G,9 5G SPEED EDITION,Q3S,Q5i,V23",
+"qty": 1.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BLP 877",
+"type": "Battery",
+"fits": "RM 8i,8,C30,C30S,C31,C33,C35,NARZO 50 A PRIME,50i PRIME,RM NOTE 50",
+"qty": 1.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BLP 879",
+"type": "Battery",
+"fits": "OPPO A96 4G,A36",
+"qty": 1.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BLP 907",
+"type": "Battery",
+"fits": "OPPO F21 PRO,F21S PRO,RENO7 4G,RENO7 Z5G,RENO 8 4G,RENO 8LITE,A96,8Z 5G,NORD N20 5G",
+"qty": 2.0,
+"cost": 1200.0,
+"price": 1600.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BLP 915",
+"type": "Battery",
+"fits": "OPPO A17,A17K,A57 5G",
+"qty": 2.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BLP 923",
+"type": "Battery",
+"fits": "OPPO A57 4G,A57S,A77 4G,A77 5G,A77 S,A78 5G,A97 5G,K10 5G,C51,C51S,NARZO N20 SE",
+"qty": 1.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BLP 927",
+"type": "Battery",
+"fits": "1+ NORD CE 2 LITE 5G",
+"qty": 1.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BLP 983",
+"type": "Battery",
+"fits": "RM 10 PRO 5G",
+"qty": 2.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BLP A15",
+"type": "Battery",
+"fits": "RM 11 PRO, OPPO RENO 11 5G",
+"qty": 2.0,
+"cost": 1200.0,
+"price": 1600.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BLP A19",
+"type": "Battery",
+"fits": "OPPO A58 4G,A38,A79 5G,A59 5G,A2 5G",
+"qty": 1.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BLP A77",
+"type": "Battery",
+"fits": "OPPO A3,A3X,A40",
+"qty": 1.0,
+"cost": 1200.0,
+"price": 1600.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BM 46",
+"type": "Battery",
+"fits": "REDMI NOTE3,NOTE 3PRO",
+"qty": 1.0,
+"cost": 900.0,
+"price": 1200.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BM 47",
+"type": "Battery",
+"fits": "",
+"qty": 8.0,
+"cost": 900.0,
+"price": 1200.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BM 49",
+"type": "Battery",
+"fits": "MI MAX",
+"qty": 4.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BM 4F",
+"type": "Battery",
+"fits": "REDMI A3[OLD], 9 LITE",
+"qty": 1.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BM 4J",
+"type": "Battery",
+"fits": "",
+"qty": 5.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BM 4P",
+"type": "Battery",
+"fits": "POCO X2,REDMI K30[4G,5G]",
+"qty": 5.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BM 4Y",
+"type": "Battery",
+"fits": "REDMI 11i 5G,11X 5G,11X PRO 5G,K405G,K40 PRO 5G,K40 PRO+ 5G",
+"qty": 1.0,
+"cost": 1200.0,
+"price": 1600.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BM 53",
+"type": "Battery",
+"fits": "REDMI 10T 5G/ 10T PRO 5G",
+"qty": 1.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BM 5A",
+"type": "Battery",
+"fits": "REDMI NOTE 11 PRO 5G",
+"qty": 2.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BM 5J",
+"type": "Battery",
+"fits": "REDMI 12 T,12T PRO, K50 ULTRA",
+"qty": 1.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BM 5R",
+"type": "Battery",
+"fits": "REDMI 12[4G,5G],POCO M6 PRO 5G,MI NOTE 12R",
+"qty": 1.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BM 5T",
+"type": "Battery",
+"fits": "REDMI 13 PRO 4G,13T,POCO X6 PRO 5G",
+"qty": 2.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BM44",
+"type": "Battery",
+"fits": "REDMI 2,2A,2 PRIME,2S",
+"qty": 2.0,
+"cost": 900.0,
+"price": 1200.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BN 30",
+"type": "Battery",
+"fits": "REDMI 4A",
+"qty": 5.0,
+"cost": 900.0,
+"price": 1200.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BN 34",
+"type": "Battery",
+"fits": "REDMI 5A",
+"qty": 1.0,
+"cost": null,
+"price": null,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BN 35",
+"type": "Battery",
+"fits": "REDMI 5",
+"qty": 3.0,
+"cost": 900.0,
+"price": 1200.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BN 37",
+"type": "Battery",
+"fits": "REDMI 6,6A",
+"qty": 3.0,
+"cost": 900.0,
+"price": 1200.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BN 3A",
+"type": "Battery",
+"fits": "REDMI GO",
+"qty": 1.0,
+"cost": 900.0,
+"price": 1200.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BN 43",
+"type": "Battery",
+"fits": "REDMI NOTE 4",
+"qty": 5.0,
+"cost": 900.0,
+"price": 1200.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BN 44",
+"type": "Battery",
+"fits": "REDMI NOTE5,5 PLUS",
+"qty": 3.0,
+"cost": 900.0,
+"price": 1200.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BN 45,BN 48",
+"type": "Battery",
+"fits": "REDMI NOTE5PRO,NOTE6PRO",
+"qty": 7.0,
+"cost": 900.0,
+"price": 1200.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BN 46",
+"type": "Battery",
+"fits": "REDMI NOTE 8,NOTE 8T,NOTE6[6PRO],MI 7,Y3",
+"qty": 1.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BN 47",
+"type": "Battery",
+"fits": "REDMI 6 PRO,MI A2 LITE",
+"qty": 5.0,
+"cost": 900.0,
+"price": 1200.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BN 49",
+"type": "Battery",
+"fits": "REDMI 7A",
+"qty": 3.0,
+"cost": 900.0,
+"price": 1200.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BN 51",
+"type": "Battery",
+"fits": "REDMI 8,8A,8A DUAL",
+"qty": 4.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BN 52",
+"type": "Battery",
+"fits": "REDMI NOTE9PRO,NOTE 9 PROMAX",
+"qty": 3.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BN 53",
+"type": "Battery",
+"fits": "POCO M2PRO,REDMI NOTE 9,9 PRO MAX,NOTE10PRO,10 PRO MAX",
+"qty": 2.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BN 54",
+"type": "Battery",
+"fits": "REDMI NOTE9,9 PRIME, MI 10 X[4G,5G,PRO 5G] POCO M2",
+"qty": 9.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BN 55",
+"type": "Battery",
+"fits": "REDMI NOTE 9S",
+"qty": 1.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BN 56",
+"type": "Battery",
+"fits": "9A,9i,9c,redmi 10A,A1,A1+,A2,POCO C3,POCO C31",
+"qty": 6.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BN 57",
+"type": "Battery",
+"fits": "POCO X3,X3 PRO",
+"qty": 3.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BN 59",
+"type": "Battery",
+"fits": "REDMI NOTE10,NOTE10S,POCO M5S",
+"qty": 1.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BN 5A",
+"type": "Battery",
+"fits": "REDMI NOTE 105G,NOTE 10T 5G,REDMI 10, MI 10 2022,POCO M3 PRO 5G",
+"qty": 2.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BN 5C",
+"type": "Battery",
+"fits": "REDMI NOTE 11 5G,NOTE 11T5G,POCO M4 PRO 5G",
+"qty": 2.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BN 5D",
+"type": "Battery",
+"fits": "REDMI NOTE 11 [4G],NOTE 11S[4G],POCO M4 PRO[4G],MI NOTE 12S",
+"qty": 2.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BN 5E",
+"type": "Battery",
+"fits": "REDMI NOTE NOTE 11PRO+5G,NOTE 11E 5G",
+"qty": 1.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BN 5G",
+"type": "Battery",
+"fits": "REDMI 10C,10A",
+"qty": 3.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BN 5H",
+"type": "Battery",
+"fits": "POCO M4 5G, M5 , REDMI 10 5G,NOTE 11E",
+"qty": 3.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BN 5J",
+"type": "Battery",
+"fits": "POCO X5 5G,REDMI NOTE 125G,12T PRO,12T,",
+"qty": 1.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BN 5P",
+"type": "Battery",
+"fits": "REDMI NOTE 13[5G,4G]",
+"qty": 1.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BN 5Q",
+"type": "Battery",
+"fits": "REDMI 13C[5G/4G],POCO C65, M6 5G",
+"qty": 1.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BN 5R",
+"type": "Battery",
+"fits": "REDMI A3[NEW],A3X,POCO C61",
+"qty": 2.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BN 5T",
+"type": "Battery",
+"fits": "REDMI 134G/REDMI 5G ,POCOM64G ,POCOM6PLUS5G",
+"qty": 3.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BN 61",
+"type": "Battery",
+"fits": "REDMI POCO X3",
+"qty": 4.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BN 62",
+"type": "Battery",
+"fits": "REMI 9 POWER,REDMI 9T,POCO M3",
+"qty": 10.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BN 63",
+"type": "Battery",
+"fits": "REDMI 10,10 PRIME,10 POWER",
+"qty": 1.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BN 66",
+"type": "Battery",
+"fits": "REDMI10 POWER,POCO C40",
+"qty": null,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BP 41",
+"type": "Battery",
+"fits": "REDMI K20,9T",
+"qty": 2.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BP 4J",
+"type": "Battery",
+"fits": "REDMI 12 PRO+5G",
+"qty": 1.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BP 4K",
+"type": "Battery",
+"fits": "REDMI NOTE 12PRO[5G/4G],NOTE 12T,POCO X5 PRO 5G,F5 5G",
+"qty": 1.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BP 5E",
+"type": "Battery",
+"fits": "REDMI A5 5G,POCO C71",
+"qty": 3.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "BY-18",
+"type": "Battery",
+"fits": "ViVO V30 5G",
+"qty": 1.0,
+"cost": 1200.0,
+"price": 1600.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "Battery - Redmi Note 10 / 10S",
+"type": "Battery",
+"fits": "REDMI NOTE 10 / REDMI NOTE 10S",
+"qty": 6.0,
+"cost": 520.0,
+"price": 850.0,
+"hsn": "85076000",
+"loc": "RACK B2"
+},
+{
+"name": "Battery - Vivo Y21 / Y21T / Y33S",
+"type": "Battery",
+"fits": "VIVO Y21 / Y21T / Y33S",
+"qty": 5.0,
+"cost": 480.0,
+"price": 800.0,
+"hsn": "85076000",
+"loc": "RACK B2"
+},
+{
+"name": "C11P 1706",
+"type": "Battery",
+"fits": "ASUS ZENFONE MAX PRO M1,M2",
+"qty": 2.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "C11P 1805",
+"type": "Battery",
+"fits": "ASUS ZENFONE MAX 2",
+"qty": 2.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "EB-BA715ABY",
+"type": "Battery",
+"fits": "SAMSUNG A71",
+"qty": 2.0,
+"cost": 1200.0,
+"price": 1600.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "F07",
+"type": "Battery",
+"fits": "ONE PLUS 5",
+"qty": 1.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "GA 40",
+"type": "Battery",
+"fits": "MOTO G4,G4 PLUS",
+"qty": 1.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "GH 6581",
+"type": "Battery",
+"fits": "NOKIA G11 PLUS,NK C31,NK G31",
+"qty": 1.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "GK 40",
+"type": "Battery",
+"fits": "MOTO G4 PLAY,G5,E3,E4",
+"qty": 1.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "HB366481ECW-11",
+"type": "Battery",
+"fits": "H0NOR 9 LITE,9N,7A,7C,5C,8,8LITE,9,9LITE,HUAWAI Y6[2018]Y7[2018]P9,P9LITE,P10LITE,9SMART,P20 LITE",
+"qty": 1.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "HB386590ECW",
+"type": "Battery",
+"fits": "HONOR 8X,9X LITE,VIEW 10 LITE,HUWAI NOVA 5T",
+"qty": 9.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "HB396286ECW",
+"type": "Battery",
+"fits": "HONOR 10LITE,10i,20i,ENJOY 9S,HUWAI 9 SMART 2019/2020",
+"qty": 4.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "HB405979ECW",
+"type": "Battery",
+"fits": "HONOR 7A,7S,6A,6C,PLAY 8A,HUWAI NOVA Y5[2017/2018/2019],Y6[2019,Y6S,Y5P,NOVA SMART,P9 LITE MINI",
+"qty": 6.0,
+"cost": 900.0,
+"price": 1200.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "HE 317",
+"type": "Battery",
+"fits": "NOKIA6 , NK 7",
+"qty": 2.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "HE 319",
+"type": "Battery",
+"fits": "NOKIA 3",
+"qty": 5.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "HE 336/HE 321",
+"type": "Battery",
+"fits": "NOKIA 5,3.1,5.1",
+"qty": 4.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "HE 338",
+"type": "Battery",
+"fits": "NOKIA 2",
+"qty": 2.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "HE 345",
+"type": "Battery",
+"fits": "NOKIA 6,6.1",
+"qty": 1.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "HE 346",
+"type": "Battery",
+"fits": "NOKIA 7 PLUS",
+"qty": 1.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "HE 363",
+"type": "Battery",
+"fits": "NOKIA 3.1PLUS,7.1 PLUS.NK X7,8.1",
+"qty": 2.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "HE 50",
+"type": "Battery",
+"fits": "MOTO E4 PLUS,E5 PLUS",
+"qty": 1.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "HG 30",
+"type": "Battery",
+"fits": "MOTO G5S,G5S PLUS,G6",
+"qty": 3.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "HX 40",
+"type": "Battery",
+"fits": "MOTO E4",
+"qty": 1.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "I 9082",
+"type": "Battery",
+"fits": "SAMSUNG GRAND DUOS",
+"qty": 1.0,
+"cost": 900.0,
+"price": 1200.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "IP 12",
+"type": "Battery",
+"fits": "IPHONE 12",
+"qty": 3.0,
+"cost": 2600.0,
+"price": 3800.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "IP 12 PRO MAX",
+"type": "Battery",
+"fits": "IPHONE 12 PRO MAX",
+"qty": 3.0,
+"cost": 3200.0,
+"price": 4500.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "IP 13",
+"type": "Battery",
+"fits": "IPHONE 13",
+"qty": 1.0,
+"cost": 2800.0,
+"price": 3500.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "IP 13 PRO",
+"type": "Battery",
+"fits": "IPHONE 13 PRO",
+"qty": 1.0,
+"cost": 3200.0,
+"price": 4500.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "IP 13 PRO MAX",
+"type": "Battery",
+"fits": "IPHONE 13 PRO MAX",
+"qty": 2.0,
+"cost": 3200.0,
+"price": 4500.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "IP 14",
+"type": "Battery",
+"fits": "IPHONE 14",
+"qty": 2.0,
+"cost": 3200.0,
+"price": 4500.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "IP 5G",
+"type": "Battery",
+"fits": "IPHONE 5",
+"qty": 1.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "IP 5S",
+"type": "Battery",
+"fits": "IPHONE 5S",
+"qty": 2.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "IP 6G",
+"type": "Battery",
+"fits": "IPHONE 6",
+"qty": 1.0,
+"cost": 1200.0,
+"price": 1600.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "IP 6G PLUS",
+"type": "Battery",
+"fits": "IPHONE 6S PLUS",
+"qty": 3.0,
+"cost": 1200.0,
+"price": 1800.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "IP 6S",
+"type": "Battery",
+"fits": "IPHONE 6S",
+"qty": 4.0,
+"cost": 1200.0,
+"price": 1600.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "IP 7G",
+"type": "Battery",
+"fits": "IPHONE 7",
+"qty": 2.0,
+"cost": 1100.0,
+"price": 1600.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "IP 7P",
+"type": "Battery",
+"fits": "IPHONE 7 PLUS",
+"qty": 1.0,
+"cost": 1200.0,
+"price": 1800.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "IP 7S",
+"type": "Battery",
+"fits": "IPHONE 7S",
+"qty": 1.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "IP SE",
+"type": "Battery",
+"fits": "IPHONE SE 2020",
+"qty": 2.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "IP X",
+"type": "Battery",
+"fits": "IPHONE 10",
+"qty": 3.0,
+"cost": 1600.0,
+"price": 2400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "IP XR",
+"type": "Battery",
+"fits": "IPHONE 10R",
+"qty": 1.0,
+"cost": 2600.0,
+"price": 3800.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "IP XS MAX",
+"type": "Battery",
+"fits": "IPHONE 10S MAX",
+"qty": 2.0,
+"cost": 1800.0,
+"price": 2400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "LC 620",
+"type": "Battery",
+"fits": "NOKIA 6.2,7.2",
+"qty": 1.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "MBBTSA057",
+"type": "Battery",
+"fits": "SAMSUNG J6",
+"qty": 1.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "MBBTSA062",
+"type": "Battery",
+"fits": "SAMSUNG A21S",
+"qty": 4.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "MBBTSA063",
+"type": "Battery",
+"fits": "SAMSUNG M11",
+"qty": 1.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "MBBTSA065",
+"type": "Battery",
+"fits": "SAMSUNG A02S",
+"qty": 4.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "MBBTSA072",
+"type": "Battery",
+"fits": "SAMSUNG J8",
+"qty": 1.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "MBBTSA073",
+"type": "Battery",
+"fits": "SAMSUNG M52",
+"qty": 1.0,
+"cost": 1200.0,
+"price": 1600.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "MC 50",
+"type": "Battery",
+"fits": "SAMSUNG A750",
+"qty": 2.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "NT 50",
+"type": "Battery",
+"fits": "MOTO EDGE 20 LITE,EDGE 20 FUSION",
+"qty": 1.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "QA-BP4K",
+"type": "Battery",
+"fits": "REDMI NOTE 12 PRO",
+"qty": 1.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "QF 50",
+"type": "Battery",
+"fits": "MOTO G04,G24,G34 5G,G45 5G",
+"qty": 1.0,
+"cost": 1200.0,
+"price": 1600.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "QM 45",
+"type": "Battery",
+"fits": "MOTO EDGE 50 PRO",
+"qty": 1.0,
+"cost": 1200.0,
+"price": 1600.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "WT 330",
+"type": "Battery",
+"fits": "NOKIA 4.2",
+"qty": 2.0,
+"cost": 1100.0,
+"price": 1400.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "Y55[OLD]",
+"type": "Battery",
+"fits": "ViVO Y55",
+"qty": 1.0,
+"cost": 900.0,
+"price": 1200.0,
+"hsn": "85076000",
+"loc": ""
+},
+{
+"name": "SAMSUNG",
+"type": "Button",
+"fits": "",
+"qty": null,
+"cost": null,
+"price": null,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG A04 CORE",
+"type": "Button",
+"fits": "A04 CORE",
+"qty": null,
+"cost": null,
+"price": null,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG A2 60",
+"type": "Button",
+"fits": "A260",
+"qty": null,
+"cost": null,
+"price": null,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG A23",
+"type": "Button",
+"fits": "",
+"qty": null,
+"cost": null,
+"price": null,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG A33",
+"type": "Button",
+"fits": "A33",
+"qty": null,
+"cost": null,
+"price": null,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG A33 5G",
+"type": "Button",
+"fits": "A33 5G",
+"qty": null,
+"cost": null,
+"price": null,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG A52S 4G",
+"type": "Button",
+"fits": "A52S",
+"qty": null,
+"cost": null,
+"price": null,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG A52S 5G",
+"type": "Button",
+"fits": "A52S 5G",
+"qty": null,
+"cost": null,
+"price": null,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG A73 5G",
+"type": "Button",
+"fits": "A73 5G",
+"qty": null,
+"cost": null,
+"price": null,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG A8+",
+"type": "Button",
+"fits": "A8+",
+"qty": null,
+"cost": null,
+"price": null,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG G530",
+"type": "Button",
+"fits": "G531,G532,GRAND PRIME,PRIME 2",
+"qty": null,
+"cost": null,
+"price": null,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG J2 CORE",
+"type": "Button",
+"fits": "J20CORE",
+"qty": null,
+"cost": null,
+"price": null,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG J510",
+"type": "Button",
+"fits": "A710",
+"qty": null,
+"cost": null,
+"price": null,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG J7 PRIME",
+"type": "Button",
+"fits": "J7 PRIME",
+"qty": null,
+"cost": null,
+"price": null,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG M01 CORE",
+"type": "Button",
+"fits": "M01 CORE",
+"qty": null,
+"cost": null,
+"price": null,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG M30",
+"type": "Button",
+"fits": "M30",
+"qty": null,
+"cost": null,
+"price": null,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG S20FE",
+"type": "Button",
+"fits": "S20 FE",
+"qty": null,
+"cost": null,
+"price": null,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "Charging Port Micro USB - Redmi 8 / 8A / 9A",
+"type": "Charging Port",
+"fits": "REDMI 8 / REDMI 8A / REDMI 9A",
+"qty": 15.0,
+"cost": 90.0,
+"price": 250.0,
+"hsn": "85177010",
+"loc": "DRAWER 3"
+},
+{
+"name": "Charging Port Type-C - Vivo Y21 / Y33S",
+"type": "Charging Port",
+"fits": "VIVO Y21 / VIVO Y33S",
+"qty": 12.0,
+"cost": 120.0,
+"price": 300.0,
+"hsn": "85177010",
+"loc": "DRAWER 3"
+},
+{
+"name": "ASUS MAX PRO M1",
+"type": "Display",
+"fits": "",
+"qty": 1.0,
+"cost": 1900.0,
+"price": 2200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "ASUS MAX PRO M2",
+"type": "Display",
+"fits": "",
+"qty": 3.0,
+"cost": 1900.0,
+"price": 2400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "HONOR 10LITE",
+"type": "Display",
+"fits": "H20i,",
+"qty": 4.0,
+"cost": 1900.0,
+"price": 2400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "HONOR 7A",
+"type": "Display",
+"fits": "",
+"qty": 2.0,
+"cost": 1700.0,
+"price": 2200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "HONOR 7C",
+"type": "Display",
+"fits": "",
+"qty": 3.0,
+"cost": 1700.0,
+"price": 2200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "HONOR 7S",
+"type": "Display",
+"fits": "",
+"qty": 1.0,
+"cost": 1700.0,
+"price": 2200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "HONOR 8X",
+"type": "Display",
+"fits": "",
+"qty": 1.0,
+"cost": 1900.0,
+"price": 2400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "HONOR 9LITE",
+"type": "Display",
+"fits": "",
+"qty": 1.0,
+"cost": 1700.0,
+"price": 2200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "HONOR 9N",
+"type": "Display",
+"fits": "",
+"qty": 4.0,
+"cost": 1700.0,
+"price": 2200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "HONOR 9X",
+"type": "Display",
+"fits": "",
+"qty": 4.0,
+"cost": 1900.0,
+"price": 2400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "HONOR 9i",
+"type": "Display",
+"fits": "",
+"qty": 1.0,
+"cost": 1900.0,
+"price": 2400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "HONOR P30LITE",
+"type": "Display",
+"fits": "",
+"qty": 4.0,
+"cost": 1900.0,
+"price": 2400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "HONOR PLAY",
+"type": "Display",
+"fits": "",
+"qty": 1.0,
+"cost": 1900.0,
+"price": 2400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "HUWAI NOVA3i",
+"type": "Display",
+"fits": "",
+"qty": 2.0,
+"cost": 1900.0,
+"price": 2400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "HUWAI P30",
+"type": "Display",
+"fits": "",
+"qty": null,
+"cost": 1900.0,
+"price": 2400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "HUWAI Y7A",
+"type": "Display",
+"fits": "",
+"qty": 2.0,
+"cost": 2200.0,
+"price": 2800.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "HUWAI [Y6 2019]",
+"type": "Display",
+"fits": "",
+"qty": 2.0,
+"cost": 1700.0,
+"price": 2200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "HUWAI [Y9 2019]",
+"type": "Display",
+"fits": "",
+"qty": 2.0,
+"cost": 1900.0,
+"price": 2400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "HUWAI [Y9 PRIME 2019]",
+"type": "Display",
+"fits": "Y9X",
+"qty": 4.0,
+"cost": 2200.0,
+"price": 2900.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "INFINIX HOT 9 PLAY",
+"type": "Display",
+"fits": "",
+"qty": 1.0,
+"cost": 2200.0,
+"price": 2900.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "IPHONE 11",
+"type": "Display",
+"fits": "",
+"qty": 2.0,
+"cost": 3200.0,
+"price": 8500.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "IPHONE 12PRO",
+"type": "Display",
+"fits": "",
+"qty": 1.0,
+"cost": 3200.0,
+"price": 6500.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "IPHONE 5",
+"type": "Display",
+"fits": "",
+"qty": 2.0,
+"cost": 2200.0,
+"price": 2800.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "IPHONE 5S",
+"type": "Display",
+"fits": "",
+"qty": 2.0,
+"cost": 2200.0,
+"price": 2800.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "IPHONE 6",
+"type": "Display",
+"fits": "",
+"qty": 1.0,
+"cost": 2200.0,
+"price": 2800.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "IPHONE XR",
+"type": "Display",
+"fits": "",
+"qty": 1.0,
+"cost": 2400.0,
+"price": 8600.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "ITEL SPARK 8",
+"type": "Display",
+"fits": "",
+"qty": 3.0,
+"cost": 1900.0,
+"price": 2400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "LAVA BLAZE 5G",
+"type": "Display",
+"fits": "BLAZE 1X 5G",
+"qty": 1.0,
+"cost": 1900.0,
+"price": 2400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "LENOVO K4 NOTE",
+"type": "Display",
+"fits": "",
+"qty": 1.0,
+"cost": 1600.0,
+"price": 2100.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "LENOVO K5 NOTE",
+"type": "Display",
+"fits": "",
+"qty": 1.0,
+"cost": 1800.0,
+"price": 2200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "LENOVO K6 NOTE",
+"type": "Display",
+"fits": "",
+"qty": 2.0,
+"cost": 1800.0,
+"price": 2200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "LENOVO K8 NOTE",
+"type": "Display",
+"fits": "",
+"qty": 1.0,
+"cost": 1800.0,
+"price": 200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "LENOVO TAB V7",
+"type": "Display",
+"fits": "",
+"qty": 1.0,
+"cost": 2600.0,
+"price": 3600.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "LENOVO Z60",
+"type": "Display",
+"fits": "",
+"qty": null,
+"cost": 1900.0,
+"price": 2200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "LG W30PRO",
+"type": "Display",
+"fits": "",
+"qty": 1.0,
+"cost": 1900.0,
+"price": 2400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "MOTO E22",
+"type": "Display",
+"fits": "",
+"qty": 1.0,
+"cost": 2400.0,
+"price": 3200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "MOTO E4",
+"type": "Display",
+"fits": "E4+",
+"qty": 2.0,
+"cost": 1800.0,
+"price": 2400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "MOTO G04",
+"type": "Display",
+"fits": "",
+"qty": 1.0,
+"cost": 2400.0,
+"price": 3200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "MOTO G20",
+"type": "Display",
+"fits": "",
+"qty": 1.0,
+"cost": 2200.0,
+"price": 3200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "MOTO G31",
+"type": "Display",
+"fits": "G71",
+"qty": null,
+"cost": 1900.0,
+"price": 2600.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "MOTO G35 5G",
+"type": "Display",
+"fits": "",
+"qty": 1.0,
+"cost": 2400.0,
+"price": 3200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "MOTO G40",
+"type": "Display",
+"fits": "G60,G51,G60S,G40 FUSION",
+"qty": 2.0,
+"cost": 2400.0,
+"price": 3400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "MOTO G45 5G",
+"type": "Display",
+"fits": "G13,G34 5G",
+"qty": 1.0,
+"cost": 2400.0,
+"price": 3400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "MOTO G52",
+"type": "Display",
+"fits": "G72,G82,G71S,EDGE30",
+"qty": null,
+"cost": 1900.0,
+"price": 2600.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "MOTO G62",
+"type": "Display",
+"fits": "",
+"qty": 1.0,
+"cost": 2400.0,
+"price": 3200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "MOTO G8PLAY",
+"type": "Display",
+"fits": "",
+"qty": 1.0,
+"cost": 2200.0,
+"price": 2900.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "MOTO G8POWER",
+"type": "Display",
+"fits": "",
+"qty": 1.0,
+"cost": 2400.0,
+"price": 3200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "NOKIA 1",
+"type": "Display",
+"fits": "",
+"qty": 5.0,
+"cost": 1600.0,
+"price": 2000.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "NOKIA 2.1",
+"type": "Display",
+"fits": "",
+"qty": 1.0,
+"cost": 1700.0,
+"price": 2200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "NOKIA 2.2",
+"type": "Display",
+"fits": "",
+"qty": 5.0,
+"cost": 1800.0,
+"price": 2400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "NOKIA 2.3",
+"type": "Display",
+"fits": "",
+"qty": 1.0,
+"cost": 1800.0,
+"price": 2400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "NOKIA 3.1",
+"type": "Display",
+"fits": "",
+"qty": 1.0,
+"cost": 1600.0,
+"price": 2200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "NOKIA 3.2",
+"type": "Display",
+"fits": "",
+"qty": 2.0,
+"cost": 1800.0,
+"price": 2400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "NOKIA 3.4",
+"type": "Display",
+"fits": "",
+"qty": 5.0,
+"cost": 1800.0,
+"price": 2400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "NOKIA 5",
+"type": "Display",
+"fits": "",
+"qty": null,
+"cost": 1900.0,
+"price": 2600.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "NOKIA 5.1+",
+"type": "Display",
+"fits": "",
+"qty": 2.0,
+"cost": 1900.0,
+"price": 2600.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "NOKIA 6",
+"type": "Display",
+"fits": "",
+"qty": 1.0,
+"cost": 1900.0,
+"price": 2600.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "NOKIA 6.1+",
+"type": "Display",
+"fits": "",
+"qty": null,
+"cost": 1900.0,
+"price": 2600.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "NOKIA C01+",
+"type": "Display",
+"fits": "",
+"qty": 1.0,
+"cost": 1800.0,
+"price": 2200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "NOKIA C10",
+"type": "Display",
+"fits": "",
+"qty": 2.0,
+"cost": 2200.0,
+"price": 2900.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "NOKIA C2",
+"type": "Display",
+"fits": "",
+"qty": 1.0,
+"cost": 1900.0,
+"price": 2400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "NOKIA C3",
+"type": "Display",
+"fits": "",
+"qty": 4.0,
+"cost": 1900.0,
+"price": 2600.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "NOKIA G21",
+"type": "Display",
+"fits": "",
+"qty": 1.0,
+"cost": 2200.0,
+"price": 2900.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "ONEPLUS 5T",
+"type": "Display",
+"fits": "",
+"qty": 1.0,
+"cost": null,
+"price": null,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "ONEPLUS 6T",
+"type": "Display",
+"fits": "",
+"qty": 3.0,
+"cost": null,
+"price": null,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "ONEPLUS 7",
+"type": "Display",
+"fits": "",
+"qty": 1.0,
+"cost": null,
+"price": null,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "ONEPLUS 7T",
+"type": "Display",
+"fits": "",
+"qty": 1.0,
+"cost": null,
+"price": null,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "ONEPLUS 8T",
+"type": "Display",
+"fits": "",
+"qty": 1.0,
+"cost": null,
+"price": null,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "ONEPLUS N10",
+"type": "Display",
+"fits": "",
+"qty": 2.0,
+"cost": null,
+"price": null,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "ONEPLUS NORD",
+"type": "Display",
+"fits": "",
+"qty": 3.0,
+"cost": null,
+"price": null,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "ONEPLUS NORD CE25G",
+"type": "Display",
+"fits": "RM9PRO+/RENO8/RENO7/RM94G/RM104G/F21PRO/MARZO50PRO/FINDX5",
+"qty": null,
+"cost": null,
+"price": null,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "OPP0 F15",
+"type": "Display",
+"fits": "OPPOF17",
+"qty": 5.0,
+"cost": null,
+"price": null,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "OPPO A15",
+"type": "Display",
+"fits": "RMC11,RMC15,A16",
+"qty": 1.0,
+"cost": 2400.0,
+"price": 3200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "OPPO A37 OLD",
+"type": "Display",
+"fits": "",
+"qty": 1.0,
+"cost": 1600.0,
+"price": 2200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "OPPO A52",
+"type": "Display",
+"fits": "",
+"qty": 1.0,
+"cost": 2400.0,
+"price": 3200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "OPPO A53",
+"type": "Display",
+"fits": "A54,A554G",
+"qty": 4.0,
+"cost": 2400.0,
+"price": 3400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "OPPO A57[NEW]",
+"type": "Display",
+"fits": "A78,A38,NORD300,A59,K10,A18,A58,NARZO50APRIME,C35,A77,A17,A17K,a78 5g",
+"qty": 5.0,
+"cost": 2400.0,
+"price": 3200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "OPPO A57[OLD]",
+"type": "Display",
+"fits": "",
+"qty": 2.0,
+"cost": 1600.0,
+"price": 2200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "OPPO A5S",
+"type": "Display",
+"fits": "OPPOA7",
+"qty": 10.0,
+"cost": null,
+"price": null,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "OPPO A71",
+"type": "Display",
+"fits": "",
+"qty": 1.0,
+"cost": 1600.0,
+"price": 2200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "OPPO A74",
+"type": "Display",
+"fits": "",
+"qty": 1.0,
+"cost": 2400.0,
+"price": 3400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "OPPO F11",
+"type": "Display",
+"fits": "A9",
+"qty": 4.0,
+"cost": 2400.0,
+"price": 3200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "OPPO F11PRO",
+"type": "Display",
+"fits": "",
+"qty": 2.0,
+"cost": 2400.0,
+"price": 3400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "OPPO F17PRO",
+"type": "Display",
+"fits": "RENO4/RENO4LITE/A934G",
+"qty": 2.0,
+"cost": null,
+"price": null,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "OPPO F19",
+"type": "Display",
+"fits": "F19PRO/F19PRO+/RENO6/A94/A96/F21/RM7PRO",
+"qty": 5.0,
+"cost": 2400.0,
+"price": null,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "OPPO F1S",
+"type": "Display",
+"fits": "",
+"qty": 3.0,
+"cost": 1700.0,
+"price": 2200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "OPPO F27",
+"type": "Display",
+"fits": "",
+"qty": null,
+"cost": null,
+"price": null,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "OPPO F3",
+"type": "Display",
+"fits": "",
+"qty": 2.0,
+"cost": 1600.0,
+"price": 2200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "OPPO F9",
+"type": "Display",
+"fits": "F9PRO,RM2PRO",
+"qty": 2.0,
+"cost": 2400.0,
+"price": 3200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "OPPO K105G",
+"type": "Display",
+"fits": "",
+"qty": 1.0,
+"cost": 2400.0,
+"price": 3200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "POCO X2",
+"type": "Display",
+"fits": "",
+"qty": 3.0,
+"cost": 2400.0,
+"price": 3400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "POCO X3",
+"type": "Display",
+"fits": "Display",
+"qty": 2.0,
+"cost": 2400.0,
+"price": 3400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "POCOF1",
+"type": "Display",
+"fits": "",
+"qty": 2.0,
+"cost": 2200.0,
+"price": 2900.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "REAKME 6PRO",
+"type": "Display",
+"fits": "",
+"qty": 1.0,
+"cost": 2400.0,
+"price": 3400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "REALME 10PRO",
+"type": "Display",
+"fits": "",
+"qty": 3.0,
+"cost": 2400.0,
+"price": 3400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "REALME 3 PRO",
+"type": "Display",
+"fits": "",
+"qty": 3.0,
+"cost": 2400.0,
+"price": 3400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "REALME 6",
+"type": "Display",
+"fits": "RM6i,7,narzo30pro,N200",
+"qty": 8.0,
+"cost": 2400.0,
+"price": 3200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "REALME 9I 5G",
+"type": "Display",
+"fits": "",
+"qty": 4.0,
+"cost": 2400.0,
+"price": 3200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "REALME C112021",
+"type": "Display",
+"fits": "C20,C21,NARZO50I",
+"qty": 7.0,
+"cost": 2400.0,
+"price": 3200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "REALME C2",
+"type": "Display",
+"fits": "A1K",
+"qty": 1.0,
+"cost": 1700.0,
+"price": 2200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "REALME C21Y",
+"type": "Display",
+"fits": "RM C25Y",
+"qty": 5.0,
+"cost": 2400.0,
+"price": 3200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "REALME C30",
+"type": "Display",
+"fits": "RM C30S",
+"qty": 3.0,
+"cost": 2200.0,
+"price": 3200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "REALME C31",
+"type": "Display",
+"fits": "",
+"qty": 1.0,
+"cost": 2200.0,
+"price": 3200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "REALME C51",
+"type": "Display",
+"fits": "RM NARZO N53,C53",
+"qty": 3.0,
+"cost": 2400.0,
+"price": 3400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "REALME C55",
+"type": "Display",
+"fits": "RM125G,RM12X,OPPOA3X,OPPOA55G,OPPOA3PRO,RMC65,RMC63,RM14X",
+"qty": 9.0,
+"cost": 2400.0,
+"price": 3400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "REALME C63",
+"type": "Display",
+"fits": "RMC61,NARZON63",
+"qty": 2.0,
+"cost": 2400.0,
+"price": 3400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "REALME NARZO 50 5G",
+"type": "Display",
+"fits": "REALME NARZO 50 5G,A97 5G",
+"qty": 1.0,
+"cost": 2400.0,
+"price": 3200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "REALME X",
+"type": "Display",
+"fits": "RENO2Z/K3",
+"qty": null,
+"cost": 2400.0,
+"price": 3600.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "REALME X3 SUPERZOOM",
+"type": "Display",
+"fits": "",
+"qty": 1.0,
+"cost": 2400.0,
+"price": 3400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "REALME XT",
+"type": "Display",
+"fits": "REALME X2",
+"qty": null,
+"cost": 2400.0,
+"price": 3600.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "REALME12+",
+"type": "Display",
+"fits": "NARZO70/NARZO70PRO/P1",
+"qty": null,
+"cost": 2400.0,
+"price": 2600.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "REDMI 10",
+"type": "Display",
+"fits": "10POWER",
+"qty": 3.0,
+"cost": 2400.0,
+"price": 3200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "REDMI 105G",
+"type": "Display",
+"fits": ",",
+"qty": 2.0,
+"cost": 2400.0,
+"price": 3200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "REDMI 10PRIME",
+"type": "Display",
+"fits": "",
+"qty": 2.0,
+"cost": 2400.0,
+"price": 3400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "REDMI 10T",
+"type": "Display",
+"fits": "10TPRO",
+"qty": 5.0,
+"cost": 2400.0,
+"price": 3400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "REDMI 11 LITE",
+"type": "Display",
+"fits": "MI 11 LITE",
+"qty": null,
+"cost": 2200.0,
+"price": 2600.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "REDMI 11PRIME",
+"type": "Display",
+"fits": "POCO M45G,MI 10 5G,NOTE11E,POCO M5 5G,NOTE11R,",
+"qty": 2.0,
+"cost": 2400.0,
+"price": 3200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "REDMI 125G",
+"type": "Display",
+"fits": "12,NOTE12R,POCO M6 PRO5G,M6 4G,M6+5G",
+"qty": 2.0,
+"cost": 2400.0,
+"price": 3200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "REDMI 12C",
+"type": "Display",
+"fits": "POCO C55,11A,10C",
+"qty": 5.0,
+"cost": 2400.0,
+"price": 3200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "REDMI 13C",
+"type": "Display",
+"fits": "13C5G,13R,POCO C65,POCO M6",
+"qty": 1.0,
+"cost": 2400.0,
+"price": 3400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "REDMI 14C",
+"type": "Display",
+"fits": "14C4G,5G,14R5G,POCOC75,POCO M75G,MI A45G,MI A4NEW,MI A3PRO",
+"qty": 4.0,
+"cost": 2400.0,
+"price": 3200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "REDMI 15C",
+"type": "Display",
+"fits": "POCO C85",
+"qty": 1.0,
+"cost": 2400.0,
+"price": 3200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "REDMI 4A",
+"type": "Display",
+"fits": "",
+"qty": 4.0,
+"cost": 1800.0,
+"price": 2200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "REDMI 5",
+"type": "Display",
+"fits": "",
+"qty": 1.0,
+"cost": 1900.0,
+"price": 2200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "REDMI 5A",
+"type": "Display",
+"fits": "",
+"qty": 4.0,
+"cost": 1800.0,
+"price": 2200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "REDMI 6",
+"type": "Display",
+"fits": "MI 6A",
+"qty": 2.0,
+"cost": 1800.0,
+"price": 2200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "REDMI 6PRO",
+"type": "Display",
+"fits": "",
+"qty": 3.0,
+"cost": 1900.0,
+"price": 2400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "REDMI 7",
+"type": "Display",
+"fits": "Y2",
+"qty": 4.0,
+"cost": 1900.0,
+"price": 2400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "REDMI 7A",
+"type": "Display",
+"fits": "",
+"qty": 1.0,
+"cost": 1800.0,
+"price": 2200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "REDMI 8A",
+"type": "Display",
+"fits": "8ADUAL",
+"qty": 1.0,
+"cost": 2400.0,
+"price": 3200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "REDMI 9A",
+"type": "Display",
+"fits": "MI9,POCOC3,9C,POCOC31,9i,9AT,10A",
+"qty": 9.0,
+"cost": 2400.0,
+"price": 3200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "REDMI 9POWER",
+"type": "Display",
+"fits": "POCO M3,9T,M9,NT94G",
+"qty": 3.0,
+"cost": 2400.0,
+"price": 3200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "REDMI 9PRIME",
+"type": "Display",
+"fits": "POCO M2",
+"qty": 7.0,
+"cost": 2400.0,
+"price": 3200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "REDMI A1 NEW",
+"type": "Display",
+"fits": "A1,A1+,A2 NEW,A2,A2+",
+"qty": 4.0,
+"cost": 2400.0,
+"price": 3200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "REDMI A2 [OLD]",
+"type": "Display",
+"fits": "",
+"qty": 2.0,
+"cost": 1900.0,
+"price": 2400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "REDMI A3NEW",
+"type": "Display",
+"fits": "",
+"qty": 2.0,
+"cost": 2400.0,
+"price": 3200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "REDMI A3[OLD]",
+"type": "Display",
+"fits": "",
+"qty": null,
+"cost": 1900.0,
+"price": 2400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "REDMI K40",
+"type": "Display",
+"fits": "K40PRO,K40PRO+,K40S,POC0 F3,MI 11I,11X,11XPRO,POCO F4,F4PRO",
+"qty": null,
+"cost": null,
+"price": null,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "REDMI NOTE 5",
+"type": "Display",
+"fits": "",
+"qty": null,
+"cost": 1900.0,
+"price": 2400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "REDMI NOTE 6PRO",
+"type": "Display",
+"fits": "",
+"qty": 2.0,
+"cost": 1900.0,
+"price": 2400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "REDMI NOTE 8PRO",
+"type": "Display",
+"fits": "",
+"qty": 4.0,
+"cost": 2400.0,
+"price": 3400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "REDMI NOTE10 5G",
+"type": "Display",
+"fits": "",
+"qty": 2.0,
+"cost": 2400.0,
+"price": 3200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "REDMI NOTE10 PRO",
+"type": "Display",
+"fits": "11PRO,NOTE11PROPLUS,NOTE145G,MI 11I,POCO X4PRO 5G,10PRO MAX",
+"qty": null,
+"cost": 2400.0,
+"price": 3600.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "REDMI NOTE104G",
+"type": "Display",
+"fits": "NOTE10S,NOTE11SE,POCO M5S",
+"qty": null,
+"cost": 2400.0,
+"price": 3600.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "REDMI NOTE11 4G",
+"type": "Display",
+"fits": "NOTE11S,POCO M4PRO5G,NOTE12S",
+"qty": null,
+"cost": 2400.0,
+"price": 3600.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "REDMI NOTE115G",
+"type": "Display",
+"fits": "NOTE11T5G,NOTE11S5G,POCO M4PRO 5G",
+"qty": null,
+"cost": null,
+"price": null,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "REDMI NOTE12",
+"type": "Display",
+"fits": "POCO X5,NOTE125G,",
+"qty": null,
+"cost": 2400.0,
+"price": 3800.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "REDMI NOTE12 PRO",
+"type": "Display",
+"fits": "NOTE12 PRO +5G,POCO X5PRO",
+"qty": null,
+"cost": 2400.0,
+"price": 3600.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "REDMI NOTE13PRO 4G",
+"type": "Display",
+"fits": "NOTE13PRO,POCO M6PRO",
+"qty": 3.0,
+"cost": 2400.0,
+"price": 3400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "REDMI NOTE4",
+"type": "Display",
+"fits": "",
+"qty": 1.0,
+"cost": 1800.0,
+"price": 2200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "REDMI NOTE7PRO",
+"type": "Display",
+"fits": "NOTE 7",
+"qty": 10.0,
+"cost": 2400.0,
+"price": 3400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "REDMI NOTE8",
+"type": "Display",
+"fits": "",
+"qty": 2.0,
+"cost": 2400.0,
+"price": 3400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "REDMI NOTE9",
+"type": "Display",
+"fits": "",
+"qty": 1.0,
+"cost": 2400.0,
+"price": 3200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "REDMI NOTE9PRO MAX",
+"type": "Display",
+"fits": "M2 PRO",
+"qty": 1.0,
+"cost": 2400.0,
+"price": 3400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "REDMI Y1LITE",
+"type": "Display",
+"fits": "",
+"qty": 1.0,
+"cost": 1900.0,
+"price": 2200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "REDMI Y2",
+"type": "Display",
+"fits": "",
+"qty": 1.0,
+"cost": 1900.0,
+"price": 2200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG A02S",
+"type": "Display",
+"fits": "",
+"qty": 3.0,
+"cost": 2400.0,
+"price": 3200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG A03CORE",
+"type": "Display",
+"fits": "",
+"qty": 3.0,
+"cost": 2200.0,
+"price": 2900.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG A04",
+"type": "Display",
+"fits": "",
+"qty": 3.0,
+"cost": 2400.0,
+"price": 3200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG A06 5G",
+"type": "Display",
+"fits": "M065G,F065G",
+"qty": 2.0,
+"cost": 2400.0,
+"price": 3200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG A10",
+"type": "Display",
+"fits": "M10",
+"qty": 3.0,
+"cost": 2400.0,
+"price": 3200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG A10S",
+"type": "Display",
+"fits": "",
+"qty": 3.0,
+"cost": 2400.0,
+"price": 3200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG A12",
+"type": "Display",
+"fits": "M12,F12,A02,M32 5G",
+"qty": 6.0,
+"cost": 2400.0,
+"price": 3200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG A13 5G",
+"type": "Display",
+"fits": "M135G,A04S",
+"qty": 5.0,
+"cost": 3400.0,
+"price": 3400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG A134G",
+"type": "Display",
+"fits": "A235G,M335G,M135G/F135G",
+"qty": 9.0,
+"cost": 2400.0,
+"price": 3400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG A14 4G",
+"type": "Display",
+"fits": "",
+"qty": 2.0,
+"cost": 2400.0,
+"price": 3200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG A145G",
+"type": "Display",
+"fits": "F14 5G,M145G,M146B",
+"qty": 2.0,
+"cost": 2400.0,
+"price": 3400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG A15 5G",
+"type": "Display",
+"fits": "",
+"qty": null,
+"cost": 2200.0,
+"price": 2600.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG A175G",
+"type": "Display",
+"fits": "A174G/A164G.5G,F165G,M165G,A265G,M15",
+"qty": null,
+"cost": 2200.0,
+"price": 2600.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG A20",
+"type": "Display",
+"fits": "",
+"qty": null,
+"cost": 2400.0,
+"price": 3600.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG A20S",
+"type": "Display",
+"fits": "",
+"qty": null,
+"cost": 2400.0,
+"price": 3200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG A21S",
+"type": "Display",
+"fits": "",
+"qty": 2.0,
+"cost": 2400.0,
+"price": 3400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG A224G",
+"type": "Display",
+"fits": "",
+"qty": null,
+"cost": null,
+"price": null,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG A225G",
+"type": "Display",
+"fits": "",
+"qty": null,
+"cost": null,
+"price": null,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG A24",
+"type": "Display",
+"fits": "A25,M34",
+"qty": null,
+"cost": 1900.0,
+"price": 2600.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG A2CORE",
+"type": "Display",
+"fits": "",
+"qty": 4.0,
+"cost": 1900.0,
+"price": 2700.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG A30S",
+"type": "Display",
+"fits": "",
+"qty": null,
+"cost": 2400.0,
+"price": 3600.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG A31",
+"type": "Display",
+"fits": "",
+"qty": null,
+"cost": 1900.0,
+"price": 2600.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG A32 4G",
+"type": "Display",
+"fits": "",
+"qty": null,
+"cost": 1900.0,
+"price": 2600.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG A33 4G",
+"type": "Display",
+"fits": "",
+"qty": null,
+"cost": 1900.0,
+"price": 2600.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG A34 5G",
+"type": "Display",
+"fits": "",
+"qty": null,
+"cost": 2200.0,
+"price": 2600.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG A35 5G",
+"type": "Display",
+"fits": "A55,M35",
+"qty": null,
+"cost": 2200.0,
+"price": 2800.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG A50",
+"type": "Display",
+"fits": "A30",
+"qty": null,
+"cost": 2400.0,
+"price": 3600.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG A50S",
+"type": "Display",
+"fits": "",
+"qty": null,
+"cost": 2400.0,
+"price": 3800.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG A51",
+"type": "Display",
+"fits": "M31S",
+"qty": null,
+"cost": 1900.0,
+"price": 2600.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG A52",
+"type": "Display",
+"fits": "",
+"qty": null,
+"cost": 2200.0,
+"price": 2600.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG A53",
+"type": "Display",
+"fits": "",
+"qty": null,
+"cost": 2200.0,
+"price": 2800.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG A70",
+"type": "Display",
+"fits": "A70S",
+"qty": null,
+"cost": 2400.0,
+"price": 3800.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG A71",
+"type": "Display",
+"fits": "M71,M51,M62,F62",
+"qty": null,
+"cost": 2600.0,
+"price": 4200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG A72",
+"type": "Display",
+"fits": "",
+"qty": null,
+"cost": 2200.0,
+"price": 2800.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG A750",
+"type": "Display",
+"fits": "",
+"qty": null,
+"cost": 1800.0,
+"price": 2400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG J1 ACE",
+"type": "Display",
+"fits": "",
+"qty": 1.0,
+"cost": 1900.0,
+"price": 2200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG J2",
+"type": "Display",
+"fits": "",
+"qty": null,
+"cost": 1600.0,
+"price": 2000.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG J250",
+"type": "Display",
+"fits": "",
+"qty": null,
+"cost": 2200.0,
+"price": 3400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG J260",
+"type": "Display",
+"fits": "J2CORE",
+"qty": 3.0,
+"cost": 1900.0,
+"price": 2200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG J3",
+"type": "Display",
+"fits": "",
+"qty": null,
+"cost": 1800.0,
+"price": 2200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG J4",
+"type": "Display",
+"fits": "",
+"qty": null,
+"cost": 1900.0,
+"price": 2200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG J4+",
+"type": "Display",
+"fits": "J6+",
+"qty": 6.0,
+"cost": 1900.0,
+"price": 2400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG J5",
+"type": "Display",
+"fits": "",
+"qty": null,
+"cost": 1900.0,
+"price": 2200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG J5PRIME",
+"type": "Display",
+"fits": "J530,J510,J710",
+"qty": 4.0,
+"cost": 1900.0,
+"price": 2400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG J6",
+"type": "Display",
+"fits": "",
+"qty": null,
+"cost": 1900.0,
+"price": 2400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG J7",
+"type": "Display",
+"fits": "",
+"qty": null,
+"cost": 1900.0,
+"price": 2200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG J7MAX",
+"type": "Display",
+"fits": "",
+"qty": 2.0,
+"cost": null,
+"price": null,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG J7PRIME",
+"type": "Display",
+"fits": "",
+"qty": 7.0,
+"cost": 1900.0,
+"price": 2400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG J7PRO",
+"type": "Display",
+"fits": "",
+"qty": null,
+"cost": 2400.0,
+"price": 3800.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG J8",
+"type": "Display",
+"fits": "A6+",
+"qty": null,
+"cost": 1800.0,
+"price": 2400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG M01",
+"type": "Display",
+"fits": "A01",
+"qty": null,
+"cost": 1800.0,
+"price": 2600.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG M11",
+"type": "Display",
+"fits": "A11",
+"qty": 3.0,
+"cost": 2400.0,
+"price": 3600.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG M20",
+"type": "Display",
+"fits": "",
+"qty": 2.0,
+"cost": 2400.0,
+"price": 3200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG M30S",
+"type": "Display",
+"fits": "M30,M21,M31,F41",
+"qty": null,
+"cost": 2400.0,
+"price": 3600.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG M40",
+"type": "Display",
+"fits": "M60",
+"qty": 1.0,
+"cost": 2200.0,
+"price": 2900.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "SAMSUNG MO1CORE",
+"type": "Display",
+"fits": "A01CORE",
+"qty": 4.0,
+"cost": 1900.0,
+"price": 2400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "V20 PRO",
+"type": "Display",
+"fits": "",
+"qty": null,
+"cost": 1900.0,
+"price": 2600.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "VIIVO V5+",
+"type": "Display",
+"fits": "",
+"qty": 1.0,
+"cost": 1700.0,
+"price": 2200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "VIVO S1",
+"type": "Display",
+"fits": "S1 PRO",
+"qty": null,
+"cost": 1800.0,
+"price": 2400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "VIVO T3X",
+"type": "Display",
+"fits": "Y385G,Y200i,Y58 5G,T4X,Y19S,Y28 4G,Y39,Y19S PRO,Y31 PRO,Y37 PRO,Y31S",
+"qty": 2.0,
+"cost": 2400.0,
+"price": 3400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "VIVO V15",
+"type": "Display",
+"fits": "",
+"qty": 1.0,
+"cost": 2400.0,
+"price": 3200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "VIVO V15PRO",
+"type": "Display",
+"fits": "",
+"qty": 1.0,
+"cost": 2400.0,
+"price": 3400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "VIVO V17",
+"type": "Display",
+"fits": "",
+"qty": null,
+"cost": 1900.0,
+"price": 2400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "VIVO V19",
+"type": "Display",
+"fits": "V19 PRO",
+"qty": null,
+"cost": 1900.0,
+"price": 2600.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "VIVO V23",
+"type": "Display",
+"fits": "",
+"qty": null,
+"cost": 1900.0,
+"price": 2600.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "VIVO V5",
+"type": "Display",
+"fits": "V5S",
+"qty": 1.0,
+"cost": 1700.0,
+"price": 2200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "VIVO V7",
+"type": "Display",
+"fits": "",
+"qty": 1.0,
+"cost": 1700.0,
+"price": 2200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "VIVO V7+",
+"type": "Display",
+"fits": "",
+"qty": 2.0,
+"cost": 1700.0,
+"price": 2200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "VIVO V9",
+"type": "Display",
+"fits": "",
+"qty": 1.0,
+"cost": 1800.0,
+"price": 2400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "VIVO Y04",
+"type": "Display",
+"fits": "Y04S,Y19E,Y19SGT,Y195G,Y29S5G,Y29T5G,Y37C,Y505G,T4LITE5G,Z105G",
+"qty": 2.0,
+"cost": 2400.0,
+"price": 3400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "VIVO Y11",
+"type": "Display",
+"fits": "Y12,Y15,Y17,",
+"qty": 5.0,
+"cost": 2400.0,
+"price": 3200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "VIVO Y19",
+"type": "Display",
+"fits": "",
+"qty": 2.0,
+"cost": 2400.0,
+"price": 3200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "VIVO Y200",
+"type": "Display",
+"fits": "V300,Y400",
+"qty": null,
+"cost": 2400.0,
+"price": 3800.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "VIVO Y21",
+"type": "Display",
+"fits": "Y21T,Y16",
+"qty": 1.0,
+"cost": 2400.0,
+"price": 3400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "VIVO Y295G",
+"type": "Display",
+"fits": "",
+"qty": 7.0,
+"cost": 2400.0,
+"price": 3400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "VIVO Y33S",
+"type": "Display",
+"fits": "Y52S,Y53S,Y55S,Y55S5G,T1X,T2X,T2X5G,T15G,Z5X,Y21T,Y21,Y31S,Y33T,Y35,Y352022,Y51A,Y51,IQZ3,Z6LITE5G,Y775G",
+"qty": 5.0,
+"cost": 2400.0,
+"price": 3200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "VIVO Y51",
+"type": "Display",
+"fits": "Y31",
+"qty": null,
+"cost": null,
+"price": null,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "VIVO Y51L",
+"type": "Display",
+"fits": "",
+"qty": 1.0,
+"cost": 1700.0,
+"price": 2200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "VIVO Y53",
+"type": "Display",
+"fits": "Y53S",
+"qty": 2.0,
+"cost": 1700.0,
+"price": 2200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "VIVO Y55",
+"type": "Display",
+"fits": "Y55S",
+"qty": 2.0,
+"cost": 1700.0,
+"price": 2200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "VIVO Y56",
+"type": "Display",
+"fits": "Y35",
+"qty": null,
+"cost": 2400.0,
+"price": 3200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "VIVO Y66",
+"type": "Display",
+"fits": "",
+"qty": 3.0,
+"cost": 1700.0,
+"price": 2200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "VIVO Y71",
+"type": "Display",
+"fits": "",
+"qty": 1.0,
+"cost": 1700.0,
+"price": 2200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "VIVO Y72",
+"type": "Display",
+"fits": "Y364G",
+"qty": 2.0,
+"cost": 2400.0,
+"price": 3200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "VIVO Y83",
+"type": "Display",
+"fits": "Y83 PRO",
+"qty": 3.0,
+"cost": 1800.0,
+"price": 2400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "VIVO Y93",
+"type": "Display",
+"fits": "Y91i,Y91,Y95,Y90i",
+"qty": 10.0,
+"cost": 2400.0,
+"price": 3200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "VIVO Z1PRO",
+"type": "Display",
+"fits": "",
+"qty": null,
+"cost": null,
+"price": null,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "realme",
+"type": "Display",
+"fits": "",
+"qty": 3.0,
+"cost": null,
+"price": null,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "realme 5",
+"type": "Display",
+"fits": "c3/5s/5i/oppo a52020-a92020/a31/narzo20a",
+"qty": 11.0,
+"cost": 2400.0,
+"price": null,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "realme 8i",
+"type": "Display",
+"fits": "rm9i/rma76/rma96/rma36/narzo50/rm9pro",
+"qty": 5.0,
+"cost": 2400.0,
+"price": 3200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "vivi y285g",
+"type": "Display",
+"fits": "Y22,Y17S",
+"qty": 6.0,
+"cost": 2400.0,
+"price": 3400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "vivo t15g",
+"type": "Display",
+"fits": "y75 5g",
+"qty": 2.0,
+"cost": 2400.0,
+"price": 3400.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "vivo v11",
+"type": "Display",
+"fits": "",
+"qty": 1.0,
+"cost": 2200.0,
+"price": 2800.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "vivo v11pro",
+"type": "Display",
+"fits": "",
+"qty": 3.0,
+"cost": 2400.0,
+"price": 3200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "vivo v21",
+"type": "Display",
+"fits": "V25/T1 PRO 5G",
+"qty": null,
+"cost": 2400.0,
+"price": 3600.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "vivo y02",
+"type": "Display",
+"fits": "y02t",
+"qty": 1.0,
+"cost": 2400.0,
+"price": 3200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "vivo y20",
+"type": "Display",
+"fits": "Y20i,Y12S,Y15S,Y01",
+"qty": 5.0,
+"cost": 2400.0,
+"price": 3200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "vivo y30",
+"type": "Display",
+"fits": "Y30i",
+"qty": 2.0,
+"cost": 2400.0,
+"price": 3200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "vivo y50",
+"type": "Display",
+"fits": "",
+"qty": 5.0,
+"cost": 2400.0,
+"price": 3200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "vovo v20",
+"type": "Display",
+"fits": "y734g,",
+"qty": null,
+"cost": 2400.0,
+"price": 3600.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "vovo y03",
+"type": "Display",
+"fits": "Y03T,Y18,Y18A,Z9LITE,Y28S5G,T3 LITE 5G,Y28A,Y28E",
+"qty": 1.0,
+"cost": 2400.0,
+"price": 3200.0,
+"hsn": "85177010",
+"loc": ""
+},
+{
+"name": "Front Camera Flex - OnePlus Nord / Nord 2 5G",
+"type": "Flex Cable",
+"fits": "ONE PLUS NORD / ONE PLUS NORD 2 5G",
+"qty": 2.0,
+"cost": 640.0,
+"price": 1100.0,
+"hsn": "85177010",
+"loc": "DRAWER 5"
+},
+{
+"name": "Power IC (Board Level) - Generic",
+"type": "Power Ic",
+"fits": "GENERIC",
+"qty": 20.0,
+"cost": 45.0,
+"price": 150.0,
+"hsn": "85423900",
+"loc": "IC BOX"
+},
+{
+"name": "SIM Tray - Redmi Note 12 5G",
+"type": "Sim Tray",
+"fits": "REDMI NOTE 12 5G",
+"qty": 10.0,
+"cost": 25.0,
+"price": 90.0,
+"hsn": "85177010",
+"loc": "DRAWER 1"
+},
+{
+"name": "Loudspeaker - Oppo A5S / F9 Pro",
+"type": "Speaker",
+"fits": "OPPO A5S / OPPO F9 PRO",
+"qty": 8.0,
+"cost": 110.0,
+"price": 280.0,
+"hsn": "85177010",
+"loc": "DRAWER 4"
+},
+{
+"name": "Touch Glass - Samsung A12 / M12 / F12",
+"type": "Touch Glass",
+"fits": "SAM A12 / SAM M12 / SAM F12",
+"qty": 7.0,
+"cost": 260.0,
+"price": 550.0,
+"hsn": "85177010",
+"loc": "RACK A2"
+}
+]
