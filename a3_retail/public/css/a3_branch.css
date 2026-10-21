@@ -454,9 +454,11 @@ body.side-collapsed .side-nav a, body.side-collapsed .side-soon { justify-conten
    ========================================================================== */
 .pos-body .topbar h1 { font-size: 19px; }
 .pos-body .main { background: #fefefe; }
-/* The mockup's proportions: a 402px bill, and a wide gutter that keeps the
-   catalogue from crowding it. */
-.pos { display: grid; grid-template-columns: minmax(0, 1fr) 402px; gap: 46px;
+/* The bill is where the work happens — the lines, the discount pair, the
+   tender — and at the mockup's 402px those fields were being read through a
+   letterbox. It gets 470px, most of it taken back out of a 46px gutter that
+   was only ever there to stop the catalogue crowding it. */
+.pos { display: grid; grid-template-columns: minmax(0, 1fr) 470px; gap: 26px;
 	padding: 16px 20px 40px; align-items: start; }
 .pos-left { min-width: 0; }
 
@@ -833,8 +835,11 @@ input.is-locked { background: rgba(42, 51, 66, .04); color: var(--muted);
 .msg.ok { color: var(--success); }
 
 @media (max-width: 1280px) {
-	.pos { grid-template-columns: minmax(0, 1fr) 370px; gap: 24px; }
+	.pos { grid-template-columns: minmax(0, 1fr) 420px; gap: 18px; }
 	.quick-row { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 1120px) {
+	.pos { grid-template-columns: minmax(0, 1fr) 390px; gap: 14px; }
 }
 @media (max-width: 1000px) {
 	.pos { grid-template-columns: 1fr; }
