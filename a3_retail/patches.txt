@@ -5,3 +5,4 @@ a3_retail.patches.create_roles
 a3_retail.patches.add_dashboard_indexes
 a3_retail.patches.merge_workspaces
 a3_retail.patches.gst_included_in_rate
+a3_retail.patches.accessories_psla_opening_stock
