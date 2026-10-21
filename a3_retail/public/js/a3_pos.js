@@ -847,12 +847,23 @@ window.POS = (function () {
 	}
 
 	function openNewCustomer(mobile) {
-		["nc-name", "nc-email", "nc-address", "nc-city", "nc-pin", "nc-gstin"]
+		["nc-name", "nc-email", "nc-address", "nc-city", "nc-pin", "nc-gstin",
+		 "nc-pan"]
 			.forEach((id) => { $(id).value = ""; });
 		$("nc-mobile").value = mobile;
 		$("nc-note").textContent = "";
 		$("new-customer-modal").hidden = false;
 		$("nc-name").focus();
+	}
+
+
+	/** A GSTIN carries the PAN as characters three to twelve, so the box fills
+	 *  itself rather than asking for the same ten characters twice. */
+	function panFromGstin(gstinId, panId) {
+		const gstin = ($(gstinId).value || "").trim().toUpperCase();
+		const pan = $(panId);
+		if (!pan || pan.value.trim() || gstin.length !== 15) return;
+		pan.value = gstin.slice(2, 12);
 	}
 
 	async function saveNewCustomer() {
@@ -868,6 +879,7 @@ window.POS = (function () {
 				state: $("nc-state").value.trim(),
 				pincode: $("nc-pin").value.trim(),
 				gstin: $("nc-gstin").value.trim().toUpperCase(),
+				pan: $("nc-pan").value.trim().toUpperCase(),
 			});
 			$("new-customer-modal").hidden = true;
 			fillCustomer(saved);
@@ -1419,12 +1431,16 @@ window.POS = (function () {
 			window.open("/retail/customers?customer=" + encodeURIComponent(state.customer), "_blank");
 		});
 		$("nc-save").addEventListener("click", saveNewCustomer);
-		$("nc-fetch").addEventListener("click", () => gstinInto("nc-gstin", {
-			name: "nc-name", address: "nc-address", city: "nc-city",
-			state: "nc-state", pin: "nc-pin" }, "nc-note"));
-		$("nc-gstin").addEventListener("change", () => gstinInto("nc-gstin", {
-			name: "nc-name", address: "nc-address", city: "nc-city",
-			state: "nc-state", pin: "nc-pin" }, "nc-note"));
+		$("nc-fetch").addEventListener("click", () => {
+			gstinInto("nc-gstin", { name: "nc-name", address: "nc-address",
+				city: "nc-city", state: "nc-state", pin: "nc-pin" }, "nc-note");
+			panFromGstin("nc-gstin", "nc-pan");
+		});
+		$("nc-gstin").addEventListener("change", () => {
+			gstinInto("nc-gstin", { name: "nc-name", address: "nc-address",
+				city: "nc-city", state: "nc-state", pin: "nc-pin" }, "nc-note");
+			panFromGstin("nc-gstin", "nc-pan");
+		});
 		$("new-customer").addEventListener("click", newCustomer);
 		$("cust-q").addEventListener("input", () => {
 			clearTimeout(custTimer);

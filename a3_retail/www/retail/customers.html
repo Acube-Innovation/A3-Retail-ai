@@ -90,6 +90,14 @@
 			<label class="field"><span>{{ _("PIN") }}</span>
 				<input id="c-pin" inputmode="numeric" maxlength="6"></label>
 		</div>
+		<div class="field-grid">
+			<label class="field"><span>{{ _("PAN (optional)") }}</span>
+				<input id="c-pan" maxlength="10" autocapitalize="characters"
+				       spellcheck="false" placeholder="AAAAA0000A"></label>
+			<label class="field"><span></span><span class="muted field-hint">
+				{{ _("Kept for a financed sale, or when the buyer asks for it on the bill.") }}
+			</span></label>
+		</div>
 		{#- A business buyer needs the bill against its GSTIN to claim the input
 		    credit. Fetch fills the rest in from the number, the same way the
 		    purchase screen does for a distributor. -#}

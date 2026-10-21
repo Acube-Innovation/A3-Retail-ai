@@ -443,7 +443,7 @@ def loyalty(customer: str) -> dict:
 def save_customer(mobile_no: str, customer_name: str, email: str | None = None,
                   address_line1: str | None = None, city: str | None = None,
                   pincode: str | None = None, state: str | None = None,
-                  gstin: str | None = None) -> dict:
+                  gstin: str | None = None, pan: str | None = None) -> dict:
 	"""Create the walk-in, or fill in what we did not have before.
 
 	A `gstin` makes this a registered buyer and the bill a B2B one. It goes on
@@ -459,7 +459,7 @@ def save_customer(mobile_no: str, customer_name: str, email: str | None = None,
 	gstin = validate_gstin(gstin)
 	customer = get_or_create(
 		mobile_no=mobile_no, customer_name=customer_name, email=email,
-		branch=employee.branch, gstin=gstin,
+		branch=employee.branch, gstin=gstin, pan=pan,
 	)
 	name = customer["name"] if isinstance(customer, dict) else customer
 

@@ -375,6 +375,11 @@
 			<label class="field"><span>{{ _("PIN") }}</span>
 				<input id="nc-pin" inputmode="numeric" maxlength="6"></label>
 		</div>
+		<div class="field-grid">
+			<label class="field"><span>{{ _("PAN (optional)") }}</span>
+				<input id="nc-pan" maxlength="10" autocapitalize="characters"
+				       spellcheck="false" placeholder="AAAAA0000A"></label>
+		</div>
 		<div class="msg" id="nc-msg"></div>
 		<div class="modal-actions">
 			<button class="btn btn-quiet" data-close>{{ _("Cancel") }}</button>

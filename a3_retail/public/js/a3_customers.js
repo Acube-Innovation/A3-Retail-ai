@@ -517,6 +517,16 @@ window.CUST = (function () {
 	/** Fill the firm's details in from its GST number, as the purchase screen
 	 *  does for a distributor. Without the GST API subscription this still
 	 *  checks the number and reads the state out of it, and says so. */
+
+	/** A GSTIN carries the PAN as characters three to twelve, so the box fills
+	 *  itself rather than asking for the same ten characters twice. */
+	function panFromGstin(gstinId, panId) {
+		const gstin = ($(gstinId).value || "").trim().toUpperCase();
+		const pan = $(panId);
+		if (!pan || pan.value.trim() || gstin.length !== 15) return;
+		pan.value = gstin.slice(2, 12);
+	}
+
 	async function fetchGstin() {
 		const gstin = $("c-gstin").value.trim().toUpperCase();
 		if (!gstin) return;
@@ -550,6 +560,7 @@ window.CUST = (function () {
 				state: $("c-state").value.trim(),
 				pincode: $("c-pin").value.trim(),
 				gstin: $("c-gstin").value.trim().toUpperCase(),
+				pan: $("c-pan").value.trim().toUpperCase(),
 			});
 			$("customer-modal").hidden = true;
 			toast("Customer saved.", "ok");
@@ -600,6 +611,8 @@ window.CUST = (function () {
 		$("new-customer").addEventListener("click", newCustomer);
 		$("c-fetch").addEventListener("click", fetchGstin);
 		$("c-gstin").addEventListener("change", fetchGstin);
+		$("c-gstin").addEventListener("change",
+			() => panFromGstin("c-gstin", "c-pan"));
 		$("c-save").addEventListener("click", saveCustomer);
 		$("message-send").addEventListener("click", sendMessage);
 		$("note-save").addEventListener("click", saveNote);
