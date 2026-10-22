@@ -155,8 +155,82 @@ window.SVC = (function () {
 
 	/** Anything else — a handset from another shop, or one bought online. The
 	 *  counter types the IMEI and names the make and model itself. */
+	/** How the phone is locked.
+	 *
+	 * A pattern is tapped rather than typed. Staff see the shape the customer
+	 * draws, not a row of numbers, and translating one to the other at the
+	 * counter is how a phone ends up on the bench that nobody can switch on.
+	 * The dots are numbered the way every phone numbers them: 1 to 9, reading
+	 * across the top row first.
+	 */
+	function wireLock(device) {
+		const type = () => $("d-locktype").value;
+
+		const show = () => {
+			const kind = type();
+			$("d-lockcode-field").hidden = !(kind === "PIN" || kind === "Password");
+			$("d-pattern").hidden = kind !== "Pattern";
+			state.device.lock_type = kind;
+			if (kind === "None") state.device.lock_value = "";
+		};
+
+		$("d-locktype").addEventListener("change", () => {
+			// Changing the kind drops whatever was recorded for the old one, so
+			// a PIN cannot be filed as a pattern.
+			state.device.lock_value = "";
+			$("d-lockcode").value = "";
+			paintPattern([]);
+			show();
+		});
+
+		$("d-lockcode").addEventListener("input", () => {
+			state.device.lock_value = $("d-lockcode").value.trim();
+		});
+
+		const dots = () => (state.device.lock_value || "")
+			.split("-").filter((n) => n);
+
+		function paintPattern(seq) {
+			state.device.lock_value = seq.join("-");
+			$("d-pattern-read").textContent = seq.length
+				? seq.join(" → ") : "—";
+			$("d-grid").querySelectorAll(".lock-dot").forEach((dot) => {
+				const at = seq.indexOf(dot.dataset.n);
+				dot.classList.toggle("is-on", at >= 0);
+				dot.textContent = at >= 0 ? String(at + 1) : "";
+			});
+		}
+
+		$("d-grid").addEventListener("click", (event) => {
+			const dot = event.target.closest(".lock-dot");
+			if (!dot) return;
+			const seq = dots();
+			// Tapping a dot twice takes it back off, because a mis-tap in the
+			// middle of a pattern otherwise means starting over.
+			const at = seq.indexOf(dot.dataset.n);
+			if (at >= 0) seq.splice(at, 1);
+			else seq.push(dot.dataset.n);
+			paintPattern(seq);
+		});
+
+		$("d-pattern-clear").addEventListener("click", () => paintPattern([]));
+
+		paintPattern(type() === "Pattern" ? dots() : []);
+		show();
+	}
+
+	/** What goes on the job card: the kind and the code, as one readable line. */
+	function lockCode(device) {
+		const kind = device.lock_type || "None";
+		const value = (device.lock_value || "").trim();
+		if (kind === "None" || !value) return "";
+		return `${kind}: ${value}`;
+	}
+
 	function paintDeviceForm(box, device) {
 		const brands = state.brands || [];
+		const lockType = device.lock_type || "None";
+		const lockValue = device.lock_value || "";
 		box.innerHTML = `
 			<div class="device-form">
 				<div class="device-form-head">
@@ -185,6 +259,30 @@ window.SVC = (function () {
 					<label class="field"><span>Model / Variant</span>
 						<select id="d-model"><option value="">Pick the model…</option></select></label>
 				</div>
+				<div class="field-grid">
+					<label class="field"><span>Screen lock</span>
+						<select id="d-locktype">
+							${["None", "PIN", "Password", "Pattern"].map((kind) =>
+								`<option value="${kind}"${kind === lockType ? " selected" : ""}>${
+									kind}</option>`).join("")}
+						</select></label>
+					<label class="field" id="d-lockcode-field"
+					       ${lockType === "PIN" || lockType === "Password" ? "" : "hidden"}>
+						<span>Code</span>
+						<input id="d-lockcode" autocomplete="off"
+						       value="${esc(lockValue)}" placeholder="As the customer gave it"></label>
+				</div>
+				<div class="lock-pattern" id="d-pattern"
+				     ${lockType === "Pattern" ? "" : "hidden"}>
+					<span class="lock-hint">Tap the dots in the order the customer draws them.</span>
+					<div class="lock-grid" id="d-grid">
+						${[1,2,3,4,5,6,7,8,9].map((n) =>
+							`<button type="button" class="lock-dot" data-n="${n}"></button>`).join("")}
+					</div>
+					<div class="lock-read"><b id="d-pattern-read">—</b>
+						<button type="button" class="linkish" id="d-pattern-clear">Start again</button>
+					</div>
+				</div>
 				<div class="device-form-foot">
 					${state.canAddModel
 						? '<button class="linkish" id="new-model">+ The model is not listed</button>'
@@ -193,6 +291,8 @@ window.SVC = (function () {
 			</div>`;
 
 		fillModels(device.brand, device.device_model);
+
+		wireLock(device);
 
 		$("d-imei").addEventListener("input", () => {
 			state.device.imei_1 = $("d-imei").value.trim();
@@ -784,6 +884,7 @@ window.SVC = (function () {
 					device_condition: device.condition || "",
 					brand: device.brand,
 					device_model: device.device_model,
+					device_password: lockCode(device),
 					device_type: device.device_type,
 					purchase_date: device.purchase_date || null,
 					warranty_type: $("warranty-type").value,

@@ -288,6 +288,9 @@ def booking(name: str) -> dict:
 			"sold_by_us": bool(cint(doc.sold_by_us)),
 			"purchase_date": str(doc.device_purchase_date or ""),
 			"condition": doc.physical_condition,
+			# The code the customer gave so the bench can switch the phone on.
+			# Stored encrypted, which is why it is read rather than selected.
+			"lock_code": _lock_code(doc),
 			"photos": [doc.get(f"device_photo_{index}") for index in range(1, 5)
 			           if doc.get(f"device_photo_{index}")],
 		},
@@ -863,6 +866,20 @@ def remove_line(name: str, row: str) -> dict:
 	doc.remove(line)
 	doc.save()
 	return lines(name)
+
+
+def _lock_code(doc) -> str:
+	"""However the phone is locked, in words the bench can act on.
+
+	Kept as an encrypted field, so it comes back through get_password rather
+	than off the document. A card with nothing recorded says nothing.
+	"""
+	if not doc.get("device_password"):
+		return ""
+	try:
+		return doc.get_password("device_password", raise_exception=False) or ""
+	except Exception:
+		return ""
 
 
 def _editable(doc) -> None:

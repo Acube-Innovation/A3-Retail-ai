@@ -2690,3 +2690,25 @@ kbd { display: inline-block; min-width: 17px; padding: 1px 5px; margin: 0 1px;
 	color: var(--muted); border-radius: var(--radius-sm); }
 .dp-flat:hover { background: #f1f4f9; }
 .dp-ok { color: var(--brand, #4f46e5); }
+
+/* ==========================================================================
+   How the phone is locked
+   A pattern is tapped, not typed: the counter sees the shape the customer
+   draws, and translating that into numbers by hand is how a phone reaches the
+   bench that nobody can switch on.
+   ========================================================================== */
+.lock-pattern { margin: 2px 0 10px; }
+.lock-hint { display: block; font-size: 11.5px; color: var(--muted); margin-bottom: 7px; }
+.lock-grid { display: grid; grid-template-columns: repeat(3, 44px); gap: 10px; }
+.lock-dot { width: 44px; height: 44px; border-radius: 50%; cursor: pointer;
+	border: 2px solid var(--line-strong); background: var(--card);
+	font: 700 14px/1 inherit; color: #fff; padding: 0; }
+.lock-dot:hover { border-color: var(--brand, #4f46e5); }
+.lock-dot.is-on { background: var(--brand, #4f46e5); border-color: var(--brand, #4f46e5); }
+.lock-read { display: flex; align-items: center; gap: 12px; margin-top: 8px;
+	font-size: 13px; }
+.lock-read b { font-variant-numeric: tabular-nums; letter-spacing: .5px; }
+/* On the bench card it is the one line a technician hunts for. */
+.lock-line { margin-top: 4px; padding: 4px 9px; border-radius: var(--radius-sm);
+	background: #fff4e6; border: 1px solid #f3c88a; font-size: 12.5px;
+	font-weight: 600; display: inline-block; }
