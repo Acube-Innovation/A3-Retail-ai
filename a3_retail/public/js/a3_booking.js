@@ -167,6 +167,8 @@ window.BOOKING = (function () {
 						${line(data.technician_name
 							? "Technician: " + data.technician_name : "No technician assigned yet")}
 						${data.device.condition ? line("Condition in: " + data.device.condition) : ""}
+						${data.device.lock_code
+							? `<div class="lock-line">${esc(data.device.lock_code)}</div>` : ""}
 					</div>
 				</div>
 

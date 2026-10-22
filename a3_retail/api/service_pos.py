@@ -560,6 +560,10 @@ def save_booking(payload) -> dict:
 	# The counter's note about the device doubles as its description when there is
 	# no IMEI to identify it by.
 	doc.physical_condition = data.get("device_condition") or data.get("notes")
+	# How the phone is locked, as the counter recorded it — "PIN: 4417",
+	# "Pattern: 1-2-3-6-9". The field is encrypted, so it is written here and
+	# read back through get_password for the bench.
+	doc.device_password = (data.get("device_password") or "").strip() or None
 	doc.customer_signature = data.get("signature")
 
 	for index, photo in enumerate((data.get("photos") or [])[:4], start=1):

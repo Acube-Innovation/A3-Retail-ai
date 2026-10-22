@@ -201,8 +201,18 @@ window.A3 = (function () {
 			}
 		});
 
-		if (heading) {
-			heading.replaceWith(select);
+		// Never take the heading out. Four screens write their own title into
+		// it once their data arrives — the booking, the invoice, the parts list
+		// and the reports — and replacing it left them setting textContent on
+		// nothing, so for anybody who can see two branches those pages died with
+		// "Cannot set properties of null". The branch chip inside the heading is
+		// what the picker is really replacing; where there is no chip it simply
+		// sits alongside.
+		const chip = heading && heading.querySelector(".chip");
+		if (chip) {
+			chip.replaceWith(select);
+		} else if (heading) {
+			heading.insertAdjacentElement("afterend", select);
 		} else {
 			host.prepend(select);
 		}
