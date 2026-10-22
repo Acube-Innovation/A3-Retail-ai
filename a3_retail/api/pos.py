@@ -463,6 +463,13 @@ def save_customer(mobile_no: str, customer_name: str, email: str | None = None,
 	)
 	name = customer["name"] if isinstance(customer, dict) else customer
 
+	# `get_or_create` does what it says: for somebody already on file it hands
+	# the record back untouched. This endpoint is also what the till's Edit
+	# button calls, and a correction typed there — a name taken down wrong, an
+	# email that has changed — has to reach the record, or the counter gets
+	# "Customer saved." and nothing happens.
+	_apply_edits(name, customer_name, email)
+
 	# A registered buyer is taxed on the state in their GSTIN, not on whatever
 	# was typed into the address — that is the figure their own return carries.
 	home = gstin_state(gstin) or state or _branch_state(employee.branch)
@@ -474,6 +481,29 @@ def save_customer(mobile_no: str, customer_name: str, email: str | None = None,
 		              home, gstin=gstin)
 
 	return find_customer(mobile_no) or {"name": name, "customer_name": customer_name}
+
+
+def _apply_edits(name: str, customer_name: str, email: str | None) -> None:
+	"""Write back what the counter typed, where it differs from what is held.
+
+	Only what was actually given. A field left empty means this caller did not
+	ask about it — the booking screen sends no email at all — and must not wipe
+	what somebody else recorded.
+	"""
+	changes = {}
+	held = frappe.db.get_value("Customer", name,
+		["customer_name", "email_id"], as_dict=True) or frappe._dict()
+
+	typed = (customer_name or "").strip()
+	if typed and typed != held.get("customer_name"):
+		changes["customer_name"] = typed
+
+	typed_email = (email or "").strip()
+	if typed_email and typed_email != held.get("email_id"):
+		changes["email_id"] = typed_email
+
+	if changes:
+		frappe.db.set_value("Customer", name, changes)
 
 
 def _branch_state(branch: str) -> str | None:
