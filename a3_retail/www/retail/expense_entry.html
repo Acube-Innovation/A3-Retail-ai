@@ -78,6 +78,19 @@
 							placeholder="{{ _('Name, or search a supplier') }}">
 						<div class="w-hits" id="x-supplier-hits"></div></label>
 
+					{#- Filled in only when a member of staff paid for this out of
+					    their own pocket, which is what turns the spend into a
+					    claim they are owed back rather than money off the till. -#}
+					<label class="field"><span>{{ _("Paid By Employee") }}</span>
+						<input id="x-employee" autocomplete="off"
+							placeholder="{{ _('Leave blank unless staff paid for it') }}">
+						<div class="w-hits" id="x-employee-hits"></div></label>
+
+					{#- Three documents come out of this screen and they are not
+					    interchangeable, so it says which one before it is saved
+					    rather than after. -#}
+					<p class="xp-route" id="x-route"></p>
+
 					<label class="field"><span>{{ _("Note") }}</span>
 						<textarea id="x-note" rows="3"
 							placeholder="{{ _('Enter Notes') }}"></textarea></label>

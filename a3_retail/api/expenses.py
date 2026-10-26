@@ -15,13 +15,30 @@ credit whatever it was paid from. Nothing here writes a ledger entry by hand.
 
 import frappe
 from frappe import _
-from frappe.utils import flt, getdate, nowdate
+from frappe.utils import cint, flt, getdate, nowdate
 
 from a3_retail.api import require_permission
 from a3_retail.utils import tax
 from a3_retail.api.staff import _me
 
 EXPENSE_PARENT_HINTS = ("Indirect Expenses", "Expenses")
+
+# Accounts that are expenses to an accountant but not a spend to a shopkeeper:
+# what the goods sold cost, a stock write-down, the rounding on an invoice.
+# Counted in, every sale of the day would turn up on the expense list.
+NOT_A_SPEND = ("Cost of Goods Sold", "Stock Adjustment",
+               "Stock Received But Not Billed", "Expenses Included In Valuation",
+               "Round Off")
+
+# A branch spends three ways and all three end up in the same ledger: a journal
+# straight to the books (which is what this screen writes), an employee paying
+# out of their own pocket, or a supplier's bill settled later. The list names
+# which route a row came in by, so it reads as one spend book rather than three.
+SPEND_KIND = {
+	"Journal Entry": "Journal",
+	"Expense Claim": "Employee",
+	"Purchase Invoice": "Supplier bill",
+}
 
 # The rates GST actually comes in, so the form offers a list rather than a box.
 GST_RATES = [0, 0.25, 3, 5, 12, 18, 28]
@@ -155,44 +172,236 @@ def _branch_cost_centres(branch: str) -> list[str]:
 	return list(centres)
 
 
+def _responsible_branch(cost_center: str | None) -> str:
+	"""The branch whose P&L actually carries this spend.
+
+	Read off the cost centre, not the `branch` stamp on the ledger line: that
+	stamp follows whoever happened to be signed in when the entry posted, and on
+	this site two entries already disagree with the books because of it. The
+	cost centre is what the P&L is cut by, so the cost centre is what is true.
+	"""
+	if not cost_center:
+		return ""
+	return frappe.get_cached_value("Cost Center", cost_center, "custom_branch") or ""
+
+
+def _things(labels: list[str], shown: int = 3) -> str:
+	"""The first few things bought, then a count of the rest.
+
+	A bill can run to thirty lines and the column is one line tall, so the
+	point is to say enough for the entry to be recognised, not to list it.
+	"""
+	labels = [str(label).strip() for label in labels if label and str(label).strip()]
+	if not labels:
+		return ""
+	rest = len(labels) - shown
+	return ", ".join(labels[:shown]) + (f" +{rest} more" if rest > 0 else "")
+
+
+def _line_label(row) -> str:
+	"""One bought thing, with its count when more than one was bought."""
+	# `item_name` first: a Purchase Invoice line carries the catalogue
+	# description, which runs to several lines and would swamp the column. A
+	# Branch Expense line has no item name, so it falls through to what the
+	# counter typed.
+	name = row.get("item_name") or row.get("description") or row.get("item_code") or ""
+	qty = flt(row.get("qty"))
+	return f"{name} x{qty:g}" if qty > 1 else name
+
+
+def _account_label(account: str | None) -> str:
+	return frappe.get_cached_value("Account", account, "account_name") if account else ""
+
+
+def _journal_spend(voucher_no: str) -> dict:
+	"""A journal: either one of this screen's own, or one posted in the office."""
+	ours = frappe.db.get_value(
+		"Branch Expense", {"journal_entry": voucher_no, "docstatus": 1},
+		["name", "category", "supplier", "paid_to", "notes", "outstanding_amount"],
+		as_dict=True)
+	if not ours:
+		# Somebody booked this straight into the books. A journal has no item
+		# lines, so the accounts it debited are the best description there is.
+		entry = frappe.db.get_value(
+			"Journal Entry", voucher_no, ["user_remark", "title"], as_dict=True
+		) or frappe._dict()
+		accounts = frappe.get_all(
+			"Journal Entry Account",
+			filters={"parent": voucher_no, "debit_in_account_currency": (">", 0)},
+			pluck="account")
+		return {"ref": voucher_no,
+		        "category_label": _account_label(accounts[0] if accounts else None),
+		        "items": _things([_account_label(a) for a in accounts]),
+		        "paid_to_label": "",
+		        "notes": entry.user_remark or entry.title or "",
+		        "outstanding_amount": 0.0}
+
+	lines = frappe.get_all("Branch Expense Item", filters={"parent": ours.name},
+	                       fields=["item_code", "description", "qty"], order_by="idx")
+	return {"ref": ours.name,
+	        "category_label": _account_label(ours.category),
+	        "items": _things([_line_label(r) for r in lines]),
+	        "paid_to_label": ours.paid_to or (
+	            frappe.get_cached_value("Supplier", ours.supplier, "supplier_name")
+	            if ours.supplier else ""),
+	        "notes": ours.notes or "",
+	        "outstanding_amount": flt(ours.outstanding_amount)}
+
+
+def _claim_spend(voucher_no: str) -> dict:
+	"""An employee paid out of their own pocket and is owed it back."""
+	claim = frappe.db.get_value(
+		"Expense Claim", voucher_no,
+		["employee_name", "remark", "grand_total", "total_amount_reimbursed"],
+		as_dict=True) or frappe._dict()
+	lines = frappe.get_all("Expense Claim Detail", filters={"parent": voucher_no},
+	                       fields=["expense_type", "description"], order_by="idx")
+	return {"ref": voucher_no,
+	        "category_label": lines[0].expense_type if lines else "",
+	        "items": _things([r.description or r.expense_type for r in lines]),
+	        "paid_to_label": claim.employee_name or "",
+	        "notes": claim.remark or "",
+	        "outstanding_amount": flt(claim.grand_total) - flt(claim.total_amount_reimbursed)}
+
+
+def _bill_spend(voucher_no: str) -> dict:
+	"""A supplier's bill, whatever has since been paid against it."""
+	bill = frappe.db.get_value(
+		"Purchase Invoice", voucher_no,
+		["supplier_name", "remarks", "outstanding_amount", "bill_no"],
+		as_dict=True) or frappe._dict()
+	lines = frappe.get_all(
+		"Purchase Invoice Item", filters={"parent": voucher_no},
+		fields=["item_name", "description", "qty", "expense_account"], order_by="idx")
+	return {"ref": voucher_no,
+	        "category_label": _account_label(lines[0].expense_account) if lines else "",
+	        "items": _things([_line_label(r) for r in lines]),
+	        "paid_to_label": bill.supplier_name or "",
+	        "notes": bill.bill_no or bill.remarks or "",
+	        "outstanding_amount": flt(bill.outstanding_amount)}
+
+
+SPEND_DETAIL = {
+	"Journal Entry": _journal_spend,
+	"Expense Claim": _claim_spend,
+	"Purchase Invoice": _bill_spend,
+}
+
+
 @frappe.whitelist()
 def recent(limit: int = 40) -> dict:
-	"""This branch's spend, newest first, with what it adds up to this month."""
+	"""This branch's spend, newest first, by whichever route it was recorded.
+
+	A spend reaches the books three ways — a journal, an employee's claim, a
+	supplier's bill — and a shopkeeper asking what the branch spent last week
+	means all three. So the list is read off the ledger rather than off this
+	screen's own documents: anything that debited an expense account against one
+	of the branch's cost centres belongs here, whoever entered it and wherever.
+	"""
 	employee = _me()
 	require_permission("Branch Expense", "read")
 
-	rows = frappe.get_all(
-		"Branch Expense",
-		filters={"branch": employee.branch, "docstatus": ["<", 2]},
-		fields=["name", "posting_date", "category", "grand_total as amount",
-		        "paid_to", "supplier", "notes", "outstanding_amount", "docstatus"],
-		order_by="posting_date desc, creation desc",
-		limit=int(limit) or 40,
-	)
-	for r in rows:
-		r["category_label"] = frappe.db.get_value("Account", r["category"], "account_name") \
-			if r.get("category") else ""
-		r["paid_to_label"] = r.get("paid_to") or (
-			frappe.db.get_value("Supplier", r["supplier"], "supplier_name")
-			if r.get("supplier") else "")
-		r["amount"] = flt(r["amount"])
+	centres = _branch_cost_centres(employee.branch)
+	if not centres:
+		return {"branch": employee.branch, "rows": [], "month_total": 0.0}
+
+	# Grouped by voucher: one bill is one line here however many accounts it
+	# touched, and the cost centre comes along to name who carries it.
+	spend = frappe.db.sql(
+		"""
+		select gl.voucher_type, gl.voucher_no, gl.posting_date,
+		       max(gl.cost_center) as cost_center,
+		       sum(gl.debit - gl.credit) as amount
+		from `tabGL Entry` gl
+		join `tabAccount` a on a.name = gl.account
+		where gl.is_cancelled = 0
+		  and gl.cost_center in %(centres)s
+		  and a.root_type = 'Expense'
+		  and ifnull(a.account_type, '') not in %(skip)s
+		group by gl.voucher_type, gl.voucher_no, gl.posting_date
+		having sum(gl.debit - gl.credit) > 0.005
+		order by gl.posting_date desc, gl.voucher_no desc
+		limit %(limit)s
+		""",
+		{"centres": centres, "skip": NOT_A_SPEND, "limit": min(cint(limit) or 40, 200)},
+		as_dict=True)
+
+	rows = []
+	for row in spend:
+		detail = SPEND_DETAIL.get(row.voucher_type, lambda _: {})(row.voucher_no)
+		rows.append({
+			"name": detail.get("ref") or row.voucher_no,
+			"voucher_type": row.voucher_type,
+			"voucher_no": row.voucher_no,
+			"kind": SPEND_KIND.get(row.voucher_type, row.voucher_type),
+			"posting_date": str(row.posting_date),
+			"amount": flt(row.amount),
+			"branch_label": _responsible_branch(row.cost_center),
+			"cost_center": row.cost_center,
+			"category_label": detail.get("category_label") or "",
+			"items": detail.get("items") or "",
+			"paid_to_label": detail.get("paid_to_label") or "",
+			"notes": detail.get("notes") or "",
+			"outstanding_amount": flt(detail.get("outstanding_amount")),
+			"docstatus": 1,
+		})
+
+	rows.extend(_unposted(employee.branch))
+	rows.sort(key=lambda r: (r["posting_date"], r["name"]), reverse=True)
 
 	month = frappe.db.sql(
 		"""
-		select coalesce(sum(grand_total), 0) from `tabBranch Expense`
-		where docstatus = 1 and branch = %(branch)s
-		  and month(posting_date) = month(curdate())
-		  and year(posting_date) = year(curdate())
+		select coalesce(sum(gl.debit - gl.credit), 0)
+		from `tabGL Entry` gl
+		join `tabAccount` a on a.name = gl.account
+		where gl.is_cancelled = 0
+		  and gl.cost_center in %(centres)s
+		  and a.root_type = 'Expense'
+		  and ifnull(a.account_type, '') not in %(skip)s
+		  and month(gl.posting_date) = month(curdate())
+		  and year(gl.posting_date) = year(curdate())
 		""",
-		{"branch": employee.branch},
-	)[0][0]
+		{"centres": centres, "skip": NOT_A_SPEND})[0][0]
 
 	return {"branch": employee.branch, "rows": rows, "month_total": flt(month)}
 
 
+def _unposted(branch: str) -> list[dict]:
+	"""Expenses started here and not yet submitted, which have no ledger line."""
+	drafts = frappe.get_all(
+		"Branch Expense", filters={"branch": branch, "docstatus": 0},
+		fields=["name", "posting_date", "category", "grand_total", "paid_to",
+		        "supplier", "notes", "outstanding_amount", "cost_center"],
+		order_by="posting_date desc, creation desc")
+	out = []
+	for d in drafts:
+		lines = frappe.get_all("Branch Expense Item", filters={"parent": d.name},
+		                       fields=["item_code", "description", "qty"], order_by="idx")
+		out.append({
+			"name": d.name, "voucher_type": "Branch Expense", "voucher_no": d.name,
+			"kind": SPEND_KIND["Journal Entry"],
+			"posting_date": str(d.posting_date), "amount": flt(d.grand_total),
+			"branch_label": _responsible_branch(d.cost_center) or branch,
+			"cost_center": d.cost_center,
+			"category_label": _account_label(d.category),
+			"items": _things([_line_label(r) for r in lines]),
+			"paid_to_label": d.paid_to or (
+				frappe.get_cached_value("Supplier", d.supplier, "supplier_name")
+				if d.supplier else ""),
+			"notes": d.notes or "", "outstanding_amount": flt(d.outstanding_amount),
+			"docstatus": 0,
+		})
+	return out
+
+
 @frappe.whitelist()
 def create(payload) -> dict:
-	"""Record a spend. The document works out the posting."""
+	"""Record a spend. The document works out which of the three it becomes.
+
+	A GST bill posts as the supplier's own Purchase Invoice, a spend an employee
+	paid out of pocket as an Expense Claim, and everything else as the Journal
+	Entry petty cash has always been. See `Branch Expense.route`.
+	"""
 	employee = _me()
 	require_permission("Branch Expense", "create")
 
@@ -213,6 +422,12 @@ def create(payload) -> dict:
 	doc.due_date = getdate(data["due_date"]) if data.get("due_date") else None
 	doc.mode_of_payment = (data.get("mode_of_payment") or "").strip() or None
 	doc.paid_from = (data.get("paid_from") or "").strip() or None
+	# Not `doc.employee = ...`: `Document.insert` re-applies field defaults over
+	# every blank field, and a Link to Employee is filled from the counter's own
+	# User Permission — so "nobody paid this out of pocket" would come back as
+	# "the person at the till did", and every petty-cash slip would post as
+	# their expense claim. The flag survives that; the field does not.
+	doc.flags.paid_by_employee = (data.get("employee") or "").strip() or None
 	doc.with_gst = 1 if data.get("with_gst") else 0
 	doc.discount_amount = flt(data.get("discount"))
 	doc.notes = (data.get("note") or "").strip() or None
@@ -227,14 +442,16 @@ def create(payload) -> dict:
 		})
 
 	# Blank means it was all paid, which is what a shop means unless it says so.
+	# A typed nought is not blank, so the flag tells the document the difference.
 	if data.get("paid_amount") not in (None, ""):
 		doc.paid_amount = flt(data.get("paid_amount"))
+		doc.flags.paid_amount_given = True
 
 	# A balance has to be owed to somebody: ERPNext keeps payables against a
 	# party, and a typed name cannot hold one. Rather than refuse the entry over
 	# a record the counter has no way to create, make the supplier from the name
 	# they gave — which is what their old software did with a contact.
-	if doc.paid_to and not doc.supplier and _owes(doc):
+	if doc.paid_to and not doc.supplier and not doc.employee and _owes(doc):
 		doc.supplier = _supplier_named(doc.paid_to)
 		doc.paid_to = None
 
@@ -248,6 +465,8 @@ def create(payload) -> dict:
 		"outstanding": flt(doc.outstanding_amount),
 		"category": frappe.db.get_value("Account", doc.category, "account_name"),
 		"date": str(doc.posting_date),
+		"posted_as": doc.posted_as,
+		"posted": doc.purchase_invoice or doc.expense_claim or doc.journal_entry,
 	}
 
 
@@ -393,6 +612,29 @@ def modes() -> list[str]:
 	_me()
 	return frappe.get_all("Mode of Payment", filters={"enabled": 1}, pluck="name",
 	                      order_by="name")
+
+
+@frappe.whitelist()
+def search_employees(query: str = "", limit: int = 10) -> list[dict]:
+	"""Staff of this branch, for a spend one of them paid out of pocket."""
+	employee = _me()
+	like = f"%{(query or '').strip()}%"
+	return frappe.get_all(
+		"Employee",
+		filters={"status": "Active", "branch": employee.branch,
+		         "employee_name": ("like", like)},
+		fields=["name", "employee_name", "designation"],
+		order_by="employee_name",
+		limit_page_length=min(cint(limit) or 10, 25))
+
+
+@frappe.whitelist()
+def supplier_gstin(supplier: str) -> dict:
+	"""Whether this supplier can be billed with GST, for the form to say so."""
+	_me()
+	from a3_retail.utils import tax
+
+	return {"supplier": supplier, "gstin": tax.supplier_gstin(supplier)}
 
 
 @frappe.whitelist()

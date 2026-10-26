@@ -30,7 +30,8 @@
 	const state = {
 		categories: [], sources: [], modes: [], uoms: [], gstRates: [], itc: [],
 		canAddCategory: false, canCreateItem: false,
-		lines: [], supplier: null, catalogue: [], chosen: new Set(), saving: false,
+		lines: [], supplier: null, employee: null, catalogue: [], chosen: new Set(),
+		saving: false,
 	};
 
 	function say(text, kind) {
@@ -354,6 +355,7 @@
 					reference_no: $("x-ref").value.trim(),
 					supplier: state.supplier,
 					paid_to: state.supplier ? "" : $("x-paidto").value.trim(),
+					employee: state.employee || "",
 					mode_of_payment: $("x-mode").value,
 					paid_from: $("x-source").value,
 					discount: Number($("x-discount").value) || 0,
@@ -366,7 +368,11 @@
 						gst_rate: l.gst_rate })),
 				},
 			});
-			say(`${result.expense} saved — ${money(result.amount)}`
+			const asWhat = { "Supplier Invoice": "supplier invoice",
+			                 "Employee Claim": "employee claim",
+			                 "Journal": "journal entry" }[result.posted_as] || "entry";
+			say(`${result.expense} saved as a ${asWhat} (${result.posted}) — `
+				+ money(result.amount)
 				+ (result.outstanding > 0
 					? `, ${money(result.outstanding)} still owed.` : "."), "ok");
 			setTimeout(() => { window.location.href = "/retail/expenses"; }, 1200);
@@ -425,6 +431,55 @@
 		});
 		paidTo.addEventListener("blur", () =>
 			setTimeout(() => { hits.innerHTML = ""; }, 120));
+
+		const staff = $("x-employee");
+		const staffHits = $("x-employee-hits");
+		staff.addEventListener("input", async () => {
+			state.employee = null;
+			showRoute();
+			const q = staff.value.trim();
+			if (q.length < 2) { staffHits.innerHTML = ""; return; }
+			const rows = await A3.call("a3_retail.api.expenses.search_employees",
+				{ query: q, limit: 6 }).catch(() => []);
+			staffHits.innerHTML = (rows || []).map((r) =>
+				`<button type="button" class="w-hit" data-name="${esc(r.name)}"
+					data-label="${esc(r.employee_name)}">${esc(r.employee_name)}${
+					r.designation ? ` · ${esc(r.designation)}` : ""}</button>`).join("");
+		});
+		staffHits.addEventListener("mousedown", (event) => {
+			const hit = event.target.closest(".w-hit");
+			if (!hit) return;
+			event.preventDefault();
+			state.employee = hit.dataset.name;
+			staff.value = hit.dataset.label;
+			staffHits.innerHTML = "";
+			showRoute();
+		});
+		staff.addEventListener("blur", () =>
+			setTimeout(() => { staffHits.innerHTML = ""; }, 120));
+
+		$("x-gst").addEventListener("change", showRoute);
+		showRoute();
+	}
+
+	/** Say which of the three documents this will become, before it is saved. */
+	function showRoute() {
+		const gst = $("x-gst").checked;
+		const staff = !!state.employee;
+		const line = $("x-route");
+		if (gst && staff) {
+			line.textContent = "A GST bill cannot also be an employee claim —"
+				+ " clear one of them.";
+			line.className = "xp-route is-bad";
+			return;
+		}
+		line.className = "xp-route";
+		line.textContent = gst
+			? "Saves as the supplier's purchase invoice, so the GST can be claimed."
+			: staff
+				? "Saves as an employee claim — what the shop owes "
+				  + $("x-employee").value.trim() + " back."
+				: "Saves as a journal entry, straight into this branch's books.";
 	}
 
 	document.addEventListener("DOMContentLoaded", start);

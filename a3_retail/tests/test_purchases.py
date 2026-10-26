@@ -202,8 +202,10 @@ class TestWhatTheSupplierIsOwed(FrappeTestCase):
 	def test_the_rate_comes_off_the_items(self):
 		import inspect
 
-		source = inspect.getsource(purchases._bill_gst_rate)
-		self.assertIn("tax.item_rate", source)
+		from a3_retail.utils import tax
+
+		source = inspect.getsource(tax.bill_rate)
+		self.assertIn("item_rate", source)
 		# a mixed bill takes the highest rate its lines carry
 		self.assertIn("max(rates)", source)
 
@@ -212,7 +214,9 @@ class TestWhatTheSupplierIsOwed(FrappeTestCase):
 		the document outright if the bill tries to."""
 		import inspect
 
-		source = inspect.getsource(purchases._tax_template)
+		from a3_retail.utils import tax
+
+		source = inspect.getsource(tax.input_gst_template)
 		self.assertIn("if not theirs:", source)
 		self.assertIn("return None", source)
 
@@ -221,7 +225,9 @@ class TestWhatTheSupplierIsOwed(FrappeTestCase):
 		line. Which it is comes off the supplier's own GSTIN."""
 		import inspect
 
-		source = inspect.getsource(purchases._tax_template)
+		from a3_retail.utils import tax
+
+		source = inspect.getsource(tax.input_gst_template)
 		self.assertIn("Out-state", source)
 		self.assertIn("In-state", source)
 		self.assertIn("startswith(str(ours))", source)

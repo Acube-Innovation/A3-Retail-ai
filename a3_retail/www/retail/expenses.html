@@ -39,22 +39,25 @@
 			<section class="svc-panel">
 				<div class="panel-head">
 					<h2>{{ _("Recent expenses") }}</h2>
-					<span class="rep-when">{{ _("Newest first, this branch only") }}</span>
+					<span class="rep-when">{{ _("Newest first · journal, employee claims and supplier bills") }}</span>
 				</div>
 				<div class="line-table">
 					<table class="bill-table" id="rows-table">
 						<thead>
 							<tr>
 								<th>{{ _("Date") }}</th>
+								<th>{{ _("Type") }}</th>
 								<th>{{ _("Spent on") }}</th>
+								<th>{{ _("Items") }}</th>
 								<th>{{ _("Paid to") }}</th>
+								<th>{{ _("Responsible branch") }}</th>
 								<th>{{ _("Note") }}</th>
 								<th class="num">{{ _("Amount") }}</th>
 								<th class="num">{{ _("Owed") }}</th>
 								<th>{{ _("Entry") }}</th>
 							</tr>
 						</thead>
-						<tbody id="rows"><tr><td colspan="7">{{ _("Loading…") }}</td></tr></tbody>
+						<tbody id="rows"><tr><td colspan="10">{{ _("Loading…") }}</td></tr></tbody>
 					</table>
 				</div>
 			</section>
