@@ -1176,6 +1176,21 @@ input.is-locked { background: rgba(42, 51, 66, .04); color: var(--muted);
 .pill { display: inline-block; font-size: 10.5px; font-weight: 700; border-radius: var(--radius-pill);
 	padding: 3px 9px; white-space: nowrap; }
 .pill-good { background: #e7f7ee; color: #1c7f4c; }
+/* The three routes a branch's spend arrives by, on the expense list. */
+.spend-journal { background: #eef2fb; color: #33559b; }
+.spend-employee { background: #fdf3e3; color: #92600c; }
+.spend-bill { background: #f1ecfb; color: #5b3fa0; }
+/* Ten columns do not fit a counter's screen on one line each, and the ones that
+   overflow are always the same three: what was bought, who it went to and which
+   branch carries it. Let those wrap and the row number stays on screen. */
+#rows-table tbody td.exp-items,
+#rows-table tbody td.exp-party,
+#rows-table tbody td.exp-branch,
+#rows-table tbody td.exp-note { white-space: normal; }
+#rows-table tbody td.exp-items { min-width: 140px; max-width: 230px; }
+#rows-table tbody td.exp-party { max-width: 160px; }
+#rows-table tbody td.exp-branch { max-width: 130px; }
+#rows-table tbody td.exp-note { max-width: 140px; }
 .pill-bad { background: #fdecec; color: var(--danger-dark); }
 .pill-warn { background: #fdf0e0; color: var(--brand-dark); }
 .pill-sky { background: #eaf3fd; color: var(--sky-dark); }

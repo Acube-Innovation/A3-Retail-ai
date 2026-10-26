@@ -10,6 +10,13 @@
 	const money = (v) =>
 		"₹" + new Intl.NumberFormat("en-IN", { maximumFractionDigits: 2 }).format(v || 0);
 
+	/* Three routes, three colours: a journal the counter wrote, an employee out
+	   of pocket, a supplier's bill. The column is the quickest way to see that
+	   half a month's spend is sitting on somebody's claim. */
+	const KIND_CLASS = { "Journal": "spend-journal", "Employee": "spend-employee",
+	                     "Supplier bill": "spend-bill" };
+	const kindClass = (kind) => KIND_CLASS[kind] || "";
+
 	function esc(v) {
 		// `"` and `'` as well, not just the tag characters: almost every use of
 		// this is inside an attribute, and a name like `APPLE IPAD A16 "11"`
@@ -44,7 +51,7 @@
 			paint(data);
 		} catch (error) {
 			$("rows").innerHTML =
-				`<tr><td colspan="5">${esc(error.message || "Could not load expenses.")}</td></tr>`;
+				`<tr><td colspan="10">${esc(error.message || "Could not load expenses.")}</td></tr>`;
 		}
 	}
 
@@ -66,16 +73,19 @@
 
 		if (!rows.length) {
 			$("rows").innerHTML =
-				'<tr><td colspan="7">Nothing recorded here yet.</td></tr>';
+				'<tr><td colspan="10">Nothing recorded here yet.</td></tr>';
 			return;
 		}
 
 		$("rows").innerHTML = rows.map((r) => `
 			<tr${r.docstatus === 0 ? ' class="is-draft"' : ""}>
 				<td>${esc(r.posting_date || "")}</td>
+				<td><span class="pill ${esc(kindClass(r.kind))}">${esc(r.kind || "")}</span></td>
 				<td>${esc(r.category_label || "")}</td>
-				<td>${esc(r.paid_to_label || "")}</td>
-				<td>${esc(r.notes || "")}</td>
+				<td class="exp-items" title="${esc(r.items || "")}">${esc(r.items || "")}</td>
+				<td class="exp-party">${esc(r.paid_to_label || "")}</td>
+				<td class="exp-branch">${esc(r.branch_label || "")}</td>
+				<td class="exp-note">${esc(r.notes || "")}</td>
 				<td class="num">${esc(money(r.amount))}</td>
 				<td class="num">${r.outstanding_amount > 0
 					? esc(money(r.outstanding_amount)) : ""}</td>
