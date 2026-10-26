@@ -7,3 +7,4 @@ a3_retail.patches.merge_workspaces
 a3_retail.patches.gst_included_in_rate
 a3_retail.patches.accessories_psla_opening_stock
 a3_retail.patches.services_psla_spare_parts
+a3_retail.patches.accessories_psla_short_codes
