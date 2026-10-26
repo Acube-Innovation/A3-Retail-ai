@@ -22,7 +22,7 @@ window.SUPPLIERS = (function () {
 	};
 
 	const state = { supplier: null, profile: null, tab: "purchases", page: 1,
-	                query: "", owing: false, editing: null, open: [] };
+	                query: "", owing: false, editing: null };
 
 	function toast(text, tone) {
 		const node = $("toast");
@@ -236,69 +236,17 @@ window.SUPPLIERS = (function () {
 	}
 
 	// -------------------------------------------------------------- paying
+	/* One figure, nothing else. Which bills it closes is the server's job —
+	   oldest first — because that is the order a shop settles in anyway, and
+	   making the counter split a payment by hand only invited arithmetic. */
 	async function openPay() {
-		state.open = await A3.call("a3_retail.api.supplier_desk.open_invoices", {
-			supplier: state.supplier });
 		$("pay-to").textContent = state.profile.supplier_name
 			+ " — " + money(state.profile.outstanding) + " outstanding";
 		$("pay-amount").value = "";
 		$("pay-ref").value = "";
 		$("pay-note").textContent = "";
-		paintPayRows();
 		$("pay-modal").hidden = false;
 		$("pay-amount").focus();
-	}
-
-	function paintPayRows() {
-		if (!state.open.length) {
-			$("pay-rows").innerHTML =
-				`<li class="cust-empty">${esc("Nothing outstanding — this will be an advance.")}</li>`;
-			summarise();
-			return;
-		}
-		$("pay-rows").innerHTML = state.open.map((r) => `
-			<li class="pay-row">
-				<div class="pay-which">
-					<b>${esc(r.name)}</b>
-					<span>${esc(day(r.posting_date))}${r.bill_no ? " · " + esc(r.bill_no) : ""}</span>
-				</div>
-				<div class="pay-owed">${esc(money(r.outstanding_amount))}</div>
-				<input class="pay-alloc" data-invoice="${esc(r.name)}"
-				       data-owed="${r.outstanding_amount}" inputmode="decimal" placeholder="0.00">
-			</li>`).join("");
-		$("pay-rows").querySelectorAll(".pay-alloc").forEach((node) => {
-			node.addEventListener("input", summarise);
-		});
-		summarise();
-	}
-
-	function allocations() {
-		return Array.from($("pay-rows").querySelectorAll(".pay-alloc"))
-			.map((node) => ({ invoice: node.dataset.invoice,
-			                  amount: parseFloat(node.value) || 0 }))
-			.filter((row) => row.amount > 0);
-	}
-
-	function summarise() {
-		const amount = parseFloat($("pay-amount").value) || 0;
-		const allocated = allocations().reduce((sum, row) => sum + row.amount, 0);
-		const left = amount - allocated;
-		$("pay-summary").innerHTML =
-			`${esc("Paying")} <b>${esc(money(amount))}</b> · ${esc("allocated")}
-			 <b>${esc(money(allocated))}</b> · ${esc(left < -0.005 ? "over by" : "on account")}
-			 <b class="${left < -0.005 ? "warn" : ""}">${esc(money(Math.abs(left)))}</b>`;
-	}
-
-	/** Fill the bills from the oldest down, which is the order a shop settles. */
-	function autoAllocate() {
-		let left = parseFloat($("pay-amount").value) || 0;
-		$("pay-rows").querySelectorAll(".pay-alloc").forEach((node) => {
-			const owed = parseFloat(node.dataset.owed) || 0;
-			const take = Math.min(left, owed);
-			node.value = take > 0 ? take.toFixed(2) : "";
-			left -= take;
-		});
-		summarise();
 	}
 
 	async function savePay() {
@@ -311,7 +259,6 @@ window.SUPPLIERS = (function () {
 				amount: amount,
 				mode_of_payment: $("pay-mode").value,
 				reference_no: $("pay-ref").value.trim(),
-				allocations: allocations(),
 			});
 			$("pay-modal").hidden = true;
 			toast(money(done.paid) + " paid — " + done.payment, "ok");
@@ -341,8 +288,6 @@ window.SUPPLIERS = (function () {
 		$("s-fetch").addEventListener("click", fetchGstin);
 		$("s-gstin").addEventListener("change", fetchGstin);
 		$("pay-save").addEventListener("click", savePay);
-		$("pay-auto").addEventListener("click", autoAllocate);
-		$("pay-amount").addEventListener("input", summarise);
 
 		document.querySelectorAll("[data-close]").forEach((node) => {
 			node.addEventListener("click", () => { node.closest(".modal").hidden = true; });

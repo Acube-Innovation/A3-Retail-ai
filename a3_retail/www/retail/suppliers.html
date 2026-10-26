@@ -101,9 +101,9 @@
 	</div>
 </div>
 
-{#- Money going out, against the bills it settles. The allocation is shown line
-    by line so the ledger ends up saying which invoice each rupee closed, rather
-    than leaving a loose credit on the account. -#}
+{#- Money going out. The counter types one figure and nothing else: the bills
+    are settled oldest first, which is the order a shop pays in, so the ledger
+    still ends up saying which invoice each rupee closed. -#}
 <div class="modal" id="pay-modal" hidden>
 	<div class="modal-card modal-wide">
 		<h3>{{ _("Pay supplier") }}</h3>
@@ -118,15 +118,7 @@
 			<label class="field"><span>{{ _("Reference (optional)") }}</span>
 				<input id="pay-ref"></label>
 		</div>
-		<div class="pay-head">
-			<span>{{ _("Settle these bills") }}</span>
-			<button class="btn btn-quiet btn-sm" id="pay-auto" type="button">
-				{{ _("Allocate oldest first") }}</button>
-		</div>
-		<ul class="pay-rows" id="pay-rows"></ul>
-		<div class="pay-foot">
-			<span id="pay-summary"></span>
-		</div>
+		<p class="pay-hint">{{ _("Settled against the oldest bills first. Anything more than is owed stays on account.") }}</p>
 		<div class="modal-note" id="pay-note"></div>
 		<div class="modal-actions">
 			<button class="btn btn-quiet" data-close>{{ _("Cancel") }}</button>

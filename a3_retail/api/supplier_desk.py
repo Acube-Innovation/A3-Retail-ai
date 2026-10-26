@@ -259,15 +259,41 @@ def open_invoices(supplier: str) -> list[dict]:
 		   order by pi.posting_date, pi.creation""", supplier, as_dict=True)
 
 
+def _oldest_first(supplier: str, amount: float) -> list[dict]:
+	"""Spread `amount` over the open bills, oldest down, stopping when it runs out.
+
+	The remainder is simply not allocated: Payment Entry carries it as an
+	unallocated credit against the supplier, which is what a shop means when it
+	hands over a round figure that covers the old bills and a bit more.
+	"""
+	left = flt(amount)
+	spread = []
+	for invoice in open_invoices(supplier):
+		if left <= 0.005:
+			break
+		share = min(left, flt(invoice.outstanding_amount))
+		if share <= 0.005:
+			continue
+		spread.append({"invoice": invoice.name, "amount": share})
+		left -= share
+	return spread
+
+
 @frappe.whitelist()
 def pay(supplier: str, amount: float, mode_of_payment: str = "Cash",
         account: str | None = None, allocations=None,
         reference_no: str | None = None, posting_date: str | None = None) -> dict:
-	"""Pay a distributor, settling the bills the counter picked.
+	"""Pay a distributor, settling the oldest bills first.
 
-	`allocations` is what the screen decided — `[{"invoice": name, "amount": x}]`.
-	Without any, the payment sits on the supplier's account as a credit, which is
-	a real thing a shop does (an advance), so it is allowed rather than refused.
+	`allocations` is `[{"invoice": name, "amount": x}]` for a caller that has
+	already decided the split. Left out entirely, the bills are filled oldest
+	first here, which is the order a shop settles in and all the counter screen
+	asks for: one figure. Passing an empty list is a different instruction — it
+	says allocate nothing — and parks the whole amount on the supplier's account
+	as an advance, which is also a real thing a shop does.
+
+	Either way, whatever is left over after the open bills are closed stays on
+	account, so paying round figures does not need the counter to do arithmetic.
 
 	The money leaves a real account, so the mode's own account is used unless the
 	counter named which one it came out of.
@@ -283,7 +309,8 @@ def pay(supplier: str, amount: float, mode_of_payment: str = "Cash",
 
 	if isinstance(allocations, str):
 		allocations = frappe.parse_json(allocations)
-	allocations = allocations or []
+	if allocations is None:
+		allocations = _oldest_first(supplier, amount)
 
 	company = _company()
 	paid_from = account or frappe.db.get_value(
