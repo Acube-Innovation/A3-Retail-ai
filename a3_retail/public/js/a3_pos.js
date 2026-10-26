@@ -1132,9 +1132,14 @@ window.POS = (function () {
 			? " · " + result.payments
 				.map((p) => `${p.mode_of_payment} ${money(p.amount)}`).join(" + ")
 			: "";
+		// What is still owed matters more than anything else on this card: the
+		// customer is standing there and the counter has one moment to say it.
 		$("done-note").textContent = `${result.invoice} · ${result.customer_name} · `
 			+ money(result.grand_total) + tender
-			+ (result.change ? ` · change ${money(result.change)}` : "");
+			+ (result.change ? ` · change ${money(result.change)}` : "")
+			+ (result.outstanding > 0
+				? ` · ${money(result.outstanding)} still owed` : "");
+		$("done-note").classList.toggle("owes", result.outstanding > 0);
 		$("print-invoice").href = result.print_url;
 		$("done-modal").hidden = false;
 		$("bill-no").textContent = result.invoice;
