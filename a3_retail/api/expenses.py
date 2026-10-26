@@ -396,7 +396,12 @@ def _unposted(branch: str) -> list[dict]:
 
 @frappe.whitelist()
 def create(payload) -> dict:
-	"""Record a spend. The document works out the posting."""
+	"""Record a spend. The document works out which of the three it becomes.
+
+	A GST bill posts as the supplier's own Purchase Invoice, a spend an employee
+	paid out of pocket as an Expense Claim, and everything else as the Journal
+	Entry petty cash has always been. See `Branch Expense.route`.
+	"""
 	employee = _me()
 	require_permission("Branch Expense", "create")
 
@@ -417,6 +422,12 @@ def create(payload) -> dict:
 	doc.due_date = getdate(data["due_date"]) if data.get("due_date") else None
 	doc.mode_of_payment = (data.get("mode_of_payment") or "").strip() or None
 	doc.paid_from = (data.get("paid_from") or "").strip() or None
+	# Not `doc.employee = ...`: `Document.insert` re-applies field defaults over
+	# every blank field, and a Link to Employee is filled from the counter's own
+	# User Permission — so "nobody paid this out of pocket" would come back as
+	# "the person at the till did", and every petty-cash slip would post as
+	# their expense claim. The flag survives that; the field does not.
+	doc.flags.paid_by_employee = (data.get("employee") or "").strip() or None
 	doc.with_gst = 1 if data.get("with_gst") else 0
 	doc.discount_amount = flt(data.get("discount"))
 	doc.notes = (data.get("note") or "").strip() or None
@@ -431,14 +442,16 @@ def create(payload) -> dict:
 		})
 
 	# Blank means it was all paid, which is what a shop means unless it says so.
+	# A typed nought is not blank, so the flag tells the document the difference.
 	if data.get("paid_amount") not in (None, ""):
 		doc.paid_amount = flt(data.get("paid_amount"))
+		doc.flags.paid_amount_given = True
 
 	# A balance has to be owed to somebody: ERPNext keeps payables against a
 	# party, and a typed name cannot hold one. Rather than refuse the entry over
 	# a record the counter has no way to create, make the supplier from the name
 	# they gave — which is what their old software did with a contact.
-	if doc.paid_to and not doc.supplier and _owes(doc):
+	if doc.paid_to and not doc.supplier and not doc.employee and _owes(doc):
 		doc.supplier = _supplier_named(doc.paid_to)
 		doc.paid_to = None
 
@@ -452,6 +465,8 @@ def create(payload) -> dict:
 		"outstanding": flt(doc.outstanding_amount),
 		"category": frappe.db.get_value("Account", doc.category, "account_name"),
 		"date": str(doc.posting_date),
+		"posted_as": doc.posted_as,
+		"posted": doc.purchase_invoice or doc.expense_claim or doc.journal_entry,
 	}
 
 
@@ -597,6 +612,29 @@ def modes() -> list[str]:
 	_me()
 	return frappe.get_all("Mode of Payment", filters={"enabled": 1}, pluck="name",
 	                      order_by="name")
+
+
+@frappe.whitelist()
+def search_employees(query: str = "", limit: int = 10) -> list[dict]:
+	"""Staff of this branch, for a spend one of them paid out of pocket."""
+	employee = _me()
+	like = f"%{(query or '').strip()}%"
+	return frappe.get_all(
+		"Employee",
+		filters={"status": "Active", "branch": employee.branch,
+		         "employee_name": ("like", like)},
+		fields=["name", "employee_name", "designation"],
+		order_by="employee_name",
+		limit_page_length=min(cint(limit) or 10, 25))
+
+
+@frappe.whitelist()
+def supplier_gstin(supplier: str) -> dict:
+	"""Whether this supplier can be billed with GST, for the form to say so."""
+	_me()
+	from a3_retail.utils import tax
+
+	return {"supplier": supplier, "gstin": tax.supplier_gstin(supplier)}
 
 
 @frappe.whitelist()

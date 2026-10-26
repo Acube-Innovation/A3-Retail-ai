@@ -15,7 +15,7 @@ tax rate has to agree with the one the bill posts.
 """
 
 import frappe
-from frappe.utils import flt
+from frappe.utils import cint, flt
 
 DEFAULT_GST_RATE = 18.0
 
@@ -44,3 +44,64 @@ def templates() -> list[dict]:
 	       for name in frappe.get_all("Item Tax Template", pluck="name", order_by="name")]
 	out.sort(key=lambda t: (t["rate"], t["name"]))
 	return out
+
+
+def input_gst_template(company: str, branch: str, supplier: str,
+                       rate: int) -> str | None:
+	"""The input-GST template for buying from this supplier, at that rate.
+
+	In-state buying splits into CGST and SGST; from another state it is one
+	IGST line. Which it is comes off the supplier's own GSTIN, since that is
+	where the goods are being billed from.
+
+	No GSTIN, no GST. An unregistered dealer cannot charge it, and india
+	compliance refuses the document outright if the bill tries to — which is the
+	right answer, just a late one. Callers that must not get that late refusal
+	check `has_gstin()` first and say so while the counter can still fix it.
+	"""
+	theirs = supplier_gstin(supplier)
+	if not theirs:
+		return None
+
+	ours = frappe.db.get_value("Branch Profile", {"branch": branch}, "state_code")
+	out_of_state = bool(ours and not str(theirs).startswith(str(ours)))
+
+	kind = "Out-state" if out_of_state else "In-state"
+	for candidate in (f"Input GST {kind} {rate}%", f"Input GST In-state {rate}%"):
+		name = frappe.db.get_value(
+			"Purchase Taxes and Charges Template",
+			{"title": candidate, "company": company}, "name")
+		if name:
+			return name
+	return None
+
+
+def supplier_gstin(supplier: str | None) -> str | None:
+	"""The supplier's GSTIN, on a site where that column may not exist."""
+	if not supplier or not frappe.db.has_column("Supplier", "gstin"):
+		return None
+	return frappe.db.get_value("Supplier", supplier, "gstin") or None
+
+
+def bill_rate(items) -> int | None:
+	"""The rate a bill is taxed at, from the items on it.
+
+	A mixed bill takes the highest rate its lines carry; ERPNext still splits
+	the tax per line on the document itself.
+	"""
+	rates = {cint(item_rate(row.item_code)) for row in items or [] if row.item_code}
+	rates.discard(0)
+	return max(rates) if rates else None
+
+
+def template_for_rate(rate: float) -> str | None:
+	"""The Item Tax Template charging this rate, when the shop has one.
+
+	A bill carries one taxes-and-charges template for its account heads, but a
+	line taxed differently from the rest needs its own template or ERPNext puts
+	the bill's rate on it. This is how a mixed-rate bill still adds up.
+	"""
+	for row in templates():
+		if cint(row["rate"]) == cint(rate):
+			return row["name"]
+	return None

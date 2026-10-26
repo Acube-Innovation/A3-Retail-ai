@@ -22,6 +22,7 @@
   "sec_party",
   "supplier",
   "paid_to",
+  "employee",
   "col_break_party",
   "due_date",
   "sec_items",
@@ -39,6 +40,9 @@
   "sec_more",
   "notes",
   "journal_entry",
+  "purchase_invoice",
+  "expense_claim",
+  "posted_as",
   "amended_from"
  ],
  "fields": [
@@ -135,6 +139,13 @@
    "description": "A name, when the money did not go to a supplier on file."
   },
   {
+   "fieldname": "employee",
+   "fieldtype": "Link",
+   "label": "Paid By Employee",
+   "options": "Employee",
+   "description": "Set when a member of staff paid out of their own pocket and is to be reimbursed."
+  },
+  {
    "fieldname": "col_break_party",
    "fieldtype": "Column Break"
   },
@@ -229,6 +240,30 @@
    "fieldtype": "Link",
    "label": "Journal Entry",
    "options": "Journal Entry",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "purchase_invoice",
+   "fieldtype": "Link",
+   "label": "Purchase Invoice",
+   "options": "Purchase Invoice",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "expense_claim",
+   "fieldtype": "Link",
+   "label": "Expense Claim",
+   "options": "Expense Claim",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "posted_as",
+   "fieldtype": "Select",
+   "label": "Posted As",
+   "options": "\nJournal\nSupplier Invoice\nEmployee Claim",
    "read_only": 1,
    "no_copy": 1
   },

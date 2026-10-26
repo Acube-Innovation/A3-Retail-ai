@@ -437,11 +437,13 @@ def _apply_tax(doc, employee) -> None:
 	"""
 	from erpnext.controllers.accounts_controller import get_taxes_and_charges
 
-	rate = _bill_gst_rate(doc)
+	from a3_retail.utils import tax
+
+	rate = tax.bill_rate(doc.get("items"))
 	if not rate:
 		return
 
-	template = _tax_template(doc, employee.branch, rate)
+	template = tax.input_gst_template(doc.company, employee.branch, doc.supplier, rate)
 	if not template:
 		return
 
@@ -451,75 +453,11 @@ def _apply_tax(doc, employee) -> None:
 		doc.append("taxes", row)
 
 
-def _bill_gst_rate(doc) -> int | None:
-	"""The rate the bill is taxed at, from the items on it.
-
-	A mixed bill takes the highest rate its lines carry; ERPNext still splits
-	the tax per line on the document itself.
-	"""
-	from a3_retail.utils import tax
-
-	rates = {cint(tax.item_rate(row.item_code)) for row in doc.get("items") or []}
-	rates.discard(0)
-	return max(rates) if rates else None
-
-
-def _tax_template(doc, branch: str, rate: int) -> str | None:
-	"""In-state or out-of-state input GST, at that rate."""
-	ours = frappe.db.get_value("Branch Profile", {"branch": branch}, "state_code")
-	theirs = frappe.db.get_value("Supplier", doc.supplier, "gstin") \
-		if frappe.db.has_column("Supplier", "gstin") else None
-	# No GSTIN, no GST. An unregistered dealer cannot charge it, and india
-	# compliance refuses the document outright if the bill tries to — which is
-	# the right answer, just a late one.
-	if not theirs:
-		return None
-
-	out_of_state = bool(ours and not str(theirs).startswith(str(ours)))
-
-	kind = "Out-state" if out_of_state else "In-state"
-	for candidate in (f"Input GST {kind} {rate}%", f"Input GST In-state {rate}%"):
-		name = frappe.db.get_value(
-			"Purchase Taxes and Charges Template",
-			{"title": candidate, "company": doc.company}, "name")
-		if name:
-			return name
-	return None
-
-
 def _settle(invoice, paid: float, mode: str, employee) -> None:
 	"""Pay the rep now — a Payment Entry against the bill just recorded."""
-	from erpnext.accounts.doctype.payment_entry.payment_entry import get_payment_entry
+	from a3_retail.utils.payments import settle_bill
 
-	payable = flt(invoice.rounded_total) or flt(invoice.grand_total)
-	if paid > payable + 0.5:
-		frappe.throw(
-			_("Paid amount is more than the bill of {0}.").format(frappe.format_value(
-				payable, {"fieldtype": "Currency"})),
-			title=_("Paid"),
-		)
-
-	account = frappe.db.get_value(
-		"Mode of Payment Account",
-		{"parent": mode, "company": invoice.company},
-		"default_account",
-	)
-	if not account:
-		frappe.throw(
-			_("{0} has no account set for this company — head office has to add it once.").format(mode),
-			title=_("Payment"),
-		)
-
-	entry = get_payment_entry("Purchase Invoice", invoice.name, party_amount=paid)
-	entry.reference_no = invoice.bill_no or invoice.name
-	entry.reference_date = invoice.posting_date
-	entry.mode_of_payment = mode
-	entry.paid_from = account
-	entry.paid_amount = paid
-	entry.base_paid_amount = paid
-	entry.flags.ignore_permissions = True
-	entry.insert(ignore_permissions=True)
-	entry.submit()
+	settle_bill(invoice, paid, mode, invoice.get("cost_center"))
 
 
 def _stamp_serials(invoice, priced: dict) -> None:

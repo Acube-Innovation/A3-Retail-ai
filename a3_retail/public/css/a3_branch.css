@@ -1176,6 +1176,10 @@ input.is-locked { background: rgba(42, 51, 66, .04); color: var(--muted);
 .pill { display: inline-block; font-size: 10.5px; font-weight: 700; border-radius: var(--radius-pill);
 	padding: 3px 9px; white-space: nowrap; }
 .pill-good { background: #e7f7ee; color: #1c7f4c; }
+/* The expense screen says which of the three documents it is about to write. */
+.xp-route { margin: -2px 0 10px; font-size: 12.5px; color: var(--muted);
+	padding-left: 9px; border-left: 2px solid var(--line); }
+.xp-route.is-bad { color: var(--danger-dark); border-left-color: var(--danger); }
 /* The three routes a branch's spend arrives by, on the expense list. */
 .spend-journal { background: #eef2fb; color: #33559b; }
 .spend-employee { background: #fdf3e3; color: #92600c; }
