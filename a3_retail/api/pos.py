@@ -917,10 +917,12 @@ def _build_invoice(data: dict, employee, draft: bool = False):
 
 	invoice.customer = data["customer"]
 	invoice.company = frappe.db.get_single_value("Global Defaults", "default_company")
-	# A bill that was put on hold yesterday and completed today is still
-	# yesterday's sale, so an existing date is kept rather than stamped over. A
-	# date sent from the counter wins, which is how a bill gets back-dated at all.
-	posting = data.get("posting_date") or invoice.get("posting_date") or nowdate()
+	# A bill is dated the day it is paid for. `checkout` is only reached when
+	# money is being taken, so that day is today unless the counter says
+	# otherwise — and a bill held last week is dated the day it is settled, not
+	# the day somebody started it. A date sent from the counter still wins,
+	# which is how a sale is back-dated deliberately.
+	posting = data.get("posting_date") or nowdate()
 	posting = getdate(posting)
 	if posting > getdate(nowdate()):
 		frappe.throw(_("A bill cannot be dated in the future."), title=_("Date"))

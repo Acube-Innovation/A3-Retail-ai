@@ -296,6 +296,7 @@ window.A3 = (function () {
 	document.addEventListener("DOMContentLoaded", () => {
 		mountBranchPicker();
 		mountMobileNav();
+		watchForDates();
 	});
 
 	/* ------------------------------------------------------------------ dates
@@ -325,28 +326,41 @@ window.A3 = (function () {
 		: "";
 
 	function datePicker(input) {
-		if (!input || input.dataset.a3dp) return;
+		if (!input) return;
+		// Mounted already *and* its face still on the page. Screens redraw their
+		// own markup all day; when a redraw takes the face with it the hidden
+		// input would be left with nothing to click, so it is mounted again.
+		const face = input.nextElementSibling;
+		if (input.dataset.a3dp && face && face.classList.contains("dp-face")) return;
 		input.dataset.a3dp = "1";
 		input.hidden = true;
 
-		const face = document.createElement("button");
-		face.type = "button";
-		face.className = "dp-face";
-		input.parentNode.insertBefore(face, input.nextSibling);
-
-		const limit = input.max ? parseIso(input.max) : null;
-		const floor = input.min ? parseIso(input.min) : null;
+		const button = document.createElement("button");
+		button.type = "button";
+		button.className = "dp-face";
+		input.parentNode.insertBefore(button, input.nextSibling);
 
 		const show = () => {
 			const d = parseIso(input.value);
-			face.textContent = d ? pretty(d) : "Choose a date";
-			face.classList.toggle("is-empty", !d);
+			button.textContent = d ? pretty(d) : "Choose a date";
+			button.classList.toggle("is-empty", !d);
 		};
 		show();
 
-		face.addEventListener("click", () => open(input, face, limit, floor, show));
+		// The bounds are read when the calendar opens, not when it is mounted:
+		// a screen often fills in the date and its limits after the box is on
+		// the page — the payment dialog sets both as it opens — and bounds read
+		// once at mount would be the ones that were not there yet.
+		button.addEventListener("click", () => open(
+			input, button,
+			input.max ? parseIso(input.max) : null,
+			input.min ? parseIso(input.min) : null,
+			show));
 		// Something else set the date — keep the face honest.
 		input.addEventListener("change", show);
+		// A value written straight into .value fires nothing, so the face is
+		// refreshed on the way in as well.
+		show();
 	}
 
 	function open(input, face, limit, floor, show) {
@@ -438,8 +452,30 @@ window.A3 = (function () {
 		});
 	}
 
+	/** Every date box on the page gets the calendar, not the browser's own.
+	 *
+	 * Screens build their rows and dialogs as they go, so this runs again
+	 * whenever the page grows. Cheap: the work is one attribute check per box.
+	 */
+	function mountDates(root) {
+		(root || document).querySelectorAll('input[type="date"]').forEach(datePicker);
+	}
+
+	function watchForDates() {
+		mountDates();
+		if (typeof MutationObserver !== "function") return;
+		let queued = false;
+		new MutationObserver(() => {
+			if (queued) return;
+			queued = true;
+			// One pass after the screen has finished redrawing, rather than one
+			// per node it happens to add.
+			requestAnimationFrame(() => { queued = false; mountDates(); });
+		}).observe(document.body, { childList: true, subtree: true });
+	}
+
 	return {
 		call, login, logout, money, shortTime, csrfToken, plain, toast,
-		mountBranchPicker, datePicker,
+		mountBranchPicker, datePicker, mountDates,
 	};
 })();

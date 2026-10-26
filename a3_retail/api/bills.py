@@ -418,14 +418,18 @@ def _payments(doc) -> list[dict]:
 	"""What the customer has actually handed over, from both places it can live."""
 	out = [
 		{"name": doc.name, "date": str(doc.posting_date), "mode": row.mode_of_payment,
+		 # Money handed over with the sale was handed over at the moment of the
+		 # sale, so the bill's own timestamp is the honest one. The posting date
+		 # stays the business date, which is what a back-dated bill needs.
+		 "at": str(doc.creation)[:16],
 		 "reference": _("At the counter"), "amount": flt(row.amount)}
 		for row in doc.get("payments") or [] if flt(row.amount)
 	]
 
 	for row in frappe.db.sql(
 		"""
-		select pe.name, pe.posting_date, pe.mode_of_payment, pe.reference_no,
-		       per.allocated_amount
+		select pe.name, pe.posting_date, pe.creation, pe.mode_of_payment,
+		       pe.reference_no, per.allocated_amount
 		from `tabPayment Entry Reference` per
 		join `tabPayment Entry` pe on pe.name = per.parent
 		where per.reference_doctype = 'Sales Invoice' and per.reference_name = %s
@@ -435,8 +439,13 @@ def _payments(doc) -> list[dict]:
 		doc.name,
 		as_dict=True,
 	):
+		# A payment recorded on the day it was taken can show the time. One
+		# entered for an earlier day cannot — its business date is the truth and
+		# the minute it was typed would be a lie.
+		same_day = str(row.creation)[:10] == str(row.posting_date)[:10]
 		out.append({
 			"name": row.name, "date": str(row.posting_date), "mode": row.mode_of_payment,
+			"at": str(row.creation)[:16] if same_day else str(row.posting_date),
 			"reference": row.reference_no or "", "amount": flt(row.allocated_amount),
 		})
 	return out
@@ -505,13 +514,17 @@ def _timeline(doc) -> list[dict]:
 	for payment in _payments(doc):
 		events.append({
 			"label": _("Payment received"),
-			"at": payment["date"],
+			"at": payment.get("at") or payment["date"],
 			"note": f"{payment['mode'] or ''} {frappe.utils.fmt_money(payment['amount'], currency='INR')}".strip(),
 		})
 
 	if cint(doc.docstatus) == 2:
 		events.append({"label": _("Cancelled"), "at": str(doc.modified)[:16]})
 
+	# In the order it happened, not the order it was gathered. Payments taken at
+	# the counter are read before payments entered later, which put a rupee
+	# collected at ten to three above the two thousand taken at a quarter to.
+	events.sort(key=lambda e: str(e.get("at") or ""))
 	return events
 
 
@@ -520,7 +533,7 @@ def _timeline(doc) -> list[dict]:
 # ---------------------------------------------------------------------------
 @frappe.whitelist()
 def collect_payment(name: str, amount: float, mode_of_payment: str = "Cash",
-                    reference: str | None = None) -> dict:
+                    reference: str | None = None, date: str | None = None) -> dict:
 	"""Take money against a bill that is still short.
 
 	A Payment Entry allocated to the invoice, the same document the desk would
@@ -561,7 +574,19 @@ def collect_payment(name: str, amount: float, mode_of_payment: str = "Cash",
 	payment.party_type = "Customer"
 	payment.party = doc.customer
 	payment.company = doc.company
-	payment.posting_date = nowdate()
+	# Money does not always reach the counter on the day it is entered — a
+	# customer settles on Saturday and it is keyed in on Monday — so the day it
+	# was taken can be said. It cannot be a day that has not happened.
+	taken = getdate(date or nowdate())
+	if taken > getdate(nowdate()):
+		frappe.throw(_("A payment cannot be dated in the future."), title=_("Date"))
+	if taken < getdate(doc.posting_date):
+		frappe.throw(
+			_("The bill is dated {0}, so it cannot have been paid on {1}.").format(
+				frappe.utils.formatdate(doc.posting_date),
+				frappe.utils.formatdate(taken)),
+			title=_("Date"))
+	payment.posting_date = taken
 	payment.mode_of_payment = mode
 	payment.paid_amount = amount
 	payment.received_amount = amount

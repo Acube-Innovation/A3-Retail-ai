@@ -94,10 +94,14 @@ PERMISSION_MATRIX: dict[str, dict[str, str]] = {
 		"Service Manager": "R",
 		"Accounts Manager": "R",
 	},
+	# Correcting a count is the one action that makes stock appear from nothing:
+	# a reconciliation sets a figure rather than moving it, so a wrong number
+	# typed here is a loss nobody can trace to a document. Head office does it;
+	# a branch that finds the shelf wrong says so and it is corrected centrally.
 	"Stock Reconciliation": {
 		"A3 Retail Admin": "CRUDS",
-		"Branch Manager": "CRUS",
-		"Store Keeper": "CRUS",
+		"Branch Manager": "R",
+		"Store Keeper": "R",
 		"Service Manager": "R",
 		"Accounts Manager": "R",
 		"Auditor": "R",

@@ -646,7 +646,11 @@ input.is-locked { background: rgba(42, 51, 66, .04); color: var(--muted);
 	cursor: pointer; line-height: 0; padding: 8px; border-radius: 9px; }
 .icon-btn:hover { background: var(--danger-soft); border-color: var(--danger-soft); }
 
-.bill-thead, .bill-row { display: grid; grid-template-columns: 1fr 62px 62px 58px 14px;
+/* Rate is an editable box and Amount is a figure, and at 62 and 58 a price in
+   five figures was being cut off mid-number — ₹34,900 read as ₹34,90. The bill
+   is wider now, so the money columns get the room the money needs. */
+.bill-thead, .bill-row { display: grid;
+	grid-template-columns: minmax(0, 1fr) 70px 86px 82px 14px;
 	align-items: center; gap: 6px; }
 .bill-thead { padding: 11px 14px; font-size: 12.5px; font-weight: 700; color: var(--ink);
 	border-bottom: 1px solid var(--line); }
@@ -669,7 +673,7 @@ input.is-locked { background: rgba(42, 51, 66, .04); color: var(--muted);
 .qty button:last-child { border-right: 0; border-left: 1px solid var(--line); }
 .qty button:hover { background: #f1f4f9; }
 .qty span { flex: 1; text-align: center; font-size: 12.5px; font-weight: 600; padding: 5px 0; }
-.bill-row .rate { width: 62px; padding: 5px 0; font-family: inherit; font-size: 12.5px;
+.bill-row .rate { width: 100%; padding: 5px 0; font-family: inherit; font-size: 12.5px;
 	font-weight: 700; color: var(--ink); text-align: right; border: 1px solid transparent;
 	border-radius: 6px; background: transparent; font-variant-numeric: tabular-nums; }
 .bill-row .rate:hover { border-color: var(--line-strong); background: var(--card); }

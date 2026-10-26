@@ -36,8 +36,14 @@ window.INVOICE = (function () {
 
 	function stamp(value) {
 		if (!value) return "";
-		const date = new Date(String(value).replace(" ", "T"));
-		return isNaN(date) ? String(value)
+		const text = String(value);
+		// A bare date has no time in it. Handing "2026-10-22" to new Date()
+		// reads it as midnight UTC, which in India prints as 05:30 am — so a
+		// payment taken in the afternoon appeared to arrive before the bill
+		// that it paid. Where we only know the day, only the day is shown.
+		if (/^\d{4}-\d{2}-\d{2}$/.test(text.trim())) return day(text);
+		const date = new Date(text.replace(" ", "T"));
+		return isNaN(date) ? text
 			: date.toLocaleString("en-IN", { day: "2-digit", month: "short", year: "numeric",
 			                                 hour: "2-digit", minute: "2-digit" });
 	}
@@ -436,6 +442,15 @@ window.INVOICE = (function () {
 			`${state.data.name} · ${state.data.customer.customer_name} · ${money(balance)} still owed`;
 		$("pay-amount").value = balance.toFixed(2);
 		$("pay-amount").max = balance;
+		// Today, but no earlier than the bill: money cannot arrive before the
+		// sale it pays for.
+		const today = new Date().toLocaleDateString("en-CA");
+		$("pay-date").min = String(state.data.posting_date || "").slice(0, 10);
+		$("pay-date").max = today;
+		$("pay-date").value = today;
+		A3.datePicker($("pay-date"));
+		// Setting .value in code fires nothing, so the calendar's face is told.
+		$("pay-date").dispatchEvent(new Event("change"));
 		$("payment-modal").hidden = false;
 		$("pay-amount").focus();
 	}
@@ -445,6 +460,7 @@ window.INVOICE = (function () {
 			const result = await A3.call("a3_retail.api.bills.collect_payment", {
 				name: state.name,
 				amount: Number($("pay-amount").value) || 0,
+				date: $("pay-date").value,
 				mode_of_payment: $("pay-mode").value,
 				reference: $("pay-reference").value.trim() || null,
 			});
