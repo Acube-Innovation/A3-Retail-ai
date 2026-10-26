@@ -155,6 +155,13 @@
 									{{ _("Data backup required") }}</label>
 								<label><input type="checkbox" id="data-consent">
 									{{ _("Customer accepts data loss") }}</label>
+								{#- What came in with the phone is what has to go back out
+								    with it, and the tray is the piece that goes missing.
+								    Ticked here it joins the accessory checklist, which is
+								    what delivery refuses to complete while anything on it
+								    is still in the drawer. -#}
+								<label><input type="checkbox" id="sim-tray">
+									{{ _("SIM tray received") }}</label>
 							</div>
 						</div>
 

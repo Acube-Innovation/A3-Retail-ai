@@ -899,6 +899,7 @@ window.SVC = (function () {
 					expected_delivery: $("promised").value || null,
 					data_backup_required: $("backup-required").checked ? 1 : 0,
 					data_loss_consent: $("data-consent").checked ? 1 : 0,
+					sim_tray_received: $("sim-tray").checked ? 1 : 0,
 					notes: $("notes").value.trim(),
 					signature: $("sign-pad").toDataURL("image/png"),
 					photos: state.photos,

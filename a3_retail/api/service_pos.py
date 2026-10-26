@@ -564,6 +564,16 @@ def save_booking(payload) -> dict:
 	# "Pattern: 1-2-3-6-9". The field is encrypted, so it is written here and
 	# read back through get_password for the bench.
 	doc.device_password = (data.get("device_password") or "").strip() or None
+
+	# The tray goes in the accessory checklist rather than a box of its own, so
+	# it travels the route everything else that came in with the phone travels:
+	# delivery will not complete while anything on that list is still in the
+	# drawer, and the tray is the piece that goes missing.
+	if cint(data.get("sim_tray_received")) and not any(
+			row.accessory == "SIM Tray"
+			for row in doc.get("device_condition_checklist") or []):
+		doc.append("device_condition_checklist",
+		           {"accessory": "SIM Tray", "received": 1, "condition": "Good"})
 	doc.customer_signature = data.get("signature")
 
 	for index, photo in enumerate((data.get("photos") or [])[:4], start=1):
