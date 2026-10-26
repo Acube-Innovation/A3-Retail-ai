@@ -1061,6 +1061,90 @@ def _first_seen(items: list[dict], warehouse: str) -> str | None:
 		"posting_date", order_by="posting_date asc")
 
 
+def _count_rate(row: dict, warehouse: str) -> float:
+	"""What a counted piece is worth.
+
+	A shelf that already holds some of an item has a valuation, and ERPNext
+	keeps it. A shelf that holds none has nothing to keep, and refuses the
+	count outright — "Valuation Rate required for Item T100" — which is exactly
+	the case a stock take meets: the system says nothing is there and the
+	counter is holding four thousand of them.
+
+	So where there is no valuation to inherit, one is worked out: what the
+	counter typed, else what the item last cost, else what it sells for. A rate
+	of nothing would value the shelf at nothing.
+	"""
+	typed = flt(row.get("rate"))
+	if typed > 0:
+		return typed
+
+	item = row["item_code"]
+	held = frappe.db.get_value(
+		"Bin", {"item_code": item, "warehouse": warehouse},
+		["actual_qty", "valuation_rate"], as_dict=True)
+	if held and flt(held.actual_qty) and flt(held.valuation_rate) > 0:
+		return flt(held.valuation_rate)
+
+	last = flt(frappe.db.get_value("Item", item, "last_purchase_rate"))
+	if last > 0:
+		return last
+
+	selling = frappe.db.get_value(
+		"Item Price", {"item_code": item, "selling": 1}, "price_list_rate",
+		order_by="modified desc")
+	if flt(selling) > 0:
+		return flt(selling)
+
+	frappe.throw(
+		_("{0} has never been bought or priced, so a counted piece has no value. "
+		  "Put its cost on the line, or record a purchase first.").format(item),
+		title=_("No rate for {0}").format(item))
+
+
+@frappe.whitelist()
+def search_countable(query: str = "", warehouse: str | None = None,
+                     limit: int = 10) -> list[dict]:
+	"""Anything that could be on that shelf, for a stock take.
+
+	`search_stock` offers only what the branch already holds, which is right
+	for a transfer and wrong for a count: the whole point of counting is that
+	the shelf and the system disagree, and the commonest disagreement is the
+	system saying nothing is there. Scanning the barcode of four thousand
+	tempered glasses it believes it has none of has to find them.
+
+	So this is the catalogue, matched the same way — name, code, barcode or
+	IMEI — carrying what the shelf is currently believed to hold.
+	"""
+	_me()
+	require_permission("Item", "read")
+
+	query = (query or "").strip()
+	if len(query) < 2 or not warehouse:
+		return []
+	if warehouse not in {row["warehouse"] for row in _network_warehouses()}:
+		frappe.throw(_("That warehouse is not one of ours."))
+
+	from a3_retail.utils.compatibility import barcode_clause
+
+	rows = frappe.db.sql(
+		f"""
+		select i.name as item_code, i.item_name, i.stock_uom,
+		       ifnull(i.has_serial_no, 0) as has_serial,
+		       ifnull(b.actual_qty, 0) as available
+		from `tabItem` i
+		left join `tabBin` b on b.item_code = i.name and b.warehouse = %(warehouse)s
+		where ifnull(i.disabled, 0) = 0 and ifnull(i.is_stock_item, 0) = 1
+		  and (i.name like %(like)s or i.item_name like %(like)s
+		       or {barcode_clause("i", "like")})
+		order by ifnull(b.actual_qty, 0) desc, i.item_name
+		limit %(limit)s
+		""",
+		{"warehouse": warehouse, "like": f"%{query}%", "limit": cint(limit) or 10},
+		as_dict=True,
+	)
+	return rows
+
+
 @frappe.whitelist()
 def adjust_stock(payload) -> dict:
 	"""Correct the shelf against what is actually on it — a Stock Reconciliation."""
@@ -1093,6 +1177,7 @@ def adjust_stock(payload) -> dict:
 			"item_code": row["item_code"],
 			"warehouse": warehouse,
 			"qty": flt(row.get("counted")),
+			"valuation_rate": _count_rate(row, warehouse),
 		})
 
 	doc.flags.ignore_permissions = True

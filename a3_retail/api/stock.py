@@ -196,12 +196,20 @@ def save_item(item_code: str, item_name: str = "", brand: str | None = None,
 	doc.disabled = 1 if cint(disabled) else 0
 
 	barcode = (barcode or "").strip()
-	if barcode and barcode not in [row.barcode for row in (doc.get("barcodes") or [])]:
+	rows = doc.get("barcodes") or []
+	if barcode and barcode not in [row.barcode for row in rows]:
 		owner = frappe.db.get_value("Item Barcode", {"barcode": barcode}, "parent")
 		if owner and owner != item_code:
 			frappe.throw(_("{0} is already the barcode of {1}.").format(barcode, owner),
 			             title=_("Barcode"))
-		doc.append("barcodes", {"barcode": barcode})
+		# The screen shows the first barcode in a box. Typing over it means
+		# correcting that one — appending instead would leave the wrong number
+		# still scanning to the same item, which is the fault being fixed. Any
+		# further barcodes the item carries are left alone.
+		if rows:
+			rows[0].barcode = barcode
+		else:
+			doc.append("barcodes", {"barcode": barcode})
 
 	doc.flags.ignore_mandatory = True
 	doc.save()

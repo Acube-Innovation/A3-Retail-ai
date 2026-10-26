@@ -642,8 +642,21 @@ window.STOCK = (function () {
 	 * same way.
 	 */
 	let workLines = [];
+	// "Quantity" when moving stock, "Counted" when correcting it.
+	let workLineLabel = "Quantity";
+	// Moving offers what the shelf holds; counting has to offer what it does
+	// not, because a count exists to settle a disagreement about exactly that.
+	let workSearch = "search_stock";
 
-	function linesMarkup() {
+	/** The shelf the lines are about. Moving stock calls it "From" and counting
+	 *  calls it "Warehouse", and the line search has to find either. */
+	const workWarehouse = () => {
+		const box = $("w-source") || $("w-warehouse");
+		return box ? box.value : null;
+	};
+
+	function linesMarkup(label) {
+		workLineLabel = label || "Quantity";
 		return `<div class="work-lines" id="w-lines"></div>
 			<button class="btn btn-quiet btn-block" id="w-add" type="button">
 				+ Add another item</button>`;
@@ -657,7 +670,7 @@ window.STOCK = (function () {
 				<label class="field"><span>${index ? "" : "Item"}</span>
 					<input class="w-code" data-i="${index}" value="${esc(line.item_code)}"
 					       placeholder="Type the item name or scan it" autocomplete="off"></label>
-				<label class="field"><span>${index ? "" : "Quantity"}</span>
+				<label class="field"><span>${index ? "" : workLineLabel}</span>
 					<input class="w-num" data-i="${index}" inputmode="numeric"
 					       value="${line.qty || ""}"
 					       ${line.serials ? "readonly title='Counted from the IMEIs'" : ""}></label>
@@ -721,7 +734,7 @@ window.STOCK = (function () {
 		const host = $("w-lines");
 		const box = host && host.querySelector(`.w-hits[data-i="${index}"]`);
 		if (!box) return;
-		await fillHits(box, query, $("w-source") ? $("w-source").value : null, (code) => {
+		await fillHits(box, query, workWarehouse(), (code) => {
 			workLines[index].item_code = code;
 			const input = host.querySelector(`.w-code[data-i="${index}"]`);
 			if (input) input.value = code;
@@ -740,14 +753,16 @@ window.STOCK = (function () {
 		if (!warehouse || query.length < 2) { box.innerHTML = ""; return; }
 		let rows = [];
 		try {
-			rows = await A3.call("a3_retail.api.stock_control.search_stock",
+			rows = await A3.call(`a3_retail.api.stock_control.${workSearch}`,
 			                     { query, warehouse, limit: 8 });
 		} catch (error) {
 			box.innerHTML = `<p class="muted">${esc(error.message || "Could not search.")}</p>`;
 			return;
 		}
 		if (!rows.length) {
-			box.innerHTML = `<p class="muted">Nothing by that name in ${esc(warehouse)}.</p>`;
+			box.innerHTML = `<p class="muted">${workSearch === "search_countable"
+				? "Nothing by that name in the catalogue."
+				: `Nothing by that name in ${esc(warehouse)}.`}</p>`;
 			return;
 		}
 		box.innerHTML = rows.map((r) => `
@@ -840,7 +855,7 @@ window.STOCK = (function () {
 
 	async function loadSerials(index) {
 		const line = workLines[index];
-		const source = $("w-source") ? $("w-source").value : null;
+		const source = workWarehouse();
 		if (!line.item_code || !source) return;
 		let rows = [];
 		try {
@@ -899,6 +914,7 @@ window.STOCK = (function () {
 	const today = () => new Date().toLocaleDateString("en-CA");
 
 	function openMove() {
+		workSearch = "search_stock";
 		const options = (state.network || []).map((w) =>
 			`<option value="${esc(w.warehouse)}">${esc(w.label)}</option>`).join("");
 
@@ -958,188 +974,49 @@ window.STOCK = (function () {
 	}
 
 	function openAdjust() {
+		workSearch = "search_countable";
 		const options = state.boot.warehouses.map((warehouse) =>
 			`<option value="${esc(warehouse)}">${esc(warehouse)}</option>`).join("");
 
+		startLines(null);
 		openWork("Stock adjustment",
 			"Correct the system against what is actually on the shelf. Creates a Stock "
 			+ "Reconciliation — the count you enter becomes the new quantity.",
 			`<div class="field-grid">
 				<label class="field"><span>Warehouse</span>
 					<select id="w-warehouse">${options}</select></label>
-				<label class="field"><span>Item</span>
-					<input id="w-item" placeholder="Type the item name or scan it"
-					       autocomplete="off"></label>
-			</div>
-			<div class="w-hits" id="w-item-hits"></div>
-			<div class="field-grid">
-				<label class="field"><span>Counted quantity</span>
-					<input id="w-qty" type="number" min="0" step="1" value="0"></label>
 				<label class="field"><span>Reason</span>
-					<input id="w-reason" placeholder="Why the count differs"></label>
-			</div>`,
+					<input id="w-reason" placeholder="Stock take, breakage, miscount…"></label>
+			</div>
+			${linesMarkup("Counted")}`,
 			"Submit adjustment",
 			async () => {
-				if (!$("w-item").value.trim()) throw new Error("Pick the item being counted.");
+				const counted = workLines
+					.filter((line) => line.item_code)
+					.map((line) => ({ item_code: line.item_code,
+					                  counted: Number(line.qty) || 0 }));
+				if (!counted.length) throw new Error("Add at least one item to count.");
 				const result = await A3.call("a3_retail.api.stock_control.adjust_stock", {
 					payload: {
-						warehouse: $("w-warehouse").value, reason: $("w-reason").value.trim(),
-						items: [{ item_code: $("w-item").value.trim(),
-						          counted: Number($("w-qty").value) || 0 }],
+						warehouse: $("w-warehouse").value,
+						reason: $("w-reason").value.trim(),
+						items: counted,
 					},
 				});
-				toast(`${result.adjustment} submitted (${money(result.difference)}).`, "ok");
+				toast(`${result.adjustment} submitted — ${counted.length} line`
+					+ `${counted.length === 1 ? "" : "s"} (${money(result.difference)}).`, "ok");
 				loadStock();
 				loadKpis();
 				loadTab("adjustments");
 			});
 
-		// The same search as Move stock, against the shelf being counted. A
-		// reconciliation sets a figure, so picking an item the warehouse does not
-		// hold is how stock gets conjured out of a typo.
+		// The lines search the shelf being counted, so changing the warehouse
+		// has to re-point them: a reconciliation sets a figure, and an item the
+		// warehouse does not hold is how stock gets conjured out of a typo.
 		setTimeout(() => {
-			const field = $("w-item");
-			if (!field) return;
-			let timer = null;
-			const run = () => suggestInto("w-item-hits", field.value.trim(),
-			                              $("w-warehouse").value, (code) => {
-				field.value = code;
-			});
-			field.addEventListener("input", () => { clearTimeout(timer); timer = setTimeout(run, 200); });
-			$("w-warehouse").addEventListener("change", run);
+			const picker = $("w-warehouse");
+			if (picker) picker.addEventListener("change", () => paintLines());
 		}, 0);
-	}
-
-	/** Add something new to the catalogue, and optionally what is already on the shelf. */
-	/**
-	 * Bringing a catalogue in from a spreadsheet.
-	 *
-	 * A shop changing systems has its items in a file already, and typing four
-	 * hundred of them in one at a time is how a migration stalls. Nothing is
-	 * written until the person has seen what would happen: the sheet is read,
-	 * every row checked, and the result shown as a list before a single item is
-	 * made. A bad row holds up itself and nothing else, because four hundred
-	 * rows always contain a few.
-	 */
-	let importState = { file: null, sheet: "", preview: null, spec: null };
-
-	async function openImport() {
-		importState = { file: null, sheet: "", preview: null, spec: null };
-		try {
-			importState.spec = await A3.call("a3_retail.api.item_import.spec");
-		} catch (error) {
-			return toast(error.message || "Could not open the importer.", "error");
-		}
-		const spec = importState.spec;
-		const stores = (state.boot.warehouses || []).map((warehouse) =>
-			`<option value="${esc(warehouse)}">${esc(warehouse)}</option>`).join("");
-
-		openWork("Import items",
-			"A spreadsheet of items, checked before anything is added. "
-			+ `Up to ${spec.row_limit} at a time.`,
-			`<div class="imp">
-				<div class="imp-start">
-					<button class="btn btn-quiet" id="imp-template" type="button">
-						Download the template</button>
-					<span class="imp-or">then</span>
-					<label class="btn btn-outline imp-pick">
-						<input type="file" id="imp-file" accept=".xlsx,.xls,.csv,.tsv" hidden>
-						Choose a file</label>
-					<span class="imp-chosen" id="imp-chosen">No file chosen</span>
-				</div>
-				<details class="imp-sheet">
-					<summary>…or read it straight from a Google Sheet</summary>
-					<div class="imp-sheet-row">
-						<input id="imp-url" placeholder="https://docs.google.com/spreadsheets/d/…">
-						<button class="btn btn-quiet" id="imp-read" type="button">Read it</button>
-					</div>
-					<p class="muted">The sheet has to be shared as “Anyone with the link”.</p>
-				</details>
-				${spec.can_open_stock ? `<label class="field imp-store">
-					<span>Opening stock goes into</span>
-					<select id="imp-store">${stores}</select></label>` : ""}
-				<div id="imp-result"></div>
-				<details class="imp-help">
-					<summary>What the columns mean</summary>
-					<table class="imp-cols"><tbody>${spec.columns.map((column) => `
-						<tr><td><b>${esc(column.label)}</b>${
-							column.required ? ' <span class="req">*</span>' : ""}</td>
-						<td>${esc(column.help || "")}</td></tr>`).join("")}</tbody></table>
-					<p class="muted">Headings are matched loosely — “Sales Price”, “MRP” and
-						“Price” all mean the same column.</p>
-				</details>
-			</div>`,
-			"Import",
-			async () => {
-				if (!importState.preview || !importState.preview.ready) {
-					throw new Error("Nothing is ready to import yet.");
-				}
-				const store = $("imp-store");
-				const result = await A3.call("a3_retail.api.item_import.commit", {
-					file_url: importState.file || null,
-					sheet_url: importState.sheet || null,
-					warehouse: store ? store.value : null,
-				});
-				toast(`${result.made} item${result.made === 1 ? "" : "s"} added`
-					+ (result.failed ? `, ${result.failed} could not be.` : "."),
-					result.failed ? "warn" : "ok");
-				loadAll();
-			});
-
-		$("work-go").disabled = true;
-
-		$("imp-template").addEventListener("click", async () => {
-			try {
-				const url = await A3.call("a3_retail.api.item_import.template");
-				window.open(url, "_blank");
-			} catch (error) {
-				say(error.message || "Could not build the template.", "error");
-			}
-		});
-		$("imp-file").addEventListener("change", async (event) => {
-			const file = event.target.files[0];
-			if (!file) return;
-			$("imp-chosen").textContent = file.name;
-			await readSheet(file, "");
-		});
-		$("imp-read").addEventListener("click", () => readSheet(null, $("imp-url").value.trim()));
-	}
-
-	/** Upload if it is a file, then show what the sheet would do. */
-	async function readSheet(file, sheetUrl) {
-		const panel = $("imp-result");
-		panel.innerHTML = '<p class="muted">Reading the sheet…</p>';
-		importState.preview = null;
-		say("");
-
-		try {
-			if (file) {
-				const body = new FormData();
-				body.append("file", file, file.name);
-				body.append("is_private", "1");
-				const response = await fetch("/api/method/upload_file", {
-					method: "POST",
-					headers: { "X-Frappe-CSRF-Token": A3.csrfToken() },
-					body,
-				});
-				const payload = await response.json();
-				if (!response.ok) throw new Error(payload.exception || "Could not upload that file.");
-				importState.file = payload.message.file_url;
-				importState.sheet = "";
-			} else {
-				importState.sheet = sheetUrl;
-				importState.file = null;
-			}
-
-			importState.preview = await A3.call("a3_retail.api.item_import.preview", {
-				file_url: importState.file || null,
-				sheet_url: importState.sheet || null,
-			});
-			paintPreview();
-		} catch (error) {
-			importState.preview = null;
-			panel.innerHTML = `<p class="imp-bad">${esc(error.message || "Could not read that sheet.")}</p>`;
-		}
 	}
 
 	function paintPreview() {
