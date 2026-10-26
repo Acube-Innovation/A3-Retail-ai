@@ -1241,14 +1241,12 @@ def split_payment_rows(splits, payable: float) -> list[dict]:
 
 	collected = sum(totals.values())
 
-	short = payable - collected
-	if short > SPLIT_TOLERANCE:
-		frappe.throw(
-			_("The amounts add up to {0}, which is {1} less than the bill. "
-			  "Add the rest before completing the sale.").format(
-				fmt_money(collected, currency="INR"), fmt_money(short, currency="INR")),
-			title=_("Not enough to cover the bill"),
-		)
+	# A split that does not cover the bill is a part payment, not a mistake. The
+	# customer puts something down and owes the rest, which is what the counter
+	# does every day with a deposit — and what the single-tile path has always
+	# allowed by typing a smaller figure. The shortfall is left outstanding on
+	# the bill, the screen shows it as "Still to pay" before the button is
+	# pressed, and the bill shows it after.
 
 	excess = collected - payable
 	if excess > SPLIT_TOLERANCE:

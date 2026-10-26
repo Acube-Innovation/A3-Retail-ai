@@ -641,8 +641,9 @@ class TestSplitPayment(FrappeTestCase):
 	"""Part in one form, the rest in another.
 
 	The rules exist because ERPNext will otherwise submit a bill nobody can
-	settle: a short split leaves an outstanding balance on a sale the customer
-	has walked away from, and an over-tendered card posts a negative one.
+	settle: an over-tendered card posts a negative balance, and only a drawer
+	can give change. Paying less than the bill is allowed — that is a deposit,
+	and the remainder stays owed.
 	"""
 
 	PAYABLE = 1000.0
@@ -668,9 +669,17 @@ class TestSplitPayment(FrappeTestCase):
 		rows = self._rows(("Cash", 1000), ("UPI", 0))
 		self.assertEqual([r["mode_of_payment"] for r in rows], ["Cash"])
 
-	def test_a_short_split_is_refused(self):
-		with self.assertRaises(frappe.ValidationError):
-			self._rows(("UPI", 600), ("Cash", 300))
+	def test_a_short_split_is_a_part_payment(self):
+		"""The customer puts something down and owes the rest.
+
+		It used to be refused, on the reasoning that a shortfall left a debt on
+		a sale the customer had walked away from. But that is exactly what a
+		deposit is, the single-tile path always allowed it by typing a smaller
+		figure, and the counter is shown what is still to pay before pressing
+		the button.
+		"""
+		rows = self._rows(("UPI", 600), ("Cash", 300))
+		self.assertEqual(sum(flt(r["amount"]) for r in rows), 900)
 
 	def test_cash_may_be_over_tendered_because_change_comes_from_it(self):
 		rows = self._rows(("UPI", 600), ("Cash", 500))

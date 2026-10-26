@@ -2716,3 +2716,7 @@ kbd { display: inline-block; min-width: 17px; padding: 1px 5px; margin: 0 1px;
 .lock-line { margin-top: 4px; padding: 4px 9px; border-radius: var(--radius-sm);
 	background: #fff4e6; border: 1px solid #f3c88a; font-size: 12.5px;
 	font-weight: 600; display: inline-block; }
+
+/* A bill that went out part paid. The counter has one moment to say so while
+   the customer is still at the desk. */
+.owes { color: var(--danger, #c0392b); font-weight: 600; }

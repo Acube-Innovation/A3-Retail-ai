@@ -647,6 +647,8 @@ window.STOCK = (function () {
 	// Moving offers what the shelf holds; counting has to offer what it does
 	// not, because a count exists to settle a disagreement about exactly that.
 	let workSearch = "search_stock";
+	// Whether the lines carry a cost box. Counting may need one; moving never does.
+	let workLineRate = false;
 
 	/** The shelf the lines are about. Moving stock calls it "From" and counting
 	 *  calls it "Warehouse", and the line search has to find either. */
@@ -655,8 +657,11 @@ window.STOCK = (function () {
 		return box ? box.value : null;
 	};
 
-	function linesMarkup(label) {
+	function linesMarkup(label, withRate) {
 		workLineLabel = label || "Quantity";
+		// Counting asks what a piece is worth; moving does not, because moving
+		// carries the value that is already on the shelf.
+		workLineRate = !!withRate;
 		return `<div class="work-lines" id="w-lines"></div>
 			<button class="btn btn-quiet btn-block" id="w-add" type="button">
 				+ Add another item</button>`;
@@ -674,6 +679,10 @@ window.STOCK = (function () {
 					<input class="w-num" data-i="${index}" inputmode="numeric"
 					       value="${line.qty || ""}"
 					       ${line.serials ? "readonly title='Counted from the IMEIs'" : ""}></label>
+				${workLineRate ? `<label class="field"><span>${index ? "" : "Cost each"}</span>
+					<input class="w-rate" data-i="${index}" inputmode="decimal"
+					       value="${line.rate || ""}"
+					       placeholder="Only if asked"></label>` : ""}
 				<button class="btn btn-quiet work-drop" data-i="${index}" type="button"
 				        ${workLines.length > 1 ? "" : "disabled"}>×</button>
 			</div>
@@ -700,6 +709,9 @@ window.STOCK = (function () {
 				if (workLines[i].item_code !== workLines[i].loaded_for) loadSerials(i);
 			});
 		});
+		host.querySelectorAll(".w-rate").forEach((n) => n.addEventListener("input", () => {
+			workLines[Number(n.dataset.i)].rate = Number(n.value) || 0;
+		}));
 		host.querySelectorAll(".w-num").forEach((n) => n.addEventListener("input", () => {
 			workLines[Number(n.dataset.i)].qty = Number(n.value) || 0;
 		}));
@@ -988,13 +1000,14 @@ window.STOCK = (function () {
 				<label class="field"><span>Reason</span>
 					<input id="w-reason" placeholder="Stock take, breakage, miscount…"></label>
 			</div>
-			${linesMarkup("Counted")}`,
+			${linesMarkup("Counted", true)}`,
 			"Submit adjustment",
 			async () => {
 				const counted = workLines
 					.filter((line) => line.item_code)
 					.map((line) => ({ item_code: line.item_code,
-					                  counted: Number(line.qty) || 0 }));
+					                  counted: Number(line.qty) || 0,
+					                  rate: Number(line.rate) || 0 }));
 				if (!counted.length) throw new Error("Add at least one item to count.");
 				const result = await A3.call("a3_retail.api.stock_control.adjust_stock", {
 					payload: {
