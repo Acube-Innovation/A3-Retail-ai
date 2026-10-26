@@ -1986,25 +1986,14 @@ input.is-locked { background: rgba(42, 51, 66, .04); color: var(--muted);
 
 /* ==========================================================================
    Supplier payments (/retail/suppliers)
-   The allocation list is a row per outstanding bill: which bill, what is left
-   on it, and how much of this payment closes it.
+   One figure and three fields; the bills it closes are decided server side.
+   `.pay-row` below is shared with the sales and service tills.
    ========================================================================== */
 .modal-card.modal-wide { max-width: 720px; }
-.pay-head { display: flex; align-items: center; justify-content: space-between;
-	margin: 14px 0 6px; font-size: 12px; color: var(--muted);
-	text-transform: uppercase; letter-spacing: .06em; }
-.pay-rows { list-style: none; margin: 0; padding: 0; max-height: 260px;
-	overflow-y: auto; border: 1px solid var(--line); border-radius: var(--radius); }
 .pay-row { display: flex; align-items: center; gap: 12px; padding: 9px 12px;
 	border-bottom: 1px solid var(--line); }
 .pay-row:last-child { border-bottom: none; }
-.pay-which { flex: 1 1 auto; min-width: 0; }
-.pay-which b { display: block; font-size: 13px; }
-.pay-which span { font-size: 11.5px; color: var(--muted); }
-.pay-owed { flex: 0 0 auto; font-size: 13px; color: var(--muted); }
-/* `min-width: 0` so the box shrinks instead of pushing the row wide. */
-.pay-alloc { flex: 0 0 120px; min-width: 0; text-align: right; }
-.pay-foot { margin-top: 10px; font-size: 12.5px; color: var(--muted); }
+.pay-hint { margin: 14px 0 0; font-size: 12.5px; color: var(--muted); }
 .cust-head-actions { display: flex; gap: 8px; align-items: center; }
 .cust-facts { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px 18px;
 	margin: 14px 0; font-size: 13px; }
