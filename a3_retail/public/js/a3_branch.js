@@ -474,8 +474,213 @@ window.A3 = (function () {
 		}).observe(document.body, { childList: true, subtree: true });
 	}
 
+	// ------------------------------------------------------------- photos
+	/**
+	 * Ask for pictures, from the camera or from the machine.
+	 *
+	 * Built after Frappe's own upload window — drop area, and a tile per place
+	 * a file can come from — because that is the dialog anyone who has seen the
+	 * desk already knows. Resolves to an array of File; an empty one means the
+	 * counter changed their mind.
+	 *
+	 * The camera tile only appears where the browser will actually hand one
+	 * over: `getUserMedia` exists and the page is a secure context. Over plain
+	 * http on a LAN address it is neither, and a tile that opens nothing is
+	 * worse than no tile.
+	 */
+	function photoPicker(options) {
+		const settings = Object.assign({
+			title: "Add photo", note: "", accept: "image/*",
+			multiple: true, max: 0,
+		}, options || {});
+
+		return new Promise((resolve) => {
+			const picked = [];
+			let stream = null;
+
+			const modal = document.createElement("div");
+			modal.className = "modal";
+			modal.innerHTML = `
+				<div class="modal-card fup">
+					<h3>${escapeHtml(settings.title)}</h3>
+					<p class="modal-note">${escapeHtml(settings.note
+						|| "Drag a picture here, or add one from")}</p>
+					<div class="fup-sources">
+						<button type="button" class="fup-source" data-src="camera" hidden>
+							<span class="fup-ico">${CAMERA_GLYPH}</span>Camera</button>
+						<button type="button" class="fup-source" data-src="device">
+							<span class="fup-ico">${DEVICE_GLYPH}</span>My Device</button>
+					</div>
+					<div class="fup-stage" data-drop>
+						<p class="fup-hint">Drop a picture here</p>
+					</div>
+					<div class="fup-strip"></div>
+					<div class="msg" data-msg></div>
+					<div class="modal-actions">
+						<button type="button" class="btn btn-quiet" data-cancel>Cancel</button>
+						<button type="button" class="btn btn-primary" data-done disabled>Add</button>
+					</div>
+				</div>`;
+			document.body.appendChild(modal);
+
+			const q = (sel) => modal.querySelector(sel);
+			const stage = q("[data-drop]");
+			const strip = q(".fup-strip");
+			const done = q("[data-done]");
+			const msg = q("[data-msg]");
+
+			function say(text, kind) {
+				msg.textContent = text || "";
+				msg.className = "msg" + (kind ? " " + kind : "");
+			}
+
+			function room() {
+				return settings.max ? settings.max - picked.length : Infinity;
+			}
+
+			function paint() {
+				strip.innerHTML = picked.map((file, index) =>
+					`<span class="fup-thumb"><img src="${URL.createObjectURL(file)}" alt="">
+						<button type="button" data-drop-i="${index}" aria-label="Remove">×</button>
+					</span>`).join("");
+				strip.querySelectorAll("[data-drop-i]").forEach((node) => {
+					node.addEventListener("click", () => {
+						picked.splice(Number(node.dataset.dropI), 1);
+						paint();
+					});
+				});
+				done.disabled = !picked.length;
+				done.textContent = picked.length > 1
+					? `Add ${picked.length} photos` : "Add";
+			}
+
+			function take(files) {
+				const images = [...files].filter((f) => f.type.startsWith("image/")
+					|| settings.accept !== "image/*");
+				if (!images.length) return say("That is not a picture.", "error");
+				const space = room();
+				if (space <= 0) return say(`That is already ${settings.max}.`, "error");
+				picked.push(...images.slice(0, settings.multiple ? space : 1));
+				if (images.length > space) say(`Only ${settings.max} fit — the rest were left.`);
+				else say("");
+				paint();
+			}
+
+			// ---- from the machine
+			function fromDevice() {
+				const input = document.createElement("input");
+				input.type = "file";
+				input.accept = settings.accept;
+				input.multiple = Boolean(settings.multiple);
+				input.addEventListener("change", () => take(input.files));
+				input.click();
+			}
+
+			// ---- from the camera
+			async function fromCamera() {
+				say("");
+				stage.innerHTML = `<video autoplay playsinline muted></video>
+					<div class="fup-shoot">
+						<button type="button" class="btn btn-primary" data-snap>Take photo</button>
+						<button type="button" class="btn btn-quiet" data-stop>Stop camera</button>
+					</div>`;
+				try {
+					stream = await navigator.mediaDevices.getUserMedia({
+						video: { facingMode: { ideal: "environment" } }, audio: false });
+				} catch (error) {
+					stopCamera();
+					// A shop tablet refuses for one of two reasons and the fix
+					// differs, so the browser's own words are more use than ours.
+					say(error && error.name === "NotAllowedError"
+						? "The browser blocked the camera. Allow it for this site, then try again."
+						: "No camera the browser will open: " + (error.message || error.name),
+						"error");
+					return;
+				}
+				const video = stage.querySelector("video");
+				video.srcObject = stream;
+				stage.querySelector("[data-snap]").addEventListener("click", () => snap(video));
+				stage.querySelector("[data-stop]").addEventListener("click", stopCamera);
+			}
+
+			function snap(video) {
+				const canvas = document.createElement("canvas");
+				canvas.width = video.videoWidth;
+				canvas.height = video.videoHeight;
+				canvas.getContext("2d").drawImage(video, 0, 0);
+				canvas.toBlob((blob) => {
+					if (!blob) return say("The camera gave nothing back.", "error");
+					const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+					take([new File([blob], `photo-${stamp}.jpg`, { type: "image/jpeg" })]);
+					if (room() <= 0) stopCamera();
+				}, "image/jpeg", 0.9);
+			}
+
+			function stopCamera() {
+				if (stream) {
+					stream.getTracks().forEach((track) => track.stop());
+					stream = null;
+				}
+				stage.innerHTML = '<p class="fup-hint">Drop a picture here</p>';
+			}
+
+			// ---- wiring
+			if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia
+					&& window.isSecureContext) {
+				q('[data-src="camera"]').hidden = false;
+				q('[data-src="camera"]').addEventListener("click", fromCamera);
+			}
+			q('[data-src="device"]').addEventListener("click", fromDevice);
+
+			["dragenter", "dragover"].forEach((name) =>
+				stage.addEventListener(name, (event) => {
+					event.preventDefault();
+					stage.classList.add("is-over");
+				}));
+			["dragleave", "drop"].forEach((name) =>
+				stage.addEventListener(name, () => stage.classList.remove("is-over")));
+			stage.addEventListener("drop", (event) => {
+				event.preventDefault();
+				take(event.dataTransfer.files);
+			});
+
+			function close(result) {
+				stopCamera();
+				modal.remove();
+				document.removeEventListener("keydown", onKey);
+				resolve(result);
+			}
+			function onKey(event) {
+				if (event.key === "Escape") close([]);
+			}
+			document.addEventListener("keydown", onKey);
+			q("[data-cancel]").addEventListener("click", () => close([]));
+			done.addEventListener("click", () => close(picked.slice()));
+			modal.addEventListener("mousedown", (event) => {
+				if (event.target === modal) close([]);
+			});
+
+			paint();
+		});
+	}
+
+	function escapeHtml(value) {
+		return String(value == null ? "" : value)
+			.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+			.replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+	}
+
+	const CAMERA_GLYPH =
+		'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">'
+		+ '<path d="M3 8.5A1.5 1.5 0 0 1 4.5 7h2.2l1.1-2h8.4l1.1 2h2.2A1.5 1.5 0 0 1 21 8.5v9A1.5'
+		+ ' 1.5 0 0 1 19.5 19h-15A1.5 1.5 0 0 1 3 17.5z"/><circle cx="12" cy="13" r="3.6"/></svg>';
+	const DEVICE_GLYPH =
+		'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">'
+		+ '<path d="M12 16V4"/><path d="m7.5 8.5 4.5-4.5 4.5 4.5"/>'
+		+ '<path d="M4 16v2.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V16"/></svg>';
+
 	return {
 		call, login, logout, money, shortTime, csrfToken, plain, toast,
-		mountBranchPicker, datePicker, mountDates,
+		mountBranchPicker, datePicker, mountDates, photoPicker,
 	};
 })();

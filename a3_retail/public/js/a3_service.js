@@ -722,21 +722,21 @@ window.SVC = (function () {
 	// ------------------------------------------------------------ photos
 	/** The shop photographs a device before it takes it in, so there is no
 	 *  argument later about the scratch that was already there (scope 3.2). */
-	function addPhoto() {
-		const picker = document.createElement("input");
-		picker.type = "file";
-		picker.accept = "image/*";
-		picker.capture = "environment";
-		picker.multiple = true;
-		picker.addEventListener("change", () => uploadPhotos([...picker.files]));
-		picker.click();
+	async function addPhoto() {
+		const room = 4 - state.photos.length;
+		if (room <= 0) return say("Four photos is the most a job card holds.", "error");
+		// The counter either has the device in front of a tablet camera or the
+		// pictures are already on the machine, so ask which rather than guessing.
+		const files = await A3.photoPicker({
+			title: "Device photos",
+			note: "Photograph the device before taking it in. Drag one here, or add from",
+			max: room,
+		});
+		if (files.length) uploadPhotos(files);
 	}
 
 	async function uploadPhotos(files) {
-		const room = 4 - state.photos.length;
-		if (room <= 0) return say("Four photos is the most a job card holds.", "error");
-
-		for (const file of files.slice(0, room)) {
+		for (const file of files.slice(0, 4 - state.photos.length)) {
 			const body = new FormData();
 			body.append("file", file, file.name);
 			body.append("is_private", "1");
