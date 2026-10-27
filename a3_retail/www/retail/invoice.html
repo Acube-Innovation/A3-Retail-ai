@@ -84,6 +84,44 @@
 	</div>
 </div>
 
+{#- A warranty swap in one act: the faulty handset goes back to the supplier
+    and a good one goes to the customer, and the six documents that takes are
+    raised together rather than left to be remembered one at a time. -#}
+<div class="modal" id="replace-modal" hidden>
+	<div class="modal-card modal-wide">
+		<h3>{{ _("Replace a faulty item") }}</h3>
+		<p class="modal-note">{{ _("The faulty one goes back to the supplier, a good one goes to the customer, and nobody pays anything more.") }}</p>
+
+		<label class="field"><span>{{ _("Which item is faulty?") }}</span>
+			<select id="rp-item"></select></label>
+
+		<div class="field-grid">
+			<label class="field"><span>{{ _("Faulty IMEI / serial") }}</span>
+				<select id="rp-faulty"></select></label>
+			<label class="field"><span>{{ _("New IMEI the supplier gave") }}</span>
+				<input id="rp-new" autocomplete="off"
+				       placeholder="{{ _('Type or scan it') }}"></label>
+		</div>
+
+		<div class="field-grid">
+			<label class="field"><span>{{ _("Goes back to") }}</span>
+				<select id="rp-supplier"></select></label>
+			<label class="field"><span>{{ _("Replaced on") }}</span>
+				<input id="rp-date" type="date"></label>
+		</div>
+
+		<label class="field"><span>{{ _("What is wrong with it") }}</span>
+			<input id="rp-reason" maxlength="200"
+			       placeholder="{{ _('Screen dead, not charging…') }}"></label>
+
+		<div class="msg" id="rp-msg"></div>
+		<div class="modal-actions">
+			<button class="btn btn-quiet" data-close-replace>{{ _("Cancel") }}</button>
+			<button class="btn btn-primary" id="rp-go">{{ _("Replace it") }}</button>
+		</div>
+	</div>
+</div>
+
 <script>
 window.addEventListener("DOMContentLoaded", function () {
 	INVOICE.start({

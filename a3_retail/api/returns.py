@@ -16,7 +16,7 @@ import frappe
 from frappe import _
 from frappe.utils import cint, flt, getdate, nowdate
 
-from a3_retail.api import require_permission
+from a3_retail.api import date_window, require_permission
 from a3_retail.api.pos import _profile, _sales_person, _sold_by, print_url, resolve_mode
 from a3_retail.api.staff import _me
 
@@ -122,27 +122,126 @@ def bill_lines(invoice: str) -> dict:
 	}
 
 
+def _where(data: dict, employee) -> tuple[list[str], dict]:
+	"""The filter bar as one clause, shared by the list and the cards above it."""
+	values = {"branch": employee.branch}
+	where = ["si.is_return = 1", "si.branch = %(branch)s"]
+
+	if not cint(data.get("show_cancelled", 0)):
+		# A cancelled credit note is kept for the audit trail, not because
+		# anybody is looking for it.
+		where.append("si.docstatus < 2")
+
+	where += date_window(data, "si.posting_date", values)
+	query = (data.get("query") or "").strip()
+	if query:
+		# The credit note's own number, the bill it came back on, or the customer.
+		where.append("(si.name like %(q)s or si.return_against like %(q)s"
+		             " or si.customer_name like %(q)s or si.contact_mobile like %(q)s)")
+		values["q"] = f"%{query}%"
+
+	settled = data.get("settled") or "all"
+	if settled == "refunded":
+		where.append("abs(si.outstanding_amount) <= 0.005")
+	elif settled == "on_account":
+		where.append("abs(si.outstanding_amount) > 0.005")
+	return where, values
+
+
 @frappe.whitelist()
-def recent(limit: int = 30) -> dict:
+def recent(limit: int = 30, filters=None, page: int = 1) -> dict:
 	"""Credit notes this branch has raised, newest first."""
 	employee = _me()
 	require_permission("Sales Invoice", "read")
 
+	data = frappe.parse_json(filters) if isinstance(filters, str) else (filters or {})
+	where, values = _where(data, employee)
+	size = min(cint(limit) or 30, 100)
+	page = max(cint(page), 1)
+	values.update({"start": (page - 1) * size, "size": size})
+
+	total = frappe.db.sql(
+		f"select count(*) from `tabSales Invoice` si where {' and '.join(where)}",
+		values)[0][0]
+
 	rows = frappe.db.sql(
-		"""
-		select name, customer_name, posting_date, return_against, grand_total,
-		       outstanding_amount, docstatus
-		from `tabSales Invoice`
-		where is_return = 1 and docstatus < 2 and branch = %(branch)s
-		order by posting_date desc, creation desc
-		limit %(limit)s
+		f"""
+		select si.name, si.customer, si.customer_name, si.contact_mobile,
+		       si.posting_date, si.return_against, si.grand_total, si.rounded_total,
+		       si.outstanding_amount, si.docstatus, si.remarks,
+		       (select count(*) from `tabSales Invoice Item` it
+		         where it.parent = si.name) as line_count,
+		       (select group_concat(it.item_name order by it.idx separator ', ')
+		          from `tabSales Invoice Item` it where it.parent = si.name) as items,
+		       (select st.sales_person from `tabSales Team` st
+		         where st.parent = si.name order by st.idx limit 1) as sold_by
+		from `tabSales Invoice` si
+		where {" and ".join(where)}
+		order by si.posting_date desc, si.creation desc
+		limit %(start)s, %(size)s
 		""",
-		{"branch": employee.branch, "limit": min(cint(limit) or 30, 100)},
-		as_dict=True,
+		values, as_dict=True,
 	)
 	for row in rows:
-		row["amount"] = abs(flt(row.grand_total))
-	return {"branch": employee.branch, "rows": rows}
+		row["amount"] = abs(flt(row.rounded_total) or flt(row.grand_total))
+		# What was handed back in cash, and what is still sitting as credit on
+		# the customer's account. A credit note's outstanding runs negative.
+		row["on_account"] = abs(flt(row.outstanding_amount))
+		row["refunded"] = flt(row["amount"] - row["on_account"])
+		row["items"] = _shorten(row.get("items"))
+		row["status"] = ("Cancelled" if cint(row.docstatus) == 2
+		                 else "Draft" if cint(row.docstatus) == 0
+		                 else "Refunded" if row["on_account"] <= 0.005
+		                 else "On account" if row["refunded"] <= 0.005
+		                 else "Part refunded")
+
+	return {"branch": employee.branch, "rows": rows, "total": total,
+	        "page": page, "page_size": size,
+	        "pages": max(1, -(-total // size)),
+	        "showing": [(page - 1) * size + 1 if total else 0, min(page * size, total)]}
+
+
+def _shorten(names: str | None, shown: int = 2) -> str:
+	"""The first couple of things that came back, then a count of the rest."""
+	parts = [p.strip() for p in (names or "").split(",") if p.strip()]
+	if not parts:
+		return ""
+	rest = len(parts) - shown
+	return ", ".join(parts[:shown]) + (f" +{rest} more" if rest > 0 else "")
+
+
+@frappe.whitelist()
+def summary(filters=None) -> dict:
+	"""The cards over the list, answering to the same filters as the rows."""
+	employee = _me()
+	require_permission("Sales Invoice", "read")
+
+	data = frappe.parse_json(filters) if isinstance(filters, str) else (filters or {})
+	where, values = _where(data, employee)
+	rows = frappe.db.sql(
+		f"""
+		select si.grand_total, si.rounded_total, si.outstanding_amount,
+		       si.docstatus, si.posting_date
+		from `tabSales Invoice` si where {" and ".join(where)}
+		""",
+		values, as_dict=True)
+
+	live = [r for r in rows if cint(r.docstatus) == 1]
+	amount = lambda rs: sum(abs(flt(r.rounded_total) or flt(r.grand_total)) for r in rs)
+	on_account = sum(abs(flt(r.outstanding_amount)) for r in live)
+	month = [r for r in live if getdate(r.posting_date).month == getdate(nowdate()).month
+	         and getdate(r.posting_date).year == getdate(nowdate()).year]
+
+	return {
+		"total": {"count": len(rows), "amount": amount(rows)},
+		"refunded": {"count": len([r for r in live
+		                           if abs(flt(r.outstanding_amount)) <= 0.005]),
+		             "amount": amount(live) - on_account},
+		"on_account": {"count": len([r for r in live
+		                             if abs(flt(r.outstanding_amount)) > 0.005]),
+		               "amount": on_account},
+		"month": {"count": len(month), "amount": amount(month)},
+	}
 
 
 @frappe.whitelist()

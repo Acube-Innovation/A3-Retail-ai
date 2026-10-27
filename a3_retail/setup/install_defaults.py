@@ -7,6 +7,7 @@ Later steps append their own `_setup_*` function and call it from `run()`.
 """
 
 import frappe
+from frappe.utils import flt
 
 # Transaction doctypes that must carry the Branch dimension (scope 1.1).
 # ERPNext's Accounting Dimension Detail is keyed by *company*, not by doctype, so
@@ -94,6 +95,31 @@ def _setup_system_settings():
 	# customer may also have bought, so the same item legitimately appears twice.
 	if not frappe.db.get_single_value("Selling Settings", "allow_multiple_items"):
 		frappe.db.set_single_value("Selling Settings", "allow_multiple_items", 1)
+
+	# A service counter signs for goods before the distributor's bill arrives,
+	# so the receipt is valued at what the item last cost and the bill puts the
+	# real figure on it later. ERPNext stops that by default — it insists a bill
+	# match the receipt it came from — which is precisely the thing this flow
+	# cannot do. Warned rather than stopped, so a rate that changes for any
+	# other reason is still noticed.
+	if frappe.db.get_single_value("Buying Settings", "maintain_same_rate_action") != "Warn":
+		frappe.db.set_single_value("Buying Settings", "maintain_same_rate_action", "Warn")
+
+	# And the same reasoning for over-billing: a bill that comes to more than
+	# the guess the goods were booked in at is the ordinary case, not a fraud.
+	# A ceiling is still kept — a bill many times the provisional is a typo and
+	# should be refused — but it cannot be the default nought.
+	if flt(frappe.db.get_single_value("Accounts Settings", "over_billing_allowance")) < 100:
+		frappe.db.set_single_value("Accounts Settings", "over_billing_allowance", 100)
+
+	# Without this the stock stays valued at the guess for ever: the bill's real
+	# cost would land in a difference account and the shelf would keep saying
+	# the provisional. The whole point of receiving before billing is that the
+	# bill, when it comes, is what the goods are worth.
+	if not frappe.db.get_single_value(
+			"Buying Settings", "set_landed_cost_based_on_purchase_invoice_rate"):
+		frappe.db.set_single_value(
+			"Buying Settings", "set_landed_cost_based_on_purchase_invoice_rate", 1)
 
 
 def _setup_accounting_dimension():

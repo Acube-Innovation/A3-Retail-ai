@@ -297,6 +297,7 @@ window.A3 = (function () {
 		mountBranchPicker();
 		mountMobileNav();
 		watchForDates();
+		watchNumbers();
 	});
 
 	/* ------------------------------------------------------------------ dates
@@ -342,7 +343,9 @@ window.A3 = (function () {
 
 		const show = () => {
 			const d = parseIso(input.value);
-			button.textContent = d ? pretty(d) : "Choose a date";
+			// A filter box is narrow and means "any date" when it is empty, which
+			// is both shorter and truer than telling it to choose one.
+			button.textContent = d ? pretty(d) : (input.dataset.empty || "Choose a date");
 			button.classList.toggle("is-empty", !d);
 		};
 		show();
@@ -474,8 +477,357 @@ window.A3 = (function () {
 		}).observe(document.body, { childList: true, subtree: true });
 	}
 
+	// ------------------------------------------------------------- photos
+	/**
+	 * Ask for pictures, from the camera or from the machine.
+	 *
+	 * Built after Frappe's own upload window — drop area, and a tile per place
+	 * a file can come from — because that is the dialog anyone who has seen the
+	 * desk already knows. Resolves to an array of File; an empty one means the
+	 * counter changed their mind.
+	 *
+	 * The camera tile only appears where the browser will actually hand one
+	 * over: `getUserMedia` exists and the page is a secure context. Over plain
+	 * http on a LAN address it is neither, and a tile that opens nothing is
+	 * worse than no tile.
+	 */
+	function photoPicker(options) {
+		const settings = Object.assign({
+			title: "Add photo", note: "", accept: "image/*",
+			multiple: true, max: 0,
+		}, options || {});
+
+		return new Promise((resolve) => {
+			const picked = [];
+			let stream = null;
+
+			const modal = document.createElement("div");
+			modal.className = "modal";
+			modal.innerHTML = `
+				<div class="modal-card fup">
+					<h3>${escapeHtml(settings.title)}</h3>
+					<p class="modal-note">${escapeHtml(settings.note
+						|| "Drag a picture here, or add one from")}</p>
+					<div class="fup-sources">
+						<button type="button" class="fup-source" data-src="camera" hidden>
+							<span class="fup-ico">${CAMERA_GLYPH}</span>Camera</button>
+						<button type="button" class="fup-source" data-src="device">
+							<span class="fup-ico">${DEVICE_GLYPH}</span>My Device</button>
+					</div>
+					<div class="fup-stage" data-drop>
+						<p class="fup-hint">Drop a picture here</p>
+					</div>
+					<div class="fup-strip"></div>
+					<div class="msg" data-msg></div>
+					<div class="modal-actions">
+						<button type="button" class="btn btn-quiet" data-cancel>Cancel</button>
+						<button type="button" class="btn btn-primary" data-done disabled>Add</button>
+					</div>
+				</div>`;
+			document.body.appendChild(modal);
+
+			const q = (sel) => modal.querySelector(sel);
+			const stage = q("[data-drop]");
+			const strip = q(".fup-strip");
+			const done = q("[data-done]");
+			const msg = q("[data-msg]");
+
+			function say(text, kind) {
+				msg.textContent = text || "";
+				msg.className = "msg" + (kind ? " " + kind : "");
+			}
+
+			function room() {
+				return settings.max ? settings.max - picked.length : Infinity;
+			}
+
+			function paint() {
+				strip.innerHTML = picked.map((file, index) =>
+					`<span class="fup-thumb"><img src="${URL.createObjectURL(file)}" alt="">
+						<button type="button" data-drop-i="${index}" aria-label="Remove">×</button>
+					</span>`).join("");
+				strip.querySelectorAll("[data-drop-i]").forEach((node) => {
+					node.addEventListener("click", () => {
+						picked.splice(Number(node.dataset.dropI), 1);
+						paint();
+					});
+				});
+				done.disabled = !picked.length;
+				done.textContent = picked.length > 1
+					? `Add ${picked.length} photos` : "Add";
+			}
+
+			function take(files) {
+				const images = [...files].filter((f) => f.type.startsWith("image/")
+					|| settings.accept !== "image/*");
+				if (!images.length) return say("That is not a picture.", "error");
+				const space = room();
+				if (space <= 0) return say(`That is already ${settings.max}.`, "error");
+				picked.push(...images.slice(0, settings.multiple ? space : 1));
+				if (images.length > space) say(`Only ${settings.max} fit — the rest were left.`);
+				else say("");
+				paint();
+			}
+
+			// ---- from the machine
+			function fromDevice() {
+				const input = document.createElement("input");
+				input.type = "file";
+				input.accept = settings.accept;
+				input.multiple = Boolean(settings.multiple);
+				input.addEventListener("change", () => take(input.files));
+				input.click();
+			}
+
+			// ---- from the camera
+			async function fromCamera() {
+				say("");
+				stage.innerHTML = `<video autoplay playsinline muted></video>
+					<div class="fup-shoot">
+						<button type="button" class="btn btn-primary" data-snap>Take photo</button>
+						<button type="button" class="btn btn-quiet" data-stop>Stop camera</button>
+					</div>`;
+				try {
+					stream = await navigator.mediaDevices.getUserMedia({
+						video: { facingMode: { ideal: "environment" } }, audio: false });
+				} catch (error) {
+					stopCamera();
+					// A shop tablet refuses for one of two reasons and the fix
+					// differs, so the browser's own words are more use than ours.
+					say(error && error.name === "NotAllowedError"
+						? "The browser blocked the camera. Allow it for this site, then try again."
+						: "No camera the browser will open: " + (error.message || error.name),
+						"error");
+					return;
+				}
+				const video = stage.querySelector("video");
+				video.srcObject = stream;
+				stage.querySelector("[data-snap]").addEventListener("click", () => snap(video));
+				stage.querySelector("[data-stop]").addEventListener("click", stopCamera);
+			}
+
+			function snap(video) {
+				const canvas = document.createElement("canvas");
+				canvas.width = video.videoWidth;
+				canvas.height = video.videoHeight;
+				canvas.getContext("2d").drawImage(video, 0, 0);
+				canvas.toBlob((blob) => {
+					if (!blob) return say("The camera gave nothing back.", "error");
+					const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+					take([new File([blob], `photo-${stamp}.jpg`, { type: "image/jpeg" })]);
+					if (room() <= 0) stopCamera();
+				}, "image/jpeg", 0.9);
+			}
+
+			function stopCamera() {
+				if (stream) {
+					stream.getTracks().forEach((track) => track.stop());
+					stream = null;
+				}
+				stage.innerHTML = '<p class="fup-hint">Drop a picture here</p>';
+			}
+
+			// ---- wiring
+			if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia
+					&& window.isSecureContext) {
+				q('[data-src="camera"]').hidden = false;
+				q('[data-src="camera"]').addEventListener("click", fromCamera);
+			}
+			q('[data-src="device"]').addEventListener("click", fromDevice);
+
+			["dragenter", "dragover"].forEach((name) =>
+				stage.addEventListener(name, (event) => {
+					event.preventDefault();
+					stage.classList.add("is-over");
+				}));
+			["dragleave", "drop"].forEach((name) =>
+				stage.addEventListener(name, () => stage.classList.remove("is-over")));
+			stage.addEventListener("drop", (event) => {
+				event.preventDefault();
+				take(event.dataTransfer.files);
+			});
+
+			function close(result) {
+				stopCamera();
+				modal.remove();
+				document.removeEventListener("keydown", onKey);
+				resolve(result);
+			}
+			function onKey(event) {
+				if (event.key === "Escape") close([]);
+			}
+			document.addEventListener("keydown", onKey);
+			q("[data-cancel]").addEventListener("click", () => close([]));
+			done.addEventListener("click", () => close(picked.slice()));
+			modal.addEventListener("mousedown", (event) => {
+				if (event.target === modal) close([]);
+			});
+
+			paint();
+		});
+	}
+
+	function escapeHtml(value) {
+		return String(value == null ? "" : value)
+			.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+			.replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+	}
+
+	const CAMERA_GLYPH =
+		'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">'
+		+ '<path d="M3 8.5A1.5 1.5 0 0 1 4.5 7h2.2l1.1-2h8.4l1.1 2h2.2A1.5 1.5 0 0 1 21 8.5v9A1.5'
+		+ ' 1.5 0 0 1 19.5 19h-15A1.5 1.5 0 0 1 3 17.5z"/><circle cx="12" cy="13" r="3.6"/></svg>';
+	const DEVICE_GLYPH =
+		'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">'
+		+ '<path d="M12 16V4"/><path d="m7.5 8.5 4.5-4.5 4.5 4.5"/>'
+		+ '<path d="M4 16v2.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V16"/></svg>';
+
+	// ------------------------------------------------------------- filters
+	/**
+	 * A filter button for a list of transactions, and the sheet behind it.
+	 *
+	 * The long-standing lists — bills, bookings, EMI — carry a filter bar across
+	 * the top because they are searched all day. The rest are read a screenful
+	 * at a time and only occasionally narrowed, so they get an icon instead:
+	 * the same filters, out of the way until they are wanted.
+	 *
+	 * `host` is the element the button is appended to, usually a `.panel-head`.
+	 * `onApply` is handed `{query, from_date, to_date}`; blank strings mean the
+	 * filter is not set, which is what every endpoint here treats as "all".
+	 */
+	function filterSheet(host, options) {
+		const settings = Object.assign({ search: "", label: "Filter" }, options || {});
+		const chosen = { query: "", from_date: "", to_date: "" };
+		if (!host) return { get: () => ({}), clear() {} };
+
+		const button = document.createElement("button");
+		button.type = "button";
+		button.className = "icon-btn plain filter-btn";
+		button.title = settings.label;
+		button.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"'
+			+ ' stroke-width="1.7"><path d="M3 5h18l-7 8v6l-4 2v-8z"/></svg>';
+		host.appendChild(button);
+
+		const isSet = () => Boolean(chosen.query || chosen.from_date || chosen.to_date);
+		const paint = () => button.classList.toggle("is-on", isSet());
+
+		function open() {
+			const today = new Date().toLocaleDateString("en-CA");
+			const modal = document.createElement("div");
+			modal.className = "modal";
+			modal.innerHTML = `
+				<div class="modal-card">
+					<h3>${escapeHtml(settings.label)}</h3>
+					${settings.search ? `<label class="field"><span>Search</span>
+						<input id="fs-q" placeholder="${escapeHtml(settings.search)}"
+							value="${escapeHtml(chosen.query)}"></label>` : ""}
+					<div class="field-grid">
+						<label class="field"><span>From</span>
+							<input id="fs-from" type="date" max="${today}"
+								value="${chosen.from_date}"></label>
+						<label class="field"><span>To</span>
+							<input id="fs-to" type="date" max="${today}"
+								value="${chosen.to_date}"></label>
+					</div>
+					<div class="modal-actions">
+						<button type="button" class="btn btn-quiet" data-clear>Clear</button>
+						<span class="fs-gap"></span>
+						<button type="button" class="btn btn-quiet" data-cancel>Cancel</button>
+						<button type="button" class="btn btn-primary" data-apply>Apply</button>
+					</div>
+				</div>`;
+			document.body.appendChild(modal);
+			// The shared picker claims any date box on the page, but only on the
+			// next frame — these are wanted the moment the sheet is on screen.
+			modal.querySelectorAll('input[type="date"]').forEach(datePicker);
+
+			const close = () => {
+				modal.remove();
+				document.removeEventListener("keydown", onKey);
+			};
+			function onKey(event) {
+				if (event.key === "Escape") close();
+			}
+			document.addEventListener("keydown", onKey);
+
+			function apply(next) {
+				Object.assign(chosen, next);
+				paint();
+				close();
+				settings.onApply(Object.assign({}, chosen));
+			}
+
+			modal.querySelector("[data-apply]").addEventListener("click", () => {
+				const from = modal.querySelector("#fs-from").value;
+				const to = modal.querySelector("#fs-to").value;
+				if (from && to && from > to) {
+					// Said plainly rather than silently swapped: the counter meant
+					// one of the two and only they know which.
+					toast("The From date is after the To date.", "error");
+					return;
+				}
+				apply({ from_date: from, to_date: to,
+				        query: settings.search
+					        ? modal.querySelector("#fs-q").value.trim() : "" });
+			});
+			modal.querySelector("[data-clear]").addEventListener("click", () =>
+				apply({ query: "", from_date: "", to_date: "" }));
+			modal.querySelector("[data-cancel]").addEventListener("click", close);
+			modal.addEventListener("mousedown", (event) => {
+				if (event.target === modal) close();
+			});
+		}
+
+		button.addEventListener("click", open);
+		return { get: () => Object.assign({}, chosen),
+		         clear() { Object.assign(chosen, { query: "", from_date: "", to_date: "" }); paint(); } };
+	}
+
+	// ------------------------------------------------------- figures that fit
+	/**
+	 * Shrink a headline figure until it fits its tile.
+	 *
+	 * The tiles size their text off the viewport, which says nothing about how
+	 * long the number in them is: a branch holding a crore of stock, in rupees
+	 * and paise, needs half as much room again as the tile has. It ran off the
+	 * edge rather than resizing. This measures the number that is actually
+	 * there and steps the size down until it is inside.
+	 */
+	function fitNumbers(root) {
+		(root || document).querySelectorAll(".tile .value, .ctile-value")
+			.forEach((el) => {
+				if (el.dataset.fitBase) el.style.fontSize = el.dataset.fitBase;
+				else el.style.fontSize = "";
+				// Hidden tiles measure zero, and shrinking to a floor on every
+				// pass would leave them tiny when they are finally shown.
+				if (!el.clientWidth) return;
+				const base = parseFloat(getComputedStyle(el).fontSize);
+				if (!el.dataset.fitBase) el.dataset.fitBase = base + "px";
+				let size = base;
+				while (el.scrollWidth > el.clientWidth + 1 && size > 12) {
+					size -= 1;
+					el.style.fontSize = size + "px";
+				}
+			});
+	}
+
+	/** Re-fit whenever tiles are repainted, which every filter change does. */
+	function watchNumbers() {
+		fitNumbers();
+		if (typeof MutationObserver !== "function") return;
+		let queued = false;
+		// `childList` only: the pass sets `style`, and watching attributes too
+		// would make it retrigger itself for ever.
+		new MutationObserver(() => {
+			if (queued) return;
+			queued = true;
+			requestAnimationFrame(() => { queued = false; fitNumbers(); });
+		}).observe(document.body, { childList: true, subtree: true });
+	}
+
 	return {
 		call, login, logout, money, shortTime, csrfToken, plain, toast,
-		mountBranchPicker, datePicker, mountDates,
+		mountBranchPicker, datePicker, mountDates, photoPicker, filterSheet,
+		fitNumbers,
 	};
 })();

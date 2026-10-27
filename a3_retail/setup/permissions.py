@@ -115,8 +115,13 @@ PERMISSION_MATRIX: dict[str, dict[str, str]] = {
 	},
 	"Purchase Receipt": {
 		"A3 Retail Admin": "CRUDS",
-		"Branch Manager": "R",
+		"Branch Manager": "CRUS",
 		"Store Keeper": "CRUS",
+		# A service counter signs for the parts it is sent, long before the
+		# distributor's bill turns up. Without this it cannot book them in at
+		# all, and the box sits on the floor unaccounted for.
+		"Service Manager": "CRUS",
+		"Reception Executive": "CRUS",
 		"Accounts Manager": "R",
 		"Auditor": "R",
 	},

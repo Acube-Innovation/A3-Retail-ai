@@ -98,7 +98,10 @@ class ServiceJobCard(A3BranchMixin, Document):
 			return
 
 		st.validate_transition(previous, self.status)
-		st.log_transition(self, previous, self.status)
+		# Set by `set_status` when the counter said when this happened; a save
+		# from anywhere else is happening now, which is what `None` means.
+		st.log_transition(self, previous, self.status,
+		                  changed_on=self.flags.get("changed_on"))
 		self.on_status_changed(previous, self.status)
 
 	def on_status_changed(self, previous: str, current: str):
@@ -575,7 +578,8 @@ def assign_technician(job_card: str, technician: str) -> dict:
 
 
 @frappe.whitelist()
-def set_status(job_card: str, status: str, remarks: str | None = None) -> dict:
+def set_status(job_card: str, status: str, remarks: str | None = None,
+               changed_on=None) -> dict:
 	"""Move a job card through the state machine with validation."""
 	from a3_retail.api import require_permission
 
@@ -583,6 +587,8 @@ def set_status(job_card: str, status: str, remarks: str | None = None) -> dict:
 	require_permission("Service Job Card", "write", doc)
 
 	previous = doc.status
+	if changed_on:
+		doc.flags.changed_on = changed_on
 	doc.status = status
 	if remarks and status == st.ON_HOLD:
 		doc.hold_reason = remarks

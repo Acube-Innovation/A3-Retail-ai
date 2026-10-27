@@ -75,3 +75,22 @@ def stamp_cost_center(doc, cost_center: str | None):
 		for row in doc.get(table.fieldname) or []:
 			stamp(row)
 
+
+
+def date_window(data: dict, column: str, values: dict) -> list[str]:
+	"""SQL for the from/to dates a list's filter sheet sends.
+
+	Shared because five lists ask the same question of five different date
+	columns, and a window that is half-applied on one of them is the kind of
+	wrong nobody notices until a month's figures do not add up.
+	"""
+	from frappe.utils import getdate
+
+	where = []
+	if data.get("from_date"):
+		where.append(f"{column} >= %(from_date)s")
+		values["from_date"] = getdate(data["from_date"])
+	if data.get("to_date"):
+		where.append(f"{column} <= %(to_date)s")
+		values["to_date"] = getdate(data["to_date"])
+	return where

@@ -15,7 +15,7 @@ money and everything that has happened to it.
 
 import frappe
 from frappe import _
-from frappe.utils import cint, flt, getdate, now_datetime, nowdate
+from frappe.utils import cint, flt, get_datetime, getdate, now_datetime, nowdate
 
 from a3_retail.a3_retail_service.doctype.service_job_card import state as st
 from a3_retail.api import require_permission
@@ -651,7 +651,8 @@ def steps(name: str) -> dict:
 
 
 @frappe.whitelist()
-def advance(name: str, status: str, remarks: str | None = None) -> dict:
+def advance(name: str, status: str, remarks: str | None = None,
+            changed_on=None) -> dict:
 	"""Move the job card one step, through the same rules the desk obeys.
 
 	The branch app is where the work actually happens, so the whole repair has
@@ -678,11 +679,45 @@ def advance(name: str, status: str, remarks: str | None = None) -> dict:
 
 	from a3_retail.a3_retail_service.doctype.service_job_card.service_job_card import set_status
 
-	moved = set_status(name, status, reason or None)
+	moved = set_status(name, status, reason or None, changed_on=_stage_time(doc, changed_on))
 	if reason:
 		doc.reload()
 		doc.add_comment("Comment", text=f"{status}: {reason}")
 	return moved
+
+
+def _stage_time(doc, given):
+	"""When a step happened, if the counter said rather than letting it be now.
+
+	Two things it cannot be: later than now, or earlier than the step before
+	it. A repair that was collected before it was booked in would put negative
+	hours into the timings every report reads.
+	"""
+	if not given:
+		return None
+
+	when = get_datetime(given)
+	now = now_datetime()
+	if when > now:
+		frappe.throw(_("A step cannot be dated in the future."), title=_("Date"))
+
+	log = doc.get("status_log") or []
+	floor = get_datetime(log[-1].changed_on) if log and log[-1].changed_on else None
+	if not floor and doc.get("received_on"):
+		floor = get_datetime(doc.received_on)
+	if floor and when < floor:
+		frappe.throw(
+			_("This repair was last at {0} on {1}, so the next step cannot be "
+			  "earlier than that.").format(
+				(log[-1].to_status if log else doc.status),
+				frappe.utils.format_datetime(floor)),
+			title=_("Date"))
+
+	# A bare date means that day; without a time it would land at midnight and
+	# read as having happened before everything else that day.
+	if when.date() == now.date() and (when.hour, when.minute) == (0, 0):
+		return now
+	return when
 
 
 @frappe.whitelist()

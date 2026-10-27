@@ -43,7 +43,14 @@
 				<button class="btn btn-primary" data-do="request" hidden>+ {{ _("Request Stock") }}</button>
 				<button class="btn btn-purple" data-do="procure" hidden>+ {{ _("Request Procurement") }}</button>
 				<button class="btn btn-orange" data-do="move" hidden>{{ _("Move Stock") }}</button>
+				{#- Damaged goods leave the shelf the same way stock moves off it,
+				    so the button that does it sits beside the one that moves it. -#}
+				<button class="btn btn-danger" data-do="damage" hidden>{{ _("Damage Entry") }}</button>
 				<button class="btn btn-save" data-do="receive">{{ _("Receive Stock") }}</button>
+				{#- Goods in before the bill is: the counter knows how many came
+				    and what the shop sells them at, and nothing else yet. -#}
+				<button class="btn btn-quiet" data-do="goods-in" hidden>
+					{{ _("Goods In (No Bill)") }}</button>
 				<button class="btn btn-quiet" data-do="adjust" hidden>{{ _("Stock Adjustment") }}</button>
 				<!-- Shown only to roles that hold Create on Item; the item master is
 				     shared by every branch. -->

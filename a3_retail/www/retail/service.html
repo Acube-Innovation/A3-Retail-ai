@@ -178,6 +178,12 @@
 								{% endfor %}
 							</div>
 
+							{#- A repair is often written up after the fact: the counter
+							    was busy, or it went in a book first. Blank means now. -#}
+							<label class="field"><span>{{ _("Booked In On") }}</span>
+								<input id="received-on" type="date"
+								       data-empty="{{ _('Today') }}"></label>
+
 							<label class="field"><span>{{ _("Expected Delivery Date") }}</span>
 								<input id="promised" type="date"></label>
 

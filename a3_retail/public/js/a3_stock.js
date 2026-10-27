@@ -647,8 +647,12 @@ window.STOCK = (function () {
 	// Moving offers what the shelf holds; counting has to offer what it does
 	// not, because a count exists to settle a disagreement about exactly that.
 	let workSearch = "search_stock";
-	// Whether the lines carry a cost box. Counting may need one; moving never does.
+	// Whether the lines carry a money box. Counting asks what a piece cost;
+	// goods arriving before their bill ask what it will sell for, which is the
+	// only figure the person signing for the box actually knows.
 	let workLineRate = false;
+	let workRateLabel = "Cost each";
+	let workRatePlaceholder = "Only if asked";
 
 	/** The shelf the lines are about. Moving stock calls it "From" and counting
 	 *  calls it "Warehouse", and the line search has to find either. */
@@ -657,8 +661,10 @@ window.STOCK = (function () {
 		return box ? box.value : null;
 	};
 
-	function linesMarkup(label, withRate) {
+	function linesMarkup(label, withRate, rateLabel, ratePlaceholder) {
 		workLineLabel = label || "Quantity";
+		workRateLabel = rateLabel || "Cost each";
+		workRatePlaceholder = ratePlaceholder || "Only if asked";
 		// Counting asks what a piece is worth; moving does not, because moving
 		// carries the value that is already on the shelf.
 		workLineRate = !!withRate;
@@ -671,7 +677,7 @@ window.STOCK = (function () {
 		const host = $("w-lines");
 		if (!host) return;
 		host.innerHTML = workLines.map((line, index) => `
-			<div class="field-grid work-line">
+			<div class="field-grid work-line${workLineRate ? " has-rate" : ""}">
 				<label class="field"><span>${index ? "" : "Item"}</span>
 					<input class="w-code" data-i="${index}" value="${esc(line.item_code)}"
 					       placeholder="Type the item name or scan it" autocomplete="off"></label>
@@ -679,10 +685,10 @@ window.STOCK = (function () {
 					<input class="w-num" data-i="${index}" inputmode="numeric"
 					       value="${line.qty || ""}"
 					       ${line.serials ? "readonly title='Counted from the IMEIs'" : ""}></label>
-				${workLineRate ? `<label class="field"><span>${index ? "" : "Cost each"}</span>
+				${workLineRate ? `<label class="field"><span>${index ? "" : workRateLabel}</span>
 					<input class="w-rate" data-i="${index}" inputmode="decimal"
 					       value="${line.rate || ""}"
-					       placeholder="Only if asked"></label>` : ""}
+					       placeholder="${workRatePlaceholder}"></label>` : ""}
 				<button class="btn btn-quiet work-drop" data-i="${index}" type="button"
 				        ${workLines.length > 1 ? "" : "disabled"}>×</button>
 			</div>
@@ -985,6 +991,121 @@ window.STOCK = (function () {
 		}
 	}
 
+	function openDamage() {
+		workSearch = "search_stock";
+		const options = (state.boot.warehouses || []).map((warehouse) =>
+			`<option value="${esc(warehouse)}">${esc(warehouse)}</option>`).join("");
+
+		startLines(null);
+		openWork("Damage entry",
+			"Takes broken stock off the shelf for good. Creates a Stock Entry — "
+			+ "Material Issue, under the Damage Entry type, written off at what it "
+			+ "was worth.",
+			`<div class="field-grid">
+				<label class="field"><span>Off which shelf</span>
+					<select id="w-warehouse">${options}</select></label>
+				<label class="field"><span>Found on</span>
+					<input id="w-date" type="date" max="${today()}" value="${today()}"></label>
+			</div>
+			${linesMarkup()}
+			<label class="field"><span>What happened to it</span>
+				<input id="w-remarks" placeholder="Screen cracked in transit, water damage…">
+			</label>`,
+			"Write it off",
+			async () => {
+				if (!$("w-remarks").value.trim())
+					throw new Error("Say what happened to it.");
+				const short = workLines.find((l) => l.item_code && l.serials
+				                                    && l.picked.length === 0);
+				if (short) throw new Error(
+					short.item_code + " goes by IMEI — pick which handsets are damaged.");
+				const result = await A3.call("a3_retail.api.stock_control.damage_entry", {
+					payload: {
+						source: $("w-warehouse").value,
+						posting_date: $("w-date").value,
+						remarks: $("w-remarks").value.trim(),
+						items: linesPayload(),
+					},
+				});
+				toast(`Written off — ${result.stock_entry}`
+					+ (result.written_off ? ` · ${money(result.written_off)}` : "") + ".",
+					"ok");
+				loadStock();
+				loadKpis();
+				loadSide();
+			});
+
+	}
+
+	function openGoodsIn() {
+		workSearch = "search_countable";
+		startLines(null);
+		openWork("Goods in, no bill yet",
+			"Books the stock in against the supplier and records what the shop "
+			+ "will sell it at. What it cost goes on later, when the bill arrives.",
+			`<div class="field-grid">
+				<label class="field"><span>Who sent it</span>
+					<input id="w-supplier" autocomplete="off"
+					       placeholder="Supplier name">
+					<div class="w-hits" id="w-supplier-hits"></div></label>
+				<label class="field"><span>Came in on</span>
+					<input id="w-date" type="date" max="${today()}" value="${today()}"></label>
+			</div>
+			${linesMarkup("Quantity", true, "Selling price", "What it sells for")}
+			<label class="field"><span>Docket / LR number (optional)</span>
+				<input id="w-docket"></label>`,
+			"Book it in",
+			async () => {
+				if (!state.goodsInSupplier) throw new Error("Say who sent it.");
+				const result = await A3.call("a3_retail.api.receipts.receive", {
+					payload: {
+						supplier: state.goodsInSupplier,
+						date: $("w-date").value,
+						docket: $("w-docket").value.trim(),
+						// The cost box on these lines is the *selling* price:
+						// what it cost is on a bill nobody has yet.
+						items: linesPayload().map((l) => ({
+							item_code: l.item_code, qty: l.qty,
+							serials: l.serials, selling_rate: l.rate,
+						})),
+					},
+				});
+				toast(`Booked in — ${result.receipt}, ${result.lines} line(s).`
+					+ ` Waiting for the bill.`, "ok");
+				loadStock();
+				loadKpis();
+				loadSide();
+			});
+
+		state.goodsInSupplier = null;
+		const box = $("w-supplier");
+		const hits = $("w-supplier-hits");
+		let timer = null;
+		box.addEventListener("input", () => {
+			state.goodsInSupplier = null;
+			clearTimeout(timer);
+			timer = setTimeout(async () => {
+				const q = box.value.trim();
+				if (q.length < 2) { hits.innerHTML = ""; return; }
+				const rows = await A3.call("a3_retail.api.expenses.search_suppliers",
+					{ query: q, limit: 6 }).catch(() => []);
+				hits.innerHTML = (rows || []).map((r) =>
+					`<button type="button" class="w-hit" data-name="${esc(r.name)}"
+						data-label="${esc(r.supplier_name)}">${esc(r.supplier_name)}</button>`)
+					.join("");
+			}, 220);
+		});
+		hits.addEventListener("mousedown", (event) => {
+			const hit = event.target.closest(".w-hit");
+			if (!hit) return;
+			event.preventDefault();
+			state.goodsInSupplier = hit.dataset.name;
+			box.value = hit.dataset.label;
+			hits.innerHTML = "";
+		});
+		box.addEventListener("blur", () => setTimeout(() => { hits.innerHTML = ""; }, 120));
+	}
+
 	function openAdjust() {
 		workSearch = "search_countable";
 		const options = state.boot.warehouses.map((warehouse) =>
@@ -1280,6 +1401,7 @@ window.STOCK = (function () {
 		const ALLOWED = {
 			"new-item": "create_item", "request": "request", "procure": "procure",
 			"move": "transfer", "adjust": "adjust", "import": "create_item",
+			"damage": "transfer", "goods-in": "receive",
 		};
 		document.querySelectorAll("[data-do]").forEach((node) => {
 			const needs = ALLOWED[node.dataset.do];
@@ -1325,6 +1447,8 @@ window.STOCK = (function () {
 				if (what === "request") return openRequest(null);
 				if (what === "procure") return openProcure(null);
 				if (what === "move") return openMove();
+				if (what === "damage") return openDamage();
+				if (what === "goods-in") return openGoodsIn();
 				if (what === "adjust") return openAdjust();
 				if (what === "new-item") return openNewItem();
 				if (what === "import") return openImport();

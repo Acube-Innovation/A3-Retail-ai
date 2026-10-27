@@ -126,9 +126,20 @@
 	}
 
 	// ------------------------------------------------------------- the list
+	// The filter icon over this list, and the window it is currently asking
+	// for. Mounted on first load so the button exists before anyone can press it.
+	let sheet = null;
+
 	async function load() {
+		if (!sheet) {
+			sheet = A3.filterSheet(document.getElementById("list-head"), {
+				label: "Filter", search: "Debit note no or the supplier",
+				onApply: () => load(),
+			});
+		}
 		try {
-			const data = await A3.call("a3_retail.api.supplier_returns.recent", { limit: 30 });
+			const data = await A3.call("a3_retail.api.supplier_returns.recent",
+				{ limit: 30, filters: sheet ? sheet.get() : {} });
 			paint(data.rows || []);
 		} catch (error) {
 			$("rows").innerHTML =

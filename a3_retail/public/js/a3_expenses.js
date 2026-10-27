@@ -35,10 +35,21 @@
 		$("work-msg").className = "msg" + (kind ? " " + kind : "");
 	}
 
+	// The filter icon over this list, and the window it is currently asking
+	// for. Mounted on first load so the button exists before anyone can press it.
+	let sheet = null;
+
 	async function load() {
+		if (!sheet) {
+			sheet = A3.filterSheet(document.getElementById("list-head"), {
+				label: "Filter", search: "Entry no, what it was spent on, who it went to",
+				onApply: () => load(),
+			});
+		}
 		try {
 			const [data, cats, srcs, mayAdd, modes] = await Promise.all([
-				A3.call("a3_retail.api.expenses.recent", { limit: 40 }),
+				A3.call("a3_retail.api.expenses.recent",
+					{ limit: 40, filters: sheet ? sheet.get() : {} }),
 				A3.call("a3_retail.api.expenses.categories"),
 				A3.call("a3_retail.api.expenses.paid_from"),
 				A3.call("a3_retail.api.expenses.can_add_category"),
@@ -61,8 +72,13 @@
 		const count = rows.length;
 		const biggest = rows.reduce((m, r) => Math.max(m, r.amount || 0), 0);
 
+		// Once a window is asked for, "this month" is not what is on screen —
+		// so the tile says which figure it is showing rather than quietly
+		// disagreeing with the rows under it.
 		$("kpis").innerHTML = [
-			["This month", money(spentThisMonth), "neutral"],
+			data.filtered
+				? ["Shown", money(data.shown_total || 0), "neutral"]
+				: ["This month", money(spentThisMonth), "neutral"],
 			["Entries shown", String(count), "neutral"],
 			["Largest", money(biggest), "neutral"],
 		].map(([label, value]) => `

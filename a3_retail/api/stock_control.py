@@ -114,6 +114,9 @@ def bootstrap() -> dict:
 			"approve": bool(frappe.has_permission("Stock Request", "submit")),
 			"transfer": bool(frappe.has_permission("Stock Entry", "create")),
 			"adjust": bool(frappe.has_permission("Stock Reconciliation", "create")),
+			# Goods in before the bill — a service counter signs for parts it
+			# is sent long before the distributor invoices them.
+			"receive": bool(frappe.has_permission("Purchase Receipt", "create")),
 			"procure": bool(frappe.has_permission("Material Request", "create")),
 			# The item master is shared across branches, so only the roles holding
 			# Create on Item see the button at all.
@@ -1000,6 +1003,100 @@ def move_stock(payload) -> dict:
 		raise
 
 	return {"stock_entry": entry.name, "print_url": print_url("Stock Entry", entry.name)}
+
+
+DAMAGE_TYPE = "Damage Entry"
+
+
+def _damage_type() -> str:
+	"""The Stock Entry Type damaged goods leave under.
+
+	A type of its own rather than a plain Material Issue, so a month's breakages
+	can be totalled without anybody reading remarks. ERPNext's `purpose` list is
+	fixed and cannot gain a tenth entry, but a type the shop names can sit on
+	top of one — which is what a Stock Entry Type is for.
+	"""
+	if not frappe.db.exists("Stock Entry Type", DAMAGE_TYPE):
+		frappe.get_doc({"doctype": "Stock Entry Type", "__newname": DAMAGE_TYPE,
+		                "purpose": "Material Issue", "is_standard": 0}
+		               ).insert(ignore_permissions=True)
+	return DAMAGE_TYPE
+
+
+@frappe.whitelist()
+def damage_entry(payload) -> dict:
+	"""Take damaged stock off the shelf for good.
+
+	A Material Issue: the goods leave and nothing comes back for them, which is
+	exactly what issuing stock without a destination means. It is written off at
+	what it was worth, so the loss lands in the P&L rather than quietly
+	shrinking the count.
+	"""
+	employee = _me()
+	require_permission("Stock Entry", "create")
+
+	data = frappe.parse_json(payload) if isinstance(payload, str) else (payload or {})
+	source = data.get("source")
+	# A branch writes off its own shelf and nobody else's.
+	if source not in set(_warehouses(employee.branch)):
+		frappe.throw(_("That warehouse does not belong to {0}.").format(employee.branch))
+
+	items = [row for row in (data.get("items") or []) if row.get("item_code")
+	         and flt(row.get("qty")) > 0]
+	if not items:
+		frappe.throw(_("Nothing to write off."))
+
+	reason = (data.get("remarks") or "").strip()
+	if not reason:
+		frappe.throw(_("Say what happened to it."), title=_("Reason"))
+
+	# Breakages are found on a stocktake and entered days later, so the day can
+	# be named. It cannot be a day that has not happened.
+	posting = getdate(data.get("posting_date") or nowdate())
+	if posting > getdate(nowdate()):
+		frappe.throw(_("A damage entry cannot be dated in the future."), title=_("Date"))
+
+	for row in items:
+		available = _available(row["item_code"], source)
+		if flt(row["qty"]) > available + 0.0001:
+			frappe.throw(
+				_("Only {0} of {1} are on the shelf in {2}. {3} were written off.").format(
+					f"{available:g}", row["item_code"], source, f"{flt(row['qty']):g}"),
+				title=_("Not enough stock"),
+			)
+
+	entry = frappe.new_doc("Stock Entry")
+	entry.stock_entry_type = _damage_type()
+	entry.purpose = "Material Issue"
+	entry.company = frappe.db.get_single_value("Global Defaults", "default_company")
+	entry.posting_date = posting
+	entry.set_posting_time = 1
+	entry.from_warehouse = source
+	if entry.meta.has_field("branch"):
+		entry.branch = frappe.db.get_value("Warehouse", source, "custom_branch") \
+			or employee.branch
+	# The type already says it was damage; the remark says what the damage was.
+	entry.remarks = f"{DAMAGE_TYPE}: {reason}"
+
+	for row in items:
+		entry.append("items", {
+			"item_code": row["item_code"], "qty": flt(row["qty"]),
+			"s_warehouse": source,
+			"serial_no": "\n".join(row.get("serials") or []) or None,
+			"use_serial_batch_fields": 1 if row.get("serials") else 0,
+		})
+
+	entry.flags.ignore_permissions = True
+	try:
+		entry.insert(ignore_permissions=True)
+		entry.submit()
+	except frappe.exceptions.ValidationError as error:
+		_explain_move(error, posting, source, items)
+		raise
+
+	entry.reload()
+	return {"stock_entry": entry.name, "written_off": flt(entry.total_outgoing_value),
+	        "print_url": print_url("Stock Entry", entry.name)}
 
 
 def _explain_move(error, posting, source: str, items: list[dict]) -> None:

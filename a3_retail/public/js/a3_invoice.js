@@ -68,6 +68,7 @@ window.INVOICE = (function () {
 
 	function icon(name) {
 		const paths = {
+			swap: '<path d="M4 8h13l-3-3"/><path d="M20 16H7l3 3"/>',
 			print: '<path d="M7 9V4h10v5"/><rect x="4" y="9" width="16" height="7" rx="2"/><path d="M7 14h10v6H7z"/>',
 			pencil: '<path d="M4 20h4L20 8l-4-4L4 16z"/><path d="M14 6l4 4"/>',
 			cash: '<rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/>',
@@ -213,8 +214,12 @@ window.INVOICE = (function () {
 					icon("print")} Print Invoice</button>` : ""}
 			${data.editable
 				? `<a class="btn btn-outline btn-icon" href="/retail/sales?invoice=${
-					encodeURIComponent(data.name)}">${icon("pencil")} Edit</a>` : ""}`;
+					encodeURIComponent(data.name)}">${icon("pencil")} Edit</a>` : ""}
+			${data.status === "Submitted" && !data.is_return
+				? `<button class="btn btn-outline btn-icon" id="replace-top">${
+					icon("swap")} Replace</button>` : ""}`;
 		if ($("print-top")) $("print-top").addEventListener("click", print);
+		if ($("replace-top")) $("replace-top").addEventListener("click", openReplace);
 
 		$("body").innerHTML = `
 			${data.editable ? draftHeaderForm(data) : ""}
@@ -483,6 +488,99 @@ window.INVOICE = (function () {
 		}
 	}
 
+	// ------------------------------------------------------------ replacing
+	/**
+	 * A faulty handset swapped for a good one.
+	 *
+	 * The counter says which unit failed and what the supplier sent back; the
+	 * six documents that takes are raised together, because remembering four
+	 * of them a fortnight later is how branches end up with phones nobody can
+	 * account for.
+	 */
+	let swap = null;
+
+	async function openReplace() {
+		$("rp-msg").textContent = "";
+		$("rp-msg").className = "msg";
+		$("rp-new").value = "";
+		$("rp-reason").value = "";
+		try {
+			swap = await A3.call("a3_retail.api.replacements.options",
+			                     { invoice: state.name });
+		} catch (error) {
+			return toast(error.message, "error");
+		}
+		const open = swap.lines.filter((line) => line.can_replace > 0);
+		if (!open.length) {
+			return toast("Everything on this bill has already come back.", "error");
+		}
+		swap.open = open;
+		$("rp-item").innerHTML = open.map((line, i) =>
+			`<option value="${i}">${esc(line.item_name)}</option>`).join("");
+
+		const today = new Date().toLocaleDateString("en-CA");
+		$("rp-date").value = today;
+		$("rp-date").max = today;
+		A3.datePicker($("rp-date"));
+		$("rp-date").dispatchEvent(new Event("change"));
+
+		await paintSwapLine();
+		$("rp-item").onchange = paintSwapLine;
+		$("replace-modal").hidden = false;
+	}
+
+	async function paintSwapLine() {
+		const line = swap.open[Number($("rp-item").value)];
+		$("rp-faulty").innerHTML = line.serials.length
+			? line.serials.map((s) => `<option value="${esc(s)}">${esc(s)}</option>`).join("")
+			: '<option value="">No IMEI on this item</option>';
+		// An accessory carries no IMEI, so neither side of the swap asks for one.
+		$("rp-faulty").disabled = !line.serials.length;
+		$("rp-new").disabled = !line.has_serial;
+		$("rp-new").placeholder = line.has_serial
+			? "Type or scan it" : "Not a serialised item";
+
+		const suppliers = await A3.call("a3_retail.api.expenses.search_suppliers",
+		                                { query: "", limit: 50 }).catch(() => []);
+		$("rp-supplier").innerHTML = (suppliers || []).map((s) =>
+			`<option value="${esc(s.name)}"${s.name === line.supplier ? " selected" : ""}>${
+				esc(s.supplier_name)}</option>`).join("");
+	}
+
+	async function doReplace() {
+		const line = swap.open[Number($("rp-item").value)];
+		const reason = $("rp-reason").value.trim();
+		if (!reason) {
+			$("rp-msg").textContent = "Say what is wrong with it.";
+			$("rp-msg").className = "msg error";
+			return;
+		}
+		$("rp-go").disabled = true;
+		$("rp-msg").textContent = "Raising the paperwork…";
+		$("rp-msg").className = "msg";
+		try {
+			const out = await A3.call("a3_retail.api.replacements.replace", {
+				payload: {
+					invoice: state.name, item_code: line.item_code, qty: 1,
+					faulty_serials: $("rp-faulty").value ? [$("rp-faulty").value] : [],
+					new_serials: $("rp-new").value.trim() ? [$("rp-new").value.trim()] : [],
+					supplier: $("rp-supplier").value,
+					reason: reason, date: $("rp-date").value,
+				},
+			});
+			$("replace-modal").hidden = true;
+			toast(`Replaced — ${out.sale} out to the customer, `
+			      + `${out.debit_note} back to the supplier.`, "ok");
+			window.open(out.print_url, "_blank");
+			load();
+		} catch (error) {
+			$("rp-msg").textContent = A3.plain(error.message || "Could not replace it.");
+			$("rp-msg").className = "msg error";
+		} finally {
+			$("rp-go").disabled = false;
+		}
+	}
+
 	// --------------------------------------------------------------- start
 	function start(options) {
 		state.name = options.name;
@@ -495,6 +593,9 @@ window.INVOICE = (function () {
 		}
 
 		$("pay-save").addEventListener("click", takePayment);
+		$("rp-go").addEventListener("click", doReplace);
+		document.querySelectorAll("[data-close-replace]").forEach((node) =>
+			node.addEventListener("click", () => { $("replace-modal").hidden = true; }));
 		document.querySelectorAll("[data-close]").forEach((node) => {
 			node.addEventListener("click", () => { node.closest(".modal").hidden = true; });
 		});

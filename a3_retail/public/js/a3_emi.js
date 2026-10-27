@@ -993,20 +993,25 @@ window.EMI = (function () {
 	/** Upload goes through Frappe's own file endpoint, attached to the
 	 *  application, so the file inherits its permissions and its audit trail. */
 	function askUpload(application, row) {
+		// Held in a closure rather than read back off an input: the picture may
+		// have come from the camera, which no file input can be given.
+		const chosen = [];
 		openWork("Upload a document", "It is attached to the application itself.",
 			`<label class="field"><span>File</span>
-				<input id="w-file" type="file" accept="image/*,application/pdf"></label>
+				<div class="fup-chosen">
+					<button type="button" class="btn btn-quiet" id="w-pick">Choose file</button>
+					<span id="w-file-name">None chosen</span>
+				</div></label>
 			<div class="field-grid">
 				${field("Reference number (optional)", "w-number", 'placeholder="Last digits only"', "")}
 				${field("Expires on (optional)", "w-expiry", 'type="date"', "")}
 			</div>`,
 			"Upload", async () => {
-				const picker = $("w-file");
-				if (!picker.files.length) return workMessage("Pick the file first.", "error");
+				if (!chosen.length) return workMessage("Pick the file first.", "error");
 				workMessage("Uploading…");
 
 				const form = new FormData();
-				form.append("file", picker.files[0]);
+				form.append("file", chosen[0]);
 				form.append("doctype", "EMI Application");
 				form.append("docname", application);
 				form.append("is_private", 1);
@@ -1033,6 +1038,18 @@ window.EMI = (function () {
 					workMessage(error.message, "error");
 				}
 			});
+
+		$("w-pick").addEventListener("click", async () => {
+			const files = await A3.photoPicker({
+				title: "Upload a document",
+				note: "A photograph of the paper is fine. Drag one here, or add from",
+				accept: "image/*,application/pdf", multiple: false, max: 1,
+			});
+			if (!files.length) return;
+			chosen.length = 0;
+			chosen.push(files[0]);
+			$("w-file-name").textContent = files[0].name;
+		});
 	}
 
 	async function verifyDocument(application, row) {
