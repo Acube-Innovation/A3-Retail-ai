@@ -297,6 +297,7 @@ window.A3 = (function () {
 		mountBranchPicker();
 		mountMobileNav();
 		watchForDates();
+		watchNumbers();
 	});
 
 	/* ------------------------------------------------------------------ dates
@@ -780,8 +781,51 @@ window.A3 = (function () {
 		         clear() { Object.assign(chosen, { query: "", from_date: "", to_date: "" }); paint(); } };
 	}
 
+	// ------------------------------------------------------- figures that fit
+	/**
+	 * Shrink a headline figure until it fits its tile.
+	 *
+	 * The tiles size their text off the viewport, which says nothing about how
+	 * long the number in them is: a branch holding a crore of stock, in rupees
+	 * and paise, needs half as much room again as the tile has. It ran off the
+	 * edge rather than resizing. This measures the number that is actually
+	 * there and steps the size down until it is inside.
+	 */
+	function fitNumbers(root) {
+		(root || document).querySelectorAll(".tile .value, .ctile-value")
+			.forEach((el) => {
+				if (el.dataset.fitBase) el.style.fontSize = el.dataset.fitBase;
+				else el.style.fontSize = "";
+				// Hidden tiles measure zero, and shrinking to a floor on every
+				// pass would leave them tiny when they are finally shown.
+				if (!el.clientWidth) return;
+				const base = parseFloat(getComputedStyle(el).fontSize);
+				if (!el.dataset.fitBase) el.dataset.fitBase = base + "px";
+				let size = base;
+				while (el.scrollWidth > el.clientWidth + 1 && size > 12) {
+					size -= 1;
+					el.style.fontSize = size + "px";
+				}
+			});
+	}
+
+	/** Re-fit whenever tiles are repainted, which every filter change does. */
+	function watchNumbers() {
+		fitNumbers();
+		if (typeof MutationObserver !== "function") return;
+		let queued = false;
+		// `childList` only: the pass sets `style`, and watching attributes too
+		// would make it retrigger itself for ever.
+		new MutationObserver(() => {
+			if (queued) return;
+			queued = true;
+			requestAnimationFrame(() => { queued = false; fitNumbers(); });
+		}).observe(document.body, { childList: true, subtree: true });
+	}
+
 	return {
 		call, login, logout, money, shortTime, csrfToken, plain, toast,
 		mountBranchPicker, datePicker, mountDates, photoPicker, filterSheet,
+		fitNumbers,
 	};
 })();
