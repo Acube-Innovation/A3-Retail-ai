@@ -985,6 +985,52 @@ window.STOCK = (function () {
 		}
 	}
 
+	function openDamage() {
+		workSearch = "search_stock";
+		const options = (state.boot.warehouses || []).map((warehouse) =>
+			`<option value="${esc(warehouse)}">${esc(warehouse)}</option>`).join("");
+
+		startLines(null);
+		openWork("Damage entry",
+			"Takes broken stock off the shelf for good. Creates a Stock Entry — "
+			+ "Material Issue, under the Damage Entry type, written off at what it "
+			+ "was worth.",
+			`<div class="field-grid">
+				<label class="field"><span>Off which shelf</span>
+					<select id="w-warehouse">${options}</select></label>
+				<label class="field"><span>Found on</span>
+					<input id="w-date" type="date" max="${today()}" value="${today()}"></label>
+			</div>
+			${linesMarkup()}
+			<label class="field"><span>What happened to it</span>
+				<input id="w-remarks" placeholder="Screen cracked in transit, water damage…">
+			</label>`,
+			"Write it off",
+			async () => {
+				if (!$("w-remarks").value.trim())
+					throw new Error("Say what happened to it.");
+				const short = workLines.find((l) => l.item_code && l.serials
+				                                    && l.picked.length === 0);
+				if (short) throw new Error(
+					short.item_code + " goes by IMEI — pick which handsets are damaged.");
+				const result = await A3.call("a3_retail.api.stock_control.damage_entry", {
+					payload: {
+						source: $("w-warehouse").value,
+						posting_date: $("w-date").value,
+						remarks: $("w-remarks").value.trim(),
+						items: linesPayload(),
+					},
+				});
+				toast(`Written off — ${result.stock_entry}`
+					+ (result.written_off ? ` · ${money(result.written_off)}` : "") + ".",
+					"ok");
+				loadStock();
+				loadKpis();
+				loadSide();
+			});
+
+	}
+
 	function openAdjust() {
 		workSearch = "search_countable";
 		const options = state.boot.warehouses.map((warehouse) =>
@@ -1280,6 +1326,7 @@ window.STOCK = (function () {
 		const ALLOWED = {
 			"new-item": "create_item", "request": "request", "procure": "procure",
 			"move": "transfer", "adjust": "adjust", "import": "create_item",
+			"damage": "transfer",
 		};
 		document.querySelectorAll("[data-do]").forEach((node) => {
 			const needs = ALLOWED[node.dataset.do];
@@ -1325,6 +1372,7 @@ window.STOCK = (function () {
 				if (what === "request") return openRequest(null);
 				if (what === "procure") return openProcure(null);
 				if (what === "move") return openMove();
+				if (what === "damage") return openDamage();
 				if (what === "adjust") return openAdjust();
 				if (what === "new-item") return openNewItem();
 				if (what === "import") return openImport();

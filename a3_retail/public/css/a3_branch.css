@@ -1406,6 +1406,11 @@ input.is-locked { background: rgba(42, 51, 66, .04); color: var(--muted);
 .tl-at, .tl-note { display: block; color: var(--faint); font-size: 11px; }
 .btn-orange { background: var(--brand); border: 0; color: #fff; font-weight: 700; }
 .btn-orange:hover { background: var(--brand-dark); }
+/* Writing stock off is not undone by writing it back on, so the button
+   that does it does not look like the ones beside it. */
+.btn-danger { background: var(--danger-soft); border: 1px solid var(--danger);
+	color: var(--danger-dark); font-weight: 700; }
+.btn-danger:hover { background: var(--danger); color: #fff; }
 
 @media (max-width: 1400px) {
 	.bill-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); }
