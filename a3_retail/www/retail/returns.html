@@ -22,6 +22,16 @@
 				<p class="topbar-sub">{{ _("Goods coming back, and the credit note for them") }}</p>
 			</div>
 			<div class="topbar-right">
+				{#- Raising one is the rare act; reading the list is the daily one,
+				    so the button sits in the corner and the list has the page. -#}
+				<a class="btn btn-primary btn-new" href="/retail/return_entry">
+					+ {{ _("New Return") }}</a>
+				<button class="btn btn-quiet btn-icon" id="export">
+					{% set icon = "download" %}{% include "a3_retail/www/retail/_icons.html" %}
+					{{ _("Export") }}</button>
+				<button class="btn btn-quiet btn-icon" id="refresh">
+					{% set icon = "refresh" %}{% include "a3_retail/www/retail/_icons.html" %}
+					{{ _("Refresh") }}</button>
 				<a class="btn btn-quiet" href="/retail/dashboard">{{ _("Dashboard") }}</a>
 				<div class="who">
 					<div class="name">{{ me.employee_name }}</div>
@@ -32,77 +42,78 @@
 			</div>
 		</header>
 
-		<main class="content pe-grid">
-			<div class="pe-main">
+		<main class="content bills">
+			<section class="ctiles bill-tiles" id="tiles"></section>
 
-				<section class="svc-panel">
-					<div class="panel-head"><h2>{{ _("Which bill is it coming back on?") }}</h2></div>
-					<div class="field">
-						<input id="bill-q" type="search" autocomplete="off" autofocus
-						       placeholder="{{ _('Bill number, customer name or phone…') }}">
-						<div id="bill-hits" class="pick-list"></div>
-					</div>
-					<p class="muted" id="bill-picked"></p>
-				</section>
+			<section class="svc-panel bill-filters">
+				<button class="btn btn-outline btn-sm filter-toggle" id="filter-toggle">
+					{% set icon = "filter" %}{% include "a3_retail/www/retail/_icons.html" %}
+					{{ _("Filters") }}</button>
 
-				<section class="svc-panel" id="lines-panel" hidden>
-					<div class="panel-head"><h2>{{ _("What is coming back") }}</h2></div>
-					<table class="bill-table" id="lines">
+				<div class="filter-row ret-filters" id="filter-row">
+					<label class="field wide"><span>{{ _("Search") }}</span>
+						<input id="q" autocomplete="off"
+						       placeholder="{{ _('Credit note, bill, customer or phone…') }}"></label>
+
+					<label class="field"><span>{{ _("Date from") }}</span>
+						<input id="from-date" type="date"
+						       data-empty="{{ _('Any date') }}"></label>
+					<label class="field"><span>{{ _("Date to") }}</span>
+						<input id="to-date" type="date"
+						       data-empty="{{ _('Any date') }}"></label>
+
+					<label class="field"><span>{{ _("Settled") }}</span>
+						<select id="settled">
+							{% for value, label in [("all", "All"), ("refunded", "Refunded"),
+							                        ("on_account", "On account")] %}
+							<option value="{{ value }}">{{ _(label) }}</option>
+							{% endfor %}
+						</select></label>
+
+					<label class="field check-field"><span></span>
+						<span class="check-inline">
+							<input type="checkbox" id="show-cancelled">
+							{{ _("Show cancelled") }}</span></label>
+
+					<button class="btn btn-quiet btn-sm" id="clear">{{ _("Clear filters") }}</button>
+				</div>
+			</section>
+
+			<section class="svc-panel bill-table-panel">
+				<div class="bill-table-wrap">
+					<table class="bill-table" id="rows-table">
 						<thead><tr>
-							<th>{{ _("Item") }}</th><th>{{ _("Sold") }}</th>
-							<th>{{ _("Already back") }}</th><th>{{ _("Returning") }}</th>
-							<th>{{ _("Rate") }}</th><th>{{ _("Amount") }}</th>
+							<th>{{ _("Credit Note") }}</th>
+							<th>{{ _("Date") }}</th>
+							<th>{{ _("Customer") }}</th>
+							<th>{{ _("Against") }}</th>
+							<th>{{ _("What came back") }}</th>
+							<th class="num">{{ _("Amount") }}</th>
+							<th class="num">{{ _("Refunded") }}</th>
+							<th class="num">{{ _("On account") }}</th>
+							<th>{{ _("Settled") }}</th>
+							<th>{{ _("Status") }}</th>
+							<th>{{ _("Handled by") }}</th>
+							<th>{{ _("Actions") }}</th>
 						</tr></thead>
-						<tbody></tbody>
+						<tbody id="rows">
+							<tr><td colspan="12">{{ _("Loading…") }}</td></tr>
+						</tbody>
 					</table>
-				</section>
-
-				<section class="svc-panel">
-					<div class="panel-head" id="list-head"><h2>{{ _("Recent credit notes") }}</h2>
-						<button class="btn btn-quiet" id="refresh">{{ _("Refresh") }}</button>
-					</div>
-					<div id="rows"><p class="muted">{{ _("Loading…") }}</p></div>
-				</section>
-			</div>
-
-			<aside class="pe-side">
-				<section class="svc-panel">
-					<h2>{{ _("Credit note") }}</h2>
-					<div class="bill-totals">
-						<div class="tr"><span>{{ _("Lines") }}</span><span id="r-lines">0</span></div>
-						<div class="tr tr-grand"><span>{{ _("Coming back") }}</span>
-							<span id="r-total">₹0.00</span></div>
-					</div>
-
-					<div class="field"><label for="r-date">{{ _("Date") }}</label>
-						<input id="r-date" type="date"></div>
-					<div class="field"><label for="r-seller">{{ _("Handled by") }}</label>
-						<select id="r-seller"></select></div>
-					<div class="field"><label for="r-refund">{{ _("Refund now") }}</label>
-						<input id="r-refund" type="number" min="0" step="0.01" placeholder="0.00"></div>
-					<div class="field"><label for="r-mode">{{ _("Refund by") }}</label>
-						<select id="r-mode"></select></div>
-					<p class="muted">{{ _("Leave Refund now empty to keep it as credit on the customer's account.") }}</p>
-
-					<div class="field"><label for="r-reason">{{ _("Reason") }}</label>
-						<input id="r-reason" type="text" maxlength="200"
-						       placeholder="{{ _('Why is it coming back?') }}"></div>
-
-					<button class="btn btn-primary btn-wide" id="r-save" disabled>
-						{{ _("Raise Credit Note") }}</button>
-					<p class="msg" id="work-msg"></p>
-				</section>
-			</aside>
+				</div>
+				<div class="bill-foot">
+					<span id="showing"></span>
+					<label class="page-size">{{ _("Per page") }}
+						<select id="page-size">
+							{% for size in [20, 50, 100] %}<option value="{{ size }}">{{ size }}</option>{% endfor %}
+						</select></label>
+					<div class="pager" id="pager"></div>
+				</div>
+			</section>
 		</main>
 	</div>
 </div>
 
 <div class="toast" id="toast" hidden></div>
-
-<script>
-window.addEventListener("DOMContentLoaded", function () {
-	RETURNS.start({ branch: {{ me.branch|tojson }} });
-});
-</script>
 </body>
 </html>

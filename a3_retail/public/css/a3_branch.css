@@ -2831,3 +2831,73 @@ kbd { display: inline-block; min-width: 17px; padding: 1px 5px; margin: 0 1px;
 .filter-row .check-inline:hover { border-color: var(--brand); }
 .filter-row .check-inline input[type="checkbox"] { flex: 0 0 auto; width: 16px;
 	height: 16px; margin: 0; cursor: pointer; accent-color: var(--brand); }
+
+/* ==========================================================================
+   Sales returns (/retail/returns and /retail/return_entry)
+   The list is the Bills list in all but name; the entry page is two steps
+   down the middle with the credit note itself kept in view beside them.
+   ========================================================================== */
+.ret-filters { grid-template-columns: minmax(150px, 1.6fr) minmax(0, .88fr)
+	minmax(0, .88fr) minmax(0, 1fr) auto auto; }
+#rows-table tbody td.ret-items { white-space: normal; min-width: 150px; max-width: 260px; }
+#rows-table tbody td.ret-items small { display: block; font-size: 11px; color: var(--muted); }
+#rows-table tbody td small.muted { display: block; font-size: 11px; color: var(--muted); }
+.warn-amber { color: var(--warn); font-weight: 700; }
+
+/* ---- the entry page ---- */
+.ret-cols { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 16px;
+	align-items: start; }
+.ret-main { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.ret-side { position: sticky; top: 16px; }
+/* A numbered step, so the page says which order it expects to be used in. */
+.step-no { display: inline-flex; align-items: center; justify-content: center;
+	width: 22px; height: 22px; margin-right: 8px; font-size: 12px; font-weight: 800;
+	color: #fff; background: var(--brand); border-radius: 50%; }
+.ret-search { max-width: 520px; }
+.ret-none { margin: 10px 2px; }
+
+/* The bill once it has been chosen: the one fact the rest of the page hangs
+   off, so it stays on screen rather than becoming a line of grey text. */
+.ret-picked { display: flex; align-items: center; gap: 14px; margin-top: 12px;
+	padding: 12px 14px; background: var(--surface); border: 1px solid var(--line);
+	border-radius: var(--radius); }
+.ret-picked-main { flex: 1 1 auto; min-width: 0; }
+.ret-picked-main b { display: block; font-size: 14px; }
+.ret-picked-main span { font-size: 12.5px; color: var(--muted); }
+.ret-picked-amt { font-size: 15px; font-weight: 800; font-variant-numeric: tabular-nums; }
+
+/* Search hits as a row each, lined up in columns rather than run together. */
+.ret-hit { display: grid; grid-template-columns: 150px 1fr 120px 110px; gap: 10px;
+	align-items: center; text-align: left; }
+.ret-hit-no { font-weight: 700; color: var(--sky-dark); }
+.ret-hit-who { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ret-hit-when, .ret-hit-amt { font-size: 12.5px; color: var(--muted);
+	font-variant-numeric: tabular-nums; }
+.ret-hit-amt { text-align: right; }
+
+/* An item name runs to fifty characters and the four columns after it are all
+   numbers, so the name wraps and the numbers keep their own width. Without
+   this the name simply ran through them. */
+.ret-lines { table-layout: fixed; width: 100%; }
+.ret-lines th:first-child, .ret-lines td:first-child { white-space: normal;
+	word-break: break-word; }
+.ret-lines th:nth-child(2), .ret-lines td:nth-child(2),
+.ret-lines th:nth-child(3), .ret-lines td:nth-child(3) { width: 92px; }
+.ret-lines th:nth-child(4), .ret-lines td:nth-child(4) { width: 110px; }
+.ret-lines th:nth-child(5), .ret-lines td:nth-child(5),
+.ret-lines th:nth-child(6), .ret-lines td:nth-child(6) { width: 118px; }
+.ret-lines input.back { width: 84px; text-align: right; }
+.ret-lines tr.is-returning { background: #fff8ef; }
+.ret-lines tr.is-returning td:last-child { font-weight: 700; }
+
+.ret-card .field-grid { gap: 10px; }
+.ret-totals { margin: 0 0 14px; }
+.ret-hint { margin: -2px 0 12px; font-size: 12px; color: var(--muted);
+	padding-left: 9px; border-left: 2px solid var(--line); }
+
+@media (max-width: 1100px) {
+	.ret-cols { grid-template-columns: minmax(0, 1fr); }
+	.ret-side { position: static; }
+	.ret-hit { grid-template-columns: 1fr auto; }
+	.ret-hit-when { display: none; }
+}
