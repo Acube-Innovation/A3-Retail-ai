@@ -343,7 +343,9 @@ window.A3 = (function () {
 
 		const show = () => {
 			const d = parseIso(input.value);
-			button.textContent = d ? pretty(d) : "Choose a date";
+			// A filter box is narrow and means "any date" when it is empty, which
+			// is both shorter and truer than telling it to choose one.
+			button.textContent = d ? pretty(d) : (input.dataset.empty || "Choose a date");
 			button.classList.toggle("is-empty", !d);
 		};
 		show();

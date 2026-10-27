@@ -55,15 +55,17 @@
 						       placeholder="{{ _('Search invoice no, customer, phone…') }}"></label>
 
 					<label class="field"><span>{{ _("Date from") }}</span>
-						<input id="from-date" type="date"></label>
+						<input id="from-date" type="date"
+						       data-empty="{{ _('Any date') }}"></label>
 					<label class="field"><span>{{ _("Date to") }}</span>
-						<input id="to-date" type="date"></label>
+						<input id="to-date" type="date"
+						       data-empty="{{ _('Any date') }}"></label>
 
 					<label class="field"><span>{{ _("Status") }}</span>
 						<select id="status">
 							{% for value, label in [("all", "All"), ("Draft", "Draft"),
 							                        ("Unpaid", "Unpaid"),
-							                        ("Partially Paid", "Partially Paid"),
+							                        ("Partially Paid", "Part paid"),
 							                        ("Paid", "Paid"), ("Cancelled", "Cancelled")] %}
 							<option value="{{ value }}">{{ _(label) }}</option>
 							{% endfor %}
@@ -90,7 +92,7 @@
 					{#- On by default: a cancelled bill is kept for the audit trail, not
 			    because anybody is looking for it. The Cancelled card above still
 			    counts them, and picking the Cancelled status overrides this. -#}
-			<label class="field check-field"><span>&nbsp;</span>
+			<label class="field check-field"><span></span>
 				<span class="check-inline">
 					<input type="checkbox" id="hide-cancelled" checked>
 					{{ _("Hide cancelled") }}</span></label>

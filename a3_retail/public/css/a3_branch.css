@@ -1305,11 +1305,22 @@ input.is-locked { background: rgba(42, 51, 66, .04); color: var(--muted);
 /* filters */
 .bill-filters { padding: 12px 14px; }
 .filter-toggle { display: none; }
+/* Nine things on one line. The three that need least room get least: a date
+   box holds "Choose a date" and nothing longer, and a status is one word. The
+   tick and the Clear button size to their own text. */
 .filter-row { display: grid; gap: 10px; align-items: end;
-	grid-template-columns: minmax(180px, 1.6fr) repeat(6, minmax(0, 1fr)) auto; }
+	grid-template-columns: minmax(150px, 1.4fr) minmax(0, .88fr) minmax(0, .88fr)
+		minmax(0, 1fr) repeat(3, minmax(0, 1fr)) auto auto; }
 .filter-row .field { margin: 0; }
 .filter-row .field.wide { grid-column: span 1; }
 .filter-row .btn { height: 38px; }
+/* One line, always: a date box that wraps makes the whole bar two rows tall. */
+.filter-row .dp-face { white-space: nowrap; overflow: hidden;
+	text-overflow: ellipsis; }
+/* One height for everything on the bar, so the row reads as a row. The boxes
+   each came with their own padding and were landing a pixel or two apart. */
+.filter-row .field input:not([type="checkbox"]), .filter-row .field select,
+.filter-row .dp-face, .filter-row .check-inline { height: 40px; }
 
 /* the table */
 .bill-table-panel { padding: 0; overflow: hidden; }
@@ -2802,7 +2813,21 @@ kbd { display: inline-block; min-width: 17px; padding: 1px 5px; margin: 0 1px;
 .fs-gap { flex: 1 1 auto; }
 /* A tick inside the filter grid: it needs a blank label so it sits on the
    same baseline as the boxes beside it, not shoved up against their captions. */
-.filter-row .check-field { justify-content: flex-end; }
-.check-inline { display: flex; align-items: center; gap: 7px; height: 38px;
-	font-size: 13px; color: var(--ink); white-space: nowrap; }
-.check-inline input { width: 15px; height: 15px; accent-color: var(--brand); }
+/* Dressed as a control rather than loose text, so it sits in the row as an
+   equal of the boxes beside it instead of floating at the end of them. */
+/* Bottom-aligned like its neighbours, with its own caption hidden: the pill
+   is the control, so it should sit where the boxes either side of it sit.
+   Prefixed with `.filter-row` throughout because `.field span` already makes
+   every span in a field a block, and would otherwise win over `.check-inline`
+   and leave the tick sitting at the top of its own pill. */
+.filter-row .check-field { display: flex; align-items: flex-end;
+	justify-content: flex-end; align-self: end; height: 40px; }
+.filter-row .check-field > span:first-child { display: none; }
+.filter-row .check-inline { display: flex; align-items: center; gap: 8px;
+	height: 40px; margin: 0; padding: 0 12px; font-size: 13px; font-weight: 600;
+	color: var(--ink); white-space: nowrap; cursor: pointer;
+	background: var(--card); border: 1px solid var(--line-strong);
+	border-radius: 9px; }
+.filter-row .check-inline:hover { border-color: var(--brand); }
+.filter-row .check-inline input[type="checkbox"] { flex: 0 0 auto; width: 16px;
+	height: 16px; margin: 0; cursor: pointer; accent-color: var(--brand); }
