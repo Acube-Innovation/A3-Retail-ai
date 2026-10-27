@@ -114,6 +114,9 @@ def bootstrap() -> dict:
 			"approve": bool(frappe.has_permission("Stock Request", "submit")),
 			"transfer": bool(frappe.has_permission("Stock Entry", "create")),
 			"adjust": bool(frappe.has_permission("Stock Reconciliation", "create")),
+			# Goods in before the bill — a service counter signs for parts it
+			# is sent long before the distributor invoices them.
+			"receive": bool(frappe.has_permission("Purchase Receipt", "create")),
 			"procure": bool(frappe.has_permission("Material Request", "create")),
 			# The item master is shared across branches, so only the roles holding
 			# Create on Item see the button at all.

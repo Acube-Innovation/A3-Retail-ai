@@ -2036,6 +2036,9 @@ input.is-locked { background: rgba(42, 51, 66, .04); color: var(--muted);
    things, so the rows stack and only the first keeps its labels. */
 .work-lines { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
 .work-line { grid-template-columns: 1fr 110px 34px; align-items: end; gap: 8px; }
+/* A line that also carries a money box needs a column for it: without one the
+   box was sharing the quantity's 110px and came out a character wide. */
+.work-line.has-rate { grid-template-columns: 1fr 92px 118px 34px; }
 .work-drop { padding: 8px 0; min-width: 34px; line-height: 1; }
 .work-drop:disabled { opacity: .35; cursor: not-allowed; }
 
