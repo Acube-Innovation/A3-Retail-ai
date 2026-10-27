@@ -161,11 +161,14 @@ doc_events = {
 			"a3_retail.a3_retail_sales.doctype.seasonal_offer_campaign.seasonal_offer_campaign.track_offer_consumption",
 			"a3_retail.a3_retail_finance.doctype.emi_application.emi_application.stamp_invoice_on_application",
 			"a3_retail.a3_retail_warranty.doctype.warranty_registration.warranty_registration.register_from_invoice",
+			"a3_retail.overrides.service_payment.from_invoice",
 		],
 		"on_cancel": [
 			"a3_retail.overrides.sales_invoice.on_cancel",
 			"a3_retail.a3_retail_finance.doctype.emi_application.emi_application.unstamp_invoice_on_application",
+			"a3_retail.overrides.service_payment.from_invoice",
 		],
+		"on_update_after_submit": "a3_retail.overrides.service_payment.from_invoice",
 	},
 	"POS Invoice": {
 		"before_validate": "a3_retail.overrides.transactions.stamp_branch",
@@ -182,7 +185,13 @@ doc_events = {
 		# Payroll's accrual JE carries one row per branch cost center (scope 10.1).
 		"validate": "a3_retail.setup.hr.stamp_row_dimensions",
 	},
-	"Payment Entry": {"before_validate": "a3_retail.overrides.transactions.stamp_branch"},
+	"Payment Entry": {
+		"before_validate": "a3_retail.overrides.transactions.stamp_branch",
+		# A bill's outstanding is rewritten by the payment with `db_set`, which
+		# fires nothing on the invoice — so the repair hears it from here.
+		"on_submit": "a3_retail.overrides.service_payment.from_payment",
+		"on_cancel": "a3_retail.overrides.service_payment.from_payment",
+	},
 	"Stock Entry": {"before_validate": "a3_retail.overrides.transactions.stamp_branch"},
 	"Delivery Note": {"before_validate": "a3_retail.overrides.transactions.stamp_branch"},
 	"Purchase Receipt": {"before_validate": "a3_retail.overrides.transactions.stamp_branch"},

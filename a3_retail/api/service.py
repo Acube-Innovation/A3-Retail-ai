@@ -330,11 +330,11 @@ def create_sales_invoice(job_card: str) -> dict:
 	invoice.submit()
 
 	doc.db_set("sales_invoice", invoice.name, update_modified=False)
-	doc.db_set("outstanding_amount", flt(invoice.outstanding_amount), update_modified=False)
-	doc.db_set(
-		"payment_status", "Paid" if flt(invoice.outstanding_amount) <= 0 else "Partly Paid (Advance)",
-		update_modified=False,
-	)
+	# The one place that works out what to call a repair's payment state, so a
+	# bill settled later at the till reaches the card the same way this does.
+	from a3_retail.overrides.service_payment import refresh
+
+	refresh(doc.name)
 
 	return {"sales_invoice": invoice.name, "created": True,
 	        "outstanding": flt(invoice.outstanding_amount)}
