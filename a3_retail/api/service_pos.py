@@ -498,6 +498,30 @@ def line_item_defaults() -> dict:
 	}
 
 
+def _received_on(given) -> "datetime":
+	"""When the device actually came in.
+
+	A repair booked days after it was taken in is ordinary: the counter was
+	busy, the shop was shut, somebody wrote it in a book first. So the day can
+	be named, and the time of day is kept when today is the day — a card booked
+	this morning and one booked this afternoon are not the same card in a
+	queue sorted by arrival.
+	"""
+	now = frappe.utils.now_datetime()
+	if not given:
+		return now
+
+	when = frappe.utils.get_datetime(given)
+	if when > now:
+		frappe.throw(_("A device cannot have been booked in on a day that has "
+		               "not happened."), title=_("Date"))
+	# A bare date arrives at midnight, which would put every back-dated card
+	# ahead of everything else that day. Dated today, it means now.
+	if when.date() == now.date() and (when.hour, when.minute) == (0, 0):
+		return now
+	return when
+
+
 @frappe.whitelist()
 def save_booking(payload) -> dict:
 	"""Book the device in. One call, the way a counter works (scope 3.9)."""
@@ -551,7 +575,7 @@ def save_booking(payload) -> dict:
 	doc.repair_category = CATEGORY_BY_KEY.get(data.get("service_type"), data.get("repair_category"))
 	doc.priority = data.get("priority") or "Normal"
 	doc.lead_source = data.get("lead_source") or "Walk-in"
-	doc.received_on = frappe.utils.now_datetime()
+	doc.received_on = _received_on(data.get("received_on"))
 	doc.received_by = employee.name
 	doc.assigned_technician = data.get("technician") or None
 	doc.estimated_delivery_date = _promised(data.get("expected_delivery"))

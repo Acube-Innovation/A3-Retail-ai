@@ -138,9 +138,16 @@ def validate_transition(from_status: str, to_status: str, user: str | None = Non
 			)
 
 
-def log_transition(doc, from_status: str, to_status: str, remarks: str | None = None):
-	"""Append a Job Card Status Log row with the duration spent in `from_status`."""
-	now = now_datetime()
+def log_transition(doc, from_status: str, to_status: str, remarks: str | None = None,
+                   changed_on=None):
+	"""Append a Job Card Status Log row with the duration spent in `from_status`.
+
+	`changed_on` is when the step actually happened, which is not always when
+	somebody got to a screen to record it — a technician finishes at six and
+	the counter marks it ready the next morning. The hours in the previous
+	state are measured against it, so the timings stay true either way.
+	"""
+	now = get_datetime(changed_on) if changed_on else now_datetime()
 	duration = 0.0
 
 	previous = doc.get("status_log")

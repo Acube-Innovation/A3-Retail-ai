@@ -559,6 +559,12 @@ window.BOOKING = (function () {
 			? "The reason this is stopping — the customer will be asked"
 			: "Anything the next person should know";
 		$("stage-msg").textContent = "";
+		// Cleared each time: the last step's date must not quietly become this
+		// one's. Blank means now, which is what it is nearly every time.
+		$("stage-when").value = "";
+		$("stage-when").max = new Date().toLocaleDateString("en-CA");
+		A3.datePicker($("stage-when"));
+		$("stage-when").dispatchEvent(new Event("change"));
 		$("stage-modal").hidden = false;
 		paintStageLines();
 		$("stage-reason").focus();
@@ -758,7 +764,8 @@ window.BOOKING = (function () {
 				              { name: state.name, technician: who });
 			}
 			await A3.call("a3_retail.api.bookings.advance",
-			              { name: state.name, status, remarks: remarks || null });
+			              { name: state.name, status, remarks: remarks || null,
+			                changed_on: $("stage-when").value || null });
 			$("stage-modal").hidden = true;
 			toast(`Moved to ${status}.`, "ok");
 			reload();

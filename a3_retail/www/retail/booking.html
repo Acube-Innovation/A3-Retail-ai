@@ -91,6 +91,11 @@
 
 			<div class="stage-lines" id="stage-lines"></div>
 
+			{#- A step is not always recorded when it happened: a technician
+			    finishes at six and the counter marks it ready next morning. -#}
+			<label class="field"><span>{{ _("When This Happened") }}</span>
+				<input id="stage-when" type="date" data-empty="{{ _('Now') }}"></label>
+
 			<label class="field" id="stage-reason-field">
 				<span id="stage-reason-label">{{ _("Note") }}</span>
 				<textarea id="stage-reason" rows="2"

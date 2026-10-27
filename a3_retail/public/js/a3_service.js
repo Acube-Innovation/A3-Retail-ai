@@ -898,7 +898,8 @@ window.SVC = (function () {
 					technician: $("technician").value || null,
 					expected_delivery: $("promised").value || null,
 					data_backup_required: $("backup-required").checked ? 1 : 0,
-					data_loss_consent: $("data-consent").checked ? 1 : 0,
+					received_on: $("received-on").value || null,
+			data_loss_consent: $("data-consent").checked ? 1 : 0,
 					sim_tray_received: $("sim-tray").checked ? 1 : 0,
 					notes: $("notes").value.trim(),
 					signature: $("sign-pad").toDataURL("image/png"),
@@ -1070,6 +1071,10 @@ window.SVC = (function () {
 	async function start(options) {
 		state.branch = options.branch;
 		$("promised").value = options.today;
+		// A device cannot have come in tomorrow; blank means today, so the box
+		// is left empty rather than pre-filled with a date nobody chose.
+		$("received-on").max = options.today;
+		A3.datePicker($("received-on"));
 
 		let boot;
 		try {
