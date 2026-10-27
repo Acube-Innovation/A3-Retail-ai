@@ -12,7 +12,7 @@ window.BILLS = (function () {
 	const state = {
 		branch: "", page: 1, pageSize: 20, rows: [], invoice: null,
 		filters: { query: "", from_date: "", to_date: "", status: "all", mode: "all",
-		           branch: "current", customer: "" },
+		           branch: "current", customer: "", hide_cancelled: 1 },
 	};
 	const $ = (id) => document.getElementById(id);
 
@@ -344,7 +344,8 @@ window.BILLS = (function () {
 		});
 		$("clear").addEventListener("click", () => {
 			state.filters = { query: "", from_date: "", to_date: "", status: "all", mode: "all",
-			                  branch: "current", customer: "" };
+			                  branch: "current", customer: "", hide_cancelled: 1 };
+			$("hide-cancelled").checked = true;
 			["q", "from-date", "to-date", "customer"].forEach((id) => { $(id).value = ""; });
 			$("status").value = "all";
 			$("mode").value = "all";
@@ -353,6 +354,10 @@ window.BILLS = (function () {
 		});
 		$("refresh").addEventListener("click", () => { load(); toast("Refreshed."); });
 		$("export").addEventListener("click", exportCsv);
+		$("hide-cancelled").addEventListener("change", () => {
+			state.filters.hide_cancelled = $("hide-cancelled").checked ? 1 : 0;
+			load(1);
+		});
 		$("filter-toggle").addEventListener("click", () => {
 			$("filter-row").classList.toggle("is-open");
 		});

@@ -87,7 +87,14 @@
 						       placeholder="{{ _('Any customer') }}">
 						<datalist id="customer-list"></datalist></label>
 
-					<button class="btn btn-quiet btn-sm" id="clear">{{ _("Clear filters") }}</button>
+					{#- On by default: a cancelled bill is kept for the audit trail, not
+			    because anybody is looking for it. The Cancelled card above still
+			    counts them, and picking the Cancelled status overrides this. -#}
+			<label class="field check-field"><span>&nbsp;</span>
+				<span class="check-inline">
+					<input type="checkbox" id="hide-cancelled" checked>
+					{{ _("Hide cancelled") }}</span></label>
+			<button class="btn btn-quiet btn-sm" id="clear">{{ _("Clear filters") }}</button>
 				</div>
 			</section>
 

@@ -49,8 +49,24 @@ def _doc_status(docstatus: int) -> str:
 	return {0: "Draft", 1: "Submitted", 2: "Cancelled"}.get(cint(docstatus), "Draft")
 
 
-def _filters(data: dict) -> tuple[str, dict]:
-	"""Turn the filter bar into one where-clause everything on the page shares."""
+def hides_cancelled(data: dict) -> bool:
+	"""Whether cancelled bills are being kept out of the way.
+
+	On unless the counter says otherwise — a cancelled bill is kept for the
+	audit trail, not because anybody is looking for it. Asking for the
+	Cancelled status is asking for them, and then the tick cannot win.
+	"""
+	return bool(cint(data.get("hide_cancelled", 1))
+	            and (data.get("status") or "all") != "Cancelled")
+
+
+def _filters(data: dict, counting: bool = False) -> tuple[str, dict]:
+	"""Turn the filter bar into one where-clause everything on the page shares.
+
+	`counting` is for the cards, which have to keep seeing cancelled bills even
+	while the list hides them — otherwise the card that says how many there are
+	would always say none.
+	"""
 	employee = _me()
 	conditions = ["si.company = %(company)s"]
 	values = {
@@ -98,6 +114,9 @@ def _filters(data: dict) -> tuple[str, dict]:
 			"ifnull(nullif(si.rounded_total, 0), si.grand_total) - 0.005"
 		)
 
+	if hides_cancelled(data) and not counting:
+		conditions.append("si.docstatus != 2")
+
 	if (data.get("mode") or "all") != "all":
 		conditions.append(
 			"exists (select 1 from `tabSales Invoice Payment` p "
@@ -114,7 +133,7 @@ def summary(filters=None) -> dict:
 	_me()
 	require_permission("Sales Invoice", "read")
 	data = frappe.parse_json(filters) if isinstance(filters, str) else (filters or {})
-	where, values = _filters(data)
+	where, values = _filters(data, counting=True)
 
 	rows = frappe.db.sql(
 		f"""
@@ -132,8 +151,14 @@ def summary(filters=None) -> dict:
 	live = [row for row in rows if cint(row.docstatus) == 1]
 	today = getdate(nowdate())
 
+	# What the list is showing, so the Total card and the rows under it agree.
+	# The Cancelled card is counted off everything, because its whole job is to
+	# say that cancelled bills are there.
+	counted = ([r for r in rows if cint(r.docstatus) != 2]
+	           if hides_cancelled(data) else rows)
+
 	return {
-		"total": {"count": len(rows), "amount": total(rows)},
+		"total": {"count": len(counted), "amount": total(counted)},
 		"paid": {"count": len([r for r in live if _payment_status(r) == PAID]),
 		         "amount": total([r for r in live if _payment_status(r) == PAID])},
 		"partly": {"count": len([r for r in live if _payment_status(r) == PARTLY]),
