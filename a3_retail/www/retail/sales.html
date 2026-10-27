@@ -153,6 +153,10 @@
 				<div class="bill-head">
 					<h2>{{ _("Current Bill") }}</h2>
 					<div class="bill-head-right">
+						{#- The day this bill will post under. A bill held last week
+						    and finished today still posts under last week, so the
+						    counter is told which it is before they take money. -#}
+						<span class="bill-date" id="bill-date"></span>
 						<span class="bill-no" id="bill-no">{{ _("New") }}</span>
 						<button class="icon-btn" id="clear-cart" title="{{ _('Clear cart') }}">
 							{% set icon = "trash" %}{% include "a3_retail/www/retail/_icons.html" %}</button>

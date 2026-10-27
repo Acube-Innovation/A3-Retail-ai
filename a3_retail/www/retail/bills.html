@@ -135,8 +135,14 @@
 					<option value="{{ mode }}">{{ mode }}</option>{% endfor %}
 				</select></label>
 		</div>
-		<label class="field"><span>{{ _("Reference (optional)") }}</span>
-			<input id="pay-reference" placeholder="{{ _('UPI reference, card slip…') }}"></label>
+		{#- Money does not always reach the counter on the day it is keyed in: a
+		    customer settles on Saturday and it is entered on Monday. -#}
+		<div class="field-grid">
+			<label class="field"><span>{{ _("Paid on") }}</span>
+				<input id="pay-date" type="date"></label>
+			<label class="field"><span>{{ _("Reference (optional)") }}</span>
+				<input id="pay-reference" placeholder="{{ _('UPI reference, card slip…') }}"></label>
+		</div>
 		<div class="modal-actions">
 			<button class="btn btn-quiet" data-close>{{ _("Cancel") }}</button>
 			<button class="btn btn-primary" id="pay-save">{{ _("Take payment") }}</button>

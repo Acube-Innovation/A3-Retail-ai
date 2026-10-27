@@ -251,6 +251,14 @@ window.BILLS = (function () {
 		$("pay-amount").value = row.balance.toFixed(2);
 		$("pay-amount").max = row.balance;
 		$("pay-reference").value = "";
+		// Today by default, and never outside the window the server will take:
+		// not before the bill, not after today. `en-CA` is the shop's own day.
+		const today = new Date().toLocaleDateString("en-CA");
+		$("pay-date").min = String(row.posting_date || "").slice(0, 10);
+		$("pay-date").max = today;
+		$("pay-date").value = today;
+		A3.datePicker($("pay-date"));
+		$("pay-date").dispatchEvent(new Event("change"));
 		$("payment-modal").hidden = false;
 		$("pay-amount").focus();
 	}
@@ -260,6 +268,7 @@ window.BILLS = (function () {
 			const result = await A3.call("a3_retail.api.bills.collect_payment", {
 				name: state.invoice.name,
 				amount: Number($("pay-amount").value) || 0,
+				date: $("pay-date").value,
 				mode_of_payment: $("pay-mode").value,
 				reference: $("pay-reference").value.trim() || null,
 			});

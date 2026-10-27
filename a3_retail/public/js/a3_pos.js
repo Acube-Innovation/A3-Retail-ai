@@ -12,6 +12,9 @@ window.POS = (function () {
 	const state = {
 		branch: "", groups: [], group: "", view: "grid",
 		items: [], cart: [], customer: null, mode: "Cash", editing: null,
+		// The day this bill posts under: a held bill keeps the date it was
+		// given, so resuming one does not quietly restamp it as today.
+		postingDate: null,
 		// Split tender: the customer settles one bill in more than one form.
 		// `splits` is only read while `split` is on, so the ordinary one-tile
 		// path is untouched.
@@ -1073,6 +1076,7 @@ window.POS = (function () {
 				payload: {
 					invoice: state.editing,
 					customer: state.customer,
+					posting_date: state.postingDate || null,
 					mode_of_payment: state.mode,
 					sold_by: state.soldBy || "",
 					financier: state.financier || "",
@@ -1146,6 +1150,8 @@ window.POS = (function () {
 
 		state.cart = [];
 		state.customer = null;
+		state.postingDate = null;
+		showBillDate();
 		newCustomer();
 		setChip("");
 		$("notes").value = "";
@@ -1258,6 +1264,8 @@ window.POS = (function () {
 			if (bill.discount_on) {
 				$("discount-on").value = bill.discount_on;
 			}
+			state.postingDate = bill.posting_date || null;
+			showBillDate();
 			setChip("Editing " + bill.invoice, "warn");
 			markEditing(bill.invoice);
 			paintCart();
@@ -1265,6 +1273,20 @@ window.POS = (function () {
 		} catch (error) {
 			say(error.message, "error");
 		}
+	}
+
+	/** Show the day this bill will post under, loudly when it is not today. */
+	function showBillDate() {
+		const el = $("bill-date");
+		if (!el) return;
+		// `en-CA` is the shop's own day, not UTC — `toISOString` would roll the
+		// date back five and a half hours every evening.
+		const today = new Date().toLocaleDateString("en-CA");
+		const on = state.postingDate || today;
+		el.textContent = new Date(on + "T00:00:00").toLocaleDateString("en-IN",
+			{ day: "2-digit", month: "short", year: "numeric" });
+		el.classList.toggle("is-back", on !== today);
+		el.title = on === today ? "" : "This bill posts under " + on + ", not today.";
 	}
 
 	function markEditing(name) {
@@ -1391,6 +1413,7 @@ window.POS = (function () {
 		state.branch = options.branch;
 		state.groups = options.groups || [];
 		state.pricesIncludeTax = Boolean(options.pricesIncludeTax);
+		showBillDate();
 		loadSellers();
 
 		$("q").addEventListener("input", () => {
