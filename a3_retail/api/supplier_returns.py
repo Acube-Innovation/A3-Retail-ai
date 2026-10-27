@@ -22,7 +22,7 @@ import frappe
 from frappe import _
 from frappe.utils import cint, flt, getdate, nowdate
 
-from a3_retail.api import require_permission
+from a3_retail.api import date_window, require_permission
 from a3_retail.api.pos import _profile
 from a3_retail.api.staff import _me
 
@@ -80,8 +80,8 @@ def stock_items(query: str = "", limit: int = 10) -> list[dict]:
 
 
 @frappe.whitelist()
-def recent(limit: int = 30) -> dict:
-	"""Debit notes this branch has raised, newest first."""
+def recent(limit: int = 30, filters=None) -> dict:
+	"""Debit notes this branch has raised, within the window asked for."""
 	employee = _me()
 	require_permission("Purchase Invoice", "read")
 
@@ -89,21 +89,31 @@ def recent(limit: int = 30) -> dict:
 	if not profile.default_warehouse:
 		return {"branch": employee.branch, "rows": []}
 
+	data = frappe.parse_json(filters) if isinstance(filters, str) else (filters or {})
+	values = {"warehouse": profile.default_warehouse,
+	          "limit": min(cint(limit) or 30, 100)}
+	where = ["pi.is_return = 1", "pi.docstatus < 2",
+	         "exists (select 1 from `tabPurchase Invoice Item` it"
+	         " where it.parent = pi.name and it.warehouse = %(warehouse)s)"]
+	where += date_window(data, "pi.posting_date", values)
+	query = (data.get("query") or "").strip()
+	if query:
+		where.append("(pi.name like %(q)s or pi.supplier_name like %(q)s"
+		             " or pi.return_against like %(q)s)")
+		values["q"] = f"%{query}%"
+
 	rows = frappe.db.sql(
-		"""
+		f"""
 		select pi.name, pi.supplier, pi.posting_date, pi.grand_total,
 		       pi.outstanding_amount, pi.docstatus,
 		       (select count(*) from `tabPurchase Invoice Item` it
 		         where it.parent = pi.name) as line_count
 		from `tabPurchase Invoice` pi
-		where pi.is_return = 1 and pi.docstatus < 2 and exists (
-		      select 1 from `tabPurchase Invoice Item` it
-		       where it.parent = pi.name and it.warehouse = %(warehouse)s)
+		where {" and ".join(where)}
 		order by pi.posting_date desc, pi.creation desc
 		limit %(limit)s
 		""",
-		{"warehouse": profile.default_warehouse, "limit": min(cint(limit) or 30, 100)},
-		as_dict=True,
+		values, as_dict=True,
 	)
 	for row in rows:
 		row["supplier_name"] = frappe.db.get_value("Supplier", row.supplier, "supplier_name")

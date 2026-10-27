@@ -17,7 +17,7 @@ import frappe
 from frappe import _
 from frappe.utils import cint, flt, getdate, nowdate
 
-from a3_retail.api import require_permission, stamp_cost_center
+from a3_retail.api import date_window, require_permission, stamp_cost_center
 from a3_retail.api.customer import validate_pan
 from a3_retail.api.pos import _profile
 from a3_retail.api.staff import _me
@@ -242,8 +242,8 @@ def _supplier_address(supplier, title, gstin, line1, city, state, pincode) -> No
 
 
 @frappe.whitelist()
-def recent(limit: int = 30) -> dict:
-	"""What this branch has bought, newest first."""
+def recent(limit: int = 30, filters=None) -> dict:
+	"""What this branch has bought, newest first, within the window asked for."""
 	employee = _me()
 	require_permission("Purchase Invoice", "read")
 
@@ -252,21 +252,31 @@ def recent(limit: int = 30) -> dict:
 	if not warehouse:
 		return {"branch": employee.branch, "rows": []}
 
+	data = frappe.parse_json(filters) if isinstance(filters, str) else (filters or {})
+	values = {"warehouse": warehouse, "limit": min(cint(limit) or 30, 100)}
+	where = ["pi.docstatus < 2",
+	         "exists (select 1 from `tabPurchase Invoice Item` it"
+	         " where it.parent = pi.name and it.warehouse = %(warehouse)s)"]
+	where += date_window(data, "pi.posting_date", values)
+	query = (data.get("query") or "").strip()
+	if query:
+		# Our number, the supplier's number, or who it came from.
+		where.append("(pi.name like %(q)s or pi.bill_no like %(q)s"
+		             " or pi.supplier_name like %(q)s)")
+		values["q"] = f"%{query}%"
+
 	rows = frappe.db.sql(
-		"""
+		f"""
 		select pi.name, pi.posting_date, pi.supplier, pi.bill_no, pi.grand_total,
 		       pi.outstanding_amount, pi.status, pi.docstatus,
 		       (select count(*) from `tabPurchase Invoice Item` it
 		         where it.parent = pi.name) as line_count
 		from `tabPurchase Invoice` pi
-		where pi.docstatus < 2 and exists (
-		      select 1 from `tabPurchase Invoice Item` it
-		       where it.parent = pi.name and it.warehouse = %(warehouse)s)
+		where {" and ".join(where)}
 		order by pi.posting_date desc, pi.creation desc
 		limit %(limit)s
 		""",
-		{"warehouse": warehouse, "limit": min(cint(limit) or 30, 100)},
-		as_dict=True,
+		values, as_dict=True,
 	)
 	for r in rows:
 		r["supplier_name"] = frappe.db.get_value("Supplier", r["supplier"], "supplier_name")

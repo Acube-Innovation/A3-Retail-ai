@@ -679,8 +679,109 @@ window.A3 = (function () {
 		+ '<path d="M12 16V4"/><path d="m7.5 8.5 4.5-4.5 4.5 4.5"/>'
 		+ '<path d="M4 16v2.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V16"/></svg>';
 
+	// ------------------------------------------------------------- filters
+	/**
+	 * A filter button for a list of transactions, and the sheet behind it.
+	 *
+	 * The long-standing lists — bills, bookings, EMI — carry a filter bar across
+	 * the top because they are searched all day. The rest are read a screenful
+	 * at a time and only occasionally narrowed, so they get an icon instead:
+	 * the same filters, out of the way until they are wanted.
+	 *
+	 * `host` is the element the button is appended to, usually a `.panel-head`.
+	 * `onApply` is handed `{query, from_date, to_date}`; blank strings mean the
+	 * filter is not set, which is what every endpoint here treats as "all".
+	 */
+	function filterSheet(host, options) {
+		const settings = Object.assign({ search: "", label: "Filter" }, options || {});
+		const chosen = { query: "", from_date: "", to_date: "" };
+		if (!host) return { get: () => ({}), clear() {} };
+
+		const button = document.createElement("button");
+		button.type = "button";
+		button.className = "icon-btn plain filter-btn";
+		button.title = settings.label;
+		button.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"'
+			+ ' stroke-width="1.7"><path d="M3 5h18l-7 8v6l-4 2v-8z"/></svg>';
+		host.appendChild(button);
+
+		const isSet = () => Boolean(chosen.query || chosen.from_date || chosen.to_date);
+		const paint = () => button.classList.toggle("is-on", isSet());
+
+		function open() {
+			const today = new Date().toLocaleDateString("en-CA");
+			const modal = document.createElement("div");
+			modal.className = "modal";
+			modal.innerHTML = `
+				<div class="modal-card">
+					<h3>${escapeHtml(settings.label)}</h3>
+					${settings.search ? `<label class="field"><span>Search</span>
+						<input id="fs-q" placeholder="${escapeHtml(settings.search)}"
+							value="${escapeHtml(chosen.query)}"></label>` : ""}
+					<div class="field-grid">
+						<label class="field"><span>From</span>
+							<input id="fs-from" type="date" max="${today}"
+								value="${chosen.from_date}"></label>
+						<label class="field"><span>To</span>
+							<input id="fs-to" type="date" max="${today}"
+								value="${chosen.to_date}"></label>
+					</div>
+					<div class="modal-actions">
+						<button type="button" class="btn btn-quiet" data-clear>Clear</button>
+						<span class="fs-gap"></span>
+						<button type="button" class="btn btn-quiet" data-cancel>Cancel</button>
+						<button type="button" class="btn btn-primary" data-apply>Apply</button>
+					</div>
+				</div>`;
+			document.body.appendChild(modal);
+			// The shared picker claims any date box on the page, but only on the
+			// next frame — these are wanted the moment the sheet is on screen.
+			modal.querySelectorAll('input[type="date"]').forEach(datePicker);
+
+			const close = () => {
+				modal.remove();
+				document.removeEventListener("keydown", onKey);
+			};
+			function onKey(event) {
+				if (event.key === "Escape") close();
+			}
+			document.addEventListener("keydown", onKey);
+
+			function apply(next) {
+				Object.assign(chosen, next);
+				paint();
+				close();
+				settings.onApply(Object.assign({}, chosen));
+			}
+
+			modal.querySelector("[data-apply]").addEventListener("click", () => {
+				const from = modal.querySelector("#fs-from").value;
+				const to = modal.querySelector("#fs-to").value;
+				if (from && to && from > to) {
+					// Said plainly rather than silently swapped: the counter meant
+					// one of the two and only they know which.
+					toast("The From date is after the To date.", "error");
+					return;
+				}
+				apply({ from_date: from, to_date: to,
+				        query: settings.search
+					        ? modal.querySelector("#fs-q").value.trim() : "" });
+			});
+			modal.querySelector("[data-clear]").addEventListener("click", () =>
+				apply({ query: "", from_date: "", to_date: "" }));
+			modal.querySelector("[data-cancel]").addEventListener("click", close);
+			modal.addEventListener("mousedown", (event) => {
+				if (event.target === modal) close();
+			});
+		}
+
+		button.addEventListener("click", open);
+		return { get: () => Object.assign({}, chosen),
+		         clear() { Object.assign(chosen, { query: "", from_date: "", to_date: "" }); paint(); } };
+	}
+
 	return {
 		call, login, logout, money, shortTime, csrfToken, plain, toast,
-		mountBranchPicker, datePicker, mountDates, photoPicker,
+		mountBranchPicker, datePicker, mountDates, photoPicker, filterSheet,
 	};
 })();

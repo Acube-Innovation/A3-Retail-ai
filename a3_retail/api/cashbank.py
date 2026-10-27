@@ -19,7 +19,7 @@ import frappe
 from frappe import _
 from frappe.utils import cint, flt, getdate, nowdate
 
-from a3_retail.api import require_permission
+from a3_retail.api import date_window, require_permission
 from a3_retail.api.staff import _me
 
 
@@ -94,19 +94,29 @@ def summary() -> dict:
 
 
 @frappe.whitelist()
-def transactions(limit: int = 40, account: str | None = None) -> dict:
-	"""Money in and money out, newest first."""
+def transactions(limit: int = 40, account: str | None = None, filters=None) -> dict:
+	"""Money in and money out, newest first, within whatever window was asked."""
 	employee = _me()
 	centres = _branch_cost_centres(employee.branch)
 	if not centres:
 		return {"branch": employee.branch, "rows": []}
 
+	data = frappe.parse_json(filters) if isinstance(filters, str) else (filters or {})
 	conditions = ["gle.is_cancelled = 0", "gle.cost_center in %(centres)s",
 	              "acc.account_type in ('Cash', 'Bank')"]
 	values = {"centres": centres, "limit": min(cint(limit) or 40, 200)}
 	if account:
 		conditions.append("gle.account = %(account)s")
 		values["account"] = account
+
+	conditions += date_window(data, "gle.posting_date", values)
+	query = (data.get("query") or "").strip()
+	if query:
+		# What a counter has to go on is the voucher number on the slip, the
+		# account it hit, or whatever the entry says it was for.
+		conditions.append("(gle.voucher_no like %(q)s or acc.account_name like %(q)s"
+		                  " or gle.remarks like %(q)s or gle.against like %(q)s)")
+		values["q"] = f"%{query}%"
 
 	rows = frappe.db.sql(
 		f"""

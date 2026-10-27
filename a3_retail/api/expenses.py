@@ -17,7 +17,7 @@ import frappe
 from frappe import _
 from frappe.utils import cint, flt, getdate, nowdate
 
-from a3_retail.api import require_permission
+from a3_retail.api import date_window, require_permission
 from a3_retail.utils import tax
 from a3_retail.api.staff import _me
 
@@ -289,7 +289,7 @@ SPEND_DETAIL = {
 
 
 @frappe.whitelist()
-def recent(limit: int = 40) -> dict:
+def recent(limit: int = 40, filters=None) -> dict:
 	"""This branch's spend, newest first, by whichever route it was recorded.
 
 	A spend reaches the books three ways — a journal, an employee's claim, a
@@ -305,6 +305,13 @@ def recent(limit: int = 40) -> dict:
 	if not centres:
 		return {"branch": employee.branch, "rows": [], "month_total": 0.0}
 
+	data = frappe.parse_json(filters) if isinstance(filters, str) else (filters or {})
+	window = date_window(data, "gl.posting_date", {})
+	narrowed = {}
+	for key in ("from_date", "to_date"):
+		if data.get(key):
+			narrowed[key] = getdate(data[key])
+
 	# Grouped by voucher: one bill is one line here however many accounts it
 	# touched, and the cost centre comes along to name who carries it.
 	spend = frappe.db.sql(
@@ -318,12 +325,14 @@ def recent(limit: int = 40) -> dict:
 		  and gl.cost_center in %(centres)s
 		  and a.root_type = 'Expense'
 		  and ifnull(a.account_type, '') not in %(skip)s
+		  {window}
 		group by gl.voucher_type, gl.voucher_no, gl.posting_date
 		having sum(gl.debit - gl.credit) > 0.005
 		order by gl.posting_date desc, gl.voucher_no desc
 		limit %(limit)s
-		""",
-		{"centres": centres, "skip": NOT_A_SPEND, "limit": min(cint(limit) or 40, 200)},
+		""".format(window=("and " + " and ".join(window)) if window else ""),
+		dict({"centres": centres, "skip": NOT_A_SPEND,
+		      "limit": min(cint(limit) or 40, 200)}, **narrowed),
 		as_dict=True)
 
 	rows = []
@@ -346,8 +355,16 @@ def recent(limit: int = 40) -> dict:
 			"docstatus": 1,
 		})
 
-	rows.extend(_unposted(employee.branch))
+	rows.extend(_unposted(employee.branch, narrowed))
 	rows.sort(key=lambda r: (r["posting_date"], r["name"]), reverse=True)
+
+	# Searched here rather than in SQL: what a spend was for lives in a journal,
+	# a claim or a bill, and the row above has already been to all three.
+	query = (data.get("query") or "").strip().lower()
+	if query:
+		rows = [r for r in rows if query in " ".join(str(r.get(key) or "") for key in
+			("name", "voucher_no", "category_label", "items", "paid_to_label",
+			 "notes", "kind")).lower()]
 
 	month = frappe.db.sql(
 		"""
@@ -363,13 +380,23 @@ def recent(limit: int = 40) -> dict:
 		""",
 		{"centres": centres, "skip": NOT_A_SPEND})[0][0]
 
-	return {"branch": employee.branch, "rows": rows, "month_total": flt(month)}
+	# What the rows on screen come to, which is not the month's total once a
+	# window has been asked for — the tiles have to say which they are showing.
+	shown = sum(flt(r["amount"]) for r in rows)
+	return {"branch": employee.branch, "rows": rows, "month_total": flt(month),
+	        "shown_total": shown, "filtered": bool(query or narrowed)}
 
 
-def _unposted(branch: str) -> list[dict]:
+def _unposted(branch: str, window: dict | None = None) -> list[dict]:
 	"""Expenses started here and not yet submitted, which have no ledger line."""
+	picked = {"branch": branch, "docstatus": 0}
+	if (window or {}).get("from_date"):
+		picked["posting_date"] = (">=", window["from_date"])
+	if (window or {}).get("to_date"):
+		picked["posting_date"] = (("between", [window.get("from_date"), window["to_date"]])
+		                          if window.get("from_date") else ("<=", window["to_date"]))
 	drafts = frappe.get_all(
-		"Branch Expense", filters={"branch": branch, "docstatus": 0},
+		"Branch Expense", filters=picked,
 		fields=["name", "posting_date", "category", "grand_total", "paid_to",
 		        "supplier", "notes", "outstanding_amount", "cost_center"],
 		order_by="posting_date desc, creation desc")

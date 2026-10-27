@@ -2772,3 +2772,14 @@ kbd { display: inline-block; min-width: 17px; padding: 1px 5px; margin: 0 1px;
 .fup-chosen { display: flex; align-items: center; gap: 10px; }
 .fup-chosen span { font-size: 12.5px; color: var(--muted); overflow: hidden;
 	text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---- the filter icon on a transaction list, and its sheet ---- */
+.filter-btn svg { width: 16px; height: 16px; display: block; }
+/* A dot, not a colour change: the button still has to read as a button when
+   nothing is filtered, and as "something is hidden" when something is. */
+.filter-btn.is-on { position: relative; color: var(--brand-dark);
+	border-color: var(--brand); }
+.filter-btn.is-on::after { content: ""; position: absolute; top: -3px; right: -3px;
+	width: 8px; height: 8px; border-radius: 50%; background: var(--brand);
+	border: 1.5px solid var(--card); }
+.fs-gap { flex: 1 1 auto; }

@@ -16,7 +16,7 @@ import frappe
 from frappe import _
 from frappe.utils import cint, flt, getdate, nowdate
 
-from a3_retail.api import require_permission
+from a3_retail.api import date_window, require_permission
 from a3_retail.api.pos import _profile, _sales_person, _sold_by, print_url, resolve_mode
 from a3_retail.api.staff import _me
 
@@ -123,22 +123,32 @@ def bill_lines(invoice: str) -> dict:
 
 
 @frappe.whitelist()
-def recent(limit: int = 30) -> dict:
-	"""Credit notes this branch has raised, newest first."""
+def recent(limit: int = 30, filters=None) -> dict:
+	"""Credit notes this branch has raised, within the window asked for."""
 	employee = _me()
 	require_permission("Sales Invoice", "read")
 
+	data = frappe.parse_json(filters) if isinstance(filters, str) else (filters or {})
+	values = {"branch": employee.branch, "limit": min(cint(limit) or 30, 100)}
+	where = ["is_return = 1", "docstatus < 2", "branch = %(branch)s"]
+	where += date_window(data, "posting_date", values)
+	query = (data.get("query") or "").strip()
+	if query:
+		# The credit note's own number, the bill it came back on, or the customer.
+		where.append("(name like %(q)s or return_against like %(q)s"
+		             " or customer_name like %(q)s)")
+		values["q"] = f"%{query}%"
+
 	rows = frappe.db.sql(
-		"""
+		f"""
 		select name, customer_name, posting_date, return_against, grand_total,
 		       outstanding_amount, docstatus
 		from `tabSales Invoice`
-		where is_return = 1 and docstatus < 2 and branch = %(branch)s
+		where {" and ".join(where)}
 		order by posting_date desc, creation desc
 		limit %(limit)s
 		""",
-		{"branch": employee.branch, "limit": min(cint(limit) or 30, 100)},
-		as_dict=True,
+		values, as_dict=True,
 	)
 	for row in rows:
 		row["amount"] = abs(flt(row.grand_total))

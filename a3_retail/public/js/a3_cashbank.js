@@ -33,12 +33,23 @@
 	}
 
 	// ------------------------------------------------------------- balances
+	// The filter icon over this list, and the window it is currently asking
+	// for. Mounted on first load so the button exists before anyone can press it.
+	let sheet = null;
+
 	async function load() {
+		if (!sheet) {
+			sheet = A3.filterSheet(document.getElementById("list-head"), {
+				label: "Filter", search: "Voucher no, account, or what it was for",
+				onApply: () => load(),
+			});
+		}
 		try {
 			const [sums, txns] = await Promise.all([
 				A3.call("a3_retail.api.cashbank.summary"),
 				A3.call("a3_retail.api.cashbank.transactions",
-					{ limit: 50, account: $("filter-account").value || null }),
+					{ limit: 50, account: $("filter-account").value || null,
+					  filters: sheet ? sheet.get() : {} }),
 			]);
 			state.accounts = [...(sums.cash || []), ...(sums.banks || [])];
 			paintTiles(sums);
