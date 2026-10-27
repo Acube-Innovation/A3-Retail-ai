@@ -24,8 +24,8 @@
 			<div class="topbar-right">
 				{#- Raising one is the rare act; reading the list is the daily one,
 				    so the button sits in the corner and the list has the page. -#}
-				<a class="btn btn-primary btn-new" href="/retail/return_entry">
-					+ {{ _("New Return") }}</a>
+				<button class="btn btn-primary btn-new" id="new-return">
+					+ {{ _("New Return") }}</button>
 				<button class="btn btn-quiet btn-icon" id="export">
 					{% set icon = "download" %}{% include "a3_retail/www/retail/_icons.html" %}
 					{{ _("Export") }}</button>
@@ -42,7 +42,7 @@
 			</div>
 		</header>
 
-		<main class="content bills">
+		<main class="bills">
 			<section class="ctiles bill-tiles" id="tiles"></section>
 
 			<section class="svc-panel bill-filters">
@@ -111,6 +111,79 @@
 				</div>
 			</section>
 		</main>
+	</div>
+</div>
+
+{#- Raising one is a short errand, not a journey: the counter finds the bill,
+    says what is coming back and is returned to the list it started from. -#}
+<div class="modal" id="return-modal" hidden>
+	<div class="modal-card ret-sheet">
+		<h3>{{ _("New Return") }}</h3>
+		<p class="modal-note">{{ _("Find the bill, then say what is coming back.") }}</p>
+
+		<div class="ret-sheet-body">
+			<div class="ret-sheet-main">
+				<label class="field"><span>{{ _("Which bill is it coming back on?") }}</span>
+					<input id="bill-q" type="search" autocomplete="off"
+					       placeholder="{{ _('Bill number, customer name or phone…') }}"></label>
+				<div id="bill-hits" class="pick-list"></div>
+				<div id="bill-picked" class="ret-picked" hidden></div>
+
+				<div id="lines-panel" hidden>
+					<div class="ret-lines-head">
+						<span>{{ _("What is coming back") }}</span>
+						<button class="btn btn-quiet btn-sm" id="take-all" type="button">
+							{{ _("Take it all back") }}</button>
+					</div>
+					<div class="bill-table-wrap">
+						<table class="bill-table ret-lines" id="lines">
+							<thead><tr>
+								<th>{{ _("Item") }}</th>
+								<th class="num">{{ _("Sold") }}</th>
+								<th class="num">{{ _("Already back") }}</th>
+								<th class="num">{{ _("Returning") }}</th>
+								<th class="num">{{ _("Rate") }}</th>
+								<th class="num">{{ _("Amount") }}</th>
+							</tr></thead>
+							<tbody></tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+
+			<aside class="ret-sheet-side">
+				<div class="bill-totals ret-totals">
+					<div class="tr"><span>{{ _("Lines") }}</span><span id="r-lines">0</span></div>
+					<div class="tr tr-grand"><span>{{ _("Coming back") }}</span>
+						<span id="r-total">₹0.00</span></div>
+				</div>
+
+				<div class="field-grid">
+					<label class="field"><span>{{ _("Date") }}</span>
+						<input id="r-date" type="date"></label>
+					<label class="field"><span>{{ _("Handled by") }}</span>
+						<select id="r-seller"></select></label>
+				</div>
+				<div class="field-grid">
+					<label class="field"><span>{{ _("Refund now") }}</span>
+						<input id="r-refund" type="number" min="0" step="0.01"
+						       placeholder="0.00"></label>
+					<label class="field"><span>{{ _("Refund by") }}</span>
+						<select id="r-mode"></select></label>
+				</div>
+				<p class="ret-hint">{{ _("Leave Refund now empty to keep it as credit on the customer's account.") }}</p>
+				<label class="field"><span>{{ _("Reason") }}</span>
+					<input id="r-reason" type="text" maxlength="200"
+					       placeholder="{{ _('Why is it coming back?') }}"></label>
+			</aside>
+		</div>
+
+		<div class="msg" id="work-msg"></div>
+		<div class="modal-actions">
+			<button class="btn btn-quiet" data-close>{{ _("Cancel") }}</button>
+			<button class="btn btn-primary" id="r-save" disabled>
+				{{ _("Raise Credit Note") }}</button>
+		</div>
 	</div>
 </div>
 

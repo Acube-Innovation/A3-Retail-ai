@@ -2,10 +2,9 @@
 /**
  * Sales returns — the credit notes this branch has raised.
  *
- * A list, like Bills. Raising one is the rare act and has a page of its own;
- * reading back what came back is the daily one, so it gets the screen. Nothing
- * here writes: a credit note is raised at /retail/return_entry and printed
- * through the same print link every other document uses.
+ * A list, like Bills, with raising one behind a sheet over it: finding the
+ * bill and saying what is coming back is a short errand, and the counter
+ * should land back on the list it started from rather than on another page.
  */
 
 (function () {
@@ -18,6 +17,11 @@
 
 	const money = (value) =>
 		"₹" + new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(value || 0);
+	// The sheet works in paise: a counter handing cash back has to see the
+	// figure it is handing back, not a rounded one.
+	const money2 = (value) =>
+		"₹" + new Intl.NumberFormat("en-IN", { minimumFractionDigits: 2,
+			maximumFractionDigits: 2 }).format(value || 0);
 
 	function esc(value) {
 		// `"` and `'` as well: almost every use of this is inside an attribute,
@@ -187,6 +191,192 @@
 		link.click();
 	}
 
+	// ---------------------------------------------------- raising one
+	const sheet = { bill: null, lines: [], saving: false };
+	let billTimer = null;
+
+	function note(text, kind) {
+		$("work-msg").textContent = A3.plain(text || "");
+		$("work-msg").className = "msg" + (kind ? " " + kind : "");
+	}
+
+	// ------------------------------------------------------------- the bill
+	async function findBills() {
+		const q = $("bill-q").value.trim();
+		if (q.length < 2) return ($("bill-hits").innerHTML = "");
+		const hits = await A3.call("a3_retail.api.returns.find_bills", { query: q, limit: 8 });
+		$("bill-hits").innerHTML = hits.length
+			? hits.map((b) => `<button class="pick ret-hit" data-name="${esc(b.name)}">
+				<span class="ret-hit-no">${esc(b.name)}</span>
+				<span class="ret-hit-who">${esc(b.customer_name)}</span>
+				<span class="ret-hit-when">${esc(day(b.posting_date))}</span>
+				<span class="ret-hit-amt">${esc(money2(b.payable))}</span></button>`).join("")
+			: '<p class="muted ret-none">No bill of this branch matches that.</p>';
+	}
+
+	async function pickBill(name) {
+		$("bill-hits").innerHTML = "";
+		try {
+			const data = await A3.call("a3_retail.api.returns.bill_lines", { invoice: name });
+			sheet.bill = data;
+			sheet.lines = data.lines.map((l) => ({ ...l, returning: 0 }));
+			$("bill-q").value = "";
+			$("bill-picked").hidden = false;
+			$("bill-picked").innerHTML = `
+				<div class="ret-picked-main">
+					<b>${esc(data.invoice)}</b>
+					<span>${esc(data.customer_name)} · ${esc(day(data.posting_date))}</span>
+				</div>
+				<div class="ret-picked-amt">${esc(money2(data.payable))}</div>
+				<button class="btn btn-quiet btn-sm" id="bill-clear">Change bill</button>`;
+			$("bill-clear").addEventListener("click", reset);
+			$("lines-panel").hidden = false;
+			paintLines();
+		} catch (error) {
+			toast(error.message || "Could not open that bill.", "error");
+		}
+	}
+
+	function paintLines() {
+		const body = $("lines").querySelector("tbody");
+		body.innerHTML = sheet.lines.map((l, i) => `
+			<tr${l.returning > 0 ? ' class="is-returning"' : ""}>
+				<td>${esc(l.item_name)}</td>
+				<td class="num">${l.qty}</td>
+				<td class="num">${l.returned || "—"}</td>
+				<td class="num"><input class="back" data-i="${i}" type="number" min="0" step="1"
+					max="${l.can_return}" value="${l.returning || ""}"
+					placeholder="0" ${l.can_return ? "" : "disabled"}></td>
+				<td class="num">${esc(money2(l.rate))}</td>
+				<td class="num">${esc(money2((l.returning || 0) * l.rate))}</td>
+			</tr>`).join("");
+
+		body.querySelectorAll(".back").forEach((n) => n.addEventListener("input", () => {
+			const line = sheet.lines[Number(n.dataset.i)];
+			const asked = Number(n.value) || 0;
+			// The box will not let more come back than went out and has not
+			// already returned — said here rather than after a failed save.
+			if (asked > line.can_return) {
+				toast(`Only ${line.can_return} of ${line.item_name} can still come back.`, "error");
+				n.value = line.can_return;
+			}
+			line.returning = Math.min(asked, line.can_return);
+			paintTotals();
+			n.closest("tr").classList.toggle("is-returning", line.returning > 0);
+			n.closest("tr").lastElementChild.textContent = money2(line.returning * line.rate);
+		}));
+		paintTotals();
+	}
+
+	function paintTotals() {
+		const total = sheet.lines.reduce((sum, l) => sum + (l.returning || 0) * l.rate, 0);
+		const count = sheet.lines.filter((l) => l.returning > 0).length;
+		$("r-lines").textContent = count;
+		$("r-total").textContent = money2(total);
+		$("r-save").disabled = !count;
+	}
+
+	// ---------------------------------------------------------------- save
+	async function save() {
+		if (sheet.saving || !sheet.bill) return;
+		const coming = sheet.lines.filter((l) => l.returning > 0);
+		if (!coming.length) return note("Say what is coming back.", "error");
+
+		sheet.saving = true;
+		$("r-save").disabled = true;
+		note("Raising the credit note…");
+		try {
+			const result = await A3.call("a3_retail.api.returns.create", {
+				payload: {
+					invoice: sheet.bill.invoice,
+					date: $("r-date").value,
+					sold_by: $("r-seller").value || "",
+					reason: $("r-reason").value.trim(),
+					refund_amount: Number($("r-refund").value) || 0,
+					mode_of_payment: $("r-mode").value,
+					items: coming.map((l) => ({
+						item_code: l.item_code, qty: l.returning, rate: l.rate,
+						serials: (l.serials || []).slice(0, l.returning),
+					})),
+				},
+			});
+			note(`${result.credit_note} raised — ${money2(result.amount)} back`
+				+ (result.refunded ? `, ${money2(result.refunded)} refunded` : "")
+				+ (result.credit_left ? `, ${money2(result.credit_left)} left as credit` : "")
+				+ ".", "ok");
+			window.open(result.print_url, "_blank");
+			// It is already on the list, so close and let it repaint.
+			setTimeout(() => {
+				$("return-modal").hidden = true;
+				reset();
+				load(1);
+			}, 1200);
+		} catch (error) {
+			note(error.message || "Could not raise the credit note.", "error");
+			sheet.saving = false;
+			$("r-save").disabled = false;
+		}
+	}
+
+	function reset() {
+		sheet.bill = null;
+		sheet.lines = [];
+		$("bill-q").value = "";
+		$("bill-picked").hidden = true;
+		$("bill-picked").innerHTML = "";
+		$("lines-panel").hidden = true;
+		$("r-refund").value = "";
+		$("r-reason").value = "";
+		$("r-lines").textContent = "0";
+		$("r-total").textContent = money2(0);
+		$("r-save").disabled = true;
+		note("");
+		$("bill-q").focus();
+	}
+
+	async function startSheet() {
+		
+		// The shop's own day, not UTC: `toISOString` rolls the date back five
+		// and a half hours every evening.
+		const today = new Date().toLocaleDateString("en-CA");
+		$("r-date").value = today;
+		$("r-date").max = today;
+		A3.datePicker($("r-date"));
+		// The face is drawn from the input's value and only redrawn on `change`,
+		// which setting `.value` in code does not fire — so it is fired here, or
+		// the box reads "Choose a date" over a date that is already chosen.
+		$("r-date").dispatchEvent(new Event("change"));
+
+		try {
+			const [boot, staff] = await Promise.all([
+				A3.call("a3_retail.api.returns.bootstrap"),
+				A3.call("a3_retail.api.pos.branch_staff"),
+			]);
+			$("r-mode").innerHTML = (boot.modes || [])
+				.map((m) => `<option value="${esc(m)}">${esc(m)}</option>`).join("");
+			$("r-seller").innerHTML = '<option value="">Who handled it?</option>'
+				+ (staff || []).map((p) =>
+					`<option value="${esc(p.employee)}">${esc(p.employee_name)}</option>`).join("");
+		} catch (error) {
+			note(error.message || "Could not start the screen.", "error");
+		}
+
+		$("bill-q").addEventListener("input", () => {
+			clearTimeout(billTimer);
+			billTimer = setTimeout(findBills, 220);
+		});
+		$("bill-hits").addEventListener("click", (event) => {
+			const pick = event.target.closest(".pick");
+			if (pick) pickBill(pick.dataset.name);
+		});
+		$("take-all").addEventListener("click", () => {
+			sheet.lines.forEach((l) => { l.returning = l.can_return; });
+			paintLines();
+		});
+		$("r-save").addEventListener("click", save);
+	}
+
+
 	// --------------------------------------------------------------- start
 	document.addEventListener("DOMContentLoaded", () => {
 		let timer = null;
@@ -227,6 +417,14 @@
 		$("filter-toggle").addEventListener("click", () =>
 			$("filter-row").classList.toggle("is-open"));
 		$("refresh").addEventListener("click", () => load(state.page));
+		$("new-return").addEventListener("click", () => {
+			reset();
+			$("return-modal").hidden = false;
+			$("bill-q").focus();
+		});
+		document.querySelectorAll("[data-close]").forEach((node) =>
+			node.addEventListener("click", () => { $("return-modal").hidden = true; }));
+		startSheet();
 		$("export").addEventListener("click", exportCsv);
 
 		load(1);

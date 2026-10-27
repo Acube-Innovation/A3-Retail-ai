@@ -2844,17 +2844,22 @@ kbd { display: inline-block; min-width: 17px; padding: 1px 5px; margin: 0 1px;
 #rows-table tbody td small.muted { display: block; font-size: 11px; color: var(--muted); }
 .warn-amber { color: var(--warn); font-weight: 700; }
 
-/* ---- the entry page ---- */
-.ret-cols { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 16px;
-	align-items: start; }
-.ret-main { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
-.ret-side { position: sticky; top: 16px; }
-/* A numbered step, so the page says which order it expects to be used in. */
-.step-no { display: inline-flex; align-items: center; justify-content: center;
-	width: 22px; height: 22px; margin-right: 8px; font-size: 12px; font-weight: 800;
-	color: #fff; background: var(--brand); border-radius: 50%; }
-.ret-search { max-width: 520px; }
+/* ---- the sheet that raises one ---- */
+/* Its own width rather than `.modal-widest`, which is written for the wrapper
+   and would need the class on the parent to reach the card. */
+.modal-card.ret-sheet { max-width: 1040px; width: 96vw; }
+.ret-sheet-body { display: grid; grid-template-columns: minmax(0, 1fr) 320px;
+	gap: 18px; align-items: start; margin-top: 4px; }
+.ret-sheet-main { min-width: 0; }
+.ret-sheet-side { min-width: 0; }
+.ret-lines-head { display: flex; align-items: center; justify-content: space-between;
+	margin: 16px 0 8px; font-size: 12px; color: var(--muted);
+	text-transform: uppercase; letter-spacing: .06em; }
 .ret-none { margin: 10px 2px; }
+/* The hit list is scrolled rather than allowed to push the sheet taller than
+   the screen, which is what a search for "SINV" would otherwise do. */
+#bill-hits { max-height: 220px; overflow-y: auto; }
+.ret-sheet .bill-table-wrap { max-height: 260px; overflow-y: auto; }
 
 /* The bill once it has been chosen: the one fact the rest of the page hangs
    off, so it stays on screen rather than becoming a line of grey text. */
@@ -2896,8 +2901,7 @@ kbd { display: inline-block; min-width: 17px; padding: 1px 5px; margin: 0 1px;
 	padding-left: 9px; border-left: 2px solid var(--line); }
 
 @media (max-width: 1100px) {
-	.ret-cols { grid-template-columns: minmax(0, 1fr); }
-	.ret-side { position: static; }
+	.ret-sheet-body { grid-template-columns: minmax(0, 1fr); }
 	.ret-hit { grid-template-columns: 1fr auto; }
 	.ret-hit-when { display: none; }
 }
