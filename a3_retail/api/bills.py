@@ -416,12 +416,16 @@ def _line_tax_rate(doc, row) -> float:
 
 def _payments(doc) -> list[dict]:
 	"""What the customer has actually handed over, from both places it can live."""
+	# Money handed over with the sale was handed over at the moment of the sale.
+	# For a bill written up the same day that moment is the bill's own timestamp,
+	# to the minute. For one back-dated to last week it is not: the sale happened
+	# last week and the minute it was keyed in would put the opening payment
+	# after every later one on the timeline. Same rule as the entries below.
+	same_day = str(doc.creation)[:10] == str(doc.posting_date)[:10]
+	taken_at = str(doc.creation)[:16] if same_day else str(doc.posting_date)
 	out = [
 		{"name": doc.name, "date": str(doc.posting_date), "mode": row.mode_of_payment,
-		 # Money handed over with the sale was handed over at the moment of the
-		 # sale, so the bill's own timestamp is the honest one. The posting date
-		 # stays the business date, which is what a back-dated bill needs.
-		 "at": str(doc.creation)[:16],
+		 "at": taken_at,
 		 "reference": _("At the counter"), "amount": flt(row.amount)}
 		for row in doc.get("payments") or [] if flt(row.amount)
 	]
@@ -434,7 +438,7 @@ def _payments(doc) -> list[dict]:
 		join `tabPayment Entry` pe on pe.name = per.parent
 		where per.reference_doctype = 'Sales Invoice' and per.reference_name = %s
 		  and pe.docstatus = 1
-		order by pe.posting_date
+		order by pe.posting_date, pe.creation
 		""",
 		doc.name,
 		as_dict=True,

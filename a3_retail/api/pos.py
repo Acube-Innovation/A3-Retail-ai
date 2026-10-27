@@ -917,12 +917,13 @@ def _build_invoice(data: dict, employee, draft: bool = False):
 
 	invoice.customer = data["customer"]
 	invoice.company = frappe.db.get_single_value("Global Defaults", "default_company")
-	# A bill is dated the day it is paid for. `checkout` is only reached when
-	# money is being taken, so that day is today unless the counter says
-	# otherwise — and a bill held last week is dated the day it is settled, not
-	# the day somebody started it. A date sent from the counter still wins,
-	# which is how a sale is back-dated deliberately.
-	posting = data.get("posting_date") or nowdate()
+	# A bill keeps the date it was given. A counter that dated a held bill meant
+	# that date, so finishing it days later must not quietly restamp it as
+	# today — which is what happened before, because the till sent no date and
+	# the fallback was today. Order: what the counter sends, else what the draft
+	# already says, else today for a bill being started now.
+	posting = data.get("posting_date") or (invoice.get("posting_date") if existing
+	                                       else None) or nowdate()
 	posting = getdate(posting)
 	if posting > getdate(nowdate()):
 		frappe.throw(_("A bill cannot be dated in the future."), title=_("Date"))
@@ -1472,6 +1473,12 @@ def _receipt(invoice, amount: float, mode: str, account: str | None = None) -> N
 	entry.base_received_amount = amount
 	entry.reference_no = invoice.name
 	entry.reference_date = invoice.posting_date
+	# The money was handed over when the sale happened, not when the sale was
+	# keyed in. Without this a bill back-dated to last week puts its own takings
+	# in today's cash book, and the bill's timeline shows the opening payment
+	# after every later one.
+	entry.posting_date = invoice.posting_date
+	entry.set_posting_time = 1
 	# Branch staff hold a User Permission on Cost Center, and strict permissions
 	# refuse a blank one as firmly as a foreign one.
 	if invoice.get("cost_center") and entry.meta.has_field("cost_center"):
