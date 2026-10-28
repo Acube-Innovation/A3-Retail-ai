@@ -247,6 +247,16 @@
 			<aside class="svc-right">
 				<section class="svc-panel">
 					<h2>{{ _("Billing Summary") }}</h2>
+					{#- At booking nobody has opened the device, so there are no
+					    parts to price. What the customer was quoted goes here and
+					    is what the job card prints, until real parts and labour
+					    are costed and take over. -#}
+					<div class="tr tr-estimate" id="estimate-row">
+						<span>{{ _("Estimated amount") }}</span>
+						<span class="rupee">₹</span>
+						<input id="estimate-amount" type="number" min="0" step="1"
+						       placeholder="0.00">
+					</div>
 					<div class="bill-totals flat">
 						<div class="tr"><span>{{ _("Sub Total") }}</span><span id="r-sub">₹0.00</span></div>
 						<div class="tr tr-discount">
@@ -321,13 +331,18 @@
 						<span class="counter"><b id="notes-count">0</b>/250</span></label>
 				</section>
 
-				<button class="btn btn-block btn-save" id="save-booking">
-					{{ _("Save Booking") }} <span class="key">F5</span></button>
-				<button class="btn btn-block btn-invoice" id="generate-invoice">
-					{{ _("Generate Invoice") }} <span class="key">F6</span></button>
-				<button class="btn btn-block btn-deliver" id="mark-delivered">
-					{{ _("Mark as Delivered") }} <span class="key">F7</span></button>
-				<div class="msg" id="svc-msg"></div>
+				{#- Pinned to the bottom of the screen. The column above them is
+				    taller than any monitor, so left in the flow these three sat
+				    at y=1218 and a counter never saw Generate Invoice at all. -#}
+				<div class="svc-finish">
+					<button class="btn btn-block btn-save" id="save-booking">
+						{{ _("Save Booking") }} <span class="key">F5</span></button>
+					<button class="btn btn-block btn-invoice" id="generate-invoice">
+						{{ _("Generate Invoice") }} <span class="key">F6</span></button>
+					<button class="btn btn-block btn-deliver" id="mark-delivered">
+						{{ _("Mark as Delivered") }} <span class="key">F7</span></button>
+					<div class="msg" id="svc-msg"></div>
+				</div>
 			</aside>
 		</main>
 	</div>

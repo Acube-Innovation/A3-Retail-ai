@@ -674,6 +674,16 @@ window.SVC = (function () {
 		         balance: Math.max(payable - advance, 0) };
 	}
 
+	function showEstimateRow() {
+		const row = document.getElementById("estimate-row");
+		if (!row) return;
+		const costed = state.lines.some((l) => Number(l.rate) > 0);
+		row.classList.toggle("is-super", costed);
+		row.title = costed
+			? "Superseded — the parts and labour below are what the bill is made of"
+			: "";
+	}
+
 	function paintTotals() {
 		const sums = totals();
 		const count = state.lines.reduce((sum, line) => sum + line.qty, 0);
@@ -692,6 +702,7 @@ window.SVC = (function () {
 
 		// Ask for the reason the moment a discount is typed, not after the save
 		// has been refused.
+		showEstimateRow();
 		$("discount-reason-row").hidden = sums.discount <= 0;
 		$("discount-reason-row").classList.toggle(
 			"is-wanted", sums.discount > 0 && !$("discount-reason").value.trim());
@@ -899,6 +910,7 @@ window.SVC = (function () {
 					expected_delivery: $("promised").value || null,
 					data_backup_required: $("backup-required").checked ? 1 : 0,
 					received_on: $("received-on").value || null,
+					estimate_amount: Number($("estimate-amount").value) || 0,
 			data_loss_consent: $("data-consent").checked ? 1 : 0,
 					sim_tray_received: $("sim-tray").checked ? 1 : 0,
 					notes: $("notes").value.trim(),
@@ -1011,6 +1023,7 @@ window.SVC = (function () {
 		$("customer-name").value = card.customer_name || "";
 		$("complaint").value = card.complaint_description || "";
 		$("advance").value = card.advance || "";
+		$("estimate-amount").value = card.estimate_amount || "";
 		paintDevice();
 		paintLines();
 		setTrack(card.status === "Delivered" ? 3
@@ -1054,7 +1067,7 @@ window.SVC = (function () {
 		state.customer = null;
 		["mobile", "customer-name", "customer-email", "customer-address", "customer-city",
 		 "customer-pin", "complaint", "notes", "advance", "discount-value", "discount-reason",
-		 "promised"].forEach((id) => { $(id).value = ""; });
+		 "promised", "estimate-amount"].forEach((id) => { $(id).value = ""; });
 		$("backup-required").checked = false;
 		$("data-consent").checked = false;
 		state.signed = false;
@@ -1075,6 +1088,10 @@ window.SVC = (function () {
 		// is left empty rather than pre-filled with a date nobody chose.
 		$("received-on").max = options.today;
 		A3.datePicker($("received-on"));
+		// The promise sits beside it and must read the same: two date boxes side
+		// by side, one a face and one a browser's own control, is the kind of
+		// detail a counter reads as a broken screen.
+		A3.datePicker($("promised"));
 
 		let boot;
 		try {
@@ -1164,6 +1181,19 @@ window.SVC = (function () {
 		$("line-new").addEventListener("click", () => showLineForm(true));
 		$("ln-cancel").addEventListener("click", () => showLineForm(false));
 		$("ln-save").addEventListener("click", saveLineItem);
+
+		// A card written up from the day book is dated when the device came in,
+		// and the promise that went with it belongs to that week. Pulling the
+		// floor back with the arrival date is what lets the counter enter the
+		// Monday it actually promised rather than today.
+		$("received-on").addEventListener("change", () => {
+			const arrived = $("received-on").value;
+			$("promised").min = arrived || "";
+			if (arrived && $("promised").value && $("promised").value < arrived) {
+				$("promised").value = arrived;
+				$("promised").dispatchEvent(new Event("change", { bubbles: true }));
+			}
+		});
 
 		$("warranty-type").addEventListener("change", paintTotals);
 		$("discount-type").addEventListener("change", paintTotals);
