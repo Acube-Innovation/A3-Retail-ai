@@ -115,11 +115,17 @@ def compute_sla_due(start: datetime | str, tat_hours: float, branch: str | None 
 	calendar = _branch_calendar(branch)
 	day_start, day_end = calendar["start"], calendar["end"]
 
-	# Guard against a misconfigured branch (would loop forever otherwise).
+	# Guard against a misconfigured branch. `<= 0` was too weak a test: every
+	# PhoneXpert profile was imported with both times set to the instant of
+	# import, a window of sixty microseconds. That is a positive number, so the
+	# loop ran its full 400 iterations and promised every device back in a year
+	# and a month. No shop opens for under an hour, so anything that narrow is
+	# bad data, and the plain clock is a better answer than a date nobody
+	# believes.
 	open_seconds = (
 		datetime.combine(start.date(), day_end) - datetime.combine(start.date(), day_start)
 	).total_seconds()
-	if open_seconds <= 0:
+	if open_seconds < 3600:
 		return start + timedelta(hours=float(tat_hours))
 
 	remaining = timedelta(hours=float(tat_hours))
@@ -157,6 +163,13 @@ def working_hours_between(start: datetime | str, end: datetime | str, branch: st
 
 	calendar = _branch_calendar(branch)
 	day_start, day_end = calendar["start"], calendar["end"]
+
+	# Same bad data as `compute_sla_due` guards against: a window of microseconds
+	# would score every repair at zero hours elapsed, and a TAT report that says
+	# nothing ever took any time is worse than one that counts the clock.
+	if (datetime.combine(start.date(), day_end)
+	        - datetime.combine(start.date(), day_start)).total_seconds() < 3600:
+		return round((end - start).total_seconds() / 3600.0, 2)
 
 	total = timedelta()
 	cursor = start

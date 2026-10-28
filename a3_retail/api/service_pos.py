@@ -576,6 +576,10 @@ def save_booking(payload) -> dict:
 	doc.priority = data.get("priority") or "Normal"
 	doc.lead_source = data.get("lead_source") or "Walk-in"
 	doc.received_on = _received_on(data.get("received_on"))
+	# What the customer was quoted before anybody opened the device. It is a
+	# promise, not a price: the moment real parts and labour are costed, those
+	# are what the bill is made of.
+	doc.estimate_amount = flt(data.get("estimate_amount"))
 	doc.received_by = employee.name
 	doc.assigned_technician = data.get("technician") or None
 	doc.estimated_delivery_date = _promised(data.get("expected_delivery"))
@@ -722,15 +726,24 @@ def _check_promise(data: dict):
 	promised = _promised(data.get("expected_delivery"))
 	if not promised:
 		return
+
+	# A card written up from the day book is dated when the device came in, and
+	# the promise that went with it belongs to that week, not to this one. So the
+	# promise is measured against the day the device arrived: before that it is
+	# impossible, after it, it is simply history the counter is recording.
 	# The date is the promise; a booking taken at seven in the evening for "today"
 	# is a promise for today, not a broken one.
-	if getdate(promised) >= getdate(nowdate()):
+	arrived = getdate(_received_on(data.get("received_on")))
+	floor = min(arrived, getdate(nowdate()))
+	if getdate(promised) >= floor:
 		return
 
 	frappe.throw(
-		_("The delivery date on this booking, {0}, has already gone by. Pick today or a "
-		  "day after it.").format(frappe.utils.format_datetime(promised, "d MMM yyyy")),
-		title=_("That date has passed"),
+		_("The delivery date on this booking, {0}, is before the device came in on {1}. "
+		  "Pick that day or one after it.").format(
+			frappe.utils.format_datetime(promised, "d MMM yyyy"),
+			frappe.utils.format_datetime(arrived, "d MMM yyyy")),
+		title=_("Before the device arrived"),
 	)
 
 
@@ -836,6 +849,7 @@ def booking(job_card: str) -> dict:
 		"priority": doc.priority,
 		"technician": doc.assigned_technician,
 		"promised": str(doc.estimated_delivery_date or ""),
+		"estimate_amount": flt(doc.estimate_amount),
 		"grand_total": flt(doc.grand_total),
 		"advance": flt(doc.advance_amount),
 		"balance": flt(doc.outstanding_amount or doc.customer_payable),

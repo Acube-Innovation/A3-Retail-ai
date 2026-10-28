@@ -75,6 +75,7 @@
   "parts",
   "labour",
   "totals_section",
+  "estimate_amount",
   "parts_total",
   "labour_total",
   "total_before_discount",
@@ -570,6 +571,12 @@
    "fieldname": "totals_section",
    "fieldtype": "Section Break",
    "label": "Totals"
+  },
+  {
+   "fieldname": "estimate_amount",
+   "fieldtype": "Currency",
+   "label": "Estimated Amount",
+   "description": "What the customer was quoted at booking, before the device was opened. Printed on the job card until real parts and labour are costed, and then superseded by them."
   },
   {
    "fieldname": "parts_total",

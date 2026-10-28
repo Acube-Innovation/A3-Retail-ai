@@ -117,11 +117,13 @@ PERMISSION_MATRIX: dict[str, dict[str, str]] = {
 		"A3 Retail Admin": "CRUDS",
 		"Branch Manager": "CRUS",
 		"Store Keeper": "CRUS",
-		# A service counter signs for the parts it is sent, long before the
-		# distributor's bill turns up. Without this it cannot book them in at
-		# all, and the box sits on the floor unaccounted for.
+		# A counter signs for what it is sent, long before the distributor's
+		# bill turns up. Without this the box sits on the floor unaccounted
+		# for. `Sales Executive` is the one role every branch holds, so it is
+		# what makes Goods In reach all seven rather than the service two.
 		"Service Manager": "CRUS",
 		"Reception Executive": "CRUS",
+		"Sales Executive": "CRUS",
 		"Accounts Manager": "R",
 		"Auditor": "R",
 	},

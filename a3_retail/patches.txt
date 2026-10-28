@@ -9,3 +9,4 @@ a3_retail.patches.accessories_psla_opening_stock
 a3_retail.patches.services_psla_spare_parts
 a3_retail.patches.accessories_psla_short_codes
 a3_retail.patches.service_booking_payment_status
+a3_retail.patches.branch_working_hours

@@ -902,7 +902,15 @@ input.is-locked { background: rgba(42, 51, 66, .04); color: var(--muted);
 .svc { display: grid; grid-template-columns: minmax(0, 1fr) 402px; gap: 22px;
 	padding: 14px 20px 40px; align-items: start; }
 .svc-left { min-width: 0; display: flex; flex-direction: column; gap: 16px; }
-.svc-right { display: flex; flex-direction: column; gap: 16px; position: sticky; top: 76px; }
+/* Not sticky itself: the column is taller than any monitor, so pinning its
+   top only guaranteed its bottom — where the buttons are — never showed. */
+.svc-right { display: flex; flex-direction: column; gap: 16px; }
+/* The three things the counter actually presses, kept on screen. Named apart
+   from `.svc-actions`, which is already the customer-search bar up in the
+   header — two different bars, and the name was taken. */
+.svc-finish { position: sticky; bottom: 0; z-index: 5; display: flex;
+	flex-direction: column; gap: 8px; padding: 12px 0 4px;
+	background: linear-gradient(180deg, rgba(247,249,252,0) 0, var(--surface) 22%); }
 
 .svc-panel { background: var(--card); border: 1px solid var(--line); border-radius: 12px;
 	padding: 16px 18px; }
@@ -1037,6 +1045,24 @@ input.is-locked { background: rgba(42, 51, 66, .04); color: var(--muted);
 
 /* the right rail */
 .bill-totals.flat { margin: 0 0 14px; padding: 0; background: none; border: 0; }
+/* What the customer was quoted, before anybody opened the device. It sits above
+   the real totals rather than among them because it is not part of the sum —
+   it is the promise the bill will be measured against. */
+.tr-estimate { display: grid; grid-template-columns: 1fr 12px 92px; align-items: center;
+	gap: 4px; margin: 0 0 10px; padding: 8px 10px; border: 1px dashed var(--line-strong);
+	border-radius: 9px; background: #fffdf5; }
+.tr-estimate .rupee { color: var(--muted); font-size: 12px; text-align: right; }
+.tr-estimate input { width: 100%; padding: 6px 8px; font-family: inherit; font-size: 12px;
+	text-align: right; border: 1px solid var(--line-strong); border-radius: 7px;
+	background: var(--card); }
+/* Stepper arrows eat the width the digits need, and nobody nudges a quote up a
+   rupee at a time. */
+.tr-estimate input::-webkit-outer-spin-button,
+.tr-estimate input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.tr-estimate input { -moz-appearance: textfield; appearance: textfield; }
+/* Once parts and labour are priced the quote is history. Left at full strength
+   it reads as a second, competing total. */
+.tr-estimate.is-super { opacity: .55; background: none; }
 .blue { color: var(--sky-dark) !important; }
 .balance { width: 188px; padding: 9px 14px; border-radius: 9px; background: #fef2f2;
 	color: var(--danger-dark); font-size: 15px; font-weight: 800; text-align: right;
