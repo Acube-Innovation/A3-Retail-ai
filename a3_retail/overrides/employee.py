@@ -108,6 +108,7 @@ def sync_user_permissions(user: str, branch: str):
 			"damaged_warehouse",
 			"used_device_warehouse",
 			"transit_warehouse",
+			"warranty_returns_warehouse",
 		):
 			if profile.get(fieldname):
 				targets.append(("Warehouse", profile.get(fieldname)))

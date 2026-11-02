@@ -777,6 +777,21 @@ class TestHeldTender(FrappeTestCase):
 		self.assertIn("tender: draft ? heldTender() : null", script)
 		self.assertIn("restoreTender(bill.tender)", script)
 
+	def test_a_completed_bill_lets_go_of_the_draft_it_came_from(self):
+		"""Completing a held or reopened bill left the counter pointing at it, so
+		"Next customer" was billed onto the bill just submitted — and the screen
+		still showed its number and the Editing heading."""
+		script = open(frappe.get_app_path("a3_retail", "public", "js", "a3_pos.js")).read()
+		done = script[script.index("function done("):script.index("function heldTender(")]
+		self.assertIn("clearEditing();", done)
+		self.assertNotIn('$("bill-no").textContent = result.invoice', done)
+
+		clear = script[script.index("function clearEditing("):]
+		clear = clear[:clear.index("\n\t}\n")]
+		self.assertIn("state.editing = null", clear)
+		self.assertIn("blankScreen.billNo", clear)
+		self.assertIn('searchParams.delete("invoice")', clear)
+
 	def test_checkout_clears_what_was_parked(self):
 		source = open(frappe.get_app_path("a3_retail", "api", "pos.py")).read()
 		checkout = source[source.index("def checkout("):source.index("def save_draft(")]

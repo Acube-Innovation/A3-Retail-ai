@@ -33,6 +33,7 @@
   "col_break_3",
   "damaged_warehouse",
   "used_device_warehouse",
+  "warranty_returns_warehouse",
   "transit_warehouse",
   "receives_stock_from",
   "sales_section",
@@ -233,6 +234,13 @@
    "options": "Warehouse"
   },
   {
+   "fieldname": "warranty_returns_warehouse",
+   "fieldtype": "Link",
+   "label": "Warranty Returns Shelf",
+   "options": "Warehouse",
+   "description": "Faulty goods kept here until they go back to the dealer. Leave it belonging to no branch: its stock is not for sale, and the Stock page shows it under Warranty Returns."
+  },
+  {
    "fieldname": "transit_warehouse",
    "fieldtype": "Link",
    "label": "Goods In Transit",
@@ -394,7 +402,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-08-05 09:00:00.000000",
+ "modified": "2026-11-02 10:00:00.000000",
  "modified_by": "Administrator",
  "module": "A3 Retail Operations",
  "name": "Branch Profile",

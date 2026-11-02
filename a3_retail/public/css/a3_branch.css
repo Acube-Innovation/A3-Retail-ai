@@ -898,6 +898,9 @@ input.is-locked { background: rgba(42, 51, 66, .04); color: var(--muted);
 .seg-btn.is-active { border-color: #bfdcf5; background: #f2f8fe; color: var(--sky-dark); }
 .seg.wide { display: grid; grid-template-columns: repeat(3, 1fr); margin: 0 0 12px; }
 .seg.wide .seg-btn { justify-content: center; }
+/* The Replace window's two roads, side by side and the same width. */
+.seg.rp-route { display: grid; grid-template-columns: 1fr 1fr; margin: 0; }
+.seg.rp-route .seg-btn { justify-content: center; }
 
 .svc { display: grid; grid-template-columns: minmax(0, 1fr) 402px; gap: 22px;
 	padding: 14px 20px 40px; align-items: start; }
@@ -1350,6 +1353,9 @@ input.is-locked { background: rgba(42, 51, 66, .04); color: var(--muted);
 
 /* the table */
 .bill-table-panel { padding: 0; overflow: hidden; }
+/* The panel gives up its padding so the table runs edge to edge; a title over
+   the table takes the same inset as the foot under it. */
+.bill-table-panel > .panel-head { padding: 14px 16px 0; }
 .bill-table-wrap { overflow-x: auto; }
 .bill-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
 /* Fifteen columns have to fit a 1536 screen before the wrap starts scrolling,
@@ -1363,6 +1369,11 @@ input.is-locked { background: rgba(42, 51, 66, .04); color: var(--muted);
 .bill-table tbody tr:hover { background: #fafbfd; }
 .bill-table tbody tr.is-cancelled { background: #fef7f7; color: var(--muted); }
 .bill-table td.num, .bill-table th.num { text-align: right; font-variant-numeric: tabular-nums; }
+/* Cash & bank: what came in and went out over the window, and which side is ahead. */
+.cash-moves tfoot td { background: #f8fafc; font-weight: 700; white-space: nowrap; }
+.cash-moves tfoot tr:first-child td { border-top: 2px solid var(--line-strong); }
+.cash-moves tfoot .is-in { color: var(--success); }
+.cash-moves tfoot .is-out { color: var(--danger-dark); }
 .bill-table td.nowrap { white-space: nowrap; }
 .bill-table td.strong { font-weight: 700; }
 .bill-table td small { display: block; color: var(--faint); font-size: 10.5px; }
@@ -1493,6 +1504,14 @@ input.is-locked { background: rgba(42, 51, 66, .04); color: var(--muted);
 .rep-filters { padding: 12px 14px; }
 .rep-filter-row { grid-template-columns: minmax(220px, 2fr) minmax(0, 1fr) minmax(0, 1fr) auto; }
 .rep-filter-actions { display: flex; gap: 8px; margin-top: 12px; }
+/* A filter that takes many values — brands — ticked from its own list. */
+.ms-list { max-height: 46vh; overflow-y: auto; border: 1px solid var(--line);
+	border-radius: var(--radius-sm); padding: 4px; }
+.ms-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px;
+	border-radius: var(--radius-sm); font-size: 13.5px; cursor: pointer; }
+.ms-row[hidden] { display: none; }
+.ms-row:hover { background: #f6f8fb; }
+.ms-row input { width: 16px; height: 16px; margin: 0; accent-color: var(--brand); }
 
 .rep-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
 .rep-card { position: relative; background: var(--card); border: 1px solid var(--line);
@@ -1560,6 +1579,16 @@ input.is-locked { background: rgba(42, 51, 66, .04); color: var(--muted);
 	width: auto; margin: 0; padding: 10px 16px; font-weight: 700; }
 .btn-purple { background: #6d3ee0; border: 0; color: #fff; }
 .btn-purple:hover { background: #5b31c4; }
+/* Faulty goods waiting for the dealer: set apart at the end of the row, in a
+   colour none of the stock actions use, with how many are waiting. */
+.stk-actions .btn-warranty { margin-left: auto; gap: 8px; background: #a21caf; border: 0;
+	color: #fff; }
+.btn-warranty:hover { background: #86198f; }
+.btn-warranty.is-active { background: #701a75; box-shadow: 0 0 0 3px rgba(162, 28, 175, .25); }
+.btn-warranty[hidden], .btn-count[hidden] { display: none; }
+.btn-count { min-width: 22px; padding: 1px 7px; border-radius: var(--radius-pill);
+	background: #fff; color: #a21caf; font-size: 12px; font-weight: 800; text-align: center; }
+.pill-fuchsia { background: #fae8ff; color: #a21caf; }
 
 .stk-kpis { grid-template-columns: repeat(9, minmax(0, 1fr)); }
 .stk-kpi { text-align: left; font-family: inherit; cursor: pointer; padding: 12px 14px; }
@@ -1603,6 +1632,16 @@ input.is-locked { background: rgba(42, 51, 66, .04); color: var(--muted);
 .stk-act-main b { display: block; font-size: 12px; }
 .stk-act-main small { color: var(--faint); font-size: 11px; }
 .modal-widest .modal-card, #network-modal .modal-card { max-width: 880px; }
+/* The title, and on its right the Branches / IMEI switch. */
+.stk-net-head { display: flex; align-items: center; justify-content: space-between; gap: 14px;
+	margin-bottom: 4px; }
+.stk-net-head h3 { margin: 0; }
+.stk-net-head .seg-btn { padding: 7px 14px; }
+.stk-net-head .seg[hidden] { display: none; }
+.stk-imei-item { display: flex; align-items: baseline; gap: 8px; margin: 2px 0 10px;
+	font-size: 14px; }
+.stk-imei-item span { font-size: 12.5px; color: var(--muted); }
+.stk-imei { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .02em; }
 .stk-reco { background: #f2f8fe; border: 1px solid #cfe6f7; border-radius: 9px; padding: 10px 14px;
 	margin-bottom: 12px; font-size: 12.5px; color: var(--sky-dark); font-weight: 600; }
 
@@ -2739,6 +2778,7 @@ kbd { display: inline-block; min-width: 17px; padding: 1px 5px; margin: 0 1px;
 .dp-backdrop { position: fixed; inset: 0; z-index: 1200; display: flex;
 	align-items: center; justify-content: center; background: rgba(17, 24, 39, .45); }
 .dp-card { width: 320px; max-width: calc(100vw - 32px); padding: 16px;
+	max-height: calc(100vh - 32px); overflow-y: auto;
 	background: var(--card); border-radius: var(--radius);
 	box-shadow: var(--shadow-pop); }
 .dp-title { text-align: center; font-size: 17px; font-weight: 600;
@@ -2762,6 +2802,17 @@ kbd { display: inline-block; min-width: 17px; padding: 1px 5px; margin: 0 1px;
 .dp-day.is-out { color: #c3cad6; }
 .dp-day:disabled { color: #dde2ea; cursor: default; }
 .dp-day.is-on { background: var(--brand, #4f46e5); color: #fff; font-weight: 600; }
+/* A range's ready-made spans, in pairs: this and the one before it. */
+.dp-presets { display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+	margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+.dp-preset { padding: 8px 10px; cursor: pointer; font-family: inherit;
+	font-size: 12.5px; font-weight: 600; color: var(--ink, #1f2937);
+	background: var(--card); border: 1px solid var(--line-strong);
+	border-radius: var(--radius-sm); }
+.dp-preset:last-child { grid-column: 1 / -1; }
+.dp-preset:hover { border-color: var(--brand, #4f46e5); color: var(--brand, #4f46e5); }
+.dp-preset.is-on { background: var(--brand, #4f46e5); border-color: var(--brand, #4f46e5);
+	color: #fff; }
 .dp-actions { display: flex; justify-content: flex-end; gap: 6px; margin-top: 10px; }
 .dp-flat { border: 0; background: none; cursor: pointer; padding: 8px 14px;
 	font-family: inherit; font-size: 12.5px; font-weight: 700; letter-spacing: .04em;

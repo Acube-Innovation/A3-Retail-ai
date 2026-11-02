@@ -86,26 +86,35 @@
 
 {#- A warranty swap in one act: the faulty handset goes back to the supplier
     and a good one goes to the customer, and the six documents that takes are
-    raised together rather than left to be remembered one at a time. -#}
+    raised together rather than left to be remembered one at a time. An
+    accessory takes the other road — to our own godown, with the good one off
+    this shelf — and the switch below picks which. -#}
 <div class="modal" id="replace-modal" hidden>
 	<div class="modal-card modal-wide">
 		<h3>{{ _("Replace a faulty item") }}</h3>
-		<p class="modal-note">{{ _("The faulty one goes back to the supplier, a good one goes to the customer, and nobody pays anything more.") }}</p>
+		<p class="modal-note" id="rp-note"></p>
 
 		<label class="field"><span>{{ _("Which item is faulty?") }}</span>
 			<select id="rp-item"></select></label>
 
+		<div class="field"><span>{{ _("Where does the faulty one go?") }}</span>
+			<div class="seg rp-route" id="rp-route">
+				<button type="button" class="seg-btn" data-route="supplier">{{ _("Back to the supplier") }}</button>
+				<button type="button" class="seg-btn" data-route="godown">{{ _("To our godown") }}</button>
+			</div></div>
+
 		<div class="field-grid">
 			<label class="field"><span>{{ _("Faulty IMEI / serial") }}</span>
 				<select id="rp-faulty"></select></label>
-			<label class="field"><span>{{ _("New IMEI the supplier gave") }}</span>
+			<label class="field"><span id="rp-new-label">{{ _("New IMEI the supplier gave") }}</span>
 				<input id="rp-new" autocomplete="off"
 				       placeholder="{{ _('Type or scan it') }}"></label>
 		</div>
 
 		<div class="field-grid">
-			<label class="field"><span>{{ _("Goes back to") }}</span>
-				<select id="rp-supplier"></select></label>
+			<label class="field"><span id="rp-to-label">{{ _("Goes back to") }}</span>
+				<select id="rp-supplier"></select>
+				<select id="rp-godown" hidden></select></label>
 			<label class="field"><span>{{ _("Replaced on") }}</span>
 				<input id="rp-date" type="date"></label>
 		</div>

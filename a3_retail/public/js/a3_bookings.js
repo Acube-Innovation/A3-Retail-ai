@@ -321,6 +321,10 @@ window.BOOKINGS = (function () {
 		 ["delay", "delay"], ["branch", "branch"]].forEach(([id, key]) => {
 			$(id).addEventListener("change", () => {
 				state.filters[key] = $(id).value;
+				// A calendar preset fills both dates and fires both; the pair is
+				// read together so neither reload goes out with half a range.
+				state.filters.from_date = $("from-date").value;
+				state.filters.to_date = $("to-date").value;
 				load(1);
 			});
 		});

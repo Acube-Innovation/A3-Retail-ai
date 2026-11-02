@@ -74,7 +74,7 @@ class BranchProfile(Document):
 
 	def validate_warehouses(self):
 		"""Stock can only be posted against leaf warehouses of the same company."""
-		for fieldname in (*WAREHOUSE_SUFFIXES, "transit_warehouse"):
+		for fieldname in (*WAREHOUSE_SUFFIXES, "transit_warehouse", "warranty_returns_warehouse"):
 			warehouse = self.get(fieldname)
 			if not warehouse:
 				continue

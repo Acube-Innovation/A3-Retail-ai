@@ -54,7 +54,7 @@
 			state.accounts = [...(sums.cash || []), ...(sums.banks || [])];
 			paintTiles(sums);
 			paintAccounts(sums);
-			paintRows(txns.rows || []);
+			paintRows(txns.rows || [], txns.totals);
 			fillPickers(sums);
 		} catch (error) {
 			$("accounts").innerHTML =
@@ -90,13 +90,19 @@
 			: '<p class="muted">No cash or bank account is set up for this company yet.</p>';
 	}
 
-	function paintRows(rows) {
+	function paintRows(rows, totals) {
 		if (!rows.length) {
 			$("rows").innerHTML = '<p class="muted">Nothing has moved yet.</p>';
 			return;
 		}
+		// Totals come from the server over the whole window, not from the rows
+		// on screen — the list stops at 50, the closing count does not.
+		const sums = totals || { in: 0, out: 0, net: 0, entries: rows.length };
+		// The difference sits under whichever side is ahead: more came in, or
+		// more went out.
+		const net = sums.net || 0;
 		$("rows").innerHTML = `
-			<table class="bill-table">
+			<table class="bill-table cash-moves">
 				<thead><tr>
 					<th>Date</th><th>Account</th><th>Document</th><th>Detail</th>
 					<th class="num">In</th><th class="num">Out</th>
@@ -111,7 +117,23 @@
 						<td class="num">${r.credit ? money(r.credit) : "—"}</td>
 					</tr>`).join("")}
 				</tbody>
-			</table>`;
+				<tfoot>
+					<tr>
+						<td colspan="4">Total</td>
+						<td class="num">${money(sums.in)}</td>
+						<td class="num">${money(sums.out)}</td>
+					</tr>
+					<tr>
+						<td colspan="4">Difference</td>
+						<td class="num${net > 0 ? " is-in" : ""}">${net > 0 ? money(net) : "—"}</td>
+						<td class="num${net < 0 ? " is-out" : ""}">${net < 0 ? money(-net) : "—"}</td>
+					</tr>
+				</tfoot>
+			</table>
+			${sums.entries > rows.length
+				? `<p class="muted">Showing the latest ${rows.length} of ${sums.entries} entries. `
+					+ `The totals cover all ${sums.entries}.</p>`
+				: ""}`;
 	}
 
 	function fillPickers(sums) {

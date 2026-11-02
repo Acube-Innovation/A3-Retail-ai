@@ -1,0 +1,378 @@
+{
+ "charts": [
+  {
+   "chart_name": "Job Cards by Status",
+   "label": "Job Cards by Status"
+  },
+  {
+   "chart_name": "Daily Job Card Trend",
+   "label": "Daily Job Card Trend"
+  },
+  {
+   "chart_name": "Repair Category Mix",
+   "label": "Repair Category Mix"
+  },
+  {
+   "chart_name": "EMI Funnel",
+   "label": "EMI Funnel"
+  },
+  {
+   "chart_name": "Footfall Trend",
+   "label": "Footfall Trend"
+  },
+  {
+   "chart_name": "Visit Outcomes",
+   "label": "Visit Outcomes"
+  },
+  {
+   "chart_name": "Stock Requests by Status",
+   "label": "Stock Requests by Status"
+  },
+  {
+   "chart_name": "Technician Productivity",
+   "label": "Technician Productivity"
+  },
+  {
+   "chart_name": "Complaint Categories",
+   "label": "Complaint Categories"
+  }
+ ],
+ "content": "[{\"id\": \"a252469be0\", \"type\": \"header\", \"data\": {\"text\": \"<span class='h4'>A3 Retail Home</span>\", \"col\": 12}}, {\"id\": \"39d2969645\", \"type\": \"header\", \"data\": {\"text\": \"<span class='h4'>Every Day</span>\", \"col\": 12}}, {\"id\": \"9ca12ec344\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Reception Desk\", \"col\": 3}}, {\"id\": \"e0628be4ec\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Technician Workbench\", \"col\": 3}}, {\"id\": \"1487efd45b\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Control Tower\", \"col\": 3}}, {\"id\": \"fed0b9c39a\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Stock Explorer\", \"col\": 3}}, {\"id\": \"0975c63754\", \"type\": \"header\", \"data\": {\"text\": \"<span class='h4'>The Counters</span>\", \"col\": 12}}, {\"id\": \"1b096c0dab\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Branch App\", \"col\": 3}}, {\"id\": \"185068e3f0\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Sales POS\", \"col\": 3}}, {\"id\": \"1780295fab\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Service POS\", \"col\": 3}}, {\"id\": \"587dca5020\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Bills\", \"col\": 3}}, {\"id\": \"482cd3d2c7\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"EMI Management\", \"col\": 3}}, {\"id\": \"3af5fc56ec\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Stock Control\", \"col\": 3}}, {\"id\": \"e56403de19\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Branch Reports\", \"col\": 3}}, {\"id\": \"50d3ca18ee\", \"type\": \"header\", \"data\": {\"text\": \"<span class='h4'>Sales</span>\", \"col\": 12}}, {\"id\": \"e24075da0b\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Sales Invoice\", \"col\": 3}}, {\"id\": \"1eca8eb5be\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"POS Invoice\", \"col\": 3}}, {\"id\": \"c0d902007f\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Quotation\", \"col\": 3}}, {\"id\": \"f231f2a931\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Offers\", \"col\": 3}}, {\"id\": \"9a955ece62\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Exchange\", \"col\": 3}}, {\"id\": \"d69a54712f\", \"type\": \"header\", \"data\": {\"text\": \"<span class='h4'>Service</span>\", \"col\": 12}}, {\"id\": \"e8b9648290\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Job Cards\", \"col\": 3}}, {\"id\": \"29939c8021\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Estimates\", \"col\": 3}}, {\"id\": \"c8e1ab1ed2\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Issue Types\", \"col\": 3}}, {\"id\": \"7f83becfb0\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"TAT Policies\", \"col\": 3}}, {\"id\": \"e745f08e6d\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Technicians\", \"col\": 3}}, {\"id\": \"9d30c07f0a\", \"type\": \"header\", \"data\": {\"text\": \"<span class='h4'>Finance & EMI</span>\", \"col\": 12}}, {\"id\": \"3b98a17a15\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Payment Entry\", \"col\": 3}}, {\"id\": \"e3c0d02f7e\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Purchase Invoice\", \"col\": 3}}, {\"id\": \"a96d682465\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"EMI Applications\", \"col\": 3}}, {\"id\": \"8f584eea64\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"EMI Schemes\", \"col\": 3}}, {\"id\": \"1362c5251a\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Financiers\", \"col\": 3}}, {\"id\": \"f3e78ec9df\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Financier Settlement\", \"col\": 3}}, {\"id\": \"4256b36d05\", \"type\": \"header\", \"data\": {\"text\": \"<span class='h4'>Stock</span>\", \"col\": 12}}, {\"id\": \"a443b207e2\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Stock Requests\", \"col\": 3}}, {\"id\": \"e6a4ebb8b5\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Purchase Receipt\", \"col\": 3}}, {\"id\": \"ec69ee99fb\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Damage Reports\", \"col\": 3}}, {\"id\": \"e4b327ef15\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Demurrage\", \"col\": 3}}, {\"id\": \"51b09cf5ec\", \"type\": \"header\", \"data\": {\"text\": \"<span class='h4'>Branch</span>\", \"col\": 12}}, {\"id\": \"109e4ef636\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Branch Profile\", \"col\": 3}}, {\"id\": \"3f2292fac8\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Footfall\", \"col\": 3}}, {\"id\": \"17eecbb7bb\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Incentive Runs\", \"col\": 3}}, {\"id\": \"ee902d8472\", \"type\": \"header\", \"data\": {\"text\": \"<span class='h4'>Customer Care</span>\", \"col\": 12}}, {\"id\": \"266bc3a3ad\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Tickets\", \"col\": 3}}, {\"id\": \"de8d4de4cc\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Feedback\", \"col\": 3}}, {\"id\": \"c50305e0aa\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Call Tasks\", \"col\": 3}}, {\"id\": \"9de6093124\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Campaigns\", \"col\": 3}}, {\"id\": \"1ae3694986\", \"type\": \"header\", \"data\": {\"text\": \"<span class='h4'>People & Assets</span>\", \"col\": 12}}, {\"id\": \"99f8a90e1f\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Attendance\", \"col\": 3}}, {\"id\": \"6559599ed4\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Payroll Entry\", \"col\": 3}}, {\"id\": \"f229a2ad10\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Incentive Schemes\", \"col\": 3}}, {\"id\": \"eeedbf5d5a\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Assets\", \"col\": 3}}, {\"id\": \"1da790bf3c\", \"type\": \"header\", \"data\": {\"text\": \"<span class='h4'>Your Numbers</span>\", \"col\": 12}}, {\"id\": \"47c78f3044\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Job Cards Received Today\", \"col\": 3}}, {\"id\": \"7e5b9df9d5\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Work In Progress\", \"col\": 3}}, {\"id\": \"03f0f0eca1\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Awaiting Parts\", \"col\": 3}}, {\"id\": \"4a74e33a4f\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Ready for Delivery\", \"col\": 3}}, {\"id\": \"ad1d8d20d5\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Delayed Job Cards\", \"col\": 3}}, {\"id\": \"5c1dbe6149\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Today's Sales\", \"col\": 3}}, {\"id\": \"0db5bfb6e5\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Month to Date Sales\", \"col\": 3}}, {\"id\": \"0b22f6a4c9\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Footfall Today\", \"col\": 3}}, {\"id\": \"b24b6990fd\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Converted Visits Today\", \"col\": 3}}, {\"id\": \"10782245a2\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"EMI Pending Approval\", \"col\": 3}}, {\"id\": \"306c01a4c6\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Financier Receivable\", \"col\": 3}}, {\"id\": \"6c55de56ac\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Stock Value\", \"col\": 3}}, {\"id\": \"ce97ff5f37\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Dead Stock Items\", \"col\": 3}}, {\"id\": \"d743e7f6ea\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Open Tickets\", \"col\": 3}}, {\"id\": \"c80a6afcb4\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"SLA Breached Tickets\", \"col\": 3}}, {\"id\": \"999019fffe\", \"type\": \"header\", \"data\": {\"text\": \"<span class='h4'>Trends</span>\", \"col\": 12}}, {\"id\": \"5b32014e9b\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Job Cards by Status\", \"col\": 12}}, {\"id\": \"db6b9550c1\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Daily Job Card Trend\", \"col\": 12}}, {\"id\": \"ce4d1706f9\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Repair Category Mix\", \"col\": 12}}, {\"id\": \"1fb2746655\", \"type\": \"chart\", \"data\": {\"chart_name\": \"EMI Funnel\", \"col\": 12}}, {\"id\": \"7519352cc1\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Footfall Trend\", \"col\": 12}}, {\"id\": \"4c3b2f553f\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Visit Outcomes\", \"col\": 12}}, {\"id\": \"d033b9d23b\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Stock Requests by Status\", \"col\": 12}}, {\"id\": \"4699474e7d\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Technician Productivity\", \"col\": 12}}, {\"id\": \"95c9890e02\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Complaint Categories\", \"col\": 12}}]",
+ "creation": "2026-10-03 16:11:58.401321",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "hide_custom": 0,
+ "icon": "getting-started",
+ "idx": 0,
+ "indicator_color": "green",
+ "is_hidden": 0,
+ "label": "A3 Retail Home",
+ "links": [],
+ "modified": "2026-10-03 16:15:40.305870",
+ "modified_by": "Administrator",
+ "module": "A3 Retail Dashboard",
+ "name": "A3 Retail Home",
+ "number_cards": [
+  {
+   "label": "Job Cards Received Today",
+   "number_card_name": "Job Cards Received Today"
+  },
+  {
+   "label": "Work In Progress",
+   "number_card_name": "Work In Progress"
+  },
+  {
+   "label": "Awaiting Parts",
+   "number_card_name": "Awaiting Parts"
+  },
+  {
+   "label": "Ready for Delivery",
+   "number_card_name": "Ready for Delivery"
+  },
+  {
+   "label": "Delayed Job Cards",
+   "number_card_name": "Delayed Job Cards"
+  },
+  {
+   "label": "Today's Sales",
+   "number_card_name": "Today's Sales"
+  },
+  {
+   "label": "Month to Date Sales",
+   "number_card_name": "Month to Date Sales"
+  },
+  {
+   "label": "Footfall Today",
+   "number_card_name": "Footfall Today"
+  },
+  {
+   "label": "Converted Visits Today",
+   "number_card_name": "Converted Visits Today"
+  },
+  {
+   "label": "EMI Pending Approval",
+   "number_card_name": "EMI Pending Approval"
+  },
+  {
+   "label": "Financier Receivable",
+   "number_card_name": "Financier Receivable"
+  },
+  {
+   "label": "Stock Value",
+   "number_card_name": "Stock Value"
+  },
+  {
+   "label": "Dead Stock Items",
+   "number_card_name": "Dead Stock Items"
+  },
+  {
+   "label": "Open Tickets",
+   "number_card_name": "Open Tickets"
+  },
+  {
+   "label": "SLA Breached Tickets",
+   "number_card_name": "SLA Breached Tickets"
+  }
+ ],
+ "owner": "Administrator",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [],
+ "sequence_id": 1.0,
+ "shortcuts": [
+  {
+   "doc_view": "",
+   "label": "Reception Desk",
+   "link_to": "a3-reception-desk",
+   "type": "Page"
+  },
+  {
+   "doc_view": "",
+   "label": "Technician Workbench",
+   "link_to": "a3-technician-workbench",
+   "type": "Page"
+  },
+  {
+   "doc_view": "",
+   "label": "Control Tower",
+   "link_to": "a3-control-tower",
+   "type": "Page"
+  },
+  {
+   "doc_view": "",
+   "label": "Stock Explorer",
+   "link_to": "a3-stock-explorer",
+   "type": "Page"
+  },
+  {
+   "doc_view": "",
+   "label": "Branch App",
+   "type": "URL",
+   "url": "/retail/dashboard"
+  },
+  {
+   "doc_view": "",
+   "label": "Sales POS",
+   "type": "URL",
+   "url": "/retail/sales"
+  },
+  {
+   "doc_view": "",
+   "label": "Service POS",
+   "type": "URL",
+   "url": "/retail/service"
+  },
+  {
+   "doc_view": "",
+   "label": "Bills",
+   "type": "URL",
+   "url": "/retail/bills"
+  },
+  {
+   "doc_view": "",
+   "label": "EMI Management",
+   "type": "URL",
+   "url": "/retail/emi"
+  },
+  {
+   "doc_view": "",
+   "label": "Stock Control",
+   "type": "URL",
+   "url": "/retail/stock"
+  },
+  {
+   "doc_view": "",
+   "label": "Branch Reports",
+   "type": "URL",
+   "url": "/retail/reports"
+  },
+  {
+   "doc_view": "",
+   "label": "Sales Invoice",
+   "link_to": "Sales Invoice",
+   "type": "DocType"
+  },
+  {
+   "doc_view": "",
+   "label": "POS Invoice",
+   "link_to": "POS Invoice",
+   "type": "DocType"
+  },
+  {
+   "doc_view": "",
+   "label": "Quotation",
+   "link_to": "Quotation",
+   "type": "DocType"
+  },
+  {
+   "doc_view": "",
+   "label": "Offers",
+   "link_to": "Seasonal Offer Campaign",
+   "type": "DocType"
+  },
+  {
+   "doc_view": "",
+   "label": "Exchange",
+   "link_to": "Device Exchange",
+   "type": "DocType"
+  },
+  {
+   "doc_view": "",
+   "label": "Job Cards",
+   "link_to": "Service Job Card",
+   "type": "DocType"
+  },
+  {
+   "doc_view": "",
+   "label": "Estimates",
+   "link_to": "Service Estimate",
+   "type": "DocType"
+  },
+  {
+   "doc_view": "",
+   "label": "Issue Types",
+   "link_to": "Service Issue Type",
+   "type": "DocType"
+  },
+  {
+   "doc_view": "",
+   "label": "TAT Policies",
+   "link_to": "Service TAT Policy",
+   "type": "DocType"
+  },
+  {
+   "doc_view": "",
+   "label": "Technicians",
+   "link_to": "Technician Profile",
+   "type": "DocType"
+  },
+  {
+   "doc_view": "",
+   "label": "Payment Entry",
+   "link_to": "Payment Entry",
+   "type": "DocType"
+  },
+  {
+   "doc_view": "",
+   "label": "Purchase Invoice",
+   "link_to": "Purchase Invoice",
+   "type": "DocType"
+  },
+  {
+   "doc_view": "",
+   "label": "EMI Applications",
+   "link_to": "EMI Application",
+   "type": "DocType"
+  },
+  {
+   "doc_view": "",
+   "label": "EMI Schemes",
+   "link_to": "EMI Scheme",
+   "type": "DocType"
+  },
+  {
+   "doc_view": "",
+   "label": "Financiers",
+   "link_to": "Finance Partner",
+   "type": "DocType"
+  },
+  {
+   "doc_view": "",
+   "label": "Financier Settlement",
+   "link_to": "Financier Settlement",
+   "type": "DocType"
+  },
+  {
+   "doc_view": "",
+   "label": "Stock Requests",
+   "link_to": "Stock Request",
+   "type": "DocType"
+  },
+  {
+   "doc_view": "",
+   "label": "Purchase Receipt",
+   "link_to": "Purchase Receipt",
+   "type": "DocType"
+  },
+  {
+   "doc_view": "",
+   "label": "Damage Reports",
+   "link_to": "Stock Damage Report",
+   "type": "DocType"
+  },
+  {
+   "doc_view": "",
+   "label": "Demurrage",
+   "link_to": "Demurrage Charge",
+   "type": "DocType"
+  },
+  {
+   "doc_view": "",
+   "label": "Branch Profile",
+   "link_to": "Branch Profile",
+   "type": "DocType"
+  },
+  {
+   "doc_view": "",
+   "label": "Footfall",
+   "link_to": "Branch Visit Log",
+   "type": "DocType"
+  },
+  {
+   "doc_view": "",
+   "label": "Incentive Runs",
+   "link_to": "Incentive Calculation Run",
+   "type": "DocType"
+  },
+  {
+   "doc_view": "",
+   "label": "Tickets",
+   "link_to": "Issue",
+   "type": "DocType"
+  },
+  {
+   "doc_view": "",
+   "label": "Feedback",
+   "link_to": "Customer Feedback",
+   "type": "DocType"
+  },
+  {
+   "doc_view": "",
+   "label": "Call Tasks",
+   "link_to": "Call Task",
+   "type": "DocType"
+  },
+  {
+   "doc_view": "",
+   "label": "Campaigns",
+   "link_to": "Telecalling Campaign",
+   "type": "DocType"
+  },
+  {
+   "doc_view": "",
+   "label": "Attendance",
+   "link_to": "Attendance",
+   "type": "DocType"
+  },
+  {
+   "doc_view": "",
+   "label": "Payroll Entry",
+   "link_to": "Payroll Entry",
+   "type": "DocType"
+  },
+  {
+   "doc_view": "",
+   "label": "Incentive Schemes",
+   "link_to": "Employee Incentive Scheme",
+   "type": "DocType"
+  },
+  {
+   "doc_view": "",
+   "label": "Assets",
+   "link_to": "Asset",
+   "type": "DocType"
+  }
+ ],
+ "title": "A3 Retail Home"
+}

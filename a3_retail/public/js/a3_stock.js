@@ -14,6 +14,10 @@ window.STOCK = (function () {
 	const state = {
 		branch: "", boot: null, filters: {}, page: 1, tab: "overview", sub: "incoming",
 		rows: [], work: null,
+		// The item whose network window is open, for its IMEI tab.
+		networkItem: null,
+		// This branch's warranty shelf and what is on it; null where none is kept.
+		warrantyShelf: null, stockSub: "",
 	};
 	const $ = (id) => document.getElementById(id);
 
@@ -55,6 +59,7 @@ window.STOCK = (function () {
 			"In Transit": "pill-warn", "Partially Received": "pill-warn",
 			"Out of Stock": "pill-bad", "Rejected": "pill-bad", "Cancelled": "pill-bad",
 			"Incoming": "pill-purple", "Reserved": "pill-sky", "Draft": "pill-sky",
+			"Warranty Return": "pill-fuchsia",
 		}[status] || "pill-sky";
 	}
 
@@ -79,7 +84,8 @@ window.STOCK = (function () {
 
 	// ------------------------------------------------------------- loading
 	async function loadAll() {
-		await Promise.all([loadKpis(), loadStock(1), loadTab(state.tab), loadSide()]);
+		await Promise.all([loadKpis(), loadStock(1), loadTab(state.tab), loadSide(),
+			loadWarranty()]);
 		$("as-of").textContent = "Updated " + new Date().toLocaleTimeString("en-IN",
 			{ hour: "2-digit", minute: "2-digit" });
 	}
@@ -100,6 +106,8 @@ window.STOCK = (function () {
 			node.addEventListener("click", () => {
 				const card = kpis[node.dataset.kpi];
 				if (card.filter) {
+					// The cards count stock for sale, so they lead back to it.
+					if (state.filters.view === "warranty") showWarranty(false, false);
 					Object.assign(state.filters, card.filter);
 					$("status").value = card.filter.status || "all";
 					loadStock(1);
@@ -117,6 +125,34 @@ window.STOCK = (function () {
 		});
 	}
 
+	/** The Warranty Returns button: there only where a warranty shelf is kept,
+	 *  with how many faulty units are waiting on it. */
+	async function loadWarranty() {
+		const shelf = await A3.call("a3_retail.api.stock_control.warranty_returns", {})
+			.catch(() => null);
+		state.warrantyShelf = shelf;
+		$("warranty-btn").hidden = !shelf;
+		if (!shelf) return;
+		$("warranty-count").hidden = !(shelf.units > 0);
+		$("warranty-count").textContent = qty(shelf.units);
+		$("warranty-btn").title = shelf.units > 0
+			? `${qty(shelf.units)} faulty ${shelf.units === 1 ? "unit" : "units"} of `
+				+ `${shelf.items} ${shelf.items === 1 ? "item" : "items"} waiting for the dealer`
+			: "Nothing waiting for the dealer";
+	}
+
+	/** Live Stock or Warranty Returns — the same table, over a different shelf. */
+	function showWarranty(on, reload = true) {
+		state.filters.view = on ? "warranty" : "";
+		$("warranty-btn").classList.toggle("is-active", on);
+		$("stock-title").textContent = on ? "Warranty Returns" : "Live Stock";
+		if (!state.stockSub) state.stockSub = $("stock-sub").textContent;
+		$("stock-sub").textContent = on && state.warrantyShelf
+			? `Faulty goods on ${state.warrantyShelf.warehouse}, waiting for the dealer`
+			: state.stockSub;
+		if (reload) loadStock(1);
+	}
+
 	async function loadStock(page) {
 		state.page = page || state.page;
 		$("stock-wrap").innerHTML = '<div class="pos-loading">Reading the shelf…</div>';
@@ -124,20 +160,29 @@ window.STOCK = (function () {
 		const data = await A3.call("a3_retail.api.stock_control.live_stock",
 			{ filters: state.filters, page: state.page, page_size: 25 });
 		state.rows = data.rows;
+		const warranty = state.filters.view === "warranty";
 
 		if (!data.rows.length) {
-			$("stock-wrap").innerHTML = `<div class="rep-empty"><b>No stock matches that</b>
-				<span>Try clearing the filters, or ask another branch.</span></div>`;
+			$("stock-wrap").innerHTML = warranty
+				? `<div class="rep-empty"><b>Nothing waiting for the dealer</b>
+					<span>Accessories replaced at a counter and sent here show up in this list.</span></div>`
+				: `<div class="rep-empty"><b>No stock matches that</b>
+					<span>Try clearing the filters, or ask another branch.</span></div>`;
 			$("showing").textContent = "";
 			$("pager").innerHTML = "";
 			return;
 		}
 
+		// Faulty stock is not for sale, reserving, ordering or reordering, so the
+		// four quantities give way to the one that matters: how many came back.
+		const amounts = warranty
+			? '<th class="num">Warranty Return</th>'
+			: `<th class="num">Available</th><th class="num">Reserved</th>
+				<th class="num">Incoming</th><th class="num">Reorder</th>`;
 		$("stock-wrap").innerHTML = `<table class="bill-table stk-table">
 			<thead><tr>
 				<th>Item</th><th>SKU</th><th>Group</th><th>Brand</th><th>Warehouse</th>
-				<th class="num">Available</th><th class="num">Reserved</th><th class="num">Incoming</th>
-				<th class="num">Reorder</th><th>Status</th><th>Network</th><th>Actions</th>
+				${amounts}<th>Status</th><th>Network</th><th>Actions</th>
 			</tr></thead>
 			<tbody>${data.rows.map((row, index) => `
 				<tr>
@@ -147,15 +192,18 @@ window.STOCK = (function () {
 					<td>${esc(row.item_group || "—")}</td>
 					<td>${esc(row.brand || "—")}</td>
 					<td class="nowrap">${esc(row.warehouse)}</td>
-					<td class="num strong">${qty(row.available)}</td>
-					<td class="num">${qty(row.reserved_qty)}</td>
-					<td class="num">${qty(row.incoming)}</td>
-					<td class="num">${qty(row.reorder_level)}</td>
+					${warranty
+						? `<td class="num strong">${qty(row.warranty_return)}</td>`
+						: `<td class="num strong">${qty(row.available)}</td>
+							<td class="num">${qty(row.reserved_qty)}</td>
+							<td class="num">${qty(row.incoming)}</td>
+							<td class="num">${qty(row.reorder_level)}</td>`}
 					<td><span class="pill ${tone(row.status)}">${esc(row.status)}</span></td>
 					<td><button class="linkish" data-network="${index}">${
 						row.branches ? row.branches + " branches" : "Only here"}</button></td>
 					<td class="bill-actions">
-						<button class="btn btn-outline btn-sm" data-ask="${index}">Request</button>
+						${warranty ? ""
+							: `<button class="btn btn-outline btn-sm" data-ask="${index}">Request</button>`}
 						<button class="btn btn-quiet btn-sm" data-edit="${index}">Edit</button>
 					</td>
 				</tr>`).join("")}</tbody>
@@ -516,6 +564,13 @@ window.STOCK = (function () {
 	// ------------------------------------------------------------- network
 	async function showNetwork(row) {
 		$("network-body").innerHTML = '<div class="pos-loading">Looking across the branches…</div>';
+		// Every item opens on its branches; the IMEI tab is only there for an
+		// item that is tracked by IMEI, and loads when it is first asked for.
+		state.networkItem = row;
+		$("network-imei").innerHTML = "";
+		$("network-imei").dataset.item = "";
+		$("network-views").hidden = !row.has_serial;
+		showNetworkView("branches");
 		$("network-modal").hidden = false;
 
 		const data = await A3.call("a3_retail.api.stock_control.network",
@@ -549,6 +604,55 @@ window.STOCK = (function () {
 				openRequest(row, branch.branch);
 			});
 		});
+	}
+
+	/** Branches and IMEI are two tabs over the same item. */
+	async function showNetworkView(view) {
+		$("network-views").querySelectorAll("[data-view]").forEach((button) => {
+			button.classList.toggle("is-active", button.dataset.view === view);
+		});
+		$("network-body").hidden = view !== "branches";
+		$("network-imei").hidden = view !== "imei";
+
+		const item = state.networkItem && state.networkItem.item_code;
+		if (view !== "imei" || !item || $("network-imei").dataset.item === item) return;
+
+		$("network-imei").dataset.item = item;
+		$("network-imei").innerHTML = '<div class="pos-loading">Finding every handset…</div>';
+		try {
+			const data = await A3.call("a3_retail.api.stock_control.network_serials",
+				{ item_code: item });
+			// Another item may have been opened while this one was loading.
+			if ($("network-imei").dataset.item === item) paintImeis(data);
+		} catch (error) {
+			$("network-imei").dataset.item = "";
+			$("network-imei").innerHTML = `<div class="rep-empty"><b>Could not list the IMEIs</b>
+				<span>${esc(error.message)}</span></div>`;
+		}
+	}
+
+	function paintImeis(data) {
+		const rows = data.rows || [];
+		// A second IMEI column only when some handset actually has one.
+		const second = rows.some((row) => row.imei_2);
+		$("network-imei").innerHTML = `
+			<div class="stk-imei-item"><b>${esc(data.item_name || data.item_code)}</b>
+				<span>${rows.length} ${rows.length === 1 ? "handset" : "handsets"} on the shelf
+					across the network${data.truncated ? ` (the first ${rows.length})` : ""}</span></div>
+			${rows.length ? `<table class="bill-table">
+				<thead><tr><th class="num">#</th><th>IMEI</th>${second ? "<th>IMEI 2</th>" : ""}
+					<th>Branch</th><th>Warehouse</th><th>Received</th></tr></thead>
+				<tbody>${rows.map((row, index) => `<tr>
+					<td class="num">${index + 1}</td>
+					<td class="stk-imei">${esc(row.imei)}</td>
+					${second ? `<td class="stk-imei">${row.imei_2 ? esc(row.imei_2) : "—"}</td>` : ""}
+					<td><b>${esc(row.branch)}</b>${row.is_mine
+						? ' <span class="pill pill-sky">This branch</span>' : ""}</td>
+					<td class="nowrap">${esc(row.warehouse)}</td>
+					<td class="nowrap">${esc(day(row.received_on))}</td>
+				</tr>`).join("")}</tbody>
+			</table>` : `<div class="rep-empty"><b>No handset is on a shelf</b>
+				<span>Every unit of this item has been sold or moved out.</span></div>`}`;
 	}
 
 	// --------------------------------------------------------------- work
@@ -1425,13 +1529,16 @@ window.STOCK = (function () {
 			});
 		});
 		$("clear").addEventListener("click", () => {
-			state.filters = {};
+			// Clearing the boxes keeps whichever shelf is being looked at.
+			state.filters = { view: state.filters.view || "" };
 			["q", "item-group", "brand", "warehouse"].forEach((id) => { $(id).value = ""; });
 			$("status").value = "all";
 			$("kind").value = "all";
 			loadStock(1);
 			loadKpis();
 		});
+		$("warranty-btn").addEventListener("click", () =>
+			showWarranty(state.filters.view !== "warranty"));
 
 		$("tabs").addEventListener("click", (event) => {
 			const tab = event.target.closest(".tab");
@@ -1477,6 +1584,10 @@ window.STOCK = (function () {
 		$("refresh").addEventListener("click", () => { loadAll(); toast("Refreshed."); });
 
 		$("item-save").addEventListener("click", saveItem);
+		$("network-views").addEventListener("click", (event) => {
+			const button = event.target.closest("[data-view]");
+			if (button) showNetworkView(button.dataset.view);
+		});
 		document.querySelectorAll("[data-close]").forEach((node) => {
 			node.addEventListener("click", () => { node.closest(".modal").hidden = true; });
 		});

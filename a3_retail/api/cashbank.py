@@ -99,7 +99,8 @@ def transactions(limit: int = 40, account: str | None = None, filters=None) -> d
 	employee = _me()
 	centres = _branch_cost_centres(employee.branch)
 	if not centres:
-		return {"branch": employee.branch, "rows": []}
+		return {"branch": employee.branch, "rows": [],
+		        "totals": {"in": 0.0, "out": 0.0, "net": 0.0, "entries": 0}}
 
 	data = frappe.parse_json(filters) if isinstance(filters, str) else (filters or {})
 	conditions = ["gle.is_cancelled = 0", "gle.cost_center in %(centres)s",
@@ -118,6 +119,7 @@ def transactions(limit: int = 40, account: str | None = None, filters=None) -> d
 		                  " or gle.remarks like %(q)s or gle.against like %(q)s)")
 		values["q"] = f"%{query}%"
 
+	where = " and ".join(conditions)
 	rows = frappe.db.sql(
 		f"""
 		select gle.posting_date, gle.account, acc.account_name, acc.account_type,
@@ -125,7 +127,7 @@ def transactions(limit: int = 40, account: str | None = None, filters=None) -> d
 		       gle.against, gle.remarks
 		from `tabGL Entry` gle
 		join `tabAccount` acc on acc.name = gle.account
-		where {" and ".join(conditions)}
+		where {where}
 		order by gle.posting_date desc, gle.creation desc
 		limit %(limit)s
 		""",
@@ -137,7 +139,23 @@ def transactions(limit: int = 40, account: str | None = None, filters=None) -> d
 		row["credit"] = flt(row["credit"])
 		row["direction"] = "in" if row["debit"] > 0 else "out"
 		row["amount"] = row["debit"] or row["credit"]
-	return {"branch": employee.branch, "rows": rows}
+
+	# Over the whole window, not the page on screen: the list stops at `limit`,
+	# and a total that quietly left out the older entries would not reconcile.
+	sums = frappe.db.sql(
+		f"""
+		select count(*) as entries, sum(gle.debit) as money_in, sum(gle.credit) as money_out
+		from `tabGL Entry` gle
+		join `tabAccount` acc on acc.name = gle.account
+		where {where}
+		""",
+		values, as_dict=True,
+	)[0]
+	money_in, money_out = flt(sums.money_in, 2), flt(sums.money_out, 2)
+	return {"branch": employee.branch, "rows": rows, "totals": {
+		"in": money_in, "out": money_out, "net": flt(money_in - money_out, 2),
+		"entries": cint(sums.entries),
+	}}
 
 
 @frappe.whitelist()

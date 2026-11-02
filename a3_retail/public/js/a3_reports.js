@@ -197,8 +197,27 @@ window.REPORTS = (function () {
 
 	function paintFilters() {
 		const filters = state.definition.filters || [];
+		const has = (fieldname) => filters.some((filter) => filter.fieldname === fieldname);
+		// From and To are one range, so the calendar offers whole spans on either.
+		const range = (filter) => {
+			if (filter.fieldname === "from_date" && has("to_date")) return ' data-range-to="rf-to_date"';
+			if (filter.fieldname === "to_date" && has("from_date")) return ' data-range-from="rf-from_date"';
+			return "";
+		};
 		$("rep-filters").innerHTML = filters.map((filter) => {
 			const value = state.filters[filter.fieldname] || "";
+			if (filter.fieldtype === "Check") {
+				return `<label class="field check-field"><span>${esc(filter.label)}</span>
+					<span class="check-inline"><input type="checkbox"
+						data-filter="${esc(filter.fieldname)}"${value ? " checked" : ""}>
+						${esc(filter.label)}</span></label>`;
+			}
+			if (filter.fieldtype === "MultiSelectList") {
+				return `<label class="field"><span>${esc(filter.label)}</span>
+					<button type="button" class="dp-face${value.length ? "" : " is-empty"}"
+						data-multi="${esc(filter.fieldname)}">${esc(multiLabel(filter, value))}</button>
+					</label>`;
+			}
 			if (filter.fieldtype === "Select") {
 				const options = (filter.options || "").split("\n").filter(Boolean);
 				return `<label class="field"><span>${esc(filter.label)}</span>
@@ -213,6 +232,7 @@ window.REPORTS = (function () {
 			const locked = filter.fieldname === "branch" && state.definition.branch_locked;
 			return `<label class="field"><span>${esc(filter.label)}</span>
 				<input type="${type}" data-filter="${esc(filter.fieldname)}"
+				       id="rf-${esc(filter.fieldname)}"${range(filter)}
 				       value="${esc(locked ? state.definition.branch : value)}"
 				       ${locked ? "disabled title=\"You see your own branch\"" : ""}
 				       placeholder="${filter.fieldtype === "Link" ? "Any " + esc(filter.options || "") : ""}">
@@ -221,9 +241,84 @@ window.REPORTS = (function () {
 
 		$("rep-filters").querySelectorAll("[data-filter]").forEach((node) => {
 			node.addEventListener("change", () => {
-				state.filters[node.dataset.filter] = node.value;
+				if (node.type !== "checkbox") {
+					state.filters[node.dataset.filter] = node.value;
+					return;
+				}
+				// A tick changes what the report shows rather than what it looks
+				// for, so it takes effect at once instead of waiting for Apply.
+				state.filters[node.dataset.filter] = node.checked ? 1 : 0;
+				runReport();
 			});
 		});
+		$("rep-filters").querySelectorAll("[data-multi]").forEach((node) => {
+			const filter = filters.find((row) => row.fieldname === node.dataset.multi);
+			node.addEventListener("click", () => pickMany(filter, node));
+		});
+	}
+
+	/** "All brands", one name, two names, or how many — whatever fits the box. */
+	function multiLabel(filter, chosen) {
+		const label = String(filter.label || "").toLowerCase();
+		if (!chosen || !chosen.length) return "All " + label;
+		if (chosen.length <= 2) return chosen.join(", ");
+		return `${chosen.length} ${label}`;
+	}
+
+	/** Tick any number of values from the filter's list — brands, say. Nothing
+	 *  changes until Done, and Apply runs the report as with every other box. */
+	function pickMany(filter, face) {
+		const chosen = new Set(state.filters[filter.fieldname] || []);
+		const modal = document.createElement("div");
+		modal.className = "modal";
+		modal.innerHTML = `
+			<div class="modal-card">
+				<h3>${esc(filter.label)}</h3>
+				<p class="modal-note">Leave everything unticked for all of them.</p>
+				<input type="search" placeholder="Search ${esc(String(filter.label).toLowerCase())}"
+				       autocomplete="off">
+				<div class="ms-list">${(filter.choices || []).map((choice) => `
+					<label class="ms-row"><input type="checkbox" value="${esc(choice)}"${
+						chosen.has(choice) ? " checked" : ""}> <span>${esc(choice)}</span></label>`)
+					.join("") || '<p class="muted">Nothing to choose from.</p>'}</div>
+				<div class="modal-actions">
+					<button type="button" class="btn btn-quiet" data-clear>Clear</button>
+					<span class="fs-gap"></span>
+					<button type="button" class="btn btn-quiet" data-cancel>Cancel</button>
+					<button type="button" class="btn btn-primary" data-done>Done</button>
+				</div>
+			</div>`;
+		document.body.appendChild(modal);
+
+		const search = modal.querySelector('input[type="search"]');
+		search.addEventListener("input", () => {
+			const typed = search.value.trim().toLowerCase();
+			modal.querySelectorAll(".ms-row").forEach((row) => {
+				row.hidden = typed && !row.textContent.toLowerCase().includes(typed);
+			});
+		});
+		modal.querySelectorAll('.ms-row input').forEach((box) => {
+			box.addEventListener("change", () => {
+				if (box.checked) chosen.add(box.value); else chosen.delete(box.value);
+			});
+		});
+		modal.addEventListener("click", (event) => {
+			if (event.target.closest("[data-clear]")) {
+				chosen.clear();
+				modal.querySelectorAll(".ms-row input").forEach((box) => { box.checked = false; });
+				return;
+			}
+			if (event.target.closest("[data-done]")) {
+				// In the list's own order, not the order they were ticked.
+				const picked = (filter.choices || []).filter((choice) => chosen.has(choice));
+				state.filters[filter.fieldname] = picked;
+				face.textContent = multiLabel(filter, picked);
+				face.classList.toggle("is-empty", !picked.length);
+				return modal.remove();
+			}
+			if (event.target.closest("[data-cancel]") || event.target === modal) modal.remove();
+		});
+		search.focus();
 	}
 
 	async function runReport() {
@@ -231,6 +326,8 @@ window.REPORTS = (function () {
 		$("chart").innerHTML = "";
 		$("table-wrap").innerHTML = '<div class="pos-loading">Running the report…</div>';
 		$("table-foot").innerHTML = "";
+		$("summary-panel").hidden = true;
+		$("table-head").hidden = true;
 
 		try {
 			state.result = await A3.call("a3_retail.api.reports.run",
@@ -265,8 +362,7 @@ window.REPORTS = (function () {
 		$("kpis").innerHTML = result.kpis.map((kpi) => `
 			<div class="ctile">
 				<div class="ctile-label">${esc(kpi.label)}</div>
-				<div class="ctile-value">${kpi.fieldtype === "Currency"
-					? money(kpi.value) : number(kpi.value)}</div>
+				<div class="ctile-value">${kpiValue(kpi)}</div>
 			</div>`).join("");
 
 		$("chart").innerHTML = result.chart ? chartMarkup(result.chart) : "";
@@ -278,9 +374,28 @@ window.REPORTS = (function () {
 			return;
 		}
 
+		// Two tables only when the report summarised its rows; each gets a title
+		// then, so it is clear which is the summary and which the detail.
+		const summary = result.summary;
+		$("summary-panel").hidden = !summary;
+		$("table-head").hidden = !(summary && summary.detail_title);
+		if (summary) {
+			$("summary-title").textContent = summary.title;
+			$("summary-wrap").innerHTML = tableMarkup(summary);
+			$("table-title").textContent = summary.detail_title;
+		}
+
 		$("table-wrap").innerHTML = tableMarkup(result);
 		$("table-foot").innerHTML =
 			`<span>${number(result.row_count)} ${result.row_count === 1 ? "row" : "rows"}</span>`;
+	}
+
+	/** A number box in its own kind: money, a percentage, a count, or a name. */
+	function kpiValue(kpi) {
+		if (kpi.fieldtype === "Currency") return money(kpi.value);
+		if (kpi.fieldtype === "Percent") return Number(kpi.value || 0).toFixed(1) + "%";
+		if (kpi.fieldtype === "Data") return esc(kpi.value);
+		return number(kpi.value);
 	}
 
 	function metaRow(label, value) {
@@ -322,8 +437,7 @@ window.REPORTS = (function () {
 					if (index === 0) return '<td class="rep-total-label">Total</td>';
 					const total = result.totals[column.fieldname];
 					return `<td class="${isNumeric(column) ? "num" : ""}">${
-						total == null ? "" : (column.fieldtype === "Currency"
-							? money(total) : number(total))}</td>`;
+						total == null ? "" : cell({ value: total }, { ...column, fieldname: "value" })}</td>`;
 				}).join("")}
 			</tr></tfoot>
 		</table>`;
@@ -365,10 +479,19 @@ window.REPORTS = (function () {
 		if (!result || !result.rows.length) return toast("Nothing to print yet.", "error");
 
 		const landscape = result.columns.length > 6;
+		const shown = (filter) => {
+			const value = state.filters[filter.fieldname];
+			if (filter.fieldtype === "Check") return "Yes";
+			return Array.isArray(value) ? value.join(", ") : value;
+		};
 		const applied = (state.definition.filters || [])
-			.filter((filter) => state.filters[filter.fieldname])
-			.map((filter) => `${filter.label}: ${state.filters[filter.fieldname]}`)
+			.filter((filter) => {
+				const value = state.filters[filter.fieldname];
+				return Array.isArray(value) ? value.length : value;
+			})
+			.map((filter) => `${filter.label}: ${shown(filter)}`)
 			.join(" · ");
+		const summary = result.summary;
 
 		const win = window.open("", "_blank");
 		win.document.write(`<!doctype html>
@@ -382,6 +505,8 @@ window.REPORTS = (function () {
 				.brand .sub { font-size: 9px; letter-spacing: .12em; color: #8b93a1; }
 				.meta { text-align: right; font-size: 10px; color: #5b6472; }
 				h2 { margin: 0 0 2px; font-size: 15px; }
+				h3 { margin: 14px 0 6px; font-size: 11px; text-transform: uppercase;
+					letter-spacing: .08em; color: #5b6472; }
 				.desc { margin: 0 0 10px; color: #5b6472; }
 				.kpis { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
 				.kpi { border: 1px solid #e6e9ef; border-radius: 6px; padding: 6px 10px; min-width: 110px; }
@@ -412,8 +537,10 @@ window.REPORTS = (function () {
 			<p class="desc">${esc(state.definition.description || "")}<br>
 				<b>Period:</b> ${periodLabel()}${applied ? ` &nbsp;·&nbsp; ${esc(applied)}` : ""}</p>
 			<div class="kpis">${result.kpis.map((kpi) => `<div class="kpi">
-				<b>${kpi.fieldtype === "Currency" ? money(kpi.value) : number(kpi.value)}</b>
+				<b>${kpiValue(kpi)}</b>
 				<span>${esc(kpi.label)}</span></div>`).join("")}</div>
+			${summary ? `<h3>${esc(summary.title)}</h3>${tableMarkup(summary)}
+				<h3>${esc(summary.detail_title)}</h3>` : ""}
 			${tableMarkup(result)}
 			<div class="foot"><span>A3 Retail · ${esc(result.report)}</span>
 				<span>${esc(result.generated_on)}</span></div>`);

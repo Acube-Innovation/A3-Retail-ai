@@ -19,9 +19,21 @@ from frappe.utils import cint, flt, formatdate, getdate, nowdate
 
 from a3_retail.api import require_permission
 from a3_retail.api.staff import _me
+from a3_retail.api.stock import WARRANTY_SHELVES
 from a3_retail.utils import tax
 
 LOW_STOCK_FLOOR = 5
+
+# Correcting a shelf by hand is head office's call. No branch — Sales,
+# Accessories, Service or Distribution — adjusts its own count; it reports the
+# miscount and the admin corrects it. Held by role rather than by the
+# Stock Reconciliation permission, which a desk grant can widen without anyone
+# meaning to open this button to every counter.
+ADJUST_ROLES = {"A3 Retail Admin", "System Manager"}
+
+
+def _can_adjust() -> bool:
+	return bool(ADJUST_ROLES & set(frappe.get_roles()))
 
 
 def _branch() -> str:
@@ -113,7 +125,8 @@ def bootstrap() -> dict:
 			"request": bool(frappe.has_permission("Stock Request", "create")),
 			"approve": bool(frappe.has_permission("Stock Request", "submit")),
 			"transfer": bool(frappe.has_permission("Stock Entry", "create")),
-			"adjust": bool(frappe.has_permission("Stock Reconciliation", "create")),
+			"adjust": _can_adjust()
+			and bool(frappe.has_permission("Stock Reconciliation", "create")),
 			# Goods in before the bill — a service counter signs for parts it
 			# is sent long before the distributor invoices them.
 			"receive": bool(frappe.has_permission("Purchase Receipt", "create")),
@@ -132,9 +145,26 @@ def bootstrap() -> dict:
 # ---------------------------------------------------------------------------
 # Live stock
 # ---------------------------------------------------------------------------
+def _warranty_shelf(branch: str) -> str | None:
+	"""Where this branch keeps faulty goods waiting for the dealer, if it does.
+
+	The shelf belongs to no branch, so none of the branch's sellable figures —
+	here, at the POS, in the network view — ever count what is on it. Only the
+	branch whose profile names it sees it, and only in the Warranty Returns view.
+	"""
+	return frappe.db.get_value("Branch Profile", {"branch": branch},
+	                           "warranty_returns_warehouse") or None
+
+
 def _stock_conditions(data: dict, branch: str) -> tuple[str, dict]:
-	conditions = ["i.disabled = 0", "w.custom_branch = %(branch)s"]
-	values = {"branch": branch, "floor": LOW_STOCK_FLOOR}
+	if data.get("view") == "warranty":
+		# Faulty goods on the branch's warranty shelf, in place of its own stock;
+		# a branch with no such shelf has nothing to show here.
+		conditions = ["i.disabled = 0", "b.warehouse = %(shelf)s", "b.actual_qty > 0"]
+		values = {"shelf": _warranty_shelf(branch) or "", "floor": LOW_STOCK_FLOOR}
+	else:
+		conditions = ["i.disabled = 0", "w.custom_branch = %(branch)s"]
+		values = {"branch": branch, "floor": LOW_STOCK_FLOOR}
 
 	if data.get("query"):
 		# Searching stock by the handset it fits, the same as the counter does.
@@ -225,12 +255,14 @@ def live_stock(filters=None, page: int = 1, page_size: int = 25) -> dict:
 		values,
 	)[0][0]
 
+	warranty = data.get("view") == "warranty"
 	for row in rows:
-		row["status"] = _status(row)
+		row["status"] = "Warranty Return" if warranty else _status(row)
+		row["warranty_return"] = flt(row["actual_qty"]) if warranty else 0
 		row["branches"] = _branches_holding(row["item_code"], employee.branch)
 
 	status = data.get("status") or "all"
-	if status != "all":
+	if status != "all" and not warranty:
 		rows = [row for row in rows if row["status"] == status]
 
 	return {
@@ -238,6 +270,22 @@ def live_stock(filters=None, page: int = 1, page_size: int = 25) -> dict:
 		"pages": max(1, -(-total // size)),
 		"showing": [(page - 1) * size + 1 if total else 0, min(page * size, total)],
 	}
+
+
+@frappe.whitelist()
+def warranty_returns() -> dict | None:
+	"""How many faulty units are waiting on this branch's warranty shelf.
+
+	None for a branch that keeps no such shelf, so the page offers no button.
+	"""
+	employee = _me()
+	shelf = _warranty_shelf(employee.branch)
+	if not shelf:
+		return None
+	row = frappe.db.sql(
+		"""select count(*) as item_lines, ifnull(sum(actual_qty), 0) as units
+		   from `tabBin` where warehouse = %s and actual_qty > 0""", shelf, as_dict=True)[0]
+	return {"warehouse": shelf, "items": cint(row.item_lines), "units": flt(row.units)}
 
 
 def _branches_holding(item_code: str, branch: str) -> int:
@@ -259,6 +307,8 @@ def kpis(filters=None) -> dict:
 	require_permission("Item", "read")
 
 	data = frappe.parse_json(filters) if isinstance(filters, str) else (filters or {})
+	# The cards are the branch's stock for sale, whichever view the table is in.
+	data = {key: value for key, value in data.items() if key != "view"}
 	where, values = _stock_conditions(data, employee.branch)
 
 	row = frappe.db.sql(
@@ -352,6 +402,54 @@ def network(item_code: str) -> dict:
 		"network_qty": sum(row["available"] for row in branches),
 		"branches": branches,
 		"recommendation": _recommend(branches, employee.branch),
+	}
+
+
+NETWORK_SERIAL_LIMIT = 1000
+
+
+@frappe.whitelist()
+def network_serials(item_code: str) -> dict:
+	"""Every IMEI of this item on a shelf anywhere in the network.
+
+	The same reach as `network`: a counter looking for a handset for a customer
+	needs to know which unit is where, not only that one exists. The number is
+	the IMEI field when it is filled, else the serial number — the rule `serials`
+	follows, and on every handset received so far the serial is the IMEI.
+	"""
+	employee = _me()
+	require_permission("Serial No", "read")
+
+	received = ("coalesce(s.a3_received_on, date(s.creation))"
+	            if frappe.db.has_column("Serial No", "a3_received_on") else "date(s.creation)")
+	rows = frappe.db.sql(
+		f"""
+		select coalesce(nullif(s.a3_imei_1, ''), s.name) as imei,
+		       nullif(s.a3_imei_2, '') as imei_2, s.name as serial_no,
+		       w.custom_branch as branch, s.warehouse, {received} as received_on
+		from `tabSerial No` s
+		join `tabWarehouse` w on w.name = s.warehouse
+		where s.item_code = %(item_code)s and s.status = 'Active' and w.disabled = 0
+		  and w.name not in ({WARRANTY_SHELVES})
+		order by ifnull(w.custom_branch, '') = %(branch)s desc, w.custom_branch,
+		         {received}, s.creation
+		limit %(limit)s
+		""",
+		{"item_code": item_code, "branch": employee.branch, "limit": NETWORK_SERIAL_LIMIT},
+		as_dict=True,
+	)
+	for row in rows:
+		row["branch"] = row.branch or _("Unassigned")
+		row["is_mine"] = row.branch == employee.branch
+
+	item = frappe.db.get_value("Item", item_code, ["item_name", "has_serial_no"],
+	                           as_dict=True) or frappe._dict()
+	return {
+		"item_code": item_code,
+		"item_name": item.item_name,
+		"has_serial": cint(item.has_serial_no),
+		"rows": rows,
+		"truncated": len(rows) >= NETWORK_SERIAL_LIMIT,
 	}
 
 
@@ -1246,6 +1344,11 @@ def search_countable(query: str = "", warehouse: str | None = None,
 def adjust_stock(payload) -> dict:
 	"""Correct the shelf against what is actually on it — a Stock Reconciliation."""
 	employee = _me()
+	if not _can_adjust():
+		frappe.throw(
+			_("Stock is adjusted by head office. Tell the admin what the shelf really holds."),
+			frappe.PermissionError, title=_("Head office only"),
+		)
 	require_permission("Stock Reconciliation", "create")
 
 	data = frappe.parse_json(payload) if isinstance(payload, str) else (payload or {})

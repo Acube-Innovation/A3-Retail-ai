@@ -58,6 +58,12 @@
 					{{ _("Import Items") }}</button>
 				<button class="btn btn-quiet" data-do="new-item" id="btn-new-item" hidden>
 					+ {{ _("New Item") }}</button>
+				{#- Faulty goods replaced at a counter and sent here to wait for the
+				    dealer. Only where a warranty shelf is kept; the count is how
+				    many are waiting. -#}
+				<button class="btn btn-warranty" id="warranty-btn" hidden>
+					{{ _("Warranty Returns") }}
+					<span class="btn-count" id="warranty-count" hidden></span></button>
 			</section>
 
 			<section class="ctiles stk-kpis" id="kpis"></section>
@@ -65,8 +71,8 @@
 			<!-- ------------------------------------------------ live stock -->
 			<section class="svc-panel">
 				<div class="panel-head">
-					<h2>{{ _("Live Stock") }}</h2>
-					<span class="rep-when">{{ _("Current availability for") }} {{ me.branch }}</span>
+					<h2 id="stock-title">{{ _("Live Stock") }}</h2>
+					<span class="rep-when" id="stock-sub">{{ _("Current availability for") }} {{ me.branch }}</span>
 				</div>
 
 				<div class="filter-row stk-filters">
@@ -175,9 +181,18 @@
 
 <div class="modal" id="network-modal" hidden>
 	<div class="modal-card modal-wide">
-		<h3 id="network-title">{{ _("Stock availability across the network") }}</h3>
+		<div class="stk-net-head">
+			<h3 id="network-title">{{ _("Stock availability across the network") }}</h3>
+			{#- Two views of one item: how many each branch holds, and which
+			    handsets they are. Only offered for an item tracked by IMEI. -#}
+			<div class="seg" id="network-views" hidden>
+				<button type="button" class="seg-btn is-active" data-view="branches">{{ _("Branches") }}</button>
+				<button type="button" class="seg-btn" data-view="imei">{{ _("IMEI") }}</button>
+			</div>
+		</div>
 		<p class="modal-note" id="network-note"></p>
 		<div id="network-body"></div>
+		<div id="network-imei" hidden></div>
 		<div class="modal-actions"><button class="btn btn-quiet" data-close>{{ _("Close") }}</button></div>
 	</div>
 </div>

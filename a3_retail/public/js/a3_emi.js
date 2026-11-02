@@ -1436,8 +1436,8 @@ window.EMI = (function () {
 			`<div class="field-grid three">
 				${select("Financier", "t-partner", state.boot.partners.map((row) => row.name),
 					partner || "")}
-				${field("From", "t-from", 'type="date"', monthAgo)}
-				${field("To", "t-to", 'type="date"', today)}
+				${field("From", "t-from", 'type="date" data-range-to="t-to"', monthAgo)}
+				${field("To", "t-to", 'type="date" data-range-from="t-from"', today)}
 			</div>
 			${select("Credited to", "t-bank", [""].concat(state.boot.accounts), "")}`,
 			"Pull the applications", async () => {
@@ -2191,6 +2191,10 @@ window.EMI = (function () {
 		 ["sales-person", "sales_person"], ["item-group", "item_group"]].forEach(([id, key]) => {
 			$(id).addEventListener("change", () => {
 				state.filters[key] = $(id).value;
+				// A calendar preset fills both dates and fires both; the pair is
+				// read together so neither reload goes out with half a range.
+				state.filters.from_date = $("from-date").value;
+				state.filters.to_date = $("to-date").value;
 				state.page = 1;
 				loadHead();
 				loadTab();

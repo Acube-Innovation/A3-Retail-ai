@@ -517,6 +517,11 @@ window.INVOICE = (function () {
 		swap.open = open;
 		$("rp-item").innerHTML = open.map((line, i) =>
 			`<option value="${i}">${esc(line.item_name)}</option>`).join("");
+		// The same godowns for every line; the one in A3 Retail Settings first.
+		$("rp-godown").innerHTML = '<option value="">Choose the godown</option>'
+			+ (swap.godowns || []).map((g) =>
+				`<option value="${esc(g.warehouse)}">${esc(g.label)}</option>`).join("");
+		$("rp-godown").value = swap.default_godown || "";
 
 		const today = new Date().toLocaleDateString("en-CA");
 		$("rp-date").value = today;
@@ -534,26 +539,54 @@ window.INVOICE = (function () {
 		$("rp-faulty").innerHTML = line.serials.length
 			? line.serials.map((s) => `<option value="${esc(s)}">${esc(s)}</option>`).join("")
 			: '<option value="">No IMEI on this item</option>';
-		// An accessory carries no IMEI, so neither side of the swap asks for one.
 		$("rp-faulty").disabled = !line.serials.length;
-		$("rp-new").disabled = !line.has_serial;
-		$("rp-new").placeholder = line.has_serial
-			? "Type or scan it" : "Not a serialised item";
 
 		const suppliers = await A3.call("a3_retail.api.expenses.search_suppliers",
 		                                { query: "", limit: 50 }).catch(() => []);
 		$("rp-supplier").innerHTML = (suppliers || []).map((s) =>
 			`<option value="${esc(s.name)}"${s.name === line.supplier ? " selected" : ""}>${
 				esc(s.supplier_name)}</option>`).join("");
+
+		// Each line starts on its own road — a handset back to the supplier,
+		// anything without an IMEI to our godown — and the counter can switch.
+		setRoute(line.route || "supplier");
+	}
+
+	/** Which road the faulty one takes, and what the window asks for on it. */
+	function setRoute(route) {
+		const line = swap.open[Number($("rp-item").value)];
+		const godown = route === "godown";
+		swap.route = route;
+		$("rp-route").querySelectorAll("[data-route]").forEach((button) => {
+			button.classList.toggle("is-active", button.dataset.route === route);
+		});
+		$("rp-note").textContent = godown
+			? "The faulty one goes to our godown, a good one comes off this shelf for the "
+				+ "customer, and nobody pays anything more."
+			: "The faulty one goes back to the supplier, a good one goes to the customer, "
+				+ "and nobody pays anything more.";
+		$("rp-to-label").textContent = godown ? "Godown" : "Goes back to";
+		$("rp-supplier").hidden = godown;
+		$("rp-godown").hidden = !godown;
+		$("rp-new-label").textContent = godown
+			? "Replacement IMEI from this shelf" : "New IMEI the supplier gave";
+		// An accessory carries no IMEI, so neither side of the swap asks for one.
+		$("rp-new").disabled = !line.has_serial;
+		$("rp-new").placeholder = line.has_serial
+			? "Type or scan it" : "Not a serialised item";
 	}
 
 	async function doReplace() {
 		const line = swap.open[Number($("rp-item").value)];
 		const reason = $("rp-reason").value.trim();
-		if (!reason) {
-			$("rp-msg").textContent = "Say what is wrong with it.";
+		const route = swap.route || "supplier";
+		const refuse = (text) => {
+			$("rp-msg").textContent = text;
 			$("rp-msg").className = "msg error";
-			return;
+		};
+		if (!reason) return refuse("Say what is wrong with it.");
+		if (route === "godown" && !$("rp-godown").value) {
+			return refuse("Choose the godown the faulty one goes to.");
 		}
 		$("rp-go").disabled = true;
 		$("rp-msg").textContent = "Raising the paperwork…";
@@ -564,13 +597,19 @@ window.INVOICE = (function () {
 					invoice: state.name, item_code: line.item_code, qty: 1,
 					faulty_serials: $("rp-faulty").value ? [$("rp-faulty").value] : [],
 					new_serials: $("rp-new").value.trim() ? [$("rp-new").value.trim()] : [],
-					supplier: $("rp-supplier").value,
+					route: route,
+					supplier: route === "supplier" ? $("rp-supplier").value : "",
+					godown: route === "godown" ? $("rp-godown").value : "",
 					reason: reason, date: $("rp-date").value,
 				},
 			});
 			$("replace-modal").hidden = true;
-			toast(`Replaced — ${out.sale} out to the customer, `
-			      + `${out.debit_note} back to the supplier.`, "ok");
+			const godown = $("rp-godown").selectedOptions[0];
+			toast(out.route === "godown"
+				? `Replaced — ${out.sale} out to the customer, the faulty one to `
+					+ `${godown ? godown.textContent : out.godown}.`
+				: `Replaced — ${out.sale} out to the customer, `
+					+ `${out.debit_note} back to the supplier.`, "ok");
 			window.open(out.print_url, "_blank");
 			load();
 		} catch (error) {
@@ -594,6 +633,10 @@ window.INVOICE = (function () {
 
 		$("pay-save").addEventListener("click", takePayment);
 		$("rp-go").addEventListener("click", doReplace);
+		$("rp-route").addEventListener("click", (event) => {
+			const button = event.target.closest("[data-route]");
+			if (button) setRoute(button.dataset.route);
+		});
 		document.querySelectorAll("[data-close-replace]").forEach((node) =>
 			node.addEventListener("click", () => { $("replace-modal").hidden = true; }));
 		document.querySelectorAll("[data-close]").forEach((node) => {

@@ -55,10 +55,10 @@
 						       placeholder="{{ _('Search invoice no, customer, phone…') }}"></label>
 
 					<label class="field"><span>{{ _("Date from") }}</span>
-						<input id="from-date" type="date"
+						<input id="from-date" type="date" data-range-to="to-date"
 						       data-empty="{{ _('Any date') }}"></label>
 					<label class="field"><span>{{ _("Date to") }}</span>
-						<input id="to-date" type="date"
+						<input id="to-date" type="date" data-range-from="from-date"
 						       data-empty="{{ _('Any date') }}"></label>
 
 					<label class="field"><span>{{ _("Status") }}</span>

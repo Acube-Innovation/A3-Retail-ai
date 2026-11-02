@@ -56,9 +56,9 @@
 						       placeholder="{{ _('Booking no, customer, phone, IMEI, model, complaint…') }}"></label>
 
 					<label class="field"><span>{{ _("Booked from") }}</span>
-						<input id="from-date" type="date"></label>
+						<input id="from-date" type="date" data-range-to="to-date"></label>
 					<label class="field"><span>{{ _("Booked to") }}</span>
-						<input id="to-date" type="date"></label>
+						<input id="to-date" type="date" data-range-from="from-date"></label>
 
 					<label class="field"><span>{{ _("Where it is") }}</span>
 						<select id="status">

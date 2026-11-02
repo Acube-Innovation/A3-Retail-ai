@@ -1146,7 +1146,9 @@ window.POS = (function () {
 		$("done-note").classList.toggle("owes", result.outstanding > 0);
 		$("print-invoice").href = result.print_url;
 		$("done-modal").hidden = false;
-		$("bill-no").textContent = result.invoice;
+		// The number is on the card above; the counter behind it is the next
+		// customer's, so a held or reopened bill must not carry over.
+		clearEditing();
 
 		state.cart = [];
 		state.customer = null;
@@ -1289,13 +1291,46 @@ window.POS = (function () {
 		el.title = on === today ? "" : "This bill posts under " + on + ", not today.";
 	}
 
+	// What the counter said before a bill was opened, in the shop's own language,
+	// so finishing that bill can put it back.
+	let blankScreen = null;
+
 	function markEditing(name) {
-		$("bill-no").textContent = name;
 		const heading = document.querySelector(".topbar-branch h1");
+		const hold = document.querySelector('.quick[data-action="hold"] .quick-label');
+		if (!blankScreen) {
+			blankScreen = {
+				billNo: $("bill-no").textContent,
+				heading: heading ? heading.textContent : "",
+				checkout: $("checkout").innerHTML,
+				hold: hold ? hold.textContent : "",
+			};
+		}
+		$("bill-no").textContent = name;
 		if (heading) heading.textContent = "Editing Invoice #" + name;
 		$("checkout").innerHTML = 'Update &amp; Submit <span class="key">F9</span>';
-		const hold = document.querySelector('.quick[data-action="hold"] .quick-label');
 		if (hold) hold.textContent = "Save Draft";
+	}
+
+	/** The bill just completed is done with: the next sale is a new invoice,
+	 *  not another attempt at the one that was held or reopened. */
+	function clearEditing() {
+		state.editing = null;
+		if (blankScreen) {
+			$("bill-no").textContent = blankScreen.billNo;
+			const heading = document.querySelector(".topbar-branch h1");
+			if (heading) heading.textContent = blankScreen.heading;
+			$("checkout").innerHTML = blankScreen.checkout;
+			const hold = document.querySelector('.quick[data-action="hold"] .quick-label');
+			if (hold) hold.textContent = blankScreen.hold;
+		}
+		// Bills and Drafts (F6) open a bill as ?invoice=; left in the address bar,
+		// a reload would try to reopen the bill that has just been submitted.
+		const url = new URL(window.location.href);
+		if (url.searchParams.has("invoice")) {
+			url.searchParams.delete("invoice");
+			history.replaceState(null, "", url.pathname + url.search);
+		}
 	}
 
 	// ----------------------------------------------------------------- EMI

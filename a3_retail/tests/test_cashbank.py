@@ -69,6 +69,25 @@ class TestBranchCashAndBank(FrappeTestCase):
 		for row in rows:
 			self.assertIn(row["direction"], ("in", "out"))
 
+	def test_the_totals_cover_the_whole_window_not_the_page(self):
+		"""The list stops at its limit; the closing count must not."""
+		everything = cashbank.transactions(limit=200)
+		one = cashbank.transactions(limit=1)
+		self.assertEqual(one["totals"], everything["totals"])
+
+		totals = everything["totals"]
+		if totals["entries"] <= 200:
+			self.assertEqual(totals["entries"], len(everything["rows"]))
+			self.assertAlmostEqual(totals["in"], sum(r["debit"] for r in everything["rows"]), 2)
+			self.assertAlmostEqual(totals["out"], sum(r["credit"] for r in everything["rows"]), 2)
+		self.assertAlmostEqual(totals["net"], totals["in"] - totals["out"], 2)
+
+	def test_the_list_shows_a_total_and_the_difference(self):
+		script = open(frappe.get_app_path("a3_retail", "public", "js", "a3_cashbank.js")).read()
+		self.assertIn("paintRows(txns.rows || [], txns.totals)", script)
+		self.assertIn("<tfoot>", script)
+		self.assertIn(">Difference<", script)
+
 	def test_banking_more_than_the_branch_holds_is_refused(self):
 		sums = cashbank.summary()
 		if not sums["cash"] or not sums["banks"]:

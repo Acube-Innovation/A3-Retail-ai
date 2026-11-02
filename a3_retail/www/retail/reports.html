@@ -80,7 +80,15 @@
 			<section class="ctiles rep-kpis" id="kpis"></section>
 			<section id="chart"></section>
 
+			{#- A report that also summarises its rows — sales per brand — draws that
+			    here, above its own table; each then carries a title. -#}
+			<section class="svc-panel bill-table-panel" id="summary-panel" hidden>
+				<div class="panel-head"><h2 id="summary-title"></h2></div>
+				<div class="bill-table-wrap" id="summary-wrap"></div>
+			</section>
+
 			<section class="svc-panel bill-table-panel">
+				<div class="panel-head" id="table-head" hidden><h2 id="table-title"></h2></div>
 				<div class="bill-table-wrap" id="table-wrap"></div>
 				<div class="bill-foot" id="table-foot"></div>
 			</section>

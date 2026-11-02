@@ -15,6 +15,11 @@ from a3_retail.utils.branch import get_user_branch
 
 MANAGER_ROLES = {"Branch Manager", "A3 Retail Admin", "Accounts Manager", "System Manager", "Auditor"}
 
+# Faulty goods waiting for the dealer. On hand, but not for sale and not
+# anybody's to request, so availability never counts them.
+WARRANTY_SHELVES = ("select bp.warranty_returns_warehouse from `tabBranch Profile` bp"
+                    " where ifnull(bp.warranty_returns_warehouse, '') != ''")
+
 
 def _may_see_valuation(user: str | None = None) -> bool:
 	user = user or frappe.session.user
@@ -36,12 +41,13 @@ def availability_matrix(item_code: str) -> list[dict]:
 	require_permission("Item", "read")
 
 	rows = frappe.db.sql(
-		"""
+		f"""
 		select w.custom_branch as branch, b.warehouse, b.actual_qty, b.reserved_qty,
 		       b.indented_qty, b.ordered_qty, b.projected_qty
 		from `tabBin` b
 		join `tabWarehouse` w on w.name = b.warehouse
 		where b.item_code = %(item_code)s and w.disabled = 0 and b.actual_qty != 0
+		  and w.name not in ({WARRANTY_SHELVES})
 		order by w.custom_branch, b.warehouse
 		""",
 		{"item_code": item_code},

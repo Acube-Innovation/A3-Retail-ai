@@ -54,6 +54,7 @@
   "dead_stock_rules",
   "col_break_6",
   "transit_warehouse",
+  "faulty_accessory_warehouse",
   "stock_request_auto_approve_limit",
   "stock_request_ho_approval_limit",
   "communication_section",
@@ -362,6 +363,13 @@
    "options": "Warehouse"
   },
   {
+   "description": "The godown a faulty accessory goes to when the counter replaces it. The Replace window starts on it; the counter can pick another.",
+   "fieldname": "faulty_accessory_warehouse",
+   "fieldtype": "Link",
+   "label": "Faulty Accessories Go To",
+   "options": "Warehouse"
+  },
+  {
    "fieldname": "stock_request_auto_approve_limit",
    "fieldtype": "Currency",
    "label": "Auto-approve Service Requests Upto",
@@ -561,7 +569,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-08-05 09:00:00.000000",
+ "modified": "2026-11-02 09:00:00.000000",
  "modified_by": "Administrator",
  "module": "A3 Retail Operations",
  "name": "A3 Retail Settings",

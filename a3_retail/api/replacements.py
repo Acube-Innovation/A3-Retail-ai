@@ -19,6 +19,13 @@ the supplier is owed no more and owes no more — so a fifth document, a journal
 against both of the customer's, knocks them off each other. Without it the
 customer is left holding a credit note and an invoice for the same money, and
 every statement they are sent is wrong.
+
+An accessory takes a shorter road. The dealer does not swap a charger at the
+counter's say-so, so the faulty one goes to the shop's own godown — returned
+straight into that warehouse by the credit note — and the good one comes off
+this branch's shelf. Two documents and the journal; no supplier in it at all.
+Which road a swap takes is the counter's call in the window, started on the
+godown for anything without an IMEI and on the supplier for anything with one.
 """
 
 import frappe
@@ -63,6 +70,7 @@ def options(invoice: str) -> dict:
 	for row in doc.items:
 		already = flt(returned.get(row.item_code, 0))
 		serials = [s for s in (row.get("serial_no") or "").split("\n") if s.strip()]
+		has_serial = bool(frappe.db.get_value("Item", row.item_code, "has_serial_no"))
 		lines.append({
 			"item_code": row.item_code,
 			"item_name": row.item_name,
@@ -70,17 +78,40 @@ def options(invoice: str) -> dict:
 			"rate": flt(row.rate),
 			"can_replace": max(flt(row.qty) - already, 0),
 			"serials": serials,
-			"has_serial": bool(frappe.db.get_value("Item", row.item_code, "has_serial_no")),
+			"has_serial": has_serial,
 			"supplier": _supplier_for(row.item_code, serials),
+			# Only where the window starts: the counter can send either way.
+			"route": "supplier" if has_serial else "godown",
 		})
 
+	godowns = _godowns()
+	chosen = frappe.db.get_single_value("A3 Retail Settings", "faulty_accessory_warehouse")
 	return {
 		"invoice": doc.name,
 		"customer": doc.customer,
 		"customer_name": doc.customer_name,
 		"posting_date": str(doc.posting_date),
 		"lines": lines,
+		"godowns": godowns,
+		"default_godown": chosen if any(g["warehouse"] == chosen for g in godowns) else None,
 	}
+
+
+def _godowns() -> list[dict]:
+	"""The shop's own warehouses a faulty accessory can be sent to.
+
+	Every working shelf in the company; not a group, not switched off, and not
+	the in-transit account, which is somewhere stock passes through rather than
+	somewhere it is kept.
+	"""
+	rows = frappe.get_all(
+		"Warehouse",
+		filters={"company": _company(), "is_group": 0, "disabled": 0},
+		fields=["name", "warehouse_name", "warehouse_type"],
+		order_by="warehouse_name",
+	)
+	return [{"warehouse": row.name, "label": row.warehouse_name}
+	        for row in rows if row.warehouse_type != "Transit"]
 
 
 def _supplier_for(item_code: str, serials: list[str]) -> str | None:
@@ -105,7 +136,6 @@ def replace(payload) -> dict:
 	"""Swap a faulty unit for a good one, both ways at once."""
 	employee = _me()
 	require_permission("Sales Invoice", "create")
-	require_permission("Purchase Invoice", "create")
 
 	data = frappe.parse_json(payload) if isinstance(payload, str) else (payload or {})
 	source = _checked_bill(data.get("invoice"), employee)
@@ -117,10 +147,10 @@ def replace(payload) -> dict:
 	if not reason:
 		frappe.throw(_("Say what is wrong with it."), title=_("Reason"))
 
-	supplier = (data.get("supplier") or "").strip()
-	if not supplier or not frappe.db.exists("Supplier", supplier):
-		frappe.throw(_("Name the supplier the faulty one goes back to."),
-		             title=_("Supplier"))
+	route = data.get("route") or "supplier"
+	if route not in ("supplier", "godown"):
+		frappe.throw(_("Choose whether the faulty one goes back to the supplier or to our "
+		               "godown."), title=_("Where it goes"))
 
 	has_serial = bool(frappe.db.get_value("Item", line.item_code, "has_serial_no"))
 	if has_serial:
@@ -128,12 +158,13 @@ def replace(payload) -> dict:
 			frappe.throw(_("Pick which {0} is coming back.").format(line.item_name),
 			             title=_("IMEI"))
 		if len(fresh) != int(qty):
-			frappe.throw(_("Enter the IMEI of the replacement the supplier gave."),
+			frappe.throw(_("Enter the IMEI of the replacement the supplier gave.")
+			             if route == "supplier"
+			             else _("Scan the IMEI of the replacement off this branch's shelf."),
 			             title=_("New IMEI"))
 		if set(fresh) & set(faulty):
 			frappe.throw(_("The replacement cannot be the handset that came back."),
 			             title=_("New IMEI"))
-		_serial_is_free(fresh)
 
 	posting = getdate(data.get("date") or nowdate())
 	if posting > getdate(nowdate()):
@@ -144,6 +175,18 @@ def replace(payload) -> dict:
 		                     frappe.utils.formatdate(posting)), title=_("Date"))
 
 	profile = _profile(employee.branch)
+	if route == "godown":
+		return _replace_from_shelf(source, line, qty, faulty, fresh, has_serial, reason,
+		                           posting, employee, profile, data.get("godown"))
+
+	require_permission("Purchase Invoice", "create")
+	supplier = (data.get("supplier") or "").strip()
+	if not supplier or not frappe.db.exists("Supplier", supplier):
+		frappe.throw(_("Name the supplier the faulty one goes back to."),
+		             title=_("Supplier"))
+	if has_serial:
+		_serial_is_free(fresh)
+
 	cost = flt(data.get("cost_rate")) or _cost_of(line.item_code, profile.default_warehouse)
 
 	# Order matters: stock has to be on the shelf before it can leave it.
@@ -160,6 +203,7 @@ def replace(payload) -> dict:
 	_leave_a_trail(source, credit, debit, bought, sold, netting, line, faulty, fresh)
 
 	return {
+		"route": "supplier",
 		"credit_note": credit, "debit_note": debit,
 		"purchase": bought, "sale": sold, "netting": netting,
 		"supplier_netting": supplier_netting,
@@ -169,9 +213,66 @@ def replace(payload) -> dict:
 	}
 
 
+def _replace_from_shelf(source, line, qty, faulty, fresh, has_serial, reason, posting,
+                        employee, profile, godown) -> dict:
+	"""The accessory road: the faulty one into our godown, a good one off this shelf.
+
+	The shelf is checked before anything is raised, and before the faulty unit
+	comes back — if the godown chosen is this very shelf, the unit just returned
+	must not count as the good one handed out.
+	"""
+	godown = _checked_godown(godown)
+	shelf = line.warehouse or profile.default_warehouse
+	if has_serial:
+		_serial_on_shelf(fresh, line.item_code, shelf)
+	elif _on_shelf(line.item_code, shelf) < flt(qty):
+		frappe.throw(_("There is no {0} on this branch's shelf to give in its place.")
+		             .format(line.item_name), title=_("None on the shelf"))
+
+	credit = _credit_note(source, line, qty, faulty, reason, posting, employee, profile,
+	                      warehouse=godown)
+	sold = _sale(source, line, qty, fresh, reason, posting, employee, profile)
+	netting = _net_off(source.customer, credit, sold, posting)
+
+	_leave_a_trail(source, credit, None, None, sold, netting, line, faulty, fresh,
+	               godown=godown)
+
+	return {
+		"route": "godown", "godown": godown,
+		"credit_note": credit, "debit_note": None, "purchase": None,
+		"sale": sold, "netting": netting, "supplier_netting": None,
+		"item": line.item_name,
+		"faulty": faulty, "replacement": fresh,
+		"print_url": print_url(sold),
+	}
+
+
 # ---------------------------------------------------------------------------
 # What is allowed
 # ---------------------------------------------------------------------------
+def _checked_godown(warehouse: str | None) -> str:
+	if not warehouse or not any(row["warehouse"] == warehouse for row in _godowns()):
+		frappe.throw(_("Choose the godown the faulty one goes to."), title=_("Godown"))
+	return warehouse
+
+
+def _on_shelf(item_code: str, warehouse: str) -> float:
+	return flt(frappe.db.get_value("Bin", {"item_code": item_code, "warehouse": warehouse},
+	                               "actual_qty"))
+
+
+def _serial_on_shelf(serials: list[str], item_code: str, warehouse: str) -> None:
+	"""A replacement handed over from the shelf must be one that is on it."""
+	for serial in serials:
+		held = frappe.db.get_value("Serial No", serial,
+		                           ["item_code", "status", "warehouse"], as_dict=True)
+		if not held or held.item_code != item_code:
+			frappe.throw(_("IMEI {0} is not a {1}. Check the number on the box.")
+			             .format(serial, frappe.db.get_value("Item", item_code, "item_name")),
+			             title=_("Wrong IMEI"))
+		if held.status != "Active" or held.warehouse != warehouse:
+			frappe.throw(_("IMEI {0} is not on this branch's shelf. Scan the one you are "
+			               "handing over.").format(serial), title=_("Not on the shelf"))
 def _checked_bill(invoice: str | None, employee):
 	doc = frappe.get_doc("Sales Invoice", invoice) if invoice and frappe.db.exists(
 		"Sales Invoice", invoice) else None
@@ -255,7 +356,8 @@ def _trim_to_line(doc, item_code: str, qty: float, serials: list[str]) -> None:
 		doc.discount_amount = flt(flt(doc.discount_amount) * share, 2)
 
 
-def _credit_note(source, line, qty, serials, reason, posting, employee, profile) -> str:
+def _credit_note(source, line, qty, serials, reason, posting, employee, profile,
+                 warehouse=None) -> str:
 	"""Leg 1 — the faulty unit comes back from the customer.
 
 	Built by ERPNext's own return builder rather than by hand: it carries the
@@ -276,13 +378,19 @@ def _credit_note(source, line, qty, serials, reason, posting, employee, profile)
 	finally:
 		frappe.set_user(actor)
 	_trim_to_line(doc, line.item_code, qty, serials)
+	if warehouse:
+		# Straight into the godown, so it is never back on this shelf to be sold.
+		doc.items[0].warehouse = warehouse
+		if doc.meta.has_field("set_warehouse"):
+			doc.set_warehouse = warehouse
 	doc.posting_date = posting
 	doc.set_posting_time = 1
 	doc.due_date = posting
 	doc.set("payment_schedule", [])
 	doc.set("payments", [])
 	doc.is_pos = 0
-	doc.remarks = _("Replaced — {0}").format(reason)[:500]
+	doc.remarks = (_("Replaced — {0}. Faulty one to {1}").format(reason, warehouse)
+	               if warehouse else _("Replaced — {0}").format(reason))[:500]
 	return _post(doc, profile)
 
 
@@ -449,12 +557,14 @@ def _net_supplier(supplier: str, debit: str, bought: str, posting) -> str:
 
 
 def _leave_a_trail(source, credit, debit, bought, sold, netting, line,
-                   faulty, fresh) -> None:
+                   faulty, fresh, godown=None) -> None:
 	"""Write the chain onto the original bill, so it can be followed later."""
 	swapped = (_("IMEI {0} replaced by {1}").format(", ".join(faulty), ", ".join(fresh))
 	           if faulty and fresh else _("{0} replaced").format(line.item_name))
+	chain = (f"Credit note {credit} (faulty one to {godown}), replacement bill {sold}"
+	         if godown else
+	         f"Credit note {credit}, debit note {debit}, purchase {bought}, "
+	         f"replacement bill {sold}")
 	frappe.get_doc("Sales Invoice", source.name).add_comment(
 		"Comment",
-		text=(f"{swapped}. Credit note {credit}, debit note {debit}, "
-		      f"purchase {bought}, replacement bill {sold}"
-		      + (f", settled by {netting}" if netting else "") + "."))
+		text=(f"{swapped}. {chain}" + (f", settled by {netting}" if netting else "") + "."))

@@ -366,11 +366,49 @@ window.A3 = (function () {
 		show();
 	}
 
+	/** The other half of a Date from / Date to pair, named on the inputs with
+	 *  `data-range-to` and `data-range-from`. Null for a date that stands alone. */
+	function rangeOf(input) {
+		const other = (id) => (id ? document.getElementById(id) : null);
+		if (other(input.dataset.rangeTo)) return { from: input, to: other(input.dataset.rangeTo) };
+		if (other(input.dataset.rangeFrom)) return { from: other(input.dataset.rangeFrom), to: input };
+		return null;
+	}
+
+	/** The spans a report is usually asked for, as [label, from, to]. Weeks run
+	 *  Sunday to Saturday, the way the calendar above them is laid out. */
+	function presets() {
+		const now = new Date();
+		const y = now.getFullYear(), m = now.getMonth(), d = now.getDate();
+		const sunday = d - now.getDay();
+		return [
+			["This Month", new Date(y, m, 1), new Date(y, m + 1, 0)],
+			["Previous Month", new Date(y, m - 1, 1), new Date(y, m, 0)],
+			["This Week", new Date(y, m, sunday), new Date(y, m, sunday + 6)],
+			["Previous Week", new Date(y, m, sunday - 7), new Date(y, m, sunday - 1)],
+			["Today", new Date(y, m, d), new Date(y, m, d)],
+			["Yesterday", new Date(y, m, d - 1), new Date(y, m, d - 1)],
+			["This Month till date", new Date(y, m, 1), new Date(y, m, d)],
+		];
+	}
+
 	function open(input, face, limit, floor, show) {
 		const chosen = parseIso(input.value) || new Date();
 		let year = chosen.getFullYear();
 		let month = chosen.getMonth();
 		let picked = parseIso(input.value) || new Date();
+		// Either half of a range offers whole spans, which fill both dates at once.
+		// A box that cannot look ahead (max is today) gets "This Month" up to
+		// today, not a date it would refuse.
+		const range = rangeOf(input);
+		const within = (d, node) => {
+			const value = iso(d);
+			if (node.max && value > node.max) return node.max;
+			if (node.min && value < node.min) return node.min;
+			return value;
+		};
+		const spans = range ? presets().map(([label, from, to]) =>
+			[label, within(from, range.from), within(to, range.to)]) : [];
 
 		const wrap = document.createElement("div");
 		wrap.className = "dp-backdrop";
@@ -387,6 +425,10 @@ window.A3 = (function () {
 			<div class="dp-grid dp-names">${DAYS.map((d) =>
 				`<span class="dp-name">${d}</span>`).join("")}</div>
 			<div class="dp-grid dp-days"></div>
+			${spans.length ? `<div class="dp-presets">${spans.map(([label, from, to], i) =>
+				`<button type="button" class="dp-preset${from === range.from.value
+					&& to === range.to.value ? " is-on" : ""}" data-span="${i}">${label}</button>`)
+				.join("")}</div>` : ""}
 			<div class="dp-actions">
 				<button type="button" class="dp-flat" data-cancel>CANCEL</button>
 				<button type="button" class="dp-flat dp-ok" data-ok>OK</button>
@@ -438,6 +480,17 @@ window.A3 = (function () {
 				month = picked.getMonth();
 				year = picked.getFullYear();
 				return paint();
+			}
+			const span = event.target.closest("[data-span]");
+			if (span) {
+				const [, from, to] = spans[Number(span.dataset.span)];
+				range.from.value = from;
+				range.to.value = to;
+				// Both set before either is announced, so a screen that reads the
+				// pair on each change never reloads with half a range.
+				[range.from, range.to].forEach((node) =>
+					node.dispatchEvent(new Event("change", { bubbles: true })));
+				return close();
 			}
 			if (event.target.closest("[data-ok]")) {
 				input.value = iso(picked);
@@ -723,10 +776,10 @@ window.A3 = (function () {
 							value="${escapeHtml(chosen.query)}"></label>` : ""}
 					<div class="field-grid">
 						<label class="field"><span>From</span>
-							<input id="fs-from" type="date" max="${today}"
+							<input id="fs-from" type="date" max="${today}" data-range-to="fs-to"
 								value="${chosen.from_date}"></label>
 						<label class="field"><span>To</span>
-							<input id="fs-to" type="date" max="${today}"
+							<input id="fs-to" type="date" max="${today}" data-range-from="fs-from"
 								value="${chosen.to_date}"></label>
 					</div>
 					<div class="modal-actions">

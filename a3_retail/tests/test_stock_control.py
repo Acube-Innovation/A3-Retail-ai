@@ -3,13 +3,14 @@
 """Branch Stock Control (`/retail/stock`)."""
 
 import os
+from unittest.mock import patch
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
 from frappe.utils import flt
 
 from a3_retail.api import stock_control as stock
-from a3_retail.tests.fixtures import ensure_branch
+from a3_retail.tests.fixtures import ensure_branch, ensure_stock
 
 
 def user_for(employee_name: str) -> str | None:
@@ -131,6 +132,36 @@ class TestStockReads(FrappeTestCase):
 		self.assertTrue(data["branches"])
 		self.assertTrue(any(branch["is_mine"] for branch in data["branches"]))
 		self.assertTrue(data["recommendation"])
+
+	def test_the_imei_tab_lists_every_handset_on_a_shelf(self):
+		"""One row per unit the Branches tab counts, wherever it sits — this
+		branch's own first."""
+		item = frappe.db.sql(
+			"""select b.item_code from `tabBin` b join `tabItem` i on i.name = b.item_code
+			   where i.has_serial_no = 1 and b.actual_qty > 0 limit 1""", pluck=True)
+		if not item:
+			self.skipTest("no handset on any shelf")
+
+		data = stock.network_serials(item[0])
+		on_shelves = sum(flt(row["available"]) + flt(row["reserved"])
+		                 for row in stock.network(item[0])["branches"])
+		self.assertEqual(len(data["rows"]), on_shelves)
+		self.assertTrue(data["has_serial"])
+		for row in data["rows"]:
+			self.assertTrue(row["imei"])
+			self.assertTrue(row["warehouse"])
+		mine = [row["is_mine"] for row in data["rows"]]
+		self.assertEqual(mine, sorted(mine, reverse=True))
+
+	def test_the_network_window_offers_an_imei_tab(self):
+		markup = open(os.path.join(frappe.get_app_path("a3_retail", "www", "retail"),
+		                           "stock.html")).read()
+		self.assertIn('id="network-views"', markup)
+		self.assertIn('data-view="imei"', markup)
+		script = open(frappe.get_app_path("a3_retail", "public", "js", "a3_stock.js")).read()
+		self.assertIn("stock_control.network_serials", script)
+		# Only for an item tracked by IMEI.
+		self.assertIn('$("network-views").hidden = !row.has_serial', script)
 
 	def test_every_tab_answers_with_rows_the_page_can_render(self):
 		for name in ("overview", "purchases", "requests", "transfers", "receipts", "movements",
@@ -270,7 +301,28 @@ class TestStockActions(FrappeTestCase):
 			"items": [{"item_code": "ACC-TGL-A55", "qty": 1}],
 		})
 
+	def _as_head_office(self):
+		"""Adjusting is head office's alone; the demo admin has no branch to act
+		in, so the branch manager stands in for it here."""
+		patcher = patch.object(stock, "_can_adjust", return_value=True)
+		patcher.start()
+		self.addCleanup(patcher.stop)
+
+	def test_a_branch_cannot_adjust_its_own_stock(self):
+		"""Not a Sales, Accessories, Service or Distribution counter — not even its
+		manager, and not when a desk grant hands Sales Executive the permission."""
+		self.assertFalse(stock.bootstrap()["can"]["adjust"])
+		warehouse = stock.bootstrap()["warehouses"][0]
+		self.assertRaises(frappe.PermissionError, stock.adjust_stock, {
+			"warehouse": warehouse, "reason": "Counted at close of day",
+			"items": [{"item_code": "ACC-TGL-A55", "counted": 1}],
+		})
+
+	def test_only_head_office_roles_adjust(self):
+		self.assertEqual(stock.ADJUST_ROLES, {"A3 Retail Admin", "System Manager"})
+
 	def test_an_adjustment_needs_a_reason(self):
+		self._as_head_office()
 		warehouse = stock.bootstrap()["warehouses"][0]
 		self.assertRaises(frappe.ValidationError, stock.adjust_stock, {
 			"warehouse": warehouse, "reason": "  ",
@@ -278,6 +330,7 @@ class TestStockActions(FrappeTestCase):
 		})
 
 	def test_an_adjustment_that_changes_nothing_says_so(self):
+		self._as_head_office()
 		warehouse = stock.bootstrap()["warehouses"][0]
 		counted = stock._available("ACC-TGL-A55", warehouse)
 
@@ -289,6 +342,7 @@ class TestStockActions(FrappeTestCase):
 		self.assertIn("nothing to adjust", str(caught.exception).lower())
 
 	def test_an_adjustment_is_a_stock_reconciliation(self):
+		self._as_head_office()
 		warehouse = stock.bootstrap()["warehouses"][0]
 		counted = stock._available("ACC-TGL-A55", warehouse)
 		if counted <= 0:
@@ -330,6 +384,66 @@ class TestStockActions(FrappeTestCase):
 		url = stock.print_url("Stock Request", "SR-KCH-26-0001")
 		self.assertIn("frappe.utils.print_format.download_pdf", url)
 		self.assertIn("doctype=Stock+Request", url)
+
+
+class TestWarrantyReturns(FrappeTestCase):
+	"""Faulty goods waiting for the dealer, on a shelf of their own."""
+
+	ITEM = "ACC-TGL-A55"
+
+	def setUp(self):
+		user = user_for("Arun Menon")
+		if not user:
+			self.skipTest("Arun Menon is not provisioned")
+		branch = ensure_branch("Kochi", "KCH")
+		self.shelf = self._shelf(branch)
+		frappe.db.set_value("Branch Profile", {"branch": "Kochi"},
+		                    "warranty_returns_warehouse", self.shelf)
+		ensure_stock(self.ITEM, self.shelf, qty=2)
+		frappe.set_user(user)
+
+	def tearDown(self):
+		frappe.set_user("Administrator")
+
+	def _shelf(self, branch) -> str:
+		name = "Kochi - Warranty Returns"
+		existing = frappe.db.get_value("Warehouse", {"warehouse_name": name})
+		if existing:
+			return existing
+		shelf = frappe.new_doc("Warehouse")
+		shelf.warehouse_name = name
+		shelf.company = branch.company
+		shelf.flags.ignore_permissions = True
+		shelf.insert()
+		return shelf.name
+
+	def test_the_button_counts_what_is_waiting(self):
+		waiting = stock.warranty_returns()
+		self.assertEqual(waiting["warehouse"], self.shelf)
+		self.assertGreaterEqual(waiting["units"], 2)
+
+	def test_the_warranty_view_is_the_shelf_with_one_quantity(self):
+		rows = stock.live_stock({"view": "warranty"}, page_size=100)["rows"]
+		self.assertTrue(rows)
+		for row in rows:
+			self.assertEqual(row["warehouse"], self.shelf)
+			self.assertEqual(row["status"], "Warranty Return")
+			self.assertEqual(row["warranty_return"], flt(row["actual_qty"]))
+
+	def test_faulty_stock_is_not_stock_for_sale(self):
+		for row in stock.live_stock({}, page_size=100)["rows"]:
+			self.assertNotEqual(row["warehouse"], self.shelf)
+		self.assertEqual(stock.kpis({"view": "warranty"}), stock.kpis({}))
+		for row in stock.network(self.ITEM)["branches"]:
+			self.assertNotEqual(row["warehouse"], self.shelf)
+
+	def test_the_page_offers_the_button_and_swaps_the_columns(self):
+		markup = open(os.path.join(frappe.get_app_path("a3_retail", "www", "retail"),
+		                           "stock.html")).read()
+		self.assertIn('id="warranty-btn"', markup)
+		script = open(frappe.get_app_path("a3_retail", "public", "js", "a3_stock.js")).read()
+		self.assertIn("stock_control.warranty_returns", script)
+		self.assertIn('<th class="num">Warranty Return</th>', script)
 
 
 class TestTransferLifecycle(FrappeTestCase):

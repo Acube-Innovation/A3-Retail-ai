@@ -70,9 +70,9 @@
 						<input id="q" autocomplete="off"
 						       placeholder="{{ _('Search customer, mobile, application no, invoice, financier…') }}"></label>
 					<label class="field"><span>{{ _("Date from") }}</span>
-						<input id="from-date" type="date"></label>
+						<input id="from-date" type="date" data-range-to="to-date"></label>
 					<label class="field"><span>{{ _("Date to") }}</span>
-						<input id="to-date" type="date"></label>
+						<input id="to-date" type="date" data-range-from="from-date"></label>
 					<label class="field"><span>{{ _("Financier") }}</span>
 						<select id="partner"><option value="">{{ _("All") }}</option></select></label>
 					<label class="field"><span>{{ _("Scheme") }}</span>

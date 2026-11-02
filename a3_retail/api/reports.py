@@ -50,6 +50,7 @@ CATEGORIES = [
 # One line per report, in the counter's language rather than the scope's.
 DESCRIPTIONS = {
 	"Branch Sales Register": "Every submitted sale in the period, with tax and what is still owed.",
+	"Brand Wise Sales": "Every line sold with its brand — and, grouped, what each brand took.",
 	"Sales Person Performance": "What each sales person billed, and what it was worth.",
 	"IMEI Sales Register": "Which handset went to which customer, by IMEI.",
 	"Hourly POS Sales Heatmap": "When the counter is busy, hour by hour.",
@@ -224,13 +225,17 @@ def definition(report: str) -> dict:
 		             frappe.PermissionError)
 
 	doc = frappe.get_cached_doc("Report", report)
+	filters = _filters_of(doc)
+	for row in filters:
+		if row["fieldtype"] == "MultiSelectList" and row.get("options"):
+			row["choices"] = _choices(doc, row)
 	return {
 		"name": doc.name,
 		"description": DESCRIPTIONS.get(doc.name) or "",
 		"category": _category_of(doc.name, doc.module),
 		"ref_doctype": doc.ref_doctype,
 		"report_type": doc.report_type,
-		"filters": _filters_of(doc),
+		"filters": filters,
 		"favourite": doc.name in _favourites(),
 		# A branch filter this person cannot widen is shown as what it is: their
 		# own branch, fixed — rather than an empty box that quietly ignores them.
@@ -276,6 +281,29 @@ def _report_js(doc) -> str | None:
 	module_path = frappe.get_module_path(doc.module)
 	slug = frappe.scrub(doc.name)
 	return os.path.join(module_path, "report", slug, f"{slug}.js")
+
+
+def _report_module(doc):
+	"""The Script Report's own Python module, for the extras it may define."""
+	if doc.report_type != "Script Report":
+		return None
+	from frappe.core.doctype.report.report import get_report_module_dotted_path
+
+	try:
+		return frappe.get_module(get_report_module_dotted_path(doc.module, doc.name))
+	except ImportError:
+		return None
+
+
+def _choices(doc, row: dict) -> list[str]:
+	"""What a multi-pick filter offers: every record of the doctype it names, plus
+	any values the report adds of its own in `EXTRA_CHOICES` — a bucket such as
+	"Others" that is not a record anywhere."""
+	names = [name for name in frappe.get_all(row["options"], pluck="name", order_by="name",
+	                                         limit_page_length=500)
+	         if not name.startswith("_Test")]
+	extra = getattr(_report_module(doc), "EXTRA_CHOICES", {}).get(row["fieldname"]) or []
+	return names + [value for value in extra if value not in names]
 
 
 def _default_for(fieldname: str, block: str) -> str | None:
@@ -325,13 +353,15 @@ def run(report: str, filters=None) -> dict:
 
 	columns = [_column(column) for column in result.get("columns") or []]
 	rows = _rows(result.get("result") or [], columns)
+	summary = _summary_table(frappe.get_cached_doc("Report", report), data, rows)
 
 	return {
 		"report": report,
 		"columns": columns,
 		"rows": rows,
 		"totals": _totals(rows, columns),
-		"kpis": _kpis(rows, columns),
+		"kpis": _report_kpis(result.get("report_summary")) or _kpis(rows, columns),
+		"summary": summary,
 		"chart": _chart(rows, columns),
 		"filters": data,
 		"branch": data.get("branch") or employee.branch,
@@ -410,6 +440,40 @@ def _kpis(rows: list[dict], columns: list[dict]) -> list[dict]:
 			"fieldtype": column["fieldtype"],
 		})
 	return kpis
+
+
+def _report_kpis(cards) -> list[dict]:
+	"""The report's own number cards (Frappe's `report_summary`), when it chose
+	them. A report knows that a bill count is distinct bills and a rate is not
+	money to add up; the column sums in `_kpis` cannot tell."""
+	return [{"label": card.get("label"), "value": card.get("value"),
+	         "fieldtype": card.get("datatype") or "Float"}
+	        for card in cards or [] if card]
+
+
+def _summary_table(doc, filters: dict, rows: list[dict]) -> dict | None:
+	"""A second table, above the report's own, when the report defines one.
+
+	A Script Report answers with a single table. One that also wants a summary
+	of its rows — sales per brand over the sales register — defines
+	`summary(filters, rows)` beside `execute`, returning a title, columns, rows
+	and totals. The desk never calls it; this page draws it.
+	"""
+	hook = getattr(_report_module(doc), "summary", None)
+	table = hook(frappe._dict(filters), rows) if hook else None
+	if not table:
+		return None
+
+	columns = [_column(column) for column in table.get("columns") or []]
+	summary_rows = _rows(table.get("rows") or [], columns)
+	return {
+		"title": table.get("title") or "",
+		"detail_title": table.get("detail_title") or "",
+		"columns": columns,
+		"rows": summary_rows,
+		# The report's own totals: a count of distinct bills does not add down.
+		"totals": table.get("totals") or _totals(summary_rows, columns),
+	}
 
 
 def _chart(rows: list[dict], columns: list[dict]) -> dict | None:
