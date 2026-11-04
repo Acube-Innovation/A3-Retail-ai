@@ -50,15 +50,33 @@ window.A3 = (function () {
 	 * class names are translated here instead of being shown raw.
 	 */
 	function firstMessage(payload) {
-		const messages = serverMessages(payload);
+		const messages = blamed(payload);
 		if (messages.length) return messages.map((row) => plain(row.message)).join(" ");
 		return plain(payload.exception || payload.exc_type || payload.message || "");
 	}
 
 	function payloadTitle(payload) {
-		const messages = serverMessages(payload);
+		const messages = blamed(payload);
 		const title = messages.length ? plain(messages[0].title || "") : "";
 		return title && title !== "Message" && title !== "Error" ? title : "";
+	}
+
+	/**
+	 * The message that actually stopped the work.
+	 *
+	 * ERPNext narrates as it posts — which expense head it chose, that it
+	 * noticed a credit note, what to untick if you wanted something else — and
+	 * every one of those arrives in the same `_server_messages` list as the one
+	 * sentence that matters. Joined together they filled a dialog with four
+	 * paragraphs of someone else's internal reasoning, with the real reason
+	 * buried at the end. Frappe stamps `raise_exception` on the one it threw,
+	 * so that is the one shown; the rest are commentary on work that did not
+	 * happen. Only if nothing is stamped does the whole list stand in.
+	 */
+	function blamed(payload) {
+		const messages = serverMessages(payload);
+		const thrown = messages.filter((row) => row.raise_exception);
+		return thrown.length ? thrown : messages;
 	}
 
 	function serverMessages(payload) {

@@ -188,7 +188,13 @@ PERMISSION_MATRIX: dict[str, dict[str, str]] = {
 	"Sales Invoice": {
 		"A3 Retail Admin": "CRUDS",
 		"Branch Manager": "CRUDS",
-		"Service Manager": "R",
+		# The bench bills the repair it finished. `create_sales_invoice` writes
+		# and submits the document with permissions bypassed — pricing a service
+		# invoice reads income accounts a technician is deliberately not shown
+		# (scope 11.1) — so `create` here is the whole gate, and without it
+		# Generate Invoice belonged to the admin account alone.
+		"Service Manager": "CRU",
+		"Technician": "CR",
 		"Sales Executive": "CRUS",
 		"Reception Executive": "CRUS",
 		"Accounts Manager": "CRUDS",
@@ -241,6 +247,9 @@ PERMISSION_MATRIX: dict[str, dict[str, str]] = {
 		"Technician": "R",
 		"Store Keeper": "CRU",
 		"Accounts Manager": "R",
+		# On the report role list for Brand Wise Stock and Item Stock Card, and
+		# a report is refused unless the reader also holds it on the doctype.
+		"Auditor": "R",
 	},
 	# Scope 11.1 keeps the chart of accounts away from the shop floor — but
 	# pricing an invoice makes ERPNext resolve the customer's receivable account,

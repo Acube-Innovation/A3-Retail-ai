@@ -242,9 +242,40 @@ window.STOCK = (function () {
 		$("item-barcodes").textContent = (details.barcodes || []).length > 1
 			? "also scans as " + details.barcodes.slice(1).join(", ") : "";
 		$("item-disabled").checked = !!details.disabled;
+
+		// How a piece is counted can only be turned around while the shelf is
+		// empty: stock already counted in without IMEIs could never produce one.
+		const serial = $("item-serial");
+		serial.checked = !!details.has_serial_no;
+		serial.disabled = !details.can_serialise;
+		$("item-serial-note").textContent = details.can_serialise
+			? "Nothing on hand, so this can still be changed."
+			: `${details.on_hand} on hand — clear the shelf before changing this.`;
+
+		// Deleting is head office's, and only for an item nothing has ever
+		// named. Everything else is stopped from selling instead.
+		$("item-delete").hidden = !details.can_delete;
+
 		$("item-note").textContent = "";
 		$("item-modal").hidden = false;
 		$("item-name").focus();
+	}
+
+	async function deleteItem() {
+		const code = state.editing;
+		if (!code) return;
+		if (!confirm(`Delete ${code}? This cannot be undone.`)) return;
+		$("item-delete").disabled = true;
+		try {
+			await A3.call("a3_retail.api.stock.delete_item", { item_code: code });
+			$("item-modal").hidden = true;
+			toast(code + " deleted.", "ok");
+			await loadStock(state.page || 1);
+		} catch (error) {
+			$("item-note").textContent = error.message || "Could not delete that item.";
+		} finally {
+			$("item-delete").disabled = false;
+		}
 	}
 
 	async function saveItem() {
@@ -260,6 +291,8 @@ window.STOCK = (function () {
 				barcode: $("item-barcode").value.trim(),
 				selling_rate: $("item-rate").value.trim(),
 				disabled: $("item-disabled").checked ? 1 : 0,
+				has_serial: $("item-serial").disabled
+					? null : ($("item-serial").checked ? 1 : 0),
 			});
 			$("item-modal").hidden = true;
 			toast(name + " saved.", "ok");
@@ -1222,6 +1255,8 @@ window.STOCK = (function () {
 			`<div class="field-grid">
 				<label class="field"><span>Warehouse</span>
 					<select id="w-warehouse">${options}</select></label>
+				<label class="field"><span>Counted on</span>
+					<input id="w-date" type="date" max="${today()}" value="${today()}"></label>
 				<label class="field"><span>Reason</span>
 					<input id="w-reason" placeholder="Stock take, breakage, miscount…"></label>
 			</div>
@@ -1237,6 +1272,10 @@ window.STOCK = (function () {
 				const result = await A3.call("a3_retail.api.stock_control.adjust_stock", {
 					payload: {
 						warehouse: $("w-warehouse").value,
+						// A stock take happens on the shop floor and reaches the
+						// screen afterwards. Dated today, a count taken on Sunday
+						// also sits ahead of Monday's sales in the ledger.
+						date: $("w-date").value,
 						reason: $("w-reason").value.trim(),
 						items: counted,
 					},
@@ -1584,6 +1623,7 @@ window.STOCK = (function () {
 		$("refresh").addEventListener("click", () => { loadAll(); toast("Refreshed."); });
 
 		$("item-save").addEventListener("click", saveItem);
+		$("item-delete").addEventListener("click", deleteItem);
 		$("network-views").addEventListener("click", (event) => {
 			const button = event.target.closest("[data-view]");
 			if (button) showNetworkView(button.dataset.view);

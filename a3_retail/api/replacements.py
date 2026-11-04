@@ -32,7 +32,8 @@ import frappe
 from frappe import _
 from frappe.utils import flt, getdate, nowdate
 
-from a3_retail.api import require_permission, stamp_cost_center
+from a3_retail.api import (require_permission, stamp_cost_center, stamp_posting,
+                           stock_expense_account)
 from a3_retail.api.pos import _profile, print_url
 from a3_retail.api.staff import _me
 
@@ -189,14 +190,18 @@ def replace(payload) -> dict:
 
 	cost = flt(data.get("cost_rate")) or _cost_of(line.item_code, profile.default_warehouse)
 
-	# Order matters: stock has to be on the shelf before it can leave it.
+	# Order matters twice over. These four are raised in sequence because stock
+	# has to be on the shelf before it can leave it — and they are *stamped* a
+	# second apart for the same reason, because the serial-number ledger reads
+	# the posting time, not the order we happened to insert them in.
 	swap_ref = f"REPL/{source.name}"
-	credit = _credit_note(source, line, qty, faulty, reason, posting, employee, profile)
-	debit = _debit_note(supplier, line, qty, faulty, cost, reason, posting,
+	credit = _credit_note(source, line, qty, faulty, reason, posting, employee, profile,
+	                      step=0)
+	debit = _debit_note(supplier, line, qty, faulty, cost, reason, posting, 1,
 	                    employee, profile, swap_ref)
-	bought = _purchase(supplier, line, qty, fresh, cost, reason, posting,
+	bought = _purchase(supplier, line, qty, fresh, cost, reason, posting, 2,
 	                   employee, profile, swap_ref)
-	sold = _sale(source, line, qty, fresh, reason, posting, employee, profile)
+	sold = _sale(source, line, qty, fresh, reason, posting, employee, profile, step=3)
 	netting = _net_off(source.customer, credit, sold, posting)
 	supplier_netting = _net_supplier(supplier, debit, bought, posting)
 
@@ -229,9 +234,11 @@ def _replace_from_shelf(source, line, qty, faulty, fresh, has_serial, reason, po
 		frappe.throw(_("There is no {0} on this branch's shelf to give in its place.")
 		             .format(line.item_name), title=_("None on the shelf"))
 
+	# Two documents this way, and the good one leaves the shelf after the faulty
+	# one lands on it — stamped in that order for the same reason as above.
 	credit = _credit_note(source, line, qty, faulty, reason, posting, employee, profile,
-	                      warehouse=godown)
-	sold = _sale(source, line, qty, fresh, reason, posting, employee, profile)
+	                      step=0, warehouse=godown)
+	sold = _sale(source, line, qty, fresh, reason, posting, employee, profile, step=1)
 	netting = _net_off(source.customer, credit, sold, posting)
 
 	_leave_a_trail(source, credit, None, None, sold, netting, line, faulty, fresh,
@@ -357,6 +364,7 @@ def _trim_to_line(doc, item_code: str, qty: float, serials: list[str]) -> None:
 
 
 def _credit_note(source, line, qty, serials, reason, posting, employee, profile,
+                 step: int = 0,
                  warehouse=None) -> str:
 	"""Leg 1 — the faulty unit comes back from the customer.
 
@@ -383,8 +391,9 @@ def _credit_note(source, line, qty, serials, reason, posting, employee, profile,
 		doc.items[0].warehouse = warehouse
 		if doc.meta.has_field("set_warehouse"):
 			doc.set_warehouse = warehouse
-	doc.posting_date = posting
-	doc.set_posting_time = 1
+	# Same day as the sale it reverses, left at midnight, it posts before that
+	# sale — and the stock ledger refuses the pair.
+	stamp_posting(doc, posting, after=source, step=step)
 	doc.due_date = posting
 	doc.set("payment_schedule", [])
 	doc.set("payments", [])
@@ -394,7 +403,8 @@ def _credit_note(source, line, qty, serials, reason, posting, employee, profile,
 	return _post(doc, profile)
 
 
-def _sale(source, line, qty, serials, reason, posting, employee, profile) -> str:
+def _sale(source, line, qty, serials, reason, posting, employee, profile,
+          step: int = 0) -> str:
 	"""Leg 4 — the replacement goes out, on the terms the first one went out on.
 
 	A copy of the original bill with the new handset on it: same price, same
@@ -405,8 +415,10 @@ def _sale(source, line, qty, serials, reason, posting, employee, profile) -> str
 	doc.is_return = 0
 	doc.return_against = None
 	_trim_to_line(doc, line.item_code, qty, serials)
-	doc.posting_date = posting
-	doc.set_posting_time = 1
+	# `copy_doc` brought the original bill's time of day with it — 11:16 on the
+	# day of the sale — so without this the replacement sale posted hours before
+	# the purchase that brought the unit in, and the serial ledger refused it.
+	stamp_posting(doc, posting, after=source, step=step)
 	doc.due_date = posting
 	# The copy carries the original's payment schedule, whose due dates are the
 	# original's too — and a schedule that falls before the bill it is on is
@@ -419,15 +431,14 @@ def _sale(source, line, qty, serials, reason, posting, employee, profile) -> str
 	return _post(doc, profile)
 
 
-def _debit_note(supplier, line, qty, serials, cost, reason, posting,
+def _debit_note(supplier, line, qty, serials, cost, reason, posting, step,
                 employee, profile, data_ref=None) -> str:
 	"""Leg 2 — the faulty unit goes out to the supplier."""
 	doc = frappe.new_doc("Purchase Invoice")
 	doc.company = _company()
 	doc.supplier = supplier
 	doc.is_return = 1
-	doc.posting_date = posting
-	doc.set_posting_time = 1
+	stamp_posting(doc, posting, step=step)
 	# GST Settings make a bill number mandatory on every purchase document, and
 	# a distributor sends no bill with a warranty swap — so the shop's own
 	# reference goes on, which is what it would write on the docket anyway.
@@ -448,7 +459,7 @@ def _debit_note(supplier, line, qty, serials, cost, reason, posting,
 	return _post(doc, profile)
 
 
-def _purchase(supplier, line, qty, serials, cost, reason, posting,
+def _purchase(supplier, line, qty, serials, cost, reason, posting, step,
               employee, profile, data_ref=None) -> str:
 	"""Leg 3 — the replacement arrives from the supplier.
 
@@ -458,8 +469,7 @@ def _purchase(supplier, line, qty, serials, cost, reason, posting,
 	doc = frappe.new_doc("Purchase Invoice")
 	doc.company = _company()
 	doc.supplier = supplier
-	doc.posting_date = posting
-	doc.set_posting_time = 1
+	stamp_posting(doc, posting, step=step)
 	doc.bill_no = (data_ref or "REPL")[:140]
 	doc.bill_date = posting
 	doc.update_stock = 1
@@ -482,6 +492,8 @@ def _post(doc, profile) -> str:
 	centre = profile.sales_cost_center or profile.cost_center
 	if centre:
 		stamp_cost_center(doc, centre)
+	if doc.doctype == "Purchase Invoice" and doc.get("update_stock"):
+		stock_expense_account(doc)
 	doc.flags.ignore_permissions = True
 	doc.insert(ignore_permissions=True)
 	doc.submit()

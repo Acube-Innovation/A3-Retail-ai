@@ -1362,9 +1362,19 @@ def adjust_stock(payload) -> dict:
 	if not (data.get("reason") or "").strip():
 		frappe.throw(_("An adjustment needs a reason on it."))
 
+	# A stock take happens on the shop floor and is typed up afterwards. Dated
+	# today, a count taken on Sunday sits in the ledger ahead of Monday's sales,
+	# and ERPNext then refuses every back-dated movement behind it — which is
+	# how "the stock reconciliation exists for future dates, cancel it first"
+	# starts turning up on unrelated screens.
+	posting = getdate(data.get("date") or nowdate())
+	if posting > getdate(nowdate()):
+		frappe.throw(_("A shelf cannot be counted on a day that has not happened."),
+		             title=_("Date"))
+
 	doc = frappe.new_doc("Stock Reconciliation")
 	doc.company = frappe.db.get_single_value("Global Defaults", "default_company")
-	doc.posting_date = getdate(nowdate())
+	doc.posting_date = posting
 	doc.set_posting_time = 1
 	doc.purpose = "Stock Reconciliation"
 	doc.set_warehouse = warehouse

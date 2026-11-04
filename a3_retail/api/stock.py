@@ -9,7 +9,7 @@ import frappe
 from frappe import _
 from frappe.utils import cint, date_diff, flt, nowdate
 
-from a3_retail.api import require_permission
+from a3_retail.api import require_permission, require_role
 from a3_retail.api.staff import _me
 from a3_retail.utils.branch import get_user_branch
 
@@ -169,20 +169,126 @@ def item_details(item_code: str) -> dict:
 		"disabled": cint(doc.disabled),
 		"barcodes": [row.barcode for row in (doc.get("barcodes") or [])],
 		"selling_rate": flt(price),
+		"on_hand": on_hand(item_code),
+		"can_serialise": can_serialise(item_code),
+		"can_delete": can_delete_item(item_code),
 	}
+
+
+def on_hand(item_code: str) -> float:
+	"""Everything this item holds, across every branch's shelves."""
+	return flt(frappe.db.sql(
+		"select ifnull(sum(actual_qty), 0) from `tabBin` where item_code = %s",
+		item_code)[0][0])
+
+
+def can_serialise(item_code: str) -> bool:
+	"""Whether this item's serial setting may still be turned around.
+
+	`has_serial_no` decides how *future* movements are recorded, so the only
+	thing that makes changing it dangerous is stock already on a shelf: those
+	pieces were counted in without IMEIs and could never produce one. With
+	nothing on hand there is nothing to re-interpret.
+
+	ERPNext's own rule is blunter — any submitted document that ever named the
+	item refuses the change (`Item.cant_change`), including a reconciliation
+	that moved zero. That is why this is decided here and written round it.
+	"""
+	if on_hand(item_code) != 0:
+		return False
+	# A bundle still holds serial numbers for the item; turning serialisation
+	# off underneath one would strand them.
+	return not frappe.db.count(
+		"Serial and Batch Bundle", {"item_code": item_code, "docstatus": ("<", 2)})
+
+
+def can_delete_item(item_code: str) -> bool:
+	"""An item may go only if nothing anywhere has ever named it.
+
+	Two checks, because they answer different questions. `_item_is_used` knows
+	the handful of doctypes a shop cares about and can name the one that is in
+	the way — "5 Stock Ledger Entry records" means something to a person.
+	Frappe's own link scan is exhaustive but says only that *something* exists,
+	so it goes second, as the backstop.
+	"""
+	if not frappe.db.get_value("Has Role", {"parent": frappe.session.user,
+	                                        "role": "A3 Retail Admin"}):
+		return False
+	if _item_is_used(item_code):
+		return False
+	return not _linked_elsewhere(item_code)
+
+
+def _linked_elsewhere(item_code: str) -> str | None:
+	"""Would the real delete go through? Answered by trying it and undoing it.
+
+	Scanning the link table directly was the obvious way and it was wrong:
+	`delete_doc` runs the Item's own `on_trash` *before* the link check, and
+	that clears the item's Bin and Item Price rows — so those two never block a
+	deletion, while a scan sees them and reports every item in the shop as
+	undeletable.
+
+	Rather than keep a second copy of which links count, the delete is simply
+	run inside a savepoint and rolled back. It cannot drift from the real
+	behaviour, because it is the real behaviour.
+
+	Returns the reason it would fail, or None if it would succeed.
+	"""
+	frappe.db.savepoint("a3_try_delete")
+	try:
+		frappe.delete_doc("Item", item_code)
+	except Exception as error:
+		return str(error) or _("Something else still names it.")
+	finally:
+		frappe.db.rollback(save_point="a3_try_delete")
+	return None
+
+
+# Everywhere an item can leave a mark that a deletion would orphan. The stock
+# side comes first because it is the one a branch is most likely to hit.
+USED_BY = (
+	("Stock Ledger Entry", "item_code"),
+	("Bin", "item_code"),
+	("Sales Invoice Item", "item_code"),
+	("POS Invoice Item", "item_code"),
+	("Purchase Invoice Item", "item_code"),
+	("Delivery Note Item", "item_code"),
+	("Purchase Receipt Item", "item_code"),
+	("Stock Entry Detail", "item_code"),
+	("Stock Reconciliation Item", "item_code"),
+	("Sales Order Item", "item_code"),
+	("Purchase Order Item", "item_code"),
+	("Material Request Item", "item_code"),
+	("Serial No", "item_code"),
+)
+
+
+def _item_is_used(item_code: str) -> tuple[str, int] | None:
+	for doctype, field in USED_BY:
+		if not frappe.db.table_exists(doctype):
+			continue
+		count = frappe.db.count(doctype, {field: item_code})
+		if count:
+			return (doctype, count)
+	return None
 
 
 @frappe.whitelist()
 def save_item(item_code: str, item_name: str = "", brand: str | None = None,
               gst_hsn_code: str | None = None, barcode: str | None = None,
-              selling_rate=None, disabled: int = 0) -> dict:
+              selling_rate=None, disabled: int = 0, has_serial=None) -> dict:
 	"""Correct an item from the shop floor.
 
 	A typo in a name, a missing HSN or a barcode that never got scanned in are
 	all things the branch finds and head office does not. What cannot be changed
-	here is anything that would rewrite history: the item code, its UOM, or
-	whether it carries serial numbers — those decide how existing stock is
-	valued and counted.
+	here is anything that would rewrite history: the item code or its UOM —
+	those decide how existing stock is valued and counted.
+
+	Serial numbers are the one of that set that can still move, and only while
+	the item holds nothing: handsets are routinely set up unserialised by
+	mistake and found weeks later, and making a second item for the same phone
+	is worse than turning the flag over on an empty shelf. `can_serialise` is
+	the gate.
 	"""
 	_me()
 	require_permission("Item", "write")
@@ -220,9 +326,74 @@ def save_item(item_code: str, item_name: str = "", brand: str | None = None,
 	doc.flags.ignore_mandatory = True
 	doc.save()
 
+	if has_serial is not None:
+		_set_serialisation(item_code, cint(has_serial))
+
 	if selling_rate not in (None, ""):
 		_set_selling_rate(item_code, flt(selling_rate))
 	return item_details(item_code)
+
+
+def _set_serialisation(item_code: str, wanted: int):
+	"""Turn serial numbers on or off for an item that holds nothing.
+
+	Written with `db_set` rather than through `save()` on purpose. ERPNext
+	refuses the change outright whenever any submitted document has ever named
+	the item — a reconciliation that moved zero quantity is enough — and that
+	rule exists to protect stock on a shelf, which `can_serialise` has already
+	confirmed there is none of. Nothing else on the document is touched.
+	"""
+	current = cint(frappe.db.get_value("Item", item_code, "has_serial_no"))
+	if current == cint(wanted):
+		return
+
+	if not can_serialise(item_code):
+		frappe.throw(
+			_("{0} still holds stock, so how it is counted cannot change. Clear the "
+			  "shelf first, or set up a new item.").format(item_code),
+			title=_("Stock on hand"),
+		)
+
+	frappe.db.set_value("Item", item_code, "has_serial_no", cint(wanted),
+	                    update_modified=False)
+	# No series: a handset's IMEI is printed on the box, not ours to invent, so
+	# the counter is asked for it at the point the piece comes in.
+	if not cint(wanted):
+		frappe.db.set_value("Item", item_code, "serial_no_series", None,
+		                    update_modified=False)
+	frappe.clear_document_cache("Item", item_code)
+
+
+@frappe.whitelist()
+def delete_item(item_code: str) -> dict:
+	"""Remove an item nothing in the books has ever named.
+
+	Head office only, and only for the genuine mistakes: the duplicate typed in
+	twice, the test row, the item a barcode was scanned into by accident. One
+	that has ever moved is disabled instead — deleting it would leave the ledger
+	pointing at nothing.
+	"""
+	_me()
+	require_role("A3 Retail Admin")
+	require_permission("Item", "delete")
+
+	if not frappe.db.exists("Item", item_code):
+		frappe.throw(_("No such item."), title=_("Item"))
+
+	instead = _("Tick \u201cStop selling this item\u201d instead: that hides it from "
+	            "the counter and leaves the books intact.")
+
+	used = _item_is_used(item_code)
+	if used:
+		doctype, count = used
+		frappe.throw(
+			_("{0} cannot be deleted — {1} {2} record(s) still name it. {3}")
+			.format(item_code, count, _(doctype), instead),
+			title=_("Still in use"),
+		)
+
+	frappe.delete_doc("Item", item_code)
+	return {"deleted": item_code}
 
 
 def _set_selling_rate(item_code: str, rate: float):

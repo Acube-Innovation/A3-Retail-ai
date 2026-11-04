@@ -426,3 +426,96 @@ def validate_customer(doc, method=None):
 		doc.a3_whatsapp_no = doc.a3_mobile_no
 	if not doc.get("a3_customer_since"):
 		doc.a3_customer_since = getdate(nowdate())
+
+
+# ---------------------------------------------------------------------------
+# PIN codes
+# ---------------------------------------------------------------------------
+PINCODE_RE = re.compile(r"^[1-9]\d{5}$")
+# India Post's own public directory. No key, no quota published, and the data
+# does not change between one customer and the next — so each code is looked up
+# once and then answered from the site cache.
+PINCODE_API = "https://api.postalpincode.in/pincode/{0}"
+PINCODE_TTL = 60 * 60 * 24 * 30
+
+
+@frappe.whitelist()
+def pincode_info(pincode: str) -> dict:
+	"""State, district and post offices for a PIN code.
+
+	The counter types six digits and the rest of the address writes itself.
+	More than the typing it saves: the state decides whether a bill carries
+	CGST+SGST or IGST, and a counter in Kerala keying a Tamil Nadu customer
+	had no reason to notice they had left the state box on Kerala.
+	"""
+	require_permission("Customer", "read")
+
+	code = re.sub(r"\D", "", str(pincode or ""))
+	if not PINCODE_RE.match(code):
+		frappe.throw(_("A PIN code is six digits."), title=_("PIN"))
+
+	key = f"a3:pincode:{code}"
+	cached = frappe.cache().get_value(key)
+	if cached is not None:
+		return cached
+
+	found = _lookup_pincode(code)
+	# A miss is cached too, briefly: a mistyped code should not reach for the
+	# network again on every keystroke that follows it.
+	frappe.cache().set_value(key, found,
+	                         expires_in_sec=PINCODE_TTL if found.get("found") else 300)
+	return found
+
+
+def _lookup_pincode(code: str) -> dict:
+	import requests
+
+	try:
+		answer = requests.get(PINCODE_API.format(code), timeout=6)
+		answer.raise_for_status()
+		payload = answer.json()
+	except Exception:
+		# The shop keeps selling when the line is down. The counter types the
+		# address itself, exactly as it did before this existed.
+		return _blank_pincode(code,
+			_("Could not reach the PIN code directory just now."))
+
+	return _parse_pincode(payload, code)
+
+
+def _blank_pincode(code: str, note: str | None = None) -> dict:
+	blank = {"pincode": code, "found": False, "state": None, "city": None,
+	         "offices": [], "office": None}
+	if note:
+		blank["note"] = note
+	return blank
+
+
+def _parse_pincode(payload, code: str) -> dict:
+	"""India Post's reply, reduced to the four fields a bill needs.
+
+	Kept apart from the fetch so it can be read — and tested — against a real
+	saved reply without a network in the room.
+	"""
+	block = (payload or [{}])[0] if isinstance(payload, list) else {}
+	offices = block.get("PostOffice") or []
+	if block.get("Status") != "Success" or not offices:
+		return _blank_pincode(code,
+			_("No post office is listed under {0}.").format(code))
+
+	names = []
+	for office in offices:
+		name = (office.get("Name") or "").strip()
+		if name and name not in names:
+			names.append(name)
+
+	first = offices[0]
+	return {
+		"pincode": code,
+		"found": True,
+		"state": (first.get("State") or "").strip() or None,
+		# India Post calls it District; on a bill it is the city line.
+		"city": (first.get("District") or "").strip() or None,
+		"offices": names,
+		"office": names[0] if names else None,
+	}
