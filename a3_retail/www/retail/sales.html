@@ -10,7 +10,11 @@
 	<script src="/assets/a3_retail/js/a3_branch.js?v={{ asset_v }}" defer></script>
 	<script src="/assets/a3_retail/js/a3_pos.js?v={{ asset_v }}" defer></script>
 </head>
-<body class="pos-body">
+{#- `pos-split` is this page alone: the two columns scroll separately and the
+    window itself does not. `pos-body` is the app's ordinary body class, worn by
+    twenty screens, and anything that fixes a page to the viewport must not
+    hang off it. -#}
+<body class="pos-body pos-split">
 <div class="app">
 
 	{% include "a3_retail/www/retail/_sidebar.html" %}

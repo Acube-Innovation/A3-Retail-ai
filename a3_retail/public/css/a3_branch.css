@@ -643,22 +643,29 @@ input.is-locked { background: rgba(42, 51, 66, .04); color: var(--muted);
    of a four-hundred-item catalogue dragged the bill up off the screen with it,
    and the counter had to scroll back to see what they were charging. Each
    column now scrolls inside its own frame and the page itself does not scroll
-   at all, so the bill is never further than the eye. Scoped to `.pos-body`:
-   every other screen is a single column and reads better scrolled whole. */
-.pos-body .app { height: 100vh; }
-.pos-body .side { overflow-y: auto; }
-.pos-body .main { height: 100vh; overflow: hidden; }
+   at all, so the bill is never further than the eye.
+
+   Scoped to `.pos-split`, which only `sales.html` carries. These were first
+   written against `.pos-body` on the assumption that it meant the Sell screen.
+   It does not: twenty of the twenty-three pages carry it, so `height: 100vh;
+   overflow: hidden` on `.main` froze Bills, Stock, Reports, Service POS and
+   every other screen at one viewport with no way to scroll. Every rule below
+   fixes a page to the window, so it must never be on a page that is simply
+   long. */
+.pos-split .app { height: 100vh; }
+.pos-split .side { overflow-y: auto; }
+.pos-split .main { height: 100vh; overflow: hidden; }
 /* Sticky buys nothing inside a frame that no longer scrolls, and left sticky
    it keeps a stacking context that clips the customer-search results. */
-.pos-body .topbar { position: static; flex: 0 0 auto; }
-.pos-body .pos { flex: 1 1 auto; min-height: 0; overflow: hidden; align-items: stretch; }
-.pos-body .pos-left { overflow-y: auto; overscroll-behavior: contain;
+.pos-split .topbar { position: static; flex: 0 0 auto; }
+.pos-split .pos { flex: 1 1 auto; min-height: 0; overflow: hidden; align-items: stretch; }
+.pos-split .pos-left { overflow-y: auto; overscroll-behavior: contain;
 	padding-right: 8px; padding-bottom: 28px; }
-.pos-body .pos-bill { max-height: 100%; overflow-y: auto; overscroll-behavior: contain; }
+.pos-split .pos-bill { max-height: 100%; overflow-y: auto; overscroll-behavior: contain; }
 /* The lines already had a 34vh frame of their own, which inside a column that
    now has a hard ceiling only makes a second scrollbar a few centimetres from
    the first. The column is the frame. */
-.pos-body .bill-rows { max-height: none; overflow-y: visible; }
+.pos-split .bill-rows { max-height: none; overflow-y: visible; }
 .bill-head { display: flex; align-items: center; justify-content: space-between;
 	padding: 15px 16px; border-bottom: 1px solid var(--line); }
 .bill-head h2 { margin: 0; font-size: 19px; font-weight: 800; letter-spacing: -.02em; }
