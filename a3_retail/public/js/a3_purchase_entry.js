@@ -185,7 +185,11 @@
 			state.pick.hits = [];
 			say(error.message || "Could not read the catalogue.", "error");
 		}
-		state.pick.cursor = state.pick.hits.length ? 0 : -1;
+		// Only a search puts the cursor on a row. On the plain catalogue it sat
+		// on the first line alphabetically — 65W GAN DARK GREY CHARGER — and one
+		// stray Enter in the search box, which is also the last keystroke every
+		// barcode gun sends, quietly put that charger on the bill.
+		state.pick.cursor = (query && state.pick.hits.length) ? 0 : -1;
 		paintPicker();
 	}
 
@@ -856,7 +860,8 @@
 			event.preventDefault();
 			// A gun sends the digits then Enter. One match is a scan that found
 			// its box, so it goes straight on; anything else adds whatever row
-			// the cursor is resting on.
+			// the cursor is resting on — and with nothing typed, no row is.
+			if (!$("pick-q").value.trim() && state.pick.cursor < 0) return;
 			if (state.pick.hits.length === 1) {
 				bump(0, 1);
 				$("pick-q").value = "";

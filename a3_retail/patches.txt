@@ -11,3 +11,5 @@ a3_retail.patches.accessories_psla_short_codes
 a3_retail.patches.service_booking_payment_status
 a3_retail.patches.branch_working_hours
 a3_retail.patches.warranty_returns_shelf
+a3_retail.patches.realme_16x_serialisation
+a3_retail.patches.warehouse_stock_account

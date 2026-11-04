@@ -16,7 +16,7 @@ import frappe
 from frappe import _
 from frappe.utils import cint, flt, getdate, nowdate
 
-from a3_retail.api import date_window, require_permission
+from a3_retail.api import date_window, require_permission, stamp_posting
 from a3_retail.api.pos import _profile, _sales_person, _sold_by, print_url, resolve_mode
 from a3_retail.api.staff import _me
 
@@ -279,8 +279,9 @@ def create(payload) -> dict:
 	doc.customer = source.customer
 	doc.is_return = 1
 	doc.return_against = against
-	doc.posting_date = posting
-	doc.set_posting_time = 1
+	# Dated the same day as the sale it reverses, a credit note left at midnight
+	# posts hours *before* that sale and the stock ledger refuses it outright.
+	stamp_posting(doc, posting, after=source)
 	doc.due_date = posting
 	doc.branch = employee.branch
 	doc.update_stock = 1

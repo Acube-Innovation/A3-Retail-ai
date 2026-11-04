@@ -635,8 +635,30 @@ input.is-locked { background: rgba(42, 51, 66, .04); color: var(--muted);
 .quick-key { font-size: 10.5px; color: var(--faint); }
 
 /* ------------------------------------------------------------ bill panel */
-.pos-bill { position: sticky; top: 76px; background: var(--card); border: 1px solid var(--line);
+.pos-bill { background: var(--card); border: 1px solid var(--line);
 	border-radius: var(--radius); box-shadow: var(--shadow-card); overflow: hidden; }
+
+/* Sell is a two-handed screen: the catalogue on the left and the bill on the
+   right are read at the same time. With one page scroll, reaching the bottom
+   of a four-hundred-item catalogue dragged the bill up off the screen with it,
+   and the counter had to scroll back to see what they were charging. Each
+   column now scrolls inside its own frame and the page itself does not scroll
+   at all, so the bill is never further than the eye. Scoped to `.pos-body`:
+   every other screen is a single column and reads better scrolled whole. */
+.pos-body .app { height: 100vh; }
+.pos-body .side { overflow-y: auto; }
+.pos-body .main { height: 100vh; overflow: hidden; }
+/* Sticky buys nothing inside a frame that no longer scrolls, and left sticky
+   it keeps a stacking context that clips the customer-search results. */
+.pos-body .topbar { position: static; flex: 0 0 auto; }
+.pos-body .pos { flex: 1 1 auto; min-height: 0; overflow: hidden; align-items: stretch; }
+.pos-body .pos-left { overflow-y: auto; overscroll-behavior: contain;
+	padding-right: 8px; padding-bottom: 28px; }
+.pos-body .pos-bill { max-height: 100%; overflow-y: auto; overscroll-behavior: contain; }
+/* The lines already had a 34vh frame of their own, which inside a column that
+   now has a hard ceiling only makes a second scrollbar a few centimetres from
+   the first. The column is the frame. */
+.pos-body .bill-rows { max-height: none; overflow-y: visible; }
 .bill-head { display: flex; align-items: center; justify-content: space-between;
 	padding: 15px 16px; border-bottom: 1px solid var(--line); }
 .bill-head h2 { margin: 0; font-size: 19px; font-weight: 800; letter-spacing: -.02em; }
@@ -828,6 +850,9 @@ input.is-locked { background: rgba(42, 51, 66, .04); color: var(--muted);
 .modal-card > input { width: 100%; padding: 11px; font-family: inherit; font-size: 15px;
 	border: 1px solid var(--line-strong); border-radius: var(--radius-sm); margin-bottom: 10px; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+/* Pushes a destructive button to the far left, the width of the dialog away
+   from Save, so the two are never neighbours under a hurried hand. */
+.modal-spacer { flex: 1 1 auto; }
 .serial-list, .branch-list, .simple-list { list-style: none; margin: 0; padding: 0; }
 /* Four columns, because two pieces of the same model are not the same goods:
    one came in last March at one price and one last week at another. */

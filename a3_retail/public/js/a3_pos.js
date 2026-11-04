@@ -919,6 +919,65 @@ window.POS = (function () {
 	                           city: "customer-city", state: "customer-state",
 	                           pin: "customer-pin" };
 
+	/** Six digits of PIN, and the rest of the address writes itself.
+	 *
+	 *  More than typing saved: the state decides whether the bill carries
+	 *  CGST+SGST or IGST, and a counter in Kerala keying a Tamil Nadu customer
+	 *  had no reason to notice the state box still said Kerala.
+	 */
+	async function pinInto(fields, noteId) {
+		const box = $(fields.pin);
+		const code = (box.value || "").replace(/\D/g, "");
+		if (code.length !== 6) return;
+		if (box.dataset.looked === code) return;   // already answered for this one
+		box.dataset.looked = code;
+
+		let info;
+		try {
+			info = await A3.call("a3_retail.api.customer.pincode_info", { pincode: code });
+		} catch (error) {
+			return;   // a PIN that cannot be checked is not a reason to stop a sale
+		}
+		if (!info.found) {
+			if (info.note && noteId) $(noteId).textContent = info.note;
+			return;
+		}
+
+		// The PIN decides these two; a stale state left over from the branch
+		// default or the last customer is exactly what this is here to fix.
+		if (info.state) $(fields.state).value = info.state;
+		if (info.city) $(fields.city).value = info.city;
+
+		// The address is the counter's own sentence. Fill it only when there is
+		// nothing there, and offer the rest of the post offices as suggestions.
+		const address = $(fields.address);
+		fillOffices(address, info.offices || []);
+		if (info.office && !address.value.trim()) address.value = info.office;
+
+		if (noteId) {
+			const extra = (info.offices || []).length > 1
+				? ` · ${info.offices.length} post offices under this PIN`
+				: "";
+			$(noteId).textContent =
+				[info.city, info.state].filter(Boolean).join(", ") + extra;
+		}
+	}
+
+	/** A datalist on the address box, so the other post offices are one tap away. */
+	function fillOffices(input, offices) {
+		if (!offices.length) return;
+		const id = input.id + "-offices";
+		let list = document.getElementById(id);
+		if (!list) {
+			list = document.createElement("datalist");
+			list.id = id;
+			input.parentNode.appendChild(list);
+			input.setAttribute("list", id);
+		}
+		list.innerHTML = offices.map((name) =>
+			`<option value="${esc(name)}"></option>`).join("");
+	}
+
 	async function saveCustomer() {
 		const name = $("customer-name").value.trim();
 		if (!name) return say("The customer needs a name.", "error");
@@ -1490,6 +1549,11 @@ window.POS = (function () {
 		const posGstin = () => gstinInto("customer-gstin", POS_GSTIN_FIELDS, "customer-note");
 		$("customer-gstin").addEventListener("change", posGstin);
 		$("customer-gstin-fetch").addEventListener("click", posGstin);
+		// On input, so the six-digit moment is caught without waiting for the
+		// counter to tab out; the lookup remembers the code it just answered.
+		const posPin = () => pinInto(POS_GSTIN_FIELDS, "customer-note");
+		$("customer-pin").addEventListener("input", posPin);
+		$("customer-pin").addEventListener("change", posPin);
 		$("cust-edit").addEventListener("click", () => {
 			window.open("/retail/customers?customer=" + encodeURIComponent(state.customer), "_blank");
 		});
@@ -1499,6 +1563,10 @@ window.POS = (function () {
 				city: "nc-city", state: "nc-state", pin: "nc-pin" }, "nc-note");
 			panFromGstin("nc-gstin", "nc-pan");
 		});
+		const ncPin = () => pinInto({ address: "nc-address", city: "nc-city",
+			state: "nc-state", pin: "nc-pin" }, "nc-note");
+		$("nc-pin").addEventListener("input", ncPin);
+		$("nc-pin").addEventListener("change", ncPin);
 		$("nc-gstin").addEventListener("change", () => {
 			gstinInto("nc-gstin", { name: "nc-name", address: "nc-address",
 				city: "nc-city", state: "nc-state", pin: "nc-pin" }, "nc-note");

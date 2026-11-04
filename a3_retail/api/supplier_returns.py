@@ -22,7 +22,8 @@ import frappe
 from frappe import _
 from frappe.utils import cint, flt, getdate, nowdate
 
-from a3_retail.api import date_window, require_permission
+from a3_retail.api import (date_window, require_permission, stamp_posting,
+                           stock_expense_account)
 from a3_retail.api.pos import _profile
 from a3_retail.api.staff import _me
 
@@ -156,8 +157,10 @@ def create(payload) -> dict:
 	doc.company = _company()
 	doc.supplier = supplier
 	doc.is_return = 1
-	doc.posting_date = posting
-	doc.set_posting_time = 1
+	# This note stands on its own — there is no one invoice it reverses — so
+	# only the time of day needs sorting out: midnight on a back-dated note
+	# lands before everything that happened that day.
+	stamp_posting(doc, posting)
 	doc.bill_no = (data.get("bill_no") or "").strip() or None
 	doc.bill_date = posting
 	doc.update_stock = 1
@@ -195,6 +198,8 @@ def create(payload) -> dict:
 		doc.cost_center = cost_center
 	if data.get("reason"):
 		doc.remarks = str(data["reason"])[:500]
+
+	stock_expense_account(doc)
 
 	doc.flags.ignore_permissions = True
 	doc.insert(ignore_permissions=True)
