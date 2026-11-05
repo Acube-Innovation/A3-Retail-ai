@@ -224,6 +224,14 @@
 					<select id="sold-by"></select>
 				</div>
 
+				{#- The protection plan sold with the handset. Claimed against
+				    months later, when the bill is the only record of whose
+				    programme it was. -#}
+				<div class="bill-seller" id="insured-row">
+					<label for="insured-by">{{ _("Insured by") }}</label>
+					<select id="insured-by"></select>
+				</div>
+
 				<div class="bill-pay">
 					<h3>{{ _("Payment Method") }}</h3>
 					<div class="pay-tiles" id="pay-tiles">

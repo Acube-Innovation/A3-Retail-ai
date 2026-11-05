@@ -271,6 +271,12 @@ SERVICE_LINK_FIELDS = {
 	"Sales Invoice": [
 		_field("a3_service_job_card", "Service Job Card", "Link", SERVICE_MODULE,
 			options="Service Job Card", insert_after="po_no", read_only=1, no_copy=1),
+		# Who covers the handset. A protection plan is sold at the counter with
+		# the phone and claimed against months later, by which time the only
+		# record of which programme it was is the bill.
+		_field("a3_insured_by", "Insured By", "Link", SALES_MODULE,
+			options="Insurance Partner", insert_after="a3_service_job_card",
+			description="The protection plan sold with this handset, if any"),
 	],
 	"Payment Entry": [
 		_field("a3_service_job_card", "Service Job Card", "Link", SERVICE_MODULE,

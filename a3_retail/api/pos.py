@@ -949,6 +949,18 @@ def _build_invoice(data: dict, employee, draft: bool = False):
 	if sales_person:
 		invoice.append("sales_team", {"sales_person": sales_person, "allocated_percentage": 100})
 
+	# A protection plan is sold with the handset and claimed against months
+	# later, by which time the bill is the only record of whose programme it
+	# was. Checked rather than trusted: the box is a picker, but the payload is
+	# the browser's and an unknown name would fail on save with nothing useful
+	# said about why.
+	insured_by = (data.get("insured_by") or "").strip()
+	if insured_by and invoice.meta.has_field("a3_insured_by"):
+		if not frappe.db.exists("Insurance Partner", insured_by):
+			frappe.throw(_("{0} is not on the list of insurers.").format(insured_by),
+			             title=_("Insured by"))
+		invoice.a3_insured_by = insured_by
+
 	for row in items:
 		line = invoice.append(
 			"items",
@@ -1516,3 +1528,35 @@ def bank_accounts() -> list[dict]:
 	)
 	return [{"account": r.name, "label": r.account_name, "kind": r.account_type}
 	        for r in rows]
+
+
+@frappe.whitelist()
+def insurers() -> list[str]:
+	"""The protection plans this counter can sell against."""
+	_me()
+	return frappe.get_all("Insurance Partner", filters={"is_active": 1},
+	                      pluck="name", order_by="name")
+
+
+@frappe.whitelist()
+def add_insurer(name: str) -> dict:
+	"""Record a programme that has only just appeared.
+
+	Kept open to the counter on purpose: a new financier or a maker's own
+	scheme turns up every season, and a bill that cannot name the cover it was
+	sold with is a claim nobody can trace back in six months.
+	"""
+	_me()
+	require_permission("Insurance Partner", "create")
+
+	name = (name or "").strip()
+	if not name:
+		frappe.throw(_("Name the insurer."), title=_("Insured by"))
+	if frappe.db.exists("Insurance Partner", name):
+		return {"name": name, "created": False}
+
+	doc = frappe.new_doc("Insurance Partner")
+	doc.partner_name = name
+	doc.is_active = 1
+	doc.insert()
+	return {"name": doc.name, "created": True}

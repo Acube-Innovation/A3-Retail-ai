@@ -281,6 +281,9 @@ def invoice(name: str) -> dict:
 		"company": doc.company,
 		"warehouse": doc.set_warehouse,
 		"sales_person": ", ".join([row.sales_person for row in doc.get("sales_team") or []]),
+		# The cover sold with the handset, read back on the bill because that is
+		# where anyone handling a claim will look for it.
+		"insured_by": doc.get("a3_insured_by"),
 		"customer": _customer_block(doc),
 		"device": _device_block(doc),
 		"items": _items(doc),

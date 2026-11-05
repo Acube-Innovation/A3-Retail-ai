@@ -236,6 +236,8 @@ window.INVOICE = (function () {
 						<div><dt>Invoice Date</dt><dd>${esc(day(data.posting_date))}</dd></div>
 						${data.sales_person
 							? `<div><dt>Sales Person</dt><dd>${esc(data.sales_person)}</dd></div>` : ""}
+						${data.insured_by
+							? `<div><dt>Insured By</dt><dd>${esc(data.insured_by)}</dd></div>` : ""}
 					</dl>
 				</header>
 
