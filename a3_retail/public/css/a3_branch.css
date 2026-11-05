@@ -933,6 +933,10 @@ input.is-locked { background: rgba(42, 51, 66, .04); color: var(--muted);
 /* The Replace window's two roads, side by side and the same width. */
 .seg.rp-route { display: grid; grid-template-columns: 1fr 1fr; margin: 0; }
 .seg.rp-route .seg-btn { justify-content: center; }
+/* The same two-up switch on the debit note screen, where the choice is which
+   kind of note is being raised rather than where a handset goes. */
+.seg.dn-kind { display: grid; grid-template-columns: 1fr 1fr; margin: 0 0 8px; }
+.seg.dn-kind .seg-btn { justify-content: center; }
 
 .svc { display: grid; grid-template-columns: minmax(0, 1fr) 402px; gap: 22px;
 	padding: 14px 20px 40px; align-items: start; }

@@ -19,7 +19,7 @@
 		<header class="topbar">
 			<div class="topbar-branch topbar-title">
 				<h1>{{ _("Debit Notes") }} <span class="chip">{{ me.branch }}</span></h1>
-				<p class="topbar-sub">{{ _("Goods going back to a supplier, and the credit for them") }}</p>
+				<p class="topbar-sub">{{ _("What a supplier owes the shop — goods sent back, or a scheme settled") }}</p>
 			</div>
 			<div class="topbar-right">
 				<a class="btn btn-quiet" href="/retail/purchases">{{ _("Purchases") }}</a>
@@ -35,8 +35,22 @@
 		<main class="content pe-grid">
 			<div class="pe-main">
 
+				{#- Two documents share this screen because both reduce what the
+				    supplier is owed. Which one is being raised decides whether
+				    stock moves, so it is asked first and asked plainly. -#}
 				<section class="svc-panel">
-					<div class="panel-head"><h2>{{ _("Going back to") }}</h2></div>
+					<div class="panel-head"><h2>{{ _("What kind of note") }}</h2></div>
+					<div class="seg dn-kind" id="dn-kind">
+						<button type="button" class="seg-btn is-active" data-kind="purchase">
+							{{ _("Against a purchase") }}</button>
+						<button type="button" class="seg-btn" data-kind="scheme">
+							{{ _("Scheme") }}</button>
+					</div>
+					<p class="muted" id="kind-note">{{ _("Goods go back to the supplier and leave the shelf.") }}</p>
+				</section>
+
+				<section class="svc-panel">
+					<div class="panel-head"><h2 id="party-head">{{ _("Going back to") }}</h2></div>
 					<div class="field">
 						<input id="supplier-q" type="search" autocomplete="off" autofocus
 						       placeholder="{{ _('Search the supplier by name or phone…') }}">
@@ -46,7 +60,13 @@
 				</section>
 
 				<section class="svc-panel">
-					<div class="panel-head"><h2>{{ _("What is going back") }}</h2></div>
+					<div class="panel-head"><h2 id="lines-head">{{ _("What is going back") }}</h2>
+						{#- Every slab offer has a different name, so the item for it
+						    cannot be set up in advance — it is made here, as the note
+						    is raised, exactly as the purchase screen does it. -#}
+						<button class="btn btn-quiet" id="dn-new-item" type="button" hidden>
+							{{ _("+ New scheme item") }}</button>
+					</div>
 					<div class="field">
 						<input id="item-q" type="search" autocomplete="off"
 						       placeholder="{{ _('Search what this branch holds…') }}">
@@ -77,8 +97,11 @@
 					<h2>{{ _("Debit note") }}</h2>
 					<div class="bill-totals">
 						<div class="tr"><span>{{ _("Lines") }}</span><span id="d-lines">0</span></div>
-						<div class="tr tr-grand"><span>{{ _("Value going back") }}</span>
+						<div class="tr"><span id="d-total-label">{{ _("Value going back") }}</span>
 							<span id="d-total">₹0.00</span></div>
+						<div class="tr"><span>{{ _("GST") }}</span><span id="d-gst">₹0.00</span></div>
+						<div class="tr tr-grand"><span>{{ _("Supplier is debited") }}</span>
+							<span id="d-grand">₹0.00</span></div>
 					</div>
 
 					<div class="field"><label for="d-bill">{{ _("Supplier's reference") }}</label>
@@ -88,7 +111,7 @@
 					<div class="field"><label for="d-reason">{{ _("Reason") }}</label>
 						<input id="d-reason" type="text" maxlength="200"
 						       placeholder="{{ _('Why is it going back?') }}"></div>
-					<p class="muted">{{ _("The stock leaves and what this supplier is owed drops by the same amount.") }}</p>
+					<p class="muted" id="d-explain">{{ _("The stock leaves and what this supplier is owed drops by the same amount.") }}</p>
 
 					<button class="btn btn-primary btn-wide" id="d-save" disabled>
 						{{ _("Raise Debit Note") }}</button>
@@ -96,6 +119,47 @@
 				</section>
 			</aside>
 		</main>
+	</div>
+</div>
+
+<div class="modal" id="si-modal" hidden>
+	<div class="modal-card">
+		<header class="modal-head">
+			<h3>{{ _("New scheme item") }}</h3>
+			<button class="modal-x" data-close aria-label="{{ _('Close') }}">&times;</button>
+		</header>
+		<div class="field">
+			<label for="si-name">{{ _("What the scheme is called") }} <span class="req">*</span></label>
+			<input id="si-name" type="text" autocomplete="off" maxlength="140"
+			       placeholder="{{ _('ex: Month Slab Offer - 1st to 31st August 2026 / AUGUST 01') }}">
+			<p class="muted">{{ _("Name it the way the distributor's statement does, with the period in it — that is how it is found again next year.") }}</p>
+		</div>
+		<div class="field-row">
+			<div class="field">
+				<label for="si-hsn">{{ _("HSN code") }}</label>
+				<input id="si-hsn" type="text" inputmode="numeric" maxlength="8"
+				       placeholder="{{ _('ex: 85171300') }}">
+			</div>
+			<div class="field">
+				<label for="si-gst">{{ _("GST rate") }}</label>
+				<select id="si-gst"></select>
+			</div>
+		</div>
+		<div class="field">
+			<label for="si-amount">{{ _("Amount, before GST") }}</label>
+			<div class="priced">
+				<span class="rupee">&#8377;</span>
+				<input id="si-amount" inputmode="decimal" placeholder="{{ _('ex: 10,033.89') }}">
+			</div>
+			<p class="muted">{{ _("What the brand agreed. The GST goes on top, as it does on their statement.") }}</p>
+		</div>
+		<div class="modal-bar">
+			<p class="modal-note" id="si-note"></p>
+			<div class="modal-actions">
+				<button class="btn btn-quiet" data-close>{{ _("Cancel") }}</button>
+				<button class="btn btn-primary" id="si-save">{{ _("Add to the note") }}</button>
+			</div>
+		</div>
 	</div>
 </div>
 

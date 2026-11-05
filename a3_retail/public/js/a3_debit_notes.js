@@ -22,7 +22,8 @@
 			.replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 	}
 
-	const state = { branch: "", supplier: null, lines: [], saving: false };
+	const state = { branch: "", supplier: null, lines: [], saving: false,
+	                kind: "purchase", gstRates: [] };
 	let supplierTimer = null;
 	let itemTimer = null;
 
@@ -64,21 +65,27 @@
 	async function findItems() {
 		const q = $("item-q").value.trim();
 		if (q.length < 2) return ($("item-hits").innerHTML = "");
+		const scheme = state.kind === "scheme";
 		const hits = await A3.call("a3_retail.api.supplier_returns.stock_items",
-			{ query: q, limit: 8 });
+			{ query: q, limit: 8, kind: state.kind });
 		$("item-hits").innerHTML = (hits || []).length
 			? hits.map((i) => `<button class="pick" data-code="${esc(i.item_code)}"
 				data-label="${esc(i.item_name)}" data-qty="${i.qty}" data-rate="${i.rate}">
-				${esc(i.item_name)} · ${i.qty} in stock</button>`).join("")
-			: '<p class="muted">Nothing by that name is in this branch\\u2019s stock.</p>';
+				${esc(i.item_name)}${scheme ? "" : " \u00b7 " + i.qty + " in stock"}</button>`).join("")
+			: (scheme
+				? '<p class="muted">No scheme by that name yet \u2014 make one with the button above.</p>'
+				: '<p class="muted">Nothing by that name is in this branch\u2019s stock.</p>');
 	}
 
 	function addLine(code, label, held, rate) {
+		const scheme = state.kind === "scheme";
 		const found = state.lines.find((l) => l.item_code === code);
 		if (found) {
-			found.qty = Math.min(found.qty + 1, found.held);
+			// A scheme has no shelf to run out of; goods do.
+			found.qty = scheme ? found.qty + 1 : Math.min(found.qty + 1, found.held);
 		} else {
-			state.lines.push({ item_code: code, item_name: label, held: Number(held) || 0,
+			state.lines.push({ item_code: code, item_name: label,
+				held: scheme ? Infinity : Number(held) || 0,
 				qty: 1, rate: Number(rate) || 0 });
 		}
 		$("item-q").value = "";
@@ -171,8 +178,12 @@
 	// ---------------------------------------------------------------- save
 	async function save() {
 		if (state.saving) return;
-		if (!state.supplier) return note("Choose which supplier it is going back to.", "error");
-		if (!state.lines.length) return note("Say what is going back.", "error");
+		const scheme = state.kind === "scheme";
+		if (!state.supplier) return note(scheme
+			? "Say which brand is settling the scheme."
+			: "Choose which supplier it is going back to.", "error");
+		if (!state.lines.length) return note(scheme
+			? "Add the scheme line." : "Say what is going back.", "error");
 
 		state.saving = true;
 		$("d-save").disabled = true;
@@ -180,6 +191,7 @@
 		try {
 			const result = await A3.call("a3_retail.api.supplier_returns.create", {
 				payload: {
+					kind: state.kind,
 					supplier: state.supplier,
 					bill_no: $("d-bill").value.trim(),
 					date: $("d-date").value,
@@ -189,8 +201,10 @@
 					})),
 				},
 			});
-			note(`${result.debit_note} raised — ${money(result.amount)} back to `
-				+ `${result.supplier}.`, "ok");
+			note(`${result.debit_note} raised \u2014 ${money(result.amount)} off `
+				+ `${result.supplier}. They now owe `
+				+ `${money(Math.abs(result.supplier_outstanding))}`
+				+ `${result.supplier_outstanding < 0 ? " to us" : " from us"}.`, "ok");
 			window.open(result.print_url, "_blank");
 			reset();
 			load();
@@ -205,11 +219,55 @@
 	function reset() {
 		state.supplier = null;
 		state.lines = [];
+		state.schemeGst = null;
 		$("supplier-q").value = "";
 		$("supplier-picked").textContent = "";
 		$("d-bill").value = "";
 		$("d-reason").value = "";
 		paintLines();
+	}
+
+	// --------------------------------------------------------- scheme item
+	/** Make the item a scheme is billed under, then put it straight on the note.
+	 *
+	 *  Deliberately a short form rather than the purchase screen's full item
+	 *  window: a scheme has no cost, no selling price, no reorder level and no
+	 *  shelf. It has a name, a rate and a figure.
+	 */
+	function openSchemeItem() {
+		$("si-name").value = $("item-q").value.trim();
+		$("si-hsn").value = "85171300";
+		$("si-amount").value = "";
+		$("si-note").textContent = "";
+		$("si-modal").hidden = false;
+		$("si-name").focus();
+	}
+
+	async function saveSchemeItem() {
+		const name = $("si-name").value.trim();
+		if (!name) { $("si-note").textContent = "Name the scheme."; return; }
+		const amount = Number($("si-amount").value) || 0;
+		if (amount <= 0) { $("si-note").textContent = "What does it come to?"; return; }
+
+		$("si-save").disabled = true;
+		$("si-note").textContent = "Saving\u2026";
+		try {
+			const made = await A3.call(
+				"a3_retail.api.supplier_returns.create_scheme_item", {
+					payload: {
+						item_name: name,
+						hsn_code: $("si-hsn").value.trim(),
+						tax_template: $("si-gst").selectedOptions[0]
+							? $("si-gst").selectedOptions[0].dataset.template || "" : "",
+					},
+				});
+			$("si-modal").hidden = true;
+			addLine(made.item_code, made.item_name || name, Infinity, amount);
+		} catch (error) {
+			$("si-note").textContent = error.message || "Could not save that.";
+		} finally {
+			$("si-save").disabled = false;
+		}
 	}
 
 	async function start(options) {
@@ -219,6 +277,11 @@
 		try {
 			const boot = await A3.call("a3_retail.api.supplier_returns.bootstrap");
 			if (!boot.can_create) $("d-save").hidden = true;
+			state.gstRates = boot.gst_rates || [];
+			$("si-gst").innerHTML = state.gstRates.map((r) =>
+				`<option value="${r.rate}" data-template="${esc(r.template || "")}"${
+					Number(r.rate) === 18 ? " selected" : ""}>${r.rate}%</option>`).join("")
+				|| '<option value="18">18%</option>';
 		} catch (error) {
 			note(error.message || "Could not start the screen.", "error");
 		}
@@ -240,9 +303,18 @@
 			if (pick) addLine(pick.dataset.code, pick.dataset.label,
 				pick.dataset.qty, pick.dataset.rate);
 		});
+		$("dn-kind").addEventListener("click", (event) => {
+			const button = event.target.closest("[data-kind]");
+			if (button) setKind(button.dataset.kind);
+		});
+		$("dn-new-item").addEventListener("click", openSchemeItem);
+		$("si-save").addEventListener("click", saveSchemeItem);
+		$("si-modal").querySelectorAll("[data-close]").forEach((b) =>
+			b.addEventListener("click", () => { $("si-modal").hidden = true; }));
+
 		$("d-save").addEventListener("click", save);
 		$("refresh").addEventListener("click", load);
-		paintLines();
+		setKind("purchase");
 		load();
 	}
 
