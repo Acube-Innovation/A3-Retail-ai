@@ -28,28 +28,41 @@
 {%- set net_total = doc.net_total|float or 1.0 -%}
 {%- set tax_total = doc.total_taxes_and_charges|float -%}
 {%- set has_igst = summary|selectattr("igst")|list|length > 0 -%}
+{#- The blank below the items is what makes the sheet reach the bottom of the
+    page. It used to be a flat 300px whatever was on the bill, so seven lines
+    pushed the totals, the HSN summary and the signature onto a second sheet —
+    a page of white paper with a signature box on it, for a 2,950 rupee bill.
+
+    So it is worked out instead: one page's worth of room, less what the lines
+    already take. A line is about 34px with its IMEI under it; below zero there
+    is no blank left to give and the bill genuinely runs on, which is the only
+    time a second page is right. -#}
+{%- set line_count = (doc.items|length) + (doc.items|selectattr("serial_no")|list|length) -%}
+{%- set fill_height = [340 - (line_count * 34), 0]|max -%}
 
 <style>
-	.mbb { font-family: Helvetica, Arial, sans-serif; font-size: 9pt; color: #000; }
+	@page { size: A4; margin: 10mm; }
+	.mbb { font-family: Helvetica, Arial, sans-serif; font-size: 10.5pt; color: #000; }
 	.mbb table { width: 100%; border-collapse: collapse; }
 	.mbb .sheet, .mbb .sheet td, .mbb .sheet th { border: 1px solid #000; }
-	.mbb td, .mbb th { padding: 3px 6px; vertical-align: top; }
-	.mbb .kind { font-weight: bold; font-size: 10pt; letter-spacing: .3px; }
+	.mbb td, .mbb th { padding: 5px 7px; vertical-align: top; }
+	.mbb .kind { font-weight: bold; font-size: 12pt; letter-spacing: .3px; }
 	.mbb .copy { border: 1px solid #999; color: #444; padding: 2px 8px; font-size: 8pt;
 		margin-left: 10px; }
-	.mbb .org { font-size: 13pt; font-weight: bold; margin-bottom: 1px; }
+	.mbb .org { font-size: 15.5pt; font-weight: bold; margin-bottom: 1px; }
 	.mbb .logo { width: 96px; text-align: center; }
 	.mbb .logo img { max-width: 88px; max-height: 76px; }
 	.mbb .meta { text-align: center; font-weight: bold; }
-	.mbb .meta-val { text-align: center; white-space: nowrap; font-size: 9pt; }
-	.mbb .label { font-size: 8pt; font-weight: bold; letter-spacing: .3px; }
-	.mbb .items th { background: #efefef; text-align: center; font-size: 8.5pt; }
-	.mbb .items td { font-size: 9pt; }
+	.mbb .meta-val { text-align: center; white-space: nowrap; font-size: 10pt; }
+	.mbb .label { font-size: 9pt; font-weight: bold; letter-spacing: .3px; }
+	.mbb .items th { background: #efefef; text-align: center; font-size: 9.5pt; }
+	.mbb .items td { font-size: 10.5pt; }
 	.mbb .num { text-align: right; white-space: nowrap; }
 	.mbb .mid { text-align: center; }
-	.mbb .imei { color: #666; font-size: 8pt; }
-	.mbb .fill td { height: 300px; }
-	.mbb .sum th { background: #efefef; text-align: center; font-size: 8.5pt; }
+	.mbb .imei { color: #666; font-size: 9pt; }
+	/* Height comes from the template: see `fill_height` above. */
+	.mbb .fill td { padding: 0; }
+	.mbb .sum th { background: #efefef; text-align: center; font-size: 9.5pt; }
 	.mbb .tot td { font-weight: bold; background: #efefef; }
 	.mbb .sign { height: 86px; text-align: center; vertical-align: bottom; }
 	.mbb .sign img { max-height: 54px; }
@@ -183,7 +196,7 @@
 			{#- The blank space below the items is not one empty box: every column
 			    rule runs down to the totals, as on the sheet the shop has always
 			    used. Seven cells, not a colspan. -#}
-			<tr class="fill"><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+			<tr class="fill"><td style="height:{{ fill_height }}px"></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
 		</tbody>
 		<tfoot>
 			{#- What came off, and what it came off. A customer handed a bill for
