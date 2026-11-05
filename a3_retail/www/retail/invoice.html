@@ -103,7 +103,10 @@
 				<button type="button" class="seg-btn" data-route="godown">{{ _("To our godown") }}</button>
 			</div></div>
 
-		<div class="field-grid">
+		{#- Only for something that carries a number. A folder, a flex or a
+		    charger has no IMEI, and on a repair bill that is most of what gets
+		    swapped — so the row goes rather than sitting there greyed out. -#}
+		<div class="field-grid" id="rp-serial-row">
 			<label class="field"><span>{{ _("Faulty IMEI / serial") }}</span>
 				<select id="rp-faulty"></select></label>
 			<label class="field"><span id="rp-new-label">{{ _("New IMEI the supplier gave") }}</span>

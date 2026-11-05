@@ -85,6 +85,13 @@
 		$("dn-new-item").hidden = !scheme;
 		$("d-bill").placeholder = scheme
 			? "Their scheme reference, if any" : "Their note number, if any";
+		$("d-reason").placeholder = scheme
+			? "Which offer, and for what period?" : "Why is it going back?";
+		// A scheme has no shelf behind it, so the stock column is noise; the
+		// quantity column is counting offers rather than pieces.
+		$("col-item").textContent = scheme ? "Scheme" : "Item";
+		$("col-held").hidden = scheme;
+		$("col-qty").textContent = scheme ? "Qty" : "Going back";
 
 		// The two kinds cannot share lines: one has stock behind it and the
 		// other has none, so switching starts the note again.
@@ -128,12 +135,13 @@
 	}
 
 	function paintLines() {
+		const scheme = state.kind === "scheme";
 		const body = $("lines").querySelector("tbody");
 		$("empty-note").hidden = state.lines.length > 0;
 		body.innerHTML = state.lines.map((l, i) => `
 			<tr>
 				<td>${esc(l.item_name)}</td>
-				<td class="num">${l.held}</td>
+				<td class="num"${scheme ? " hidden" : ""}>${scheme ? "" : l.held}</td>
 				<td><input class="qty" data-i="${i}" type="number" min="1" step="1"
 					max="${l.held}" value="${l.qty}"></td>
 				<td><input class="rate" data-i="${i}" type="number" min="0" step="0.01"

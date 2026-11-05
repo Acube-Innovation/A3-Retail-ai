@@ -514,7 +514,13 @@ window.INVOICE = (function () {
 		}
 		const open = swap.lines.filter((line) => line.can_replace > 0);
 		if (!open.length) {
-			return toast("Everything on this bill has already come back.", "error");
+			// Three different reasons for an empty picker, and the counter can
+			// only act on one of them.
+			return toast(
+				swap.work_lines && !swap.lines.length
+					? "There is nothing on this bill but labour, and labour cannot be "
+					  + "replaced. Raise a credit note if the charge itself was wrong."
+					: "Everything on this bill has already come back.", "error");
 		}
 		swap.open = open;
 		$("rp-item").innerHTML = open.map((line, i) =>
@@ -551,7 +557,9 @@ window.INVOICE = (function () {
 
 		// Each line starts on its own road — a handset back to the supplier,
 		// anything without an IMEI to our godown — and the counter can switch.
-		setRoute(line.route || "supplier");
+		// Off our own shelf unless the counter says otherwise: the customer is
+		// standing there, and the distributor's replacement is weeks away.
+		setRoute(line.route || "godown");
 	}
 
 	/** Which road the faulty one takes, and what the window asks for on it. */
@@ -572,7 +580,10 @@ window.INVOICE = (function () {
 		$("rp-godown").hidden = !godown;
 		$("rp-new-label").textContent = godown
 			? "Replacement IMEI from this shelf" : "New IMEI the supplier gave";
-		// An accessory carries no IMEI, so neither side of the swap asks for one.
+		// A part carries no number, and on a repair bill that is most of what
+		// gets swapped — so the whole row goes rather than sitting there
+		// greyed out, asking for something that does not exist.
+		$("rp-serial-row").hidden = !line.has_serial;
 		$("rp-new").disabled = !line.has_serial;
 		$("rp-new").placeholder = line.has_serial
 			? "Type or scan it" : "Not a serialised item";
