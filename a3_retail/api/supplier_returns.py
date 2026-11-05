@@ -274,7 +274,14 @@ def create(payload) -> dict:
 	# only the time of day needs sorting out: midnight on a back-dated note
 	# lands before everything that happened that day.
 	stamp_posting(doc, posting)
-	doc.bill_no = (data.get("bill_no") or "").strip() or None
+	# GST Settings make a bill number mandatory on every purchase document,
+	# and a rep taking goods back often hands over nothing — so the shop's own
+	# reference goes on, the same answer the replacement flow settled on. The
+	# time is in it because ERPNext refuses the same number twice for one
+	# supplier in a year.
+	doc.bill_no = (data.get("bill_no") or "").strip() or (
+		f"{'DN' if scheme else 'PR'}/{_profile(employee.branch).get('branch_code') or ''}"
+		f"/{posting}-{frappe.utils.nowtime()[:5].replace(':', '')}")
 	doc.bill_date = posting
 	# The whole difference between the two kinds, in one flag. A scheme is a
 	# figure, not a box: nothing leaves a shelf, so nothing is counted out.
