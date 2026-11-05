@@ -941,6 +941,14 @@ window.SVC = (function () {
 		}
 	}
 
+	/** The device sticker, offered only once there is a job card to put on it. */
+	function showLabel(url) {
+		const link = $("done-label");
+		if (!link) return;
+		link.hidden = !url;
+		if (url) link.href = url;
+	}
+
 	function done(result) {
 		state.jobCard = result.job_card;
 		$("done-title").textContent = "Booked in";
@@ -949,9 +957,15 @@ window.SVC = (function () {
 				? `${result.warranty_type} — the warranty bears ${money(result.warranty_borne)}`
 				: `balance ${money(result.balance)}`);
 		$("done-print").href = result.print_url;
+		showLabel(result.label_url);
 		$("done-modal").hidden = false;
 		setTrack(0);
 		say("Job card " + result.job_card + " is open.", "ok");
+		// The estimate is what the customer leaves with, so the print window
+		// opens on its own rather than waiting to be asked. `printing stays
+		// manual` — this opens the browser's print dialog, it does not send
+		// anything to a printer by itself.
+		if (result.print_url) window.open(result.print_url, "_blank");
 	}
 
 	async function generateInvoice() {
@@ -963,6 +977,12 @@ window.SVC = (function () {
 			$("done-title").textContent = "Invoiced";
 			$("done-note").textContent = `${result.sales_invoice} · ${money(result.grand_total || 0)}`;
 			$("done-print").href = result.print_url;
+			// The repair is finished, so this is the moment the device gets its
+			// sticker — it goes on the bag it is handed back in.
+			showLabel(result.label_url
+				|| "/printview?doctype=Service%20Job%20Card&name="
+				   + encodeURIComponent(state.jobCard)
+				   + "&format=Job%20Card%20Label&no_letterhead=1&trigger_print=1");
 			$("done-modal").hidden = false;
 			setStep("invoice");
 			setTrack(2);

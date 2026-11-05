@@ -637,6 +637,7 @@ def save_booking(payload) -> dict:
 		"warranty_type": doc.warranty_type,
 		"promised": str(doc.estimated_delivery_date or ""),
 		"print_url": estimate_url(doc.name),
+		"label_url": label_url(doc.name),
 	}
 
 	advance = flt(data.get("advance_amount"))
@@ -891,6 +892,7 @@ def booking(job_card: str) -> dict:
 		"sales_invoice": doc.sales_invoice,
 		"items": _lines_of(doc),
 		"print_url": estimate_url(doc.name),
+		"label_url": label_url(doc.name),
 	}
 
 
@@ -998,6 +1000,23 @@ def _email_update(doc, card: dict) -> bool:
 		reference_name=doc.name,
 	)
 	return True
+
+
+@frappe.whitelist()
+def label_url(job_card: str) -> str:
+	"""The sticker that goes on the device, for the bench to scan.
+
+	The print *view* rather than a PDF: a label goes to its own printer and
+	the browser's print window is where that printer is chosen. It also means
+	the label's own 50x25mm page size is honoured, which a PDF built to this
+	site's A4 setting would not be.
+	"""
+	_me()
+	return (
+		"/printview?doctype=Service%20Job%20Card"
+		f"&name={frappe.utils.quoted(job_card)}"
+		"&format=Job%20Card%20Label&no_letterhead=1&trigger_print=1"
+	)
 
 
 @frappe.whitelist()

@@ -501,6 +501,10 @@
 		<p class="modal-note" id="done-note"></p>
 		<a class="btn btn-primary btn-block" id="done-print" target="_blank" rel="noopener">
 			{{ _("Print acknowledgement (PDF)") }}</a>
+		{#- The sticker for the device itself. Its own printer and its own
+		    window, because the roll is 50mm and the acknowledgement is A4. -#}
+		<a class="btn btn-outline btn-block" id="done-label" target="_blank" rel="noopener" hidden>
+			{{ _("Print device label") }}</a>
 		<button class="btn btn-quiet btn-block" data-close>{{ _("Next customer") }}</button>
 	</div>
 </div>

@@ -1,0 +1,56 @@
+{#- The sticker that goes on the device while it is on the bench.
+
+    Read by a scanner, not by a person: the barcode carries the job card
+    number, which is what the technician's screen and the delivery counter
+    both search by. The two lines of text are for the human holding the
+    tray — whose phone is this, and which phone is it.
+
+    Sized for a 50 x 25mm label roll. Nothing on it is optional: a label that
+    needs a second glance to tell two Samsungs apart is not worth printing.
+-#}
+<style>
+	@page { size: 50mm 25mm; margin: 0; }
+	/* The print view carries Frappe's own toolbar. On a 50mm sticker that is
+	   a third of the label given over to a link nobody can press. */
+	/* The print view carries a Print / Get PDF banner — `.action-banner`, and
+	   `.print-hide` only hides it in Frappe's own print stylesheet, which a
+	   custom page size does not pull in. On a 50mm sticker it was a third of
+	   the label given over to a link nobody can press. */
+	.action-banner, .print-hide { display: none !important; }
+	html, body, .print-format, .print-format-gutter {
+		margin: 0 !important; padding: 0 !important; background: #fff !important;
+		border: 0 !important; box-shadow: none !important; }
+	.lbl { width: 50mm; height: 25mm; padding: 1.5mm 2mm; box-sizing: border-box;
+	       font-family: Helvetica, Arial, sans-serif; color: #000;
+	       display: block; overflow: hidden; }
+	.lbl .who { font-size: 8pt; font-weight: bold; line-height: 1.15;
+	            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+	.lbl .what { font-size: 7pt; line-height: 1.15; white-space: nowrap;
+	             overflow: hidden; text-overflow: ellipsis; }
+	/* Pulled out to the label's edges: a Code 128 of a job card number is
+	   about two hundred bars, and over 46mm each one is a quarter of a
+	   millimetre wide — right at what a cheap scanner can resolve. The two
+	   millimetres the padding was taking are worth more to the barcode than
+	   to the margin. */
+	.lbl .code { margin: 0.6mm -2mm 0; text-align: center; }
+	.lbl .code img { height: 9mm; width: 100%; display: block; }
+	.lbl .num { font-size: 7pt; letter-spacing: .4px; text-align: center;
+	            font-family: "DejaVu Sans Mono", monospace; }
+</style>
+
+<div class="lbl">
+	<div class="who">{{ doc.customer_name or "—" }}</div>
+	{#- The model usually carries the make already — "Samsung Samsung S24" is
+	    what naming it twice looks like on a sticker this size. -#}
+	{%- set model = doc.device_model or "Device" -%}
+	{%- set make = doc.brand or "" -%}
+	<div class="what">
+		{{- (make ~ " " if make and not model.lower().startswith(make.lower()) else "") ~ model -}}
+		{%- if doc.imei_1 %} · {{ doc.imei_1[-6:] }}{% endif -%}
+	</div>
+	<div class="code">
+		{%- set bars = a3_barcode(doc.name, 9) -%}
+		{% if bars %}<img src="{{ bars }}">{% endif %}
+	</div>
+	<div class="num">{{ doc.name }}</div>
+</div>

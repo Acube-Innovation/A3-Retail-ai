@@ -23,6 +23,11 @@ def a3_tracking_qr(doc, scale: int = 3) -> str:
 	return qr_utils.tracking_qr(doc, scale=scale)
 
 
+def a3_barcode(text: str, height: float = 12.0) -> str:
+	"""A Code 128 barcode, for a label a scanner will read rather than a person."""
+	return qr_utils.barcode_data_uri(text, height=height)
+
+
 def a3_tracking_url(doc) -> str:
 	return qr_utils.tracking_url(doc)
 

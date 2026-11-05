@@ -20,6 +20,8 @@ THERMAL_STYLE = "A3 Retail Thermal 80mm"
 # name, doctype, template, size, margins (top/bottom/left/right)
 FORMATS = [
 	("Job Card Receipt (Thermal)", "Service Job Card", "job_card_receipt_thermal", "80mm"),
+	# The sticker that goes on the device, read by a scanner on the bench.
+	("Job Card Label", "Service Job Card", "job_card_label", "50x25mm"),
 	("Job Card Acknowledgement", "Service Job Card", "job_card_acknowledgement", "A5"),
 	("Service Estimate", "Service Estimate", "service_estimate", "A4"),
 	("Service Invoice", "Sales Invoice", "service_tax_invoice", "A4"),
@@ -56,7 +58,10 @@ FORMATS = [
 	("Courier Manifest", "Courier Dispatch", "courier_manifest", "A4"),
 ]
 
-THERMAL_SIZES = {"80mm"}
+THERMAL_SIZES = {"80mm", "50x25mm"}
+# Sizes that are a label rather than a roll: no page furniture, no margins
+# worth the name, and the page box is the sticker itself.
+LABEL_SIZES = {"50x25mm"}
 
 A4_CSS = """
 .print-format { font-family: "Inter", "Helvetica Neue", Helvetica, sans-serif; font-size: 9.5pt;
@@ -211,10 +216,10 @@ def _upsert_format(name: str, doctype: str, template: str, size: str) -> bool:
 		# 6mm, not 12/18. The sheet is a bill, and the shop wants it to reach
 		# the edges of the paper rather than float in the middle of it. Six is
 		# about as close as a laser printer will go before it starts clipping.
-		"margin_top": 2 if thermal else 6,
-		"margin_bottom": 2 if thermal else 6,
-		"margin_left": 2 if thermal else 6,
-		"margin_right": 2 if thermal else 6,
+		"margin_top": 0 if size in LABEL_SIZES else (2 if thermal else 6),
+		"margin_bottom": 0 if size in LABEL_SIZES else (2 if thermal else 6),
+		"margin_left": 0 if size in LABEL_SIZES else (2 if thermal else 6),
+		"margin_right": 0 if size in LABEL_SIZES else (2 if thermal else 6),
 		# Thermal rolls have no page furniture; A4/A5 carry "Page x of y".
 		"page_number": "Hide" if thermal else "Bottom Center",
 		"align_labels_right": 0,
