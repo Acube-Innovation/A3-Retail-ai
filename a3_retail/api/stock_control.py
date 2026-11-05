@@ -1382,13 +1382,26 @@ def adjust_stock(payload) -> dict:
 		doc.branch = employee.branch
 	doc.remarks = data["reason"].strip()
 
+	retiring = []
 	for row in items:
-		doc.append("items", {
+		serials = [str(x).strip() for x in (row.get("serials") or []) if str(x).strip()]
+		line = doc.append("items", {
 			"item_code": row["item_code"],
 			"warehouse": warehouse,
 			"qty": flt(row.get("counted")),
 			"valuation_rate": _count_rate(row, warehouse),
 		})
+		if serials:
+			# A handset is counted by reading the numbers off the boxes, so the
+			# count *is* the list: ERPNext sets the shelf to exactly these
+			# pieces, and anything that was there and is not on the list has
+			# walked. The quantity follows the list rather than the other way
+			# round, so the two can never disagree.
+			line.use_serial_batch_fields = 1
+			line.serial_no = "\n".join(serials)
+			line.qty = len(serials)
+			retiring += [s for s in _serials_on_shelf(row["item_code"], warehouse)
+			             if s not in set(serials)]
 
 	doc.flags.ignore_permissions = True
 	try:
@@ -1404,8 +1417,62 @@ def adjust_stock(payload) -> dict:
 		raise
 	doc.submit()
 
+	retired = _retire_serials(retiring, doc.name)
+
 	return {"adjustment": doc.name, "difference": flt(doc.difference_amount),
+	        "retired": retired,
 	        "print_url": print_url("Stock Reconciliation", doc.name)}
+
+
+@frappe.whitelist()
+def shelf_serials(item_code: str, warehouse: str) -> dict:
+	"""The IMEIs on a shelf, for the counter to tick off against the boxes.
+
+	Head office only, the same gate as the adjustment itself: this is the one
+	screen where a number can be written onto the shelf or taken off it
+	without a bill behind it.
+	"""
+	employee = _me()
+	if not _can_adjust():
+		frappe.throw(_("Stock is adjusted by head office."),
+		             frappe.PermissionError, title=_("Head office only"))
+	if warehouse not in set(_warehouses(employee.branch)):
+		frappe.throw(_("That warehouse does not belong to {0}.").format(employee.branch))
+
+	return {
+		"item_code": item_code,
+		"has_serial": bool(frappe.db.get_value("Item", item_code, "has_serial_no")),
+		"serials": _serials_on_shelf(item_code, warehouse),
+	}
+
+
+def _serials_on_shelf(item_code: str, warehouse: str) -> list[str]:
+	"""The IMEIs this shelf is holding for an item, newest first."""
+	return frappe.get_all(
+		"Serial No",
+		filters={"item_code": item_code, "warehouse": warehouse},
+		pluck="name", order_by="creation desc")
+
+
+def _retire_serials(serials: list[str], adjustment: str) -> list[str]:
+	"""A piece that was counted off the shelf is retired, never deleted.
+
+	Deleting would be tidier to look at and would take the handset's history
+	with it — which bill it went out on, which job card it came back through,
+	what it cost. Inactive keeps all of that and takes it out of stock, which
+	is what "it is not on the shelf" actually means.
+	"""
+	done = []
+	for serial in dict.fromkeys(serials):
+		if not frappe.db.exists("Serial No", serial):
+			continue
+		frappe.db.set_value("Serial No", serial, {
+			"status": "Inactive", "warehouse": None,
+		}, update_modified=False)
+		frappe.get_doc("Serial No", serial).add_comment(
+			"Comment", text=_("Counted off the shelf by {0}.").format(adjustment))
+		done.append(serial)
+	return done
 
 
 @frappe.whitelist()

@@ -784,6 +784,10 @@ window.STOCK = (function () {
 	// Moving offers what the shelf holds; counting has to offer what it does
 	// not, because a count exists to settle a disagreement about exactly that.
 	let workSearch = "search_stock";
+	/* What ticking an IMEI means in the window that is open. Moving or writing
+	   off asks which pieces are *leaving*; counting asks which are *there*, and
+	   a stock take can also meet a handset the system has never heard of. */
+	let workSerialMode = "out";
 	// Whether the lines carry a money box. Counting asks what a piece cost;
 	// goods arriving before their bill ask what it will sell for, which is the
 	// only figure the person signing for the box actually knows.
@@ -869,6 +873,38 @@ window.STOCK = (function () {
 			scanSerial(Number(n.dataset.i), n.value);
 			n.value = "";
 		}));
+		// A handset on the shelf that the system has never heard of — bought in
+		// before the shop kept IMEIs, or counted in without one. The count is
+		// the only place it can be written down.
+		const addTyped = (i, box) => {
+			const line = workLines[i];
+			const imei = (box.value || "").replace(/\s+/g, "");
+			if (!line || !imei) return;
+			if (!/^\d{6,20}$/.test(imei)) {
+				return toast("An IMEI is digits only.", "error");
+			}
+			if (line.serials.includes(imei)) {
+				return toast(imei + " is already on the list.", "error");
+			}
+			line.serials.push(imei);
+            line.picked.push(imei);
+			line.qty = line.picked.length;
+			box.value = "";
+			paintLines();
+			const back = $("w-lines").querySelector(`.w-imei-new[data-i="${i}"]`);
+			if (back) back.focus();
+		};
+		host.querySelectorAll(".w-imei-add").forEach((n) => n.addEventListener("click", () => {
+			const i = Number(n.dataset.i);
+			addTyped(i, host.querySelector(`.w-imei-new[data-i="${i}"]`));
+		}));
+		host.querySelectorAll(".w-imei-new").forEach((n) =>
+			n.addEventListener("keydown", (event) => {
+				if (event.key !== "Enter") return;
+				event.preventDefault();
+				addTyped(Number(n.dataset.i), n);
+			}));
+
 		host.querySelectorAll(".w-imei").forEach((n) => n.addEventListener("change", () => {
 			const line = workLines[Number(n.dataset.i)];
 			const imei = n.value;
@@ -947,6 +983,7 @@ window.STOCK = (function () {
 		if (!line.serials.length) {
 			return `<p class="muted w-imei-none">No IMEIs of that item in this warehouse.</p>`;
 		}
+		const counting = workSerialMode === "count";
 		// Scanned rather than hunted for. A shelf can hold forty of the same
 		// handset, and finding one number in that list by eye is slower than
 		// reading the box — so the gun goes to the top, as it does on a
@@ -961,8 +998,17 @@ window.STOCK = (function () {
 				      >${line.picked.length}/${line.serials.length}</span>
 			</div>
 			<div class="imei-flash w-flash" data-i="${index}" hidden></div>
-			<div class="w-imei-head">On this shelf
-				<b>${line.picked.length ? line.picked.length + " going" : "none picked yet"}</b></div>
+			<div class="w-imei-head">${counting ? "Counted on this shelf" : "On this shelf"}
+				<b>${line.picked.length
+					? line.picked.length + (counting ? " counted" : " going")
+					: "none picked yet"}</b></div>
+			${counting ? `<div class="imei-scan-row w-imei-add-row">
+				<input class="w-imei-new" data-i="${index}" autocomplete="off"
+				       inputmode="numeric"
+				       placeholder="An IMEI on the shelf that is not listed \u2014 add it">
+				<button class="btn btn-quiet w-imei-add" data-i="${index}"
+				        type="button">Add</button>
+			</div>` : ""}
 			<ul class="imei-list">${line.serials.map((imei) => `
 				<li><label><input type="checkbox" class="w-imei" data-i="${index}"
 				        value="${esc(imei)}" ${line.picked.includes(imei) ? "checked" : ""}>
@@ -1024,7 +1070,17 @@ window.STOCK = (function () {
 		line.serials = rows.length ? rows.map((r) => r.serial_no || r.name) : null;
 		line.picked = [];
 		line.loaded_for = line.item_code;
-		if (line.serials) line.qty = 0;
+		// Counting starts from "everything the system thinks is here is here",
+		// because that is true far more often than not and unticking the two
+		// that have walked is less work than ticking the thirty-eight that
+		// have not. Moving starts from nothing picked.
+		if (line.serials) {
+			line.qty = 0;
+			if (workSerialMode === "count") {
+				line.picked = line.serials.slice();
+				line.qty = line.picked.length;
+			}
+		}
 		paintLines();
 		// Straight on to the next thing the person has to do: the number on the
 		// box if this is a handset, otherwise how many are going.
@@ -1069,6 +1125,7 @@ window.STOCK = (function () {
 	const today = () => new Date().toLocaleDateString("en-CA");
 
 	function openMove() {
+		workSerialMode = "out";
 		workSearch = "search_stock";
 		const options = (state.network || []).map((w) =>
 			`<option value="${esc(w.warehouse)}">${esc(w.label)}</option>`).join("");
@@ -1129,6 +1186,7 @@ window.STOCK = (function () {
 	}
 
 	function openDamage() {
+		workSerialMode = "out";
 		workSearch = "search_stock";
 		const options = (state.boot.warehouses || []).map((warehouse) =>
 			`<option value="${esc(warehouse)}">${esc(warehouse)}</option>`).join("");
@@ -1245,6 +1303,8 @@ window.STOCK = (function () {
 
 	function openAdjust() {
 		workSearch = "search_countable";
+		// Ticking means "this one is on the shelf", not "this one is leaving".
+		workSerialMode = "count";
 		const options = state.boot.warehouses.map((warehouse) =>
 			`<option value="${esc(warehouse)}">${esc(warehouse)}</option>`).join("");
 
@@ -1267,7 +1327,9 @@ window.STOCK = (function () {
 					.filter((line) => line.item_code)
 					.map((line) => ({ item_code: line.item_code,
 					                  counted: Number(line.qty) || 0,
-					                  rate: Number(line.rate) || 0 }));
+					                  rate: Number(line.rate) || 0,
+					                  // For a handset the list is the count.
+					                  serials: line.serials ? line.picked : null }));
 				if (!counted.length) throw new Error("Add at least one item to count.");
 				const result = await A3.call("a3_retail.api.stock_control.adjust_stock", {
 					payload: {
@@ -1280,8 +1342,11 @@ window.STOCK = (function () {
 						items: counted,
 					},
 				});
-				toast(`${result.adjustment} submitted — ${counted.length} line`
-					+ `${counted.length === 1 ? "" : "s"} (${money(result.difference)}).`, "ok");
+				const gone = (result.retired || []).length;
+				toast(`${result.adjustment} submitted \u2014 ${counted.length} line`
+					+ `${counted.length === 1 ? "" : "s"} (${money(result.difference)})`
+					+ (gone ? `, ${gone} IMEI${gone === 1 ? "" : "s"} marked inactive` : "")
+					+ ".", "ok");
 				loadStock();
 				loadKpis();
 				loadTab("adjustments");
