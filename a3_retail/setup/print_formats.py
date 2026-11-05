@@ -66,7 +66,7 @@ A4_CSS = """
 .print-format thead { display: table-header-group; }
 .print-format h4 { font-size: 8.5pt; text-transform: uppercase; letter-spacing: .6px;
 	color: #374151; margin: 10px 0 2px; }
-@page { size: A4; margin: 12mm 12mm 18mm 12mm; }
+@page { size: A4; margin: 6mm; }
 """
 
 THERMAL_CSS = """
@@ -208,10 +208,13 @@ def _upsert_format(name: str, doctype: str, template: str, size: str) -> bool:
 		"html": html,
 		"css": THERMAL_CSS if thermal else A4_CSS,
 		"font_size": 8 if thermal else 9,
-		"margin_top": 2 if thermal else 12,
-		"margin_bottom": 2 if thermal else 18,
-		"margin_left": 2 if thermal else 12,
-		"margin_right": 2 if thermal else 12,
+		# 6mm, not 12/18. The sheet is a bill, and the shop wants it to reach
+		# the edges of the paper rather than float in the middle of it. Six is
+		# about as close as a laser printer will go before it starts clipping.
+		"margin_top": 2 if thermal else 6,
+		"margin_bottom": 2 if thermal else 6,
+		"margin_left": 2 if thermal else 6,
+		"margin_right": 2 if thermal else 6,
 		# Thermal rolls have no page furniture; A4/A5 carry "Page x of y".
 		"page_number": "Hide" if thermal else "Bottom Center",
 		"align_labels_right": 0,
