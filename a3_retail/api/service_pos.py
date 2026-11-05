@@ -446,7 +446,7 @@ LINE_GROUPS = {
 
 @frappe.whitelist()
 def create_line_item(item_name: str, kind: str = "Part", rate: float = 0,
-                     hsn_code: str | None = None) -> dict:
+                     hsn_code: str | None = None, brand: str | None = None) -> dict:
 	"""Catalogue a part or a charge without leaving the repair.
 
 	A bench meets a part the shop has never bought before — a connector, a
@@ -479,6 +479,9 @@ def create_line_item(item_name: str, kind: str = "Part", rate: float = 0,
 		"item_name": (item_name or "").strip(),
 		"item_group": group,
 		"hsn_code": _hsn(hsn_code) or "",
+		# A flex or a folder is bought by make, and a part with no make on it
+		# cannot be found again by anyone looking for that model's spares.
+		"brand": (brand or "").strip(),
 		"uom": "Nos",
 		# A charge is work, not a thing on a shelf.
 		"is_service": 1 if is_service else 0,

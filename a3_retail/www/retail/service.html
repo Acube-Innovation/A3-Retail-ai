@@ -438,8 +438,14 @@
 				<label class="field"><span>{{ _("Price") }}</span>
 					<input id="ln-rate" inputmode="decimal" placeholder="0.00"></label>
 			</div>
-			<label class="field"><span>{{ _("HSN / SAC code") }}</span>
-				<input id="ln-hsn" placeholder="{{ _('85177090 for a part, 998716 for repair work') }}"></label>
+			<div class="field-grid">
+				<label class="field"><span>{{ _("HSN / SAC code") }}</span>
+					<input id="ln-hsn" placeholder="{{ _('85177090 for a part, 998716 for repair work') }}"></label>
+				{#- The make the part is for. Without it, nobody looking for that
+				    model's spares will ever find this line again. -#}
+				<label class="field"><span>{{ _("Brand") }}</span>
+					<select id="ln-brand"></select></label>
+			</div>
 			<div class="msg" id="ln-msg"></div>
 			<div class="modal-actions">
 				<button class="btn btn-quiet" id="ln-cancel" type="button">{{ _("Back") }}</button>

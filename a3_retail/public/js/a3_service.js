@@ -528,6 +528,13 @@ window.SVC = (function () {
 			$("ln-name").value = $("line-q").value.trim();
 			$("ln-rate").value = "";
 			$("ln-hsn").value = "";
+			// Filled each time it opens: a make added while booking the device
+			// in should be offered on the very next part.
+			$("ln-brand").innerHTML = '<option value="">\u2014</option>'
+				+ (state.brands || []).map((brand) =>
+					`<option value="${esc(brand)}">${esc(brand)}</option>`).join("");
+			// Most parts are for the device on the screen, so start there.
+			if (state.device && state.device.brand) $("ln-brand").value = state.device.brand;
 			$("ln-msg").textContent = "";
 			$("ln-name").focus();
 		}
@@ -549,6 +556,7 @@ window.SVC = (function () {
 				kind: $("ln-kind").value,
 				rate: Number($("ln-rate").value) || 0,
 				hsn_code: $("ln-hsn").value.trim(),
+				brand: $("ln-brand").value,
 			});
 			// Straight onto the repair: it was catalogued because it is needed now.
 			addLine({
