@@ -164,6 +164,18 @@
 		<h3 id="list-title"></h3>
 		<p class="modal-note" id="list-note"></p>
 		<ul class="simple-list" id="list-body"></ul>
+		{#- Cancelling runs stock and ledger reversals, which take a moment on a
+		    bill with serial numbers on it. The bar says the shop is not stuck. -#}
+		<div class="bill-busy" id="list-busy" hidden>
+			<div class="bill-busy-bar"><span></span></div>
+			<p class="bill-busy-what" id="list-busy-what"></p>
+		</div>
+		{#- ERPNext refuses for one reason at a time and often several at once.
+		    Listed, not joined into a paragraph the counter cannot act on. -#}
+		<div class="bill-refused" id="list-refused" hidden>
+			<p class="bill-refused-head" id="list-refused-head"></p>
+			<ul id="list-reasons"></ul>
+		</div>
 		<div class="modal-actions"><button class="btn btn-quiet" data-close>{{ _("Close") }}</button></div>
 	</div>
 </div>
