@@ -557,6 +557,7 @@ def save_booking(payload) -> dict:
 	_check_discount(data)
 	_check_promise(data)
 	_check_technician(data, employee.branch)
+	_check_frp_needs_imei(data)
 
 	doc = frappe.new_doc("Service Job Card")
 	doc.branch = employee.branch
@@ -680,6 +681,37 @@ def _check_not_already_booked(data: dict, branch: str):
 		  "twice. Open that job card to add to it, or hand this one back first.").format(
 			open_card.name, _(open_card.status), open_card.customer_name),
 		title=_("Already on the bench"),
+	)
+
+
+# A Google account lock is undone through the manufacturer, and every one of
+# them is asked for by IMEI. Taken in without it, the device sits on the bench
+# until somebody finds the box — which is the one place the number is still
+# readable once the phone will not unlock.
+FRP_WORDS = ("frp", "google lock", "google account lock", "factory reset protection")
+
+
+def _check_frp_needs_imei(data: dict):
+	"""An FRP lock cannot be worked on without the device's number."""
+	if (data.get("imei_1") or "").strip() or (data.get("serial_no") or "").strip():
+		return
+
+	said = " ".join(str(data.get(field) or "") for field in
+	                ("complaint_description", "issue_name", "repair_category")).lower()
+	said += " " + " ".join(str(i) for i in (data.get("issues") or [])).lower()
+	# The picked problem is a document name; what it is called is on the record.
+	for issue in data.get("issues") or []:
+		said += " " + str(frappe.db.get_value("Service Issue Type", issue, "issue_name")
+		                  or "").lower()
+
+	if not any(word in said for word in FRP_WORDS):
+		return
+
+	frappe.throw(
+		_("An FRP lock is cleared through the maker, and they ask for the IMEI. Scan "
+		  "it or read it off the box \u2014 a locked phone will not show it on screen, "
+		  "and without it the device cannot be sent on."),
+		title=_("IMEI needed for an FRP lock"),
 	)
 
 
