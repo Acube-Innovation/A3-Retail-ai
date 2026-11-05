@@ -61,6 +61,39 @@
 		paintLines();
 	}
 
+	// ------------------------------------------------------------------ kind
+	/** Which note is being raised. Everything on the screen reads this. */
+	function setKind(kind) {
+		state.kind = kind === "scheme" ? "scheme" : "purchase";
+		const scheme = state.kind === "scheme";
+
+		$("dn-kind").querySelectorAll("[data-kind]").forEach((b) =>
+			b.classList.toggle("is-active", b.dataset.kind === state.kind));
+
+		$("kind-note").textContent = scheme
+			? "A figure the brand has agreed. Nothing leaves the shelf \u2014 only what "
+			  + "the supplier is owed changes."
+			: "Goods go back to the supplier and leave the shelf.";
+		$("party-head").textContent = scheme ? "Settled by" : "Going back to";
+		$("lines-head").textContent = scheme ? "What the scheme comes to" : "What is going back";
+		$("d-total-label").textContent = scheme ? "Scheme value" : "Value going back";
+		$("d-explain").textContent = scheme
+			? "The supplier's outstanding drops by the total, GST included. No stock moves."
+			: "The stock leaves and what this supplier is owed drops by the same amount.";
+		$("item-q").placeholder = scheme
+			? "Search a scheme already set up\u2026" : "Search what this branch holds\u2026";
+		$("dn-new-item").hidden = !scheme;
+		$("d-bill").placeholder = scheme
+			? "Their scheme reference, if any" : "Their note number, if any";
+
+		// The two kinds cannot share lines: one has stock behind it and the
+		// other has none, so switching starts the note again.
+		state.lines = [];
+		$("item-q").value = "";
+		$("item-hits").innerHTML = "";
+		paintLines();
+	}
+
 	// ----------------------------------------------------------------- items
 	async function findItems() {
 		const q = $("item-q").value.trim();
@@ -70,14 +103,15 @@
 			{ query: q, limit: 8, kind: state.kind });
 		$("item-hits").innerHTML = (hits || []).length
 			? hits.map((i) => `<button class="pick" data-code="${esc(i.item_code)}"
-				data-label="${esc(i.item_name)}" data-qty="${i.qty}" data-rate="${i.rate}">
+				data-label="${esc(i.item_name)}" data-qty="${i.qty}" data-rate="${i.rate}"
+				data-gst="${i.gst_rate || 0}">
 				${esc(i.item_name)}${scheme ? "" : " \u00b7 " + i.qty + " in stock"}</button>`).join("")
 			: (scheme
 				? '<p class="muted">No scheme by that name yet \u2014 make one with the button above.</p>'
 				: '<p class="muted">Nothing by that name is in this branch\u2019s stock.</p>');
 	}
 
-	function addLine(code, label, held, rate) {
+	function addLine(code, label, held, rate, gst) {
 		const scheme = state.kind === "scheme";
 		const found = state.lines.find((l) => l.item_code === code);
 		if (found) {
@@ -86,7 +120,7 @@
 		} else {
 			state.lines.push({ item_code: code, item_name: label,
 				held: scheme ? Infinity : Number(held) || 0,
-				qty: 1, rate: Number(rate) || 0 });
+				qty: 1, rate: Number(rate) || 0, gst: Number(gst) || 0 });
 		}
 		$("item-q").value = "";
 		$("item-hits").innerHTML = "";
@@ -127,8 +161,16 @@
 		}));
 
 		const total = state.lines.reduce((sum, l) => sum + l.qty * l.rate, 0);
+		// The GST the server will put on, shown before the save rather than
+		// after it: a scheme is agreed at the figure *with* tax, so a counter
+		// who cannot see the tax cannot tell whether they typed the right
+		// number. Each line carries its own rate, as a mixed note may.
+		const gst = state.lines.reduce(
+			(sum, l) => sum + (l.qty * l.rate * (Number(l.gst) || 0)) / 100, 0);
 		$("d-lines").textContent = state.lines.length;
 		$("d-total").textContent = money(total);
+		$("d-gst").textContent = money(gst);
+		$("d-grand").textContent = money(total + gst);
 		$("d-save").disabled = !state.lines.length || !state.supplier;
 	}
 
@@ -262,7 +304,8 @@
 					},
 				});
 			$("si-modal").hidden = true;
-			addLine(made.item_code, made.item_name || name, Infinity, amount);
+			addLine(made.item_code, made.item_name || name, Infinity, amount,
+				Number($("si-gst").value) || 0);
 		} catch (error) {
 			$("si-note").textContent = error.message || "Could not save that.";
 		} finally {
@@ -301,7 +344,7 @@
 		$("item-hits").addEventListener("click", (event) => {
 			const pick = event.target.closest(".pick");
 			if (pick) addLine(pick.dataset.code, pick.dataset.label,
-				pick.dataset.qty, pick.dataset.rate);
+				pick.dataset.qty, pick.dataset.rate, pick.dataset.gst);
 		});
 		$("dn-kind").addEventListener("click", (event) => {
 			const button = event.target.closest("[data-kind]");

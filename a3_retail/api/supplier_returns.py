@@ -91,7 +91,7 @@ def stock_items(query: str = "", limit: int = 10, kind: str = "purchase") -> lis
 	# the stock join would hide it. Asked for by kind so the goods search stays
 	# exactly as it was: what this branch actually holds, and nothing else.
 	if (kind or "purchase") == "scheme":
-		return frappe.db.sql(
+		return _with_gst(frappe.db.sql(
 			"""
 			select i.name as item_code, i.item_name, i.gst_hsn_code,
 			       0 as qty, 0 as rate, 0 as has_serial
@@ -101,7 +101,7 @@ def stock_items(query: str = "", limit: int = 10, kind: str = "purchase") -> lis
 			order by i.modified desc
 			limit %(limit)s
 			""",
-			{"q": like, "limit": limit}, as_dict=True)
+			{"q": like, "limit": limit}, as_dict=True))
 
 	rows = frappe.db.sql(
 		"""
@@ -120,6 +120,19 @@ def stock_items(query: str = "", limit: int = 10, kind: str = "purchase") -> lis
 		{"warehouse": profile.default_warehouse, "q": like, "limit": limit},
 		as_dict=True,
 	)
+	return _with_gst(rows)
+
+
+def _with_gst(rows: list[dict]) -> list[dict]:
+	"""Each hit's own GST rate, so the screen can total a note before saving it.
+
+	A scheme is agreed at the figure *with* tax on it, so a counter who cannot
+	see the tax cannot tell whether they have typed the right number.
+	"""
+	from a3_retail.utils import tax
+
+	for row in rows:
+		row["gst_rate"] = tax.item_rate(row["item_code"])
 	return rows
 
 
