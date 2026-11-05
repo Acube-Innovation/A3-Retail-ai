@@ -27,6 +27,11 @@ FORMATS = [
 	# The copy a bank is given before releasing money on an EMI sale.
 	("Financier Copy", "Sales Invoice", "financier_copy", "A4"),
 	("POS Receipt", "POS Invoice", "pos_receipt", "80mm"),
+	# The same slip for an ordinary Sales Invoice. An accessory sale does not
+	# need an A4 sheet with an HSN summary on it — the customer wants a receipt
+	# — so the counter is given both and picks. The template carries nothing
+	# POS-specific, so it is the same file rather than a second copy of it.
+	("Retail Receipt (Thermal)", "Sales Invoice", "pos_receipt", "80mm"),
 	("Delivery Challan", "Delivery Note", "delivery_challan", "A4"),
 	("Device Delivery Note", "Service Job Card", "device_delivery_note", "A5"),
 	("Warranty Certificate", "Warranty Registration", "warranty_certificate", "A4"),

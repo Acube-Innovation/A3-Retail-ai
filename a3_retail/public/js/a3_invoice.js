@@ -182,8 +182,12 @@ window.INVOICE = (function () {
 		}
 	}
 
-	function print() {
-		window.open(state.data.print_url, "_blank");
+	function print(thermal) {
+		const url = thermal === true
+			? state.data.print_url.replace(
+				/format=[^&]*/, "format=" + encodeURIComponent("Retail Receipt (Thermal)"))
+			: state.data.print_url;
+		window.open(url, "_blank");
 	}
 
 	// ---------------------------------------------------------------- load
@@ -211,14 +215,18 @@ window.INVOICE = (function () {
 		$("doc-actions").innerHTML = `
 			${data.printable
 				? `<button class="btn btn-primary btn-icon" id="print-top">${
-					icon("print")} Print Invoice</button>` : ""}
+					icon("print")} Print Invoice</button>
+				   <button class="btn btn-quiet btn-icon" id="print-top-thermal">${
+					icon("print")} Thermal</button>` : ""}
 			${data.editable
 				? `<a class="btn btn-outline btn-icon" href="/retail/sales?invoice=${
 					encodeURIComponent(data.name)}">${icon("pencil")} Edit</a>` : ""}
 			${data.status === "Submitted" && !data.is_return
 				? `<button class="btn btn-outline btn-icon" id="replace-top">${
 					icon("swap")} Replace</button>` : ""}`;
-		if ($("print-top")) $("print-top").addEventListener("click", print);
+		if ($("print-top")) $("print-top").addEventListener("click", () => print(false));
+		if ($("print-top-thermal"))
+			$("print-top-thermal").addEventListener("click", () => print(true));
 		if ($("replace-top")) $("replace-top").addEventListener("click", openReplace);
 
 		$("body").innerHTML = `
@@ -346,7 +354,7 @@ window.INVOICE = (function () {
 				<button class="btn btn-quiet btn-icon" data-send="Email">${icon("mail")} Send Email</button>
 			</section>`;
 
-		if ($("print-bottom")) $("print-bottom").addEventListener("click", print);
+		if ($("print-bottom")) $("print-bottom").addEventListener("click", () => print(false));
 		if ($("collect")) $("collect").addEventListener("click", askPayment);
 		if ($("bank-bill")) $("bank-bill").addEventListener("click", () => askBankBill(data));
 		if ($("bank-save")) $("bank-save").addEventListener("click", openBankBill);
