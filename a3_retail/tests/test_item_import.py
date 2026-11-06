@@ -197,3 +197,62 @@ class TestGoogleSheet(FrappeTestCase):
 	def test_a_google_address_with_no_sheet_in_it_is_refused(self):
 		with self.assertRaises(frappe.ValidationError):
 			item_import._rows_from_sheet("https://docs.google.com/document/d/abc/edit")
+
+
+class TestTheScreen(FrappeTestCase):
+	"""The checking above is worth nothing if the button never opens the dialog.
+
+	It did not: a refactor of the stock-adjustment lines deleted `openImport`,
+	`readSheet` and the state they share, leaving the `paintPreview` that draws
+	the result behind and the Import Items button wired to a function that was
+	no longer there. Every test in this file still passed, because none of them
+	looked at the screen.
+	"""
+
+	@classmethod
+	def setUpClass(cls):
+		super().setUpClass()
+		cls.js = open(frappe.get_app_path(
+			"a3_retail", "public", "js", "a3_stock.js"), encoding="utf-8").read()
+
+	def test_the_button_exists_and_is_offered_to_whoever_may_make_an_item(self):
+		markup = open(frappe.get_app_path(
+			"a3_retail", "www", "retail", "stock.html"), encoding="utf-8").read()
+		self.assertIn('data-do="import"', markup)
+		self.assertIn('"import": "create_item"', self.js,
+		              "the catalogue is shared, so making an item is the permission")
+
+	def test_pressing_it_opens_the_dialog(self):
+		self.assertIn('if (what === "import") return openImport();', self.js)
+		self.assertIn("async function openImport()", self.js)
+
+	def test_the_three_halves_of_the_screen_are_all_present(self):
+		"""Reading the sheet, drawing the result and sending it are separate
+		functions that call each other; any one of them missing is a dead end."""
+		for part in ("async function openImport()", "async function readSheet(",
+		             "function paintPreview()"):
+			self.assertIn(part, self.js, part)
+		self.assertIn("paintPreview();", self.js, "reading the sheet draws the result")
+		self.assertIn("await readSheet(file, \"\")", self.js, "choosing a file reads it")
+
+	def test_the_screen_calls_every_endpoint_the_importer_offers(self):
+		for method in ("spec", "preview", "commit", "template", "problem_sheet"):
+			self.assertIn(f"a3_retail.api.item_import.{method}", self.js, method)
+
+	def test_nothing_can_be_imported_before_the_sheet_has_been_read(self):
+		"""The dialog opens with no sheet in it, so the button that writes to the
+		catalogue starts dead and only the preview may wake it."""
+		opener = self.js[self.js.index("async function openImport()"):
+		                 self.js.index("async function readSheet(")]
+		self.assertIn('$("work-go").disabled = true;', opener)
+		self.assertIn("Nothing is ready to import yet.", opener)
+		self.assertIn('$("work-go").disabled = !got.ready;', self.js,
+		              "the preview decides whether there is anything to send")
+
+	def test_a_dialog_opened_after_the_importer_is_not_left_dead(self):
+		"""`openImport` switches the submit button off. Every other dialog shares
+		that button, so opening one has to switch it back on — otherwise closing
+		the importer and reaching for Move Stock finds a button that does
+		nothing, which is the bug this screen already had once."""
+		work = self.js[self.js.index("function openWork("):self.js.index("function say(")]
+		self.assertIn('$("work-go").disabled = false;', work)

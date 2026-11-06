@@ -694,6 +694,9 @@ window.STOCK = (function () {
 		$("work-note").textContent = note;
 		$("work-body").innerHTML = body;
 		$("work-go").textContent = action;
+		// The importer leaves this off until a sheet has been read; whatever is
+		// opened next is not waiting on anything, so it starts live.
+		$("work-go").disabled = false;
 		$("work-msg").textContent = "";
 		$("work-modal").hidden = false;
 		state.work = go;
@@ -1359,6 +1362,140 @@ window.STOCK = (function () {
 			const picker = $("w-warehouse");
 			if (picker) picker.addEventListener("change", () => paintLines());
 		}, 0);
+	}
+
+	/**
+	 * Bringing a catalogue in from a spreadsheet.
+	 *
+	 * A shop changing systems has its items in a file already, and typing four
+	 * hundred of them in one at a time is how a migration stalls. Nothing is
+	 * written until the person has seen what would happen: the sheet is read,
+	 * every row checked, and the result shown as a list before a single item is
+	 * made. A bad row holds up itself and nothing else, because four hundred
+	 * rows always contain a few.
+	 */
+	let importState = { file: null, sheet: "", preview: null, spec: null };
+
+	async function openImport() {
+		importState = { file: null, sheet: "", preview: null, spec: null };
+		try {
+			importState.spec = await A3.call("a3_retail.api.item_import.spec");
+		} catch (error) {
+			return toast(error.message || "Could not open the importer.", "error");
+		}
+		const spec = importState.spec;
+		const stores = (state.boot.warehouses || []).map((warehouse) =>
+			`<option value="${esc(warehouse)}">${esc(warehouse)}</option>`).join("");
+
+		openWork("Import items",
+			"A spreadsheet of items, checked before anything is added. "
+			+ `Up to ${spec.row_limit} at a time.`,
+			`<div class="imp">
+				<div class="imp-start">
+					<button class="btn btn-quiet" id="imp-template" type="button">
+						Download the template</button>
+					<span class="imp-or">then</span>
+					<label class="btn btn-outline imp-pick">
+						<input type="file" id="imp-file" accept=".xlsx,.xls,.csv,.tsv" hidden>
+						Choose a file</label>
+					<span class="imp-chosen" id="imp-chosen">No file chosen</span>
+				</div>
+				<details class="imp-sheet">
+					<summary>…or read it straight from a Google Sheet</summary>
+					<div class="imp-sheet-row">
+						<input id="imp-url" placeholder="https://docs.google.com/spreadsheets/d/…">
+						<button class="btn btn-quiet" id="imp-read" type="button">Read it</button>
+					</div>
+					<p class="muted">The sheet has to be shared as “Anyone with the link”.</p>
+				</details>
+				${spec.can_open_stock ? `<label class="field imp-store">
+					<span>Opening stock goes into</span>
+					<select id="imp-store">${stores}</select></label>` : ""}
+				<div id="imp-result"></div>
+				<details class="imp-help">
+					<summary>What the columns mean</summary>
+					<table class="imp-cols"><tbody>${spec.columns.map((column) => `
+						<tr><td><b>${esc(column.label)}</b>${
+							column.required ? ' <span class="req">*</span>' : ""}</td>
+						<td>${esc(column.help || "")}</td></tr>`).join("")}</tbody></table>
+					<p class="muted">Headings are matched loosely — “Sales Price”, “MRP” and
+						“Price” all mean the same column.</p>
+				</details>
+			</div>`,
+			"Import",
+			async () => {
+				if (!importState.preview || !importState.preview.ready) {
+					throw new Error("Nothing is ready to import yet.");
+				}
+				const store = $("imp-store");
+				const result = await A3.call("a3_retail.api.item_import.commit", {
+					file_url: importState.file || null,
+					sheet_url: importState.sheet || null,
+					warehouse: store ? store.value : null,
+				});
+				toast(`${result.made} item${result.made === 1 ? "" : "s"} added`
+					+ (result.failed ? `, ${result.failed} could not be.` : "."),
+					result.failed ? "warn" : "ok");
+				loadAll();
+			});
+
+		// Nothing has been read yet, so there is nothing to import yet.
+		$("work-go").disabled = true;
+
+		$("imp-template").addEventListener("click", async () => {
+			try {
+				const url = await A3.call("a3_retail.api.item_import.template");
+				window.open(url, "_blank");
+			} catch (error) {
+				say(error.message || "Could not build the template.", "error");
+			}
+		});
+		$("imp-file").addEventListener("change", async (event) => {
+			const file = event.target.files[0];
+			if (!file) return;
+			$("imp-chosen").textContent = file.name;
+			await readSheet(file, "");
+		});
+		$("imp-read").addEventListener("click", () => readSheet(null, $("imp-url").value.trim()));
+	}
+
+	/** Upload if it is a file, then show what the sheet would do. */
+	async function readSheet(file, sheetUrl) {
+		const panel = $("imp-result");
+		panel.innerHTML = '<p class="muted">Reading the sheet…</p>';
+		importState.preview = null;
+		$("work-go").disabled = true;
+		say("");
+
+		try {
+			if (file) {
+				const body = new FormData();
+				body.append("file", file, file.name);
+				body.append("is_private", "1");
+				const response = await fetch("/api/method/upload_file", {
+					method: "POST",
+					headers: { "X-Frappe-CSRF-Token": A3.csrfToken() },
+					body,
+				});
+				const payload = await response.json();
+				if (!response.ok) throw new Error(payload.exception || "Could not upload that file.");
+				importState.file = payload.message.file_url;
+				importState.sheet = "";
+			} else {
+				if (!sheetUrl) throw new Error("Paste the sheet's link first.");
+				importState.sheet = sheetUrl;
+				importState.file = null;
+			}
+
+			importState.preview = await A3.call("a3_retail.api.item_import.preview", {
+				file_url: importState.file || null,
+				sheet_url: importState.sheet || null,
+			});
+			paintPreview();
+		} catch (error) {
+			importState.preview = null;
+			panel.innerHTML = `<p class="imp-bad">${esc(error.message || "Could not read that sheet.")}</p>`;
+		}
 	}
 
 	function paintPreview() {
