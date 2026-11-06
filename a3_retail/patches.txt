@@ -17,3 +17,4 @@ a3_retail.patches.photos_not_mandatory
 a3_retail.patches.seed_service_issue_types
 a3_retail.patches.seed_insurance_partners
 a3_retail.patches.mbb_series_counters
+a3_retail.patches.accessories_uk_opening_stock
