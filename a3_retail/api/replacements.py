@@ -68,7 +68,15 @@ def options(invoice: str) -> dict:
 		returned[row.item_code] = flt(row.qty)
 
 	lines = []
+	work_only = 0
 	for row in doc.items:
+		# Labour is not a thing that can be swapped. On a repair bill the lines
+		# are the work and the parts, and offering "Folder Replacement - Labour"
+		# as something to replace is how a counter ends up raising a credit note
+		# against an hour of somebody's time.
+		if not frappe.db.get_value("Item", row.item_code, "is_stock_item"):
+			work_only += 1
+			continue
 		already = flt(returned.get(row.item_code, 0))
 		serials = [s for s in (row.get("serial_no") or "").split("\n") if s.strip()]
 		has_serial = bool(frappe.db.get_value("Item", row.item_code, "has_serial_no"))
@@ -81,8 +89,12 @@ def options(invoice: str) -> dict:
 			"serials": serials,
 			"has_serial": has_serial,
 			"supplier": _supplier_for(row.item_code, serials),
-			# Only where the window starts: the counter can send either way.
-			"route": "supplier" if has_serial else "godown",
+			# Off our own shelf by default, whatever it is. The customer is
+			# standing there and the distributor's replacement is weeks away;
+			# the stock that goes out is this branch's, and the claim on the
+			# supplier is a separate conversation. The counter can still send
+			# it the other way.
+			"route": "godown",
 		})
 
 	godowns = _godowns()
@@ -93,6 +105,10 @@ def options(invoice: str) -> dict:
 		"customer_name": doc.customer_name,
 		"posting_date": str(doc.posting_date),
 		"lines": lines,
+		# How many lines were labour rather than goods, so the screen can say
+		# why there is nothing to pick instead of blaming the customer for
+		# having returned it all already.
+		"work_lines": work_only,
 		"godowns": godowns,
 		"default_godown": chosen if any(g["warehouse"] == chosen for g in godowns) else None,
 	}

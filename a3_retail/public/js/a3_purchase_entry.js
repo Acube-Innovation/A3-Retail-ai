@@ -599,7 +599,8 @@
 
 	function openNewItem(name) {
 		["ni-name", "ni-cost", "ni-price", "ni-open", "ni-code", "ni-hsn",
-		 "ni-desc", "ni-reorder", "ni-cost2", "ni-price2", "ni-open2"].forEach((id) => {
+		 "ni-desc", "ni-reorder", "ni-cost2", "ni-price2", "ni-open2",
+		 "ni-brand-new"].forEach((id) => {
 			$(id).value = "";
 		});
 		$("ni-serial").checked = false;
@@ -668,6 +669,9 @@
 				payload: {
 					item_name: name,
 					item_group: $("ni-group").value,
+					// A name typed into the free box wins: it is only filled in
+					// when the list did not have the make.
+					brand: $("ni-brand-new").value.trim() || $("ni-brand").value,
 					item_code: $("ni-code").value.trim(),
 					barcode: $("ni-code").value.trim(),
 					hsn_code: $("ni-hsn").value.trim(),
@@ -791,6 +795,10 @@
 				+ groups.map((g) => `<option value="${esc(g)}">${esc(g)}</option>`).join("");
 			$("pick-group").innerHTML = '<option value="">All categories</option>'
 				+ groups.map((g) => `<option value="${esc(g)}">${esc(g)}</option>`).join("");
+
+			$("ni-brand").innerHTML = '<option value="">\u2014</option>'
+				+ (stock.brands || []).map((b) =>
+					`<option value="${esc(b)}">${esc(b)}</option>`).join("");
 
 			const uoms = stock.uoms && stock.uoms.length ? stock.uoms : ["Nos"];
 			const uomOptions = uoms

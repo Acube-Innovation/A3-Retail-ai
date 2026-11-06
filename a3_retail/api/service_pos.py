@@ -446,7 +446,7 @@ LINE_GROUPS = {
 
 @frappe.whitelist()
 def create_line_item(item_name: str, kind: str = "Part", rate: float = 0,
-                     hsn_code: str | None = None) -> dict:
+                     hsn_code: str | None = None, brand: str | None = None) -> dict:
 	"""Catalogue a part or a charge without leaving the repair.
 
 	A bench meets a part the shop has never bought before — a connector, a
@@ -479,6 +479,9 @@ def create_line_item(item_name: str, kind: str = "Part", rate: float = 0,
 		"item_name": (item_name or "").strip(),
 		"item_group": group,
 		"hsn_code": _hsn(hsn_code) or "",
+		# A flex or a folder is bought by make, and a part with no make on it
+		# cannot be found again by anyone looking for that model's spares.
+		"brand": (brand or "").strip(),
 		"uom": "Nos",
 		# A charge is work, not a thing on a shelf.
 		"is_service": 1 if is_service else 0,
@@ -557,6 +560,7 @@ def save_booking(payload) -> dict:
 	_check_discount(data)
 	_check_promise(data)
 	_check_technician(data, employee.branch)
+	_check_frp_needs_imei(data)
 
 	doc = frappe.new_doc("Service Job Card")
 	doc.branch = employee.branch
@@ -633,6 +637,7 @@ def save_booking(payload) -> dict:
 		"warranty_type": doc.warranty_type,
 		"promised": str(doc.estimated_delivery_date or ""),
 		"print_url": estimate_url(doc.name),
+		"label_url": label_url(doc.name),
 	}
 
 	advance = flt(data.get("advance_amount"))
@@ -680,6 +685,37 @@ def _check_not_already_booked(data: dict, branch: str):
 		  "twice. Open that job card to add to it, or hand this one back first.").format(
 			open_card.name, _(open_card.status), open_card.customer_name),
 		title=_("Already on the bench"),
+	)
+
+
+# A Google account lock is undone through the manufacturer, and every one of
+# them is asked for by IMEI. Taken in without it, the device sits on the bench
+# until somebody finds the box — which is the one place the number is still
+# readable once the phone will not unlock.
+FRP_WORDS = ("frp", "google lock", "google account lock", "factory reset protection")
+
+
+def _check_frp_needs_imei(data: dict):
+	"""An FRP lock cannot be worked on without the device's number."""
+	if (data.get("imei_1") or "").strip() or (data.get("serial_no") or "").strip():
+		return
+
+	said = " ".join(str(data.get(field) or "") for field in
+	                ("complaint_description", "issue_name", "repair_category")).lower()
+	said += " " + " ".join(str(i) for i in (data.get("issues") or [])).lower()
+	# The picked problem is a document name; what it is called is on the record.
+	for issue in data.get("issues") or []:
+		said += " " + str(frappe.db.get_value("Service Issue Type", issue, "issue_name")
+		                  or "").lower()
+
+	if not any(word in said for word in FRP_WORDS):
+		return
+
+	frappe.throw(
+		_("An FRP lock is cleared through the maker, and they ask for the IMEI. Scan "
+		  "it or read it off the box \u2014 a locked phone will not show it on screen, "
+		  "and without it the device cannot be sent on."),
+		title=_("IMEI needed for an FRP lock"),
 	)
 
 
@@ -856,6 +892,7 @@ def booking(job_card: str) -> dict:
 		"sales_invoice": doc.sales_invoice,
 		"items": _lines_of(doc),
 		"print_url": estimate_url(doc.name),
+		"label_url": label_url(doc.name),
 	}
 
 
@@ -963,6 +1000,23 @@ def _email_update(doc, card: dict) -> bool:
 		reference_name=doc.name,
 	)
 	return True
+
+
+@frappe.whitelist()
+def label_url(job_card: str) -> str:
+	"""The sticker that goes on the device, for the bench to scan.
+
+	The print *view* rather than a PDF: a label goes to its own printer and
+	the browser's print window is where that printer is chosen. It also means
+	the label's own 50x25mm page size is honoured, which a PDF built to this
+	site's A4 setting would not be.
+	"""
+	_me()
+	return (
+		"/printview?doctype=Service%20Job%20Card"
+		f"&name={frappe.utils.quoted(job_card)}"
+		"&format=Job%20Card%20Label&no_letterhead=1&trigger_print=1"
+	)
 
 
 @frappe.whitelist()

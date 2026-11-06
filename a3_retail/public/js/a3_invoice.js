@@ -182,8 +182,12 @@ window.INVOICE = (function () {
 		}
 	}
 
-	function print() {
-		window.open(state.data.print_url, "_blank");
+	function print(thermal) {
+		const url = thermal === true
+			? state.data.print_url.replace(
+				/format=[^&]*/, "format=" + encodeURIComponent("Retail Receipt (Thermal)"))
+			: state.data.print_url;
+		window.open(url, "_blank");
 	}
 
 	// ---------------------------------------------------------------- load
@@ -211,14 +215,18 @@ window.INVOICE = (function () {
 		$("doc-actions").innerHTML = `
 			${data.printable
 				? `<button class="btn btn-primary btn-icon" id="print-top">${
-					icon("print")} Print Invoice</button>` : ""}
+					icon("print")} Print Invoice</button>
+				   <button class="btn btn-quiet btn-icon" id="print-top-thermal">${
+					icon("print")} Thermal</button>` : ""}
 			${data.editable
 				? `<a class="btn btn-outline btn-icon" href="/retail/sales?invoice=${
 					encodeURIComponent(data.name)}">${icon("pencil")} Edit</a>` : ""}
 			${data.status === "Submitted" && !data.is_return
 				? `<button class="btn btn-outline btn-icon" id="replace-top">${
 					icon("swap")} Replace</button>` : ""}`;
-		if ($("print-top")) $("print-top").addEventListener("click", print);
+		if ($("print-top")) $("print-top").addEventListener("click", () => print(false));
+		if ($("print-top-thermal"))
+			$("print-top-thermal").addEventListener("click", () => print(true));
 		if ($("replace-top")) $("replace-top").addEventListener("click", openReplace);
 
 		$("body").innerHTML = `
@@ -236,6 +244,8 @@ window.INVOICE = (function () {
 						<div><dt>Invoice Date</dt><dd>${esc(day(data.posting_date))}</dd></div>
 						${data.sales_person
 							? `<div><dt>Sales Person</dt><dd>${esc(data.sales_person)}</dd></div>` : ""}
+						${data.insured_by
+							? `<div><dt>Insured By</dt><dd>${esc(data.insured_by)}</dd></div>` : ""}
 					</dl>
 				</header>
 
@@ -344,7 +354,7 @@ window.INVOICE = (function () {
 				<button class="btn btn-quiet btn-icon" data-send="Email">${icon("mail")} Send Email</button>
 			</section>`;
 
-		if ($("print-bottom")) $("print-bottom").addEventListener("click", print);
+		if ($("print-bottom")) $("print-bottom").addEventListener("click", () => print(false));
 		if ($("collect")) $("collect").addEventListener("click", askPayment);
 		if ($("bank-bill")) $("bank-bill").addEventListener("click", () => askBankBill(data));
 		if ($("bank-save")) $("bank-save").addEventListener("click", openBankBill);
@@ -512,7 +522,13 @@ window.INVOICE = (function () {
 		}
 		const open = swap.lines.filter((line) => line.can_replace > 0);
 		if (!open.length) {
-			return toast("Everything on this bill has already come back.", "error");
+			// Three different reasons for an empty picker, and the counter can
+			// only act on one of them.
+			return toast(
+				swap.work_lines && !swap.lines.length
+					? "There is nothing on this bill but labour, and labour cannot be "
+					  + "replaced. Raise a credit note if the charge itself was wrong."
+					: "Everything on this bill has already come back.", "error");
 		}
 		swap.open = open;
 		$("rp-item").innerHTML = open.map((line, i) =>
@@ -549,7 +565,9 @@ window.INVOICE = (function () {
 
 		// Each line starts on its own road — a handset back to the supplier,
 		// anything without an IMEI to our godown — and the counter can switch.
-		setRoute(line.route || "supplier");
+		// Off our own shelf unless the counter says otherwise: the customer is
+		// standing there, and the distributor's replacement is weeks away.
+		setRoute(line.route || "godown");
 	}
 
 	/** Which road the faulty one takes, and what the window asks for on it. */
@@ -570,7 +588,10 @@ window.INVOICE = (function () {
 		$("rp-godown").hidden = !godown;
 		$("rp-new-label").textContent = godown
 			? "Replacement IMEI from this shelf" : "New IMEI the supplier gave";
-		// An accessory carries no IMEI, so neither side of the swap asks for one.
+		// A part carries no number, and on a repair bill that is most of what
+		// gets swapped — so the whole row goes rather than sitting there
+		// greyed out, asking for something that does not exist.
+		$("rp-serial-row").hidden = !line.has_serial;
 		$("rp-new").disabled = !line.has_serial;
 		$("rp-new").placeholder = line.has_serial
 			? "Type or scan it" : "Not a serialised item";

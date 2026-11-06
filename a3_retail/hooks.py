@@ -149,6 +149,11 @@ doc_events = {
 	},
 	# Branch stamping for the accounting dimension (scope 1.1, 11.1).
 	"Sales Invoice": {
+		"before_naming": "a3_retail.utils.mbb_series.apply",
+		# Amendments only: reached because Document Naming Settings routes this
+		# doctype's amendments to Default Naming instead of stamping "-1" at
+		# seventeen-plus characters. See `mbb_series.autoname`.
+		"autoname": "a3_retail.utils.mbb_series.autoname",
 		"before_validate": "a3_retail.overrides.transactions.stamp_branch",
 		"validate": [
 			"a3_retail.overrides.transactions.apply_margin_scheme",
@@ -179,13 +184,17 @@ doc_events = {
 		"on_submit": "a3_retail.overrides.sales_invoice.on_submit",
 		"on_cancel": "a3_retail.overrides.sales_invoice.on_cancel",
 	},
-	"Purchase Invoice": {"before_validate": "a3_retail.overrides.transactions.stamp_branch"},
+	"Purchase Invoice": {
+		"before_naming": "a3_retail.utils.mbb_series.apply",
+		"before_validate": "a3_retail.overrides.transactions.stamp_branch",
+	},
 	"Journal Entry": {
 		"before_validate": "a3_retail.overrides.transactions.stamp_branch",
 		# Payroll's accrual JE carries one row per branch cost center (scope 10.1).
 		"validate": "a3_retail.setup.hr.stamp_row_dimensions",
 	},
 	"Payment Entry": {
+		"before_naming": "a3_retail.utils.mbb_series.apply",
 		"before_validate": "a3_retail.overrides.transactions.stamp_branch",
 		# A bill's outstanding is rewritten by the payment with `db_set`, which
 		# fires nothing on the invoice — so the repair hears it from here.
@@ -196,7 +205,10 @@ doc_events = {
 	"Delivery Note": {"before_validate": "a3_retail.overrides.transactions.stamp_branch"},
 	"Purchase Receipt": {"before_validate": "a3_retail.overrides.transactions.stamp_branch"},
 	"Sales Order": {"before_validate": "a3_retail.overrides.transactions.stamp_branch"},
-	"Purchase Order": {"before_validate": "a3_retail.overrides.transactions.stamp_branch"},
+	"Purchase Order": {
+		"before_naming": "a3_retail.utils.mbb_series.apply",
+		"before_validate": "a3_retail.overrides.transactions.stamp_branch",
+	},
 	"Material Request": {"before_validate": "a3_retail.overrides.transactions.stamp_branch"},
 }
 

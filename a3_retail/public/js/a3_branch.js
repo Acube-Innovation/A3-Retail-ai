@@ -311,8 +311,36 @@ window.A3 = (function () {
 		document.body.classList.add("has-tabbar");
 	}
 
+	/**
+	 * Hand the counter over to the next person without closing the browser.
+	 *
+	 * Mounted here rather than written into each page's header: the topbar is
+	 * copied into twenty templates, and a button that has to be added to all
+	 * twenty is a button that ends up on nineteen.
+	 *
+	 * It signs the current person out rather than keeping two sessions open.
+	 * Every bill, every job card and every stock movement is stamped with who
+	 * did it, so a till left signed in as the morning shift is how the evening
+	 * shift's work ends up under somebody else's name.
+	 */
+	function mountSwitchUser() {
+		const host = document.querySelector(".topbar-right");
+		if (!host || host.querySelector(".switch-user")) return;
+
+		const out = host.querySelector('a[href="/retail/logout"]');
+		const button = document.createElement("a");
+		button.className = "btn btn-quiet switch-user";
+		// `to=`, and a same-site path: `logout.py` refuses anything else rather
+		// than hand the session to another host.
+		button.href = "/retail/logout?to=/retail/login";
+		button.textContent = "Switch user";
+		button.title = "Sign out and hand the counter to someone else";
+		host.insertBefore(button, out || null);
+	}
+
 	document.addEventListener("DOMContentLoaded", () => {
 		mountBranchPicker();
+		mountSwitchUser();
 		mountMobileNav();
 		watchForDates();
 		watchNumbers();

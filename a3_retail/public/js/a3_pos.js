@@ -1138,6 +1138,7 @@ window.POS = (function () {
 					posting_date: state.postingDate || null,
 					mode_of_payment: state.mode,
 					sold_by: state.soldBy || "",
+					insured_by: $("insured-by").value || "",
 					financier: state.financier || "",
 					notes: $("notes").value.trim(),
 					// An empty box and a typed zero mean different things: the first
@@ -1204,6 +1205,10 @@ window.POS = (function () {
 				? ` · ${money(result.outstanding)} still owed` : "");
 		$("done-note").classList.toggle("owes", result.outstanding > 0);
 		$("print-invoice").href = result.print_url;
+		// The same bill, the other slip. Built from the A4 link rather than
+		// asked for separately: one round trip is enough to print either.
+		$("print-thermal").href = result.print_url.replace(
+			/format=[^&]*/, "format=" + encodeURIComponent("Retail Receipt (Thermal)"));
 		$("done-modal").hidden = false;
 		// The number is on the card above; the counter behind it is the next
 		// customer's, so a held or reopened bill must not carry over.
@@ -1468,6 +1473,42 @@ window.POS = (function () {
 	 */
 	const SELLER_KEY = "a3_pos_sold_by";
 
+	/** The protection plans on offer, with a way to add one that is not. */
+	async function loadInsurers() {
+		let names = [];
+		try {
+			names = await A3.call("a3_retail.api.pos.insurers");
+		} catch (error) {
+			$("insured-row").hidden = true;
+			return;
+		}
+		paintInsurers(names, "");
+		$("insured-by").addEventListener("change", async () => {
+			if ($("insured-by").value !== "__new") return;
+			// `prompt` rather than a dialog: one field, typed once in a season,
+			// and a modal for it would be more screen than the answer deserves.
+			const typed = (window.prompt("Which insurer?") || "").trim();
+			if (!typed) { $("insured-by").value = ""; return; }
+			try {
+				const made = await A3.call("a3_retail.api.pos.add_insurer", { name: typed });
+				const fresh = await A3.call("a3_retail.api.pos.insurers");
+				paintInsurers(fresh, made.name);
+			} catch (error) {
+				say(error.message || "Could not add that insurer.", "error");
+				$("insured-by").value = "";
+			}
+		});
+	}
+
+	function paintInsurers(names, selected) {
+		$("insured-by").innerHTML =
+			'<option value="">Not insured</option>'
+			+ (names || []).map((n) =>
+				`<option value="${esc(n)}"${n === selected ? " selected" : ""}>${esc(n)}</option>`)
+				.join("")
+			+ '<option value="__new">+ Add an insurer\u2026</option>';
+	}
+
 	async function loadSellers() {
 		let staff = [];
 		try {
@@ -1509,6 +1550,7 @@ window.POS = (function () {
 		state.pricesIncludeTax = Boolean(options.pricesIncludeTax);
 		showBillDate();
 		loadSellers();
+		loadInsurers();
 
 		$("q").addEventListener("input", () => {
 			clearTimeout(searchTimer);

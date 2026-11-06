@@ -210,6 +210,8 @@ window.BILLS = (function () {
 	function more(row) {
 		$("list-title").textContent = row.name;
 		$("list-note").textContent = `${row.customer_name} · ${money2(row.payable)}`;
+		busy(false);
+		refused(null);
 		const options = [
 			["Open the invoice", () => { window.location = "/retail/invoice?name="
 				+ encodeURIComponent(row.name); }],
@@ -222,16 +224,88 @@ window.BILLS = (function () {
 				window.location = "/retail/sales?invoice=" + encodeURIComponent(row.name);
 			}]);
 		}
+		// One slot, two meanings: a submitted bill offers Cancel, a cancelled
+		// one offers Amend in the same place. `stay` keeps the window open so
+		// the bar, the result and any refusal happen where the press happened.
+		if (row.status === "Submitted") {
+			options.push(["Cancel this bill", () => cancelBill(row), "stay"]);
+		} else if (row.status === "Cancelled") {
+			options.push(["Amend — open it again as a draft", () => amendBill(row), "stay"]);
+		}
 
-		$("list-body").innerHTML = options.map(([label], index) =>
-			`<li><button class="linkish" data-i="${index}">${label}</button></li>`).join("");
+		paintOptions(options);
+		$("list-modal").hidden = false;
+	}
+
+	function paintOptions(options) {
+		$("list-body").innerHTML = options.map(([label, , stay], index) =>
+			`<li><button class="linkish${label.startsWith("Cancel") ? " is-danger" : ""}"
+				data-i="${index}">${label}</button></li>`).join("");
 		$("list-body").querySelectorAll("button").forEach((node) => {
 			node.addEventListener("click", () => {
-				$("list-modal").hidden = true;
-				options[Number(node.dataset.i)][1]();
+				const chosen = options[Number(node.dataset.i)];
+				if (!chosen[2]) $("list-modal").hidden = true;
+				chosen[1]();
 			});
 		});
-		$("list-modal").hidden = false;
+	}
+
+	// ----------------------------------------------- cancelling and amending
+	function busy(what) {
+		$("list-busy").hidden = !what;
+		$("list-busy-what").textContent = what || "";
+	}
+
+	function refused(reasons, head) {
+		$("list-refused").hidden = !reasons;
+		if (!reasons) return;
+		$("list-refused-head").textContent =
+			head || "This bill could not be cancelled:";
+		$("list-reasons").innerHTML = reasons.map((r) => `<li>${esc(r)}</li>`).join("");
+	}
+
+	/** ERPNext's own cancel, watched from the counter.
+
+	    The window stays open: the bar runs while the stock and ledger
+	    reversals happen, the toast says it is done, and the same slot then
+	    offers Amend — or the refusal appears right here, as the separate
+	    reasons ERPNext gave, because each one is a different thing to go and
+	    fix. */
+	async function cancelBill(row) {
+		if (!window.confirm(`Cancel ${row.name}? The stock comes back and the `
+			+ `bill stays in the books as cancelled.`)) return;
+		refused(null);
+		busy("Cancelling " + row.name + "\u2026");
+		try {
+			const out = await A3.call("a3_retail.api.bills.cancel_bill", { name: row.name });
+			busy(false);
+			if (out.cancelled || out.already) {
+				toast(row.name + " cancelled.", "ok");
+				row.status = "Cancelled";
+				row.docstatus = 2;
+				more(row);      // same window, same slot — now holding Amend
+				load();
+			} else {
+				refused(out.reasons || ["ERPNext refused and gave no reason."]);
+			}
+		} catch (error) {
+			busy(false);
+			refused([error.message || "Could not reach the server."]);
+		}
+	}
+
+	/** ERPNext's own amend: a draft copy pointing back at the cancelled bill,
+	    picked up at the counter it was billed on. */
+	async function amendBill(row) {
+		busy("Opening " + row.name + " as a new draft\u2026");
+		try {
+			const out = await A3.call("a3_retail.api.bills.amend_bill", { name: row.name });
+			window.location = out.edit_url;
+		} catch (error) {
+			busy(false);
+			refused([error.message || "Could not amend this bill."],
+				"This bill could not be amended:");
+		}
 	}
 
 	async function send(name, channel) {

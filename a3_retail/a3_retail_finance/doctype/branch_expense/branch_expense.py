@@ -37,6 +37,12 @@ from a3_retail.utils.naming import set_branch_code
 class BranchExpense(A3BranchMixin, Document):
 	def before_naming(self):
 		set_branch_code(self)
+		# The three branches that kept their myBillBook numbering keep it here
+		# too: an expense at Sales PSLA counts on in PT/EX/26-27/, where four
+		# hundred of its predecessors already live. The rest stay on EXP-.
+		from a3_retail.utils.mbb_series import apply as mbb_series
+
+		mbb_series(self)
 
 	def before_validate(self):
 		self.set_branch_defaults()

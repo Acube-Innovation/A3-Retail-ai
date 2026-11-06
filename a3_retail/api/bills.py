@@ -281,6 +281,9 @@ def invoice(name: str) -> dict:
 		"company": doc.company,
 		"warehouse": doc.set_warehouse,
 		"sales_person": ", ".join([row.sales_person for row in doc.get("sales_team") or []]),
+		# The cover sold with the handset, read back on the bill because that is
+		# where anyone handling a claim will look for it.
+		"insured_by": doc.get("a3_insured_by"),
 		"customer": _customer_block(doc),
 		"device": _device_block(doc),
 		"items": _items(doc),
@@ -789,3 +792,120 @@ def set_approved_amount(name: str, amount, print_format: str = "Financier Copy")
 			"Finance Partner", doc.a3_finance_partner, "partner_name") or doc.a3_finance_partner,
 		"print_url": print_url(name, print_format),
 	}
+
+
+# ---------------------------------------------------------------------------
+# Cancelling and amending
+# ---------------------------------------------------------------------------
+@frappe.whitelist()
+def cancel_bill(name: str) -> dict:
+	"""Cancel a bill, exactly the way the desk does.
+
+	`doc.cancel()` and nothing else: ERPNext reverses the stock, reverses the
+	ledger, unlinks the payments it is allowed to unlink and refuses when
+	something downstream still depends on this document. None of that is
+	reimplemented here, because a second opinion about when a bill may be
+	cancelled is how two parts of a system come to disagree about the books.
+
+	What is added is the answer when it refuses. ERPNext says why in a message
+	the counter never sees, so the reasons are collected and handed back as a
+	list rather than a wall.
+	"""
+	employee = _me()
+	require_permission("Sales Invoice", "cancel")
+
+	doc = frappe.get_doc("Sales Invoice", name)
+	if doc.branch and doc.branch != employee.branch:
+		frappe.throw(_("That bill belongs to another branch."), title=_("Not this branch"))
+	if doc.docstatus == 2:
+		return {"name": doc.name, "status": "Cancelled", "already": True}
+	if doc.docstatus == 0:
+		frappe.throw(_("This bill is still a draft, so there is nothing to cancel. "
+		               "Open it at the counter and finish or discard it."),
+		             title=_("Not submitted"))
+
+	frappe.clear_last_message()
+	try:
+		doc.cancel()
+	except Exception as error:
+		# Rolled back, so a half-cancelled bill never reaches the books. The
+		# reasons are read before the rollback clears the message log.
+		reasons = _why_not(error)
+		frappe.db.rollback()
+		return {"name": doc.name, "status": "Submitted", "cancelled": False,
+		        "reasons": reasons}
+
+	return {"name": doc.name, "status": "Cancelled", "cancelled": True}
+
+
+def _why_not(error) -> list[str]:
+	"""Why ERPNext refused, as separate sentences rather than one wall.
+
+	Its refusals arrive as HTML in the message log — often several at once, one
+	per thing still standing in the way — and joined together they are the
+	paragraph of red the counter cannot act on.
+	"""
+	import re
+
+	out = []
+	for entry in (frappe.get_message_log() or []):
+		text = str((entry.get("message") if isinstance(entry, dict) else entry) or "")
+		# One bullet per message, not per line: ERPNext's messages carry the
+		# line breaks of the source file they were written in, and splitting
+		# on those turned one sentence into six fragments. A real paragraph
+		# break in the HTML is kept as its own reason.
+		for block in re.split(r"<br\s*/?>\s*<br\s*/?>|</p>|</li>", text):
+			plain = " ".join(frappe.utils.strip_html(block).split())
+			if plain and plain not in out:
+				out.append(plain)
+	if not out:
+		plain = " ".join(frappe.utils.strip_html(str(error) or "").split())
+		out = [plain] if plain else [
+			_("ERPNext refused and gave no reason. Ask whoever runs the system "
+			  "to look at the error log.")]
+	return out[:8]
+
+
+@frappe.whitelist()
+def amend_bill(name: str) -> dict:
+	"""Open a cancelled bill again as a fresh draft — ERPNext's own amend.
+
+	The same thing the desk's Amend button does: a copy of the cancelled
+	document with `amended_from` pointing back at it, saved as a draft and
+	given a new number. The old bill stays cancelled in the books, which is
+	what the GST return has already been told about it.
+	"""
+	employee = _me()
+	require_permission("Sales Invoice", "create")
+
+	doc = frappe.get_doc("Sales Invoice", name)
+	if doc.branch and doc.branch != employee.branch:
+		frappe.throw(_("That bill belongs to another branch."), title=_("Not this branch"))
+	if doc.docstatus != 2:
+		frappe.throw(_("Only a cancelled bill can be amended. This one is {0}.")
+		             .format(_(_doc_status(doc.docstatus))), title=_("Not cancelled"))
+
+	existing = frappe.db.get_value(
+		"Sales Invoice", {"amended_from": doc.name, "docstatus": 0}, "name")
+	if existing:
+		# Amending twice would leave two drafts of the same bill and no way to
+		# tell which one the counter meant.
+		return {"name": existing, "created": False,
+		        "edit_url": _counter_url(existing)}
+
+	amended = frappe.copy_doc(doc, ignore_no_copy=False)
+	amended.amended_from = doc.name
+	amended.docstatus = 0
+	# The copy carries the cancelled bill's schedule, whose due dates are the
+	# old ones; ERPNext rebuilds it from the posting date on save.
+	amended.set("payment_schedule", [])
+	amended.flags.ignore_permissions = True
+	amended.insert(ignore_permissions=True)
+
+	return {"name": amended.name, "created": True,
+	        "edit_url": _counter_url(amended.name)}
+
+
+def _counter_url(name: str) -> str:
+	"""Where the counter picks the draft up — the same screen it was billed on."""
+	return "/retail/sales?invoice=" + frappe.utils.quoted(name)

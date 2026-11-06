@@ -107,3 +107,38 @@ def barcode(value: str, height: int = 40) -> str:
 			pass
 	# No barcode writer on the bench — the QR carries the same value.
 	return qr_data_uri(value, scale=3)
+
+
+def barcode_data_uri(text: str, height: float = 12.0, module_width: float = 0.26) -> str:
+	"""PNG data URI of a Code 128 barcode for `text`.
+
+	A label printer is pointed at a shelf or a repair bay and the number is
+	read by a gun, not by a person, so this is a 1D code rather than the QR
+	used on the customer's paperwork — every cheap scanner reads Code 128, and
+	it is what the shop's own stock labels already carry.
+
+	A data URI because wkhtmltopdf runs with `--disable-local-file-access` and
+	cannot fetch an image off the disk.
+	"""
+	if not text:
+		return ""
+
+	try:
+		import barcode
+		from barcode.writer import ImageWriter
+	except ImportError:  # pragma: no cover - python-barcode ships with the bench
+		frappe.log_error("python-barcode is not installed", "A3 Retail: barcode")
+		return ""
+
+	stream = io.BytesIO()
+	code = barcode.get("code128", str(text), writer=ImageWriter())
+	code.write(stream, options={
+		"module_height": height,
+		"module_width": module_width,
+		# The number is printed under the code by the label itself, in the
+		# shop's own type, rather than in whatever this library defaults to.
+		"write_text": False,
+		"quiet_zone": 2.0,
+	})
+	encoded = base64.b64encode(stream.getvalue()).decode()
+	return f"data:image/png;base64,{encoded}"

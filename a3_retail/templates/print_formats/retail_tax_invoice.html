@@ -28,28 +28,89 @@
 {%- set net_total = doc.net_total|float or 1.0 -%}
 {%- set tax_total = doc.total_taxes_and_charges|float -%}
 {%- set has_igst = summary|selectattr("igst")|list|length > 0 -%}
+{#- The blank below the items is what makes the sheet reach the bottom of the
+    page. It used to be a flat 300px whatever was on the bill, so seven lines
+    pushed the totals, the HSN summary and the signature onto a second sheet —
+    a page of white paper with a signature box on it, for a 2,950 rupee bill.
+
+    So it is worked out instead: one page's worth of room, less what the lines
+    already take. A line is about 34px with its IMEI under it; below zero there
+    is no blank left to give and the bill genuinely runs on, which is the only
+    time a second page is right. -#}
+{#- How much blank to leave below the items so the sheet reaches the bottom
+    of the page without going over it.
+
+    Counted, not guessed at, and calibrated against wkhtmltopdf rather than a
+    modern browser — Chrome lays this out quite differently and was reporting
+    everything fixed while the shop's own PDFs still ran to two pages. -#}
+{%- set imei_lines = doc.items|selectattr("serial_no")|list|length -%}
+{%- set discount_rows = 2 if doc.discount_amount|float else 0 -%}
+{%- set hsn_rows = [(summary|length) - 1, 0]|max -%}
+{#- A company's billing address wraps the BILL TO box several lines deeper than
+    a walk-in's "Place of Supply, Mobile". SINV-26-00129-1 — EXILIS TECHNOLOGY
+    PRIVATE LIMITED, 169 characters of address — is two lines taller than any
+    retail bill, and it was the one invoice that kept spilling while every
+    formula said it should fit. About 46 characters fit a line in that box. -#}
+{%- set addr_chars = ((doc.address_display or "")|striptags)|length -%}
+{%- set addr_rows = [((addr_chars / 46)|round(0, "ceil")|int) - 1, 0]|max -%}
+{%- set used_rows = (doc.items|length) + imei_lines + discount_rows
+                    + hsn_rows + addr_rows -%}
+{#- 130, not a round 300. Measured by rendering the shop's own bills through
+    wkhtmltopdf at a range of values: 150 was the last that never spilled and
+    165 spilled one, so this sits a margin below the cliff — real bills carry
+    longer customer names and addresses than any sample of them does. -#}
+{#- 150, measured rather than chosen: the shop's own bills rendered through
+    wkhtmltopdf at a range of values, and 150 is the last that never spilled.
+    160 spills exactly one — SINV-26-00129-1, a company sale whose 169-character
+    billing address wraps the BILL TO box two lines deeper than a walk-in's. -#}
+{#- 215, measured rather than chosen: the shop's own bills rendered through
+    wkhtmltopdf at a range of values, with 230 the highest that still never
+    spilled and 240 spilling four. This sits under that, because a sample of
+    bills is not every bill the shop will ever raise. -#}
+{%- set fill_height = [215 - (used_rows * 30), 0]|max -%}
 
 <style>
-	.mbb { font-family: Helvetica, Arial, sans-serif; font-size: 9pt; color: #000; }
+	/* The sheet reaches the paper. Frappe wraps every print format in
+	   `.print-format`, which carries its own padding on top of the page
+	   margins — so a 6mm margin still printed with a finger's width of white
+	   down each side. */
+	.print-format { padding: 0 !important; margin: 0 !important;
+		max-width: none !important; min-height: 0 !important; }
+	/* Frappe forces 6px on every cell with `!important`, which this sheet's own
+	   padding cannot outrank without saying so too. */
+	.mbb td, .mbb th { padding: 5px 7px !important; }
+	/* Left alone beyond that. Pulling the sheet out with a negative margin to
+	   claw back Frappe's 0.2in was tried and clipped both edges off the paper,
+	   which is worse than a finger's width of white. */
+	.mbb { width: 100%; }
+
+	/* No @page, no flex, no min-height. The shop's PDFs are made by
+	   wkhtmltopdf 0.12.6, whose engine predates flexbox — it logs
+	   "Unknown Property name: flex" and carries on — and which sets the page
+	   box from its own margin options rather than from @page. A min-height in
+	   millimetres it *does* honour, which is how 275mm plus wkhtmltopdf's own
+	   margins produced a second, entirely blank page. */
+	.mbb { font-family: Helvetica, Arial, sans-serif; font-size: 10.5pt; color: #000; }
 	.mbb table { width: 100%; border-collapse: collapse; }
 	.mbb .sheet, .mbb .sheet td, .mbb .sheet th { border: 1px solid #000; }
-	.mbb td, .mbb th { padding: 3px 6px; vertical-align: top; }
-	.mbb .kind { font-weight: bold; font-size: 10pt; letter-spacing: .3px; }
+	.mbb td, .mbb th { padding: 5px 7px; vertical-align: top; }
+	.mbb .kind { font-weight: bold; font-size: 12pt; letter-spacing: .3px; }
 	.mbb .copy { border: 1px solid #999; color: #444; padding: 2px 8px; font-size: 8pt;
 		margin-left: 10px; }
-	.mbb .org { font-size: 13pt; font-weight: bold; margin-bottom: 1px; }
+	.mbb .org { font-size: 15.5pt; font-weight: bold; margin-bottom: 1px; }
 	.mbb .logo { width: 96px; text-align: center; }
 	.mbb .logo img { max-width: 88px; max-height: 76px; }
 	.mbb .meta { text-align: center; font-weight: bold; }
-	.mbb .meta-val { text-align: center; white-space: nowrap; font-size: 9pt; }
-	.mbb .label { font-size: 8pt; font-weight: bold; letter-spacing: .3px; }
-	.mbb .items th { background: #efefef; text-align: center; font-size: 8.5pt; }
-	.mbb .items td { font-size: 9pt; }
+	.mbb .meta-val { text-align: center; white-space: nowrap; font-size: 10pt; }
+	.mbb .label { font-size: 9pt; font-weight: bold; letter-spacing: .3px; }
+	.mbb .items th { background: #efefef; text-align: center; font-size: 9.5pt; }
+	.mbb .items td { font-size: 10.5pt; }
 	.mbb .num { text-align: right; white-space: nowrap; }
 	.mbb .mid { text-align: center; }
-	.mbb .imei { color: #666; font-size: 8pt; }
-	.mbb .fill td { height: 300px; }
-	.mbb .sum th { background: #efefef; text-align: center; font-size: 8.5pt; }
+	.mbb .imei { color: #666; font-size: 9pt; }
+	/* Height comes from the template: see `fill_height` above. */
+	.mbb .fill td { padding: 0; }
+	.mbb .sum th { background: #efefef; text-align: center; font-size: 9.5pt; }
 	.mbb .tot td { font-weight: bold; background: #efefef; }
 	.mbb .sign { height: 86px; text-align: center; vertical-align: bottom; }
 	.mbb .sign img { max-height: 54px; }
@@ -183,7 +244,7 @@
 			{#- The blank space below the items is not one empty box: every column
 			    rule runs down to the totals, as on the sheet the shop has always
 			    used. Seven cells, not a colspan. -#}
-			<tr class="fill"><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+			<tr class="fill"><td style="height:{{ fill_height }}px"></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
 		</tbody>
 		<tfoot>
 			{#- What came off, and what it came off. A customer handed a bill for
