@@ -1,0 +1,4537 @@
+[
+{
+"name": "AIRDOPES 141 ANC GREEN",
+"code": "8905650035834",
+"cat": "BOAT AIRDOPES",
+"sell": 2150.0,
+"mrp": 5990.0,
+"qty": 0.0
+},
+{
+"name": "AIRDOPES 148 GEN 2 ACTIVE WHITE",
+"code": "8905650106503",
+"cat": "AIRPODS",
+"sell": 1699.0,
+"mrp": 3990.0,
+"qty": 0.0
+},
+{
+"name": "AIRDOPES UNITY ANC BLACK",
+"code": "8905650053746",
+"cat": "",
+"sell": 1999.0,
+"mrp": 0.0,
+"qty": -2.0
+},
+{
+"name": "AIRPODS 2ND GEN",
+"code": "",
+"cat": "AIRPODS",
+"sell": 1000.0,
+"mrp": 0.0,
+"qty": -22.0
+},
+{
+"name": "AIRPODS PRO 2nd Gen BLACK 999",
+"code": "",
+"cat": "",
+"sell": 999.0,
+"mrp": 0.0,
+"qty": 12.0
+},
+{
+"name": "AIRPODS PRO 2nd Gen WHITE 999",
+"code": "194253397427",
+"cat": "AIRPODS",
+"sell": 1000.0,
+"mrp": 0.0,
+"qty": 17.0
+},
+{
+"name": "AIRPODS SECOND QUALITY 499",
+"code": "",
+"cat": "AIRPODS",
+"sell": 499.0,
+"mrp": 0.0,
+"qty": 2.0
+},
+{
+"name": "AMAC C TO C",
+"code": "CH 73",
+"cat": "CABLE",
+"sell": 350.0,
+"mrp": 449.0,
+"qty": 1.0
+},
+{
+"name": "AMAC CAR CHARGER DUAL USB",
+"code": "AMAC CAR CHARGER",
+"cat": "CHARGER",
+"sell": 450.0,
+"mrp": 499.0,
+"qty": 5.0
+},
+{
+"name": "AMAC CH 61 DATA CABLE 4.1 A",
+"code": "908247966429",
+"cat": "",
+"sell": 350.0,
+"mrp": 0.0,
+"qty": 13.0
+},
+{
+"name": "AMAC CH 65 TYPE C",
+"code": "",
+"cat": "",
+"sell": 350.0,
+"mrp": 499.0,
+"qty": 15.0
+},
+{
+"name": "AMAQ 20W PD",
+"code": "CH 26",
+"cat": "CHARGER",
+"sell": 650.0,
+"mrp": 749.0,
+"qty": 2.0
+},
+{
+"name": "AMAQ CH-21",
+"code": "6589446583550",
+"cat": "CHARGER",
+"sell": 250.0,
+"mrp": 399.0,
+"qty": 1.0
+},
+{
+"name": "AMAQ POWER BANK CABLE",
+"code": "CH PB",
+"cat": "CABLE",
+"sell": 120.0,
+"mrp": 149.0,
+"qty": 5.0
+},
+{
+"name": "AMAQ TYPE C",
+"code": "CH 65",
+"cat": "CABLE",
+"sell": 400.0,
+"mrp": 499.0,
+"qty": 18.0
+},
+{
+"name": "AMBRANE ABCC 100",
+"code": "8904258107301",
+"cat": "CABLE",
+"sell": 800.0,
+"mrp": 899.0,
+"qty": 3.0
+},
+{
+"name": "AMBRANE C EARPHONE",
+"code": "8904258112695",
+"cat": "OTHER",
+"sell": 450.0,
+"mrp": 699.0,
+"qty": 0.0
+},
+{
+"name": "AMBRANE MICRO USB CABLE",
+"code": "8904258106298",
+"cat": "CABLE",
+"sell": 250.0,
+"mrp": 299.0,
+"qty": 4.0
+},
+{
+"name": "AMBRANE MULTIPPEL CABLE",
+"code": "8904258108971",
+"cat": "CABLE",
+"sell": 550.0,
+"mrp": 599.0,
+"qty": 1.0
+},
+{
+"name": "APPLE 20W ADAPTER",
+"code": "195949121234",
+"cat": "IOS ADAPTER",
+"sell": 2190.0,
+"mrp": 1900.0,
+"qty": -10.0,
+"merged": 2
+},
+{
+"name": "APPLE ADAPTOR 30 W",
+"code": "195949376405",
+"cat": "",
+"sell": 3800.0,
+"mrp": 0.0,
+"qty": 3.0
+},
+{
+"name": "APPLE EARPODS WITH USB-C (MYQY3ZM/A)",
+"code": "195949776274",
+"cat": "",
+"sell": 2000.0,
+"mrp": 2000.0,
+"qty": 2.0
+},
+{
+"name": "BLUETOOTH DONGLE U&J UIBD- 4221",
+"code": "659629593211",
+"cat": "",
+"sell": 450.0,
+"mrp": 999.0,
+"qty": -1.0
+},
+{
+"name": "BOAR ROCKERZ PRIME 255Z",
+"code": "8905650110999",
+"cat": "BOAT ROCKERZ",
+"sell": 1650.0,
+"mrp": 2999.0,
+"qty": -1.0
+},
+{
+"name": "BOAT AAVANTE BAR GROOVE ( PREMIUM BLACK)",
+"code": "8905650030341",
+"cat": "",
+"sell": 1900.0,
+"mrp": 3990.0,
+"qty": 0.0
+},
+{
+"name": "BOAT AAVANTE BAR RHYTHIN CARBON BLACK",
+"code": "8905650023404",
+"cat": "BOAT SPEAKERS",
+"sell": 4999.0,
+"mrp": 7990.0,
+"qty": 0.0
+},
+{
+"name": "BOAT AAVANTE BAR STARK PREMIUM BLACK",
+"code": "905650030846",
+"cat": "BOAT SPEAKERS",
+"sell": 9999.0,
+"mrp": 22990.0,
+"qty": 0.0
+},
+{
+"name": "BOAT ADAPTOR WITH CABLE WCDV 22.5W QCPD",
+"code": "1000002356",
+"cat": "",
+"sell": 1800.0,
+"mrp": 0.0,
+"qty": 5.0
+},
+{
+"name": "BOAT AIDOPES PRIMO ACTIVE BLACK",
+"code": "8905650094732",
+"cat": "BOAT AIRDOPES",
+"sell": 1550.0,
+"mrp": 4490.0,
+"qty": -1.0
+},
+{
+"name": "BOAT AIRDOPES 121 PRO PLUS BLACK",
+"code": "",
+"cat": "BOAT AIRDOPES",
+"sell": 2200.0,
+"mrp": 4990.0,
+"qty": 0.0
+},
+{
+"name": "BOAT AIRDOPES 131 ELITE ANC ACTIVE BLACK",
+"code": "8905650083637",
+"cat": "BOAT WIRED EARPHONES",
+"sell": 2400.0,
+"mrp": 6990.0,
+"qty": 0.0
+},
+{
+"name": "BOAT AIRDOPES 131 ELITE ANC ACTIVE TEAL",
+"code": "8905650083644",
+"cat": "BOAT WIRED EARPHONES",
+"sell": 2400.0,
+"mrp": 6990.0,
+"qty": 0.0
+},
+{
+"name": "BOAT AIRDOPES 131 ELLITE ANC ACTIVE WHITE",
+"code": "8905650083620",
+"cat": "BOAT AIRDOPES",
+"sell": 2400.0,
+"mrp": 6990.0,
+"qty": 0.0
+},
+{
+"name": "BOAT AIRDOPES 141 ANC WHITE",
+"code": "8905650035827",
+"cat": "BOAT AIRDOPES",
+"sell": 2200.0,
+"mrp": 5990.0,
+"qty": 0.0
+},
+{
+"name": "BOAT AIRDOPES 148 GEN 2 ACTIVE BLACK",
+"code": "8905650106497",
+"cat": "BOAT AIRDOPES",
+"sell": 1699.0,
+"mrp": 3990.0,
+"qty": 0.0
+},
+{
+"name": "BOAT AIRDOPES 161 ANC BLACK",
+"code": "8905650051407",
+"cat": "BOAT AIRDOPES",
+"sell": 2400.0,
+"mrp": 5990.0,
+"qty": 1.0
+},
+{
+"name": "BOAT AIRDOPES 161 ANC ELITE BLACK",
+"code": "8905650076103",
+"cat": "BOAT WIRED EARPHONES",
+"sell": 2200.0,
+"mrp": 6999.0,
+"qty": 0.0
+},
+{
+"name": "BOAT AIRDOPES 161 ANC GREEN",
+"code": "8905650051438",
+"cat": "BOAT AIRDOPES",
+"sell": 2400.0,
+"mrp": 5990.0,
+"qty": 2.0
+},
+{
+"name": "BOAT AIRDOPES 170 ANC HAZE",
+"code": "8905650076424",
+"cat": "BOAT AIRDOPES",
+"sell": 2400.0,
+"mrp": 5990.0,
+"qty": 0.0
+},
+{
+"name": "BOAT AIRDOPES 170 ANC SUNRISE BLUSH",
+"code": "8905650076431",
+"cat": "BOAT AIRDOPES",
+"sell": 2400.0,
+"mrp": 5990.0,
+"qty": 5.0
+},
+{
+"name": "BOAT AIRDOPES 181 PRO MOCHA ELEGANCE",
+"code": "8905650077384",
+"cat": "AIRPODS",
+"sell": 1999.0,
+"mrp": 4990.0,
+"qty": 0.0
+},
+{
+"name": "BOAT AIRDOPES 191 ANC PELLUCID BLUE",
+"code": "8905650083699",
+"cat": "BOAT AIRDOPES",
+"sell": 2499.0,
+"mrp": 6990.0,
+"qty": 0.0
+},
+{
+"name": "BOAT AIRDOPES 191 ANC PELLUCID ORANGE",
+"code": "8905650083675",
+"cat": "BOAT AIRDOPES",
+"sell": 2400.0,
+"mrp": 6990.0,
+"qty": 0.0
+},
+{
+"name": "BOAT AIRDOPES 280 ANC ACTIVE BLACK",
+"code": "8905650078503",
+"cat": "BOAT AIRDOPES",
+"sell": 1900.0,
+"mrp": 6990.0,
+"qty": 0.0
+},
+{
+"name": "BOAT AIRDOPES 300 GUMETEAL BLACK",
+"code": "8905650073270",
+"cat": "BOAT AIRDOPES",
+"sell": 1900.0,
+"mrp": 6490.0,
+"qty": 0.0
+},
+{
+"name": "BOAT AIRDOPES 301 MIDNIGHT SHADOW",
+"code": "8905650076479",
+"cat": "BOAT AIRDOPES",
+"sell": 1799.0,
+"mrp": 4990.0,
+"qty": 0.0
+},
+{
+"name": "BOAT AIRDOPES 301 SUNSET BLUSH",
+"code": "8905650076455",
+"cat": "BOAT WIRED EARPHONES",
+"sell": 1900.0,
+"mrp": 4990.0,
+"qty": 0.0
+},
+{
+"name": "BOAT AIRDOPES 311 PRO ACTIVE BLACK",
+"code": "8905650073645",
+"cat": "",
+"sell": 1400.0,
+"mrp": 0.0,
+"qty": 0.0
+},
+{
+"name": "BOAT AIRDOPES 411 ANC GREY HURRICANE",
+"code": "8904130884450",
+"cat": "BOAT AIRDOPES",
+"sell": 2800.0,
+"mrp": 4990.0,
+"qty": 5.0
+},
+{
+"name": "BOAT AIRDOPES 411 ANC STREAM EDITION BLACK",
+"code": "8905650018745",
+"cat": "BOAT AIRDOPES",
+"sell": 2900.0,
+"mrp": 4990.0,
+"qty": 1.0
+},
+{
+"name": "BOAT AIRDOPES 71 STARRY BLUE",
+"code": "8905650048810",
+"cat": "AIRPODS",
+"sell": 1600.0,
+"mrp": 4990.0,
+"qty": 0.0
+},
+{
+"name": "BOAT AIRDOPES 800 INTERSTELLAR BLACK",
+"code": "8905650077209",
+"cat": "AIRPODS",
+"sell": 2999.0,
+"mrp": 6490.0,
+"qty": 0.0
+},
+{
+"name": "BOAT AIRDOPES 800 INTERSTELLAR GREEN",
+"code": "8905650077230",
+"cat": "BOAT AIRDOPES",
+"sell": 2900.0,
+"mrp": 6490.0,
+"qty": 0.0
+},
+{
+"name": "BOAT AIRDOPES 91 ACTIVE BLACK",
+"code": "8905650048926",
+"cat": "BOAT AIRDOPES",
+"sell": 1650.0,
+"mrp": 4990.0,
+"qty": 4.0
+},
+{
+"name": "BOAT AIRDOPES ACE [ACTIVE BLACK]",
+"code": "8905650048445",
+"cat": "AIRPODS",
+"sell": 1600.0,
+"mrp": 3490.0,
+"qty": 0.0
+},
+{
+"name": "BOAT AIRDOPES ACTIVE BLACK",
+"code": "8905650013238",
+"cat": "AIRPODS",
+"sell": 1450.0,
+"mrp": 0.0,
+"qty": 0.0
+},
+{
+"name": "BOAT AIRDOPES DRIFTBLACK SABRE",
+"code": "8905650091090",
+"cat": "BOAT AIRDOPES",
+"sell": 1999.0,
+"mrp": 5990.0,
+"qty": 0.0
+},
+{
+"name": "BOAT AIRDOPES IMMORTAL 125 BLACK SABRE",
+"code": "8905650038859",
+"cat": "BOAT AIRDOPES",
+"sell": 1700.0,
+"mrp": 3499.0,
+"qty": 0.0
+},
+{
+"name": "BOAT AIRDOPES IMMORTAL KATANA BLADE 2.0 BLACK",
+"code": "8905650076080",
+"cat": "BOAT AIRDOPES",
+"sell": 2699.0,
+"mrp": 4990.0,
+"qty": 3.0
+},
+{
+"name": "BOAT AIRDOPES JOY JET BLACK",
+"code": "8905650047110",
+"cat": "AIRPODS",
+"sell": 1700.0,
+"mrp": 4990.0,
+"qty": 0.0
+},
+{
+"name": "BOAT AIRDOPES LOOP PEARL WHITE",
+"code": "8905650092332",
+"cat": "BOAT AIRDOPES",
+"sell": 2399.0,
+"mrp": 7990.0,
+"qty": 0.0
+},
+{
+"name": "BOAT AIRDOPES NIRVANA ION ANC BLACK",
+"code": "8905650058017",
+"cat": "BOAT AIRDOPES",
+"sell": 3100.0,
+"mrp": 9990.0,
+"qty": 0.0
+},
+{
+"name": "BOAT AIRDOPES NIRVANA ION ANC PRO BLAZING COMET",
+"code": "8905650091557",
+"cat": "BOAT AIRDOPES",
+"sell": 2900.0,
+"mrp": 13990.0,
+"qty": 1.0
+},
+{
+"name": "BOAT AIRDOPES NIRVANA LUCID GUNMETAL BLACK",
+"code": "8905650091649",
+"cat": "BOAT AIRDOPES",
+"sell": 3100.0,
+"mrp": 6990.0,
+"qty": 5.0
+},
+{
+"name": "BOAT AIRDOPES NIRVANA NEBULA",
+"code": "8905650017786",
+"cat": "BOAT AIRDOPES",
+"sell": 3600.0,
+"mrp": 12990.0,
+"qty": 0.0
+},
+{
+"name": "BOAT AIRDOPES NIRVANA SPACE INFINITY BLUE",
+"code": "8905650087154",
+"cat": "BOAT AIRDOPES",
+"sell": 2950.0,
+"mrp": 8499.0,
+"qty": 0.0
+},
+{
+"name": "BOAT AIRDOPES PRIME 513 ANC IVORY GLOW",
+"code": "8905650118216",
+"cat": "",
+"sell": 2400.0,
+"mrp": 5990.0,
+"qty": 3.0
+},
+{
+"name": "BOAT AIRDOPES PROGEAR ACTIVE BLACK",
+"code": "8905650071139",
+"cat": "BOAT AIRDOPES",
+"sell": 2499.0,
+"mrp": 6990.0,
+"qty": 1.0
+},
+{
+"name": "BOAT AIRDOPES ULTRA PLUS Midnight Black",
+"code": "8905650088465",
+"cat": "BOAT WIRED EARPHONES",
+"sell": 1900.0,
+"mrp": 4990.0,
+"qty": -2.0
+},
+{
+"name": "BOAT AIRDOPES ULTRA PRO",
+"code": "8905650084450",
+"cat": "BOAT WIRED EARPHONES",
+"sell": 2400.0,
+"mrp": 6990.0,
+"qty": 1.0
+},
+{
+"name": "BOAT AVANTE BAR 600 JADE BLACK",
+"code": "8905650027044",
+"cat": "BOAT SPEAKERS",
+"sell": 2800.0,
+"mrp": 5990.0,
+"qty": 0.0
+},
+{
+"name": "BOAT AVANTE BAR AURA",
+"code": "8905650008708",
+"cat": "BOAT SPEAKERS",
+"sell": 9800.0,
+"mrp": 21990.0,
+"qty": 1.0
+},
+{
+"name": "BOAT AVANTE BAR ORION PLUS BLACK",
+"code": "",
+"cat": "BOAT SPEAKERS",
+"sell": 10200.0,
+"mrp": 21999.0,
+"qty": -1.0
+},
+{
+"name": "BOAT AVANTE BAR QUAKE MIDNIGHT BALCK 200W",
+"code": "1000002406",
+"cat": "SPEAKER",
+"sell": 9999.0,
+"mrp": 22990.0,
+"qty": 0.0
+},
+{
+"name": "BOAT BASSHEADS 100 BLACK",
+"code": "8904130840883",
+"cat": "ZEBRONICS WIRED EARPHONES",
+"sell": 599.0,
+"mrp": 999.0,
+"qty": 2.0
+},
+{
+"name": "BOAT BASSHEADS 100C BLACK",
+"code": "8905650084757",
+"cat": "BOAT WIRED EARPHONES",
+"sell": 799.0,
+"mrp": 1990.0,
+"qty": 0.0
+},
+{
+"name": "BOAT BASSHEADS 102 CHARCOAL BLACK",
+"code": "8904130846885",
+"cat": "BOAT WIRED EARPHONES",
+"sell": 650.0,
+"mrp": 1290.0,
+"qty": 0.0
+},
+{
+"name": "BOAT BASSHEADS 105 BLACK",
+"code": "8904130865992",
+"cat": "BOAT WIRED EARPHONES",
+"sell": 599.0,
+"mrp": 999.0,
+"qty": 6.0
+},
+{
+"name": "BOAT BASSHEADS 110 BLACK",
+"code": "8904130842719",
+"cat": "BOAT WIRED EARPHONES",
+"sell": 650.0,
+"mrp": 999.0,
+"qty": 4.0
+},
+{
+"name": "BOAT BASSHEADS 122 ANC BLACK",
+"code": "8905650073744",
+"cat": "BOAT WIRED EARPHONES",
+"sell": 1350.0,
+"mrp": 2999.0,
+"qty": 0.0
+},
+{
+"name": "BOAT BASSHEADS 152 ACTIVE BLACK",
+"code": "8904130845963",
+"cat": "BOAT WIRED EARPHONES",
+"sell": 750.0,
+"mrp": 1299.0,
+"qty": 0.0
+},
+{
+"name": "BOAT BASSHEADS 162 V2 BOLD BLACK",
+"code": "8905650092684",
+"cat": "ZEBRONICS WIRED HEADPHONES",
+"sell": 650.0,
+"mrp": 990.0,
+"qty": 1.0
+},
+{
+"name": "BOAT BASSHEADS 180 FROSTY WHITE",
+"code": "8905650092004",
+"cat": "BOAT WIRED EARPHONES",
+"sell": 850.0,
+"mrp": 999.0,
+"qty": 0.0
+},
+{
+"name": "BOAT BASSHEADS 220 BLACK",
+"code": "8904130838316",
+"cat": "BOAT WIRED EARPHONES",
+"sell": 850.0,
+"mrp": 999.0,
+"qty": 0.0
+},
+{
+"name": "BOAT BASSHEADS 55 BLACK",
+"code": "8905650126198",
+"cat": "",
+"sell": 549.0,
+"mrp": 899.0,
+"qty": 5.0
+},
+{
+"name": "BOAT BASSHEADS 90 C",
+"code": "8905650126174",
+"cat": "",
+"sell": 700.0,
+"mrp": 999.0,
+"qty": 2.0
+},
+{
+"name": "BOAT BLITZ 1500 PRO (SPACE BLACK)",
+"code": "",
+"cat": "",
+"sell": 5400.0,
+"mrp": 0.0,
+"qty": -1.0
+},
+{
+"name": "BOAT BT SPEAKER STONE 193 CLASSIC BLUE",
+"code": "8905650031959",
+"cat": "SPEAKERS",
+"sell": 1999.0,
+"mrp": 2999.0,
+"qty": 2.0
+},
+{
+"name": "BOAT COSMIC BLACK",
+"code": "8905650084313",
+"cat": "OVERHEAD",
+"sell": 4300.0,
+"mrp": 8990.0,
+"qty": 1.0
+},
+{
+"name": "BOAT ENIGMA GEM METALLIC BLACK",
+"code": "8905650086713",
+"cat": "WATCH",
+"sell": 4099.0,
+"mrp": 8499.0,
+"qty": 0.0
+},
+{
+"name": "BOAT ENIGMA ORION ACTIVE BLACK",
+"code": "8905650087710",
+"cat": "BOAT WATCH",
+"sell": 3400.0,
+"mrp": 8999.0,
+"qty": 0.0
+},
+{
+"name": "BOAT ENIGMA ORION METALLIC SILVER",
+"code": "8905650087734",
+"cat": "",
+"sell": 3200.0,
+"mrp": 0.0,
+"qty": 0.0
+},
+{
+"name": "BOAT ENIGMA R32 CLASSIC SILVER",
+"code": "8905650046311",
+"cat": "BOAT WATCH",
+"sell": 5300.0,
+"mrp": 9999.0,
+"qty": 0.0
+},
+{
+"name": "BOAT ENIGMA RADIANT ACTIVE BLACK",
+"code": "8905650089561",
+"cat": "WATCH",
+"sell": 3700.0,
+"mrp": 8999.0,
+"qty": 0.0
+},
+{
+"name": "BOAT ENIGMA RADIANT METAL BLACK",
+"code": "8905650089530",
+"cat": "BOAT WATCH",
+"sell": 3800.0,
+"mrp": 9499.0,
+"qty": 0.0
+},
+{
+"name": "BOAT IMMORTAL AIRSPEED PRO WHITE SABRE",
+"code": "8905650084108",
+"cat": "BOAT WATCH",
+"sell": 2300.0,
+"mrp": 6990.0,
+"qty": 0.0
+},
+{
+"name": "BOAT LOOP COOL GREY",
+"code": "8905650092325",
+"cat": "AIRPODS",
+"sell": 2399.0,
+"mrp": 7990.0,
+"qty": 1.0
+},
+{
+"name": "BOAT LUNAR DISCOVERY ACTIVE BLACK",
+"code": "8905650088199",
+"cat": "WATCH",
+"sell": 2400.0,
+"mrp": 8499.0,
+"qty": 0.0
+},
+{
+"name": "BOAT LUNAR DISCOVERY PRO",
+"code": "8905650117424",
+"cat": "BOAT WATCH",
+"sell": 2199.0,
+"mrp": 8999.0,
+"qty": 0.0
+},
+{
+"name": "BOAT LUNAR EMBRACE STEEL BLACK",
+"code": "8905650059519",
+"cat": "BOAT WATCH",
+"sell": 4300.0,
+"mrp": 13999.0,
+"qty": 0.0
+},
+{
+"name": "BOAT LUNAR ORBIT 2 ACTIVE BLACK",
+"code": "8905650131291",
+"cat": "",
+"sell": 2400.0,
+"mrp": 6999.0,
+"qty": 0.0
+},
+{
+"name": "BOAT LUNAR ORBIT BLACK METAL",
+"code": "8905650094749",
+"cat": "BOAT WATCH",
+"sell": 2700.0,
+"mrp": 8999.0,
+"qty": 0.0
+},
+{
+"name": "BOAT LUNAR VISTA ACTIVE BLACK",
+"code": "8905650045741",
+"cat": "OVERHEAD",
+"sell": 2400.0,
+"mrp": 7999.0,
+"qty": 0.0
+},
+{
+"name": "BOAT NIRVA IVY GUNMETAL WHITE",
+"code": "8905650086072",
+"cat": "BOAT WIRED EARPHONES",
+"sell": 3900.0,
+"mrp": 17990.0,
+"qty": 0.0
+},
+{
+"name": "BOAT NIRVANA CROWN GUNMETAL GREY",
+"code": "8905650125849",
+"cat": "",
+"sell": 3400.0,
+"mrp": 9990.0,
+"qty": -1.0
+},
+{
+"name": "BOAT NIRVANA CRYSTL QUANTUM BLACK",
+"code": "8905650091519",
+"cat": "BOAT AIRDOPES",
+"sell": 2999.0,
+"mrp": 10990.0,
+"qty": 0.0
+},
+{
+"name": "BOAT NIRVANA ION ANC PRO NORTHERN LIGHTS",
+"code": "8905650091571",
+"cat": "BOAT WIRED EARPHONES",
+"sell": 2900.0,
+"mrp": 13990.0,
+"qty": 0.0
+},
+{
+"name": "BOAT NIRVANA X TWS COSMIC ONYX",
+"code": "8905650091113",
+"cat": "BOAT AIRDOPES",
+"sell": 2999.0,
+"mrp": 8990.0,
+"qty": 0.0
+},
+{
+"name": "BOAT NIRVANAA 751 ANC GUNMETAL GERY",
+"code": "8904130884580",
+"cat": "BOAT WIRED EARPHONES",
+"sell": 4800.0,
+"mrp": 7990.0,
+"qty": 0.0
+},
+{
+"name": "BOAT PARTYPAL 63 BLACK",
+"code": "8904130852206",
+"cat": "BOAT SPEAKERS",
+"sell": 5900.0,
+"mrp": 9990.0,
+"qty": 0.0
+},
+{
+"name": "BOAT PB 300 AIR 10,000 MAH CARBON BLACK",
+"code": "8905650061956",
+"cat": "POWER BANK",
+"sell": 1899.0,
+"mrp": 1999.0,
+"qty": 0.0
+},
+{
+"name": "BOAT PB 300 PRO CARBON BLACK",
+"code": "8905650089967",
+"cat": "POWER BANK",
+"sell": 1900.0,
+"mrp": 3499.0,
+"qty": 0.0
+},
+{
+"name": "BOAT PB 300 PRO STEEL BLUE",
+"code": "8905650089974",
+"cat": "POWER BANK",
+"sell": 1999.0,
+"mrp": 3499.0,
+"qty": -2.0
+},
+{
+"name": "BOAT PB 330 MAGNACHARGE AQUA",
+"code": "8905650089608",
+"cat": "POWER BANK",
+"sell": 2700.0,
+"mrp": 4999.0,
+"qty": 1.0
+},
+{
+"name": "BOAT PB 331MAGNACHARGE PURPIE",
+"code": "8905650104738",
+"cat": "POWER BANK",
+"sell": 2400.0,
+"mrp": 4499.0,
+"qty": 0.0
+},
+{
+"name": "BOAT PB 400 BURGUNDY 20,000 MAH",
+"code": "8905650059472",
+"cat": "",
+"sell": 2400.0,
+"mrp": 4499.0,
+"qty": 0.0
+},
+{
+"name": "BOAT PB 400 CARBON BLACK 20,000 MAH POWER BANK",
+"code": "8905650050479",
+"cat": "POWER BANK",
+"sell": 2400.0,
+"mrp": 4499.0,
+"qty": 0.0
+},
+{
+"name": "BOAT PB 400 PRO Carbon Black 20,000MAH",
+"code": "8905650089936",
+"cat": "POWER BANK",
+"sell": 2600.0,
+"mrp": 4499.0,
+"qty": 2.0
+},
+{
+"name": "BOAT PB 600 POWERPULSE [GUNMETAL] 27,000 HAH POWER BANK",
+"code": "8905650094251",
+"cat": "POWER BANK",
+"sell": 5399.0,
+"mrp": 11999.0,
+"qty": 1.0
+},
+{
+"name": "BOAT PB300 BURGUNDY 10,000MAH POWER BANK",
+"code": "8905650059496",
+"cat": "POWER BANK",
+"sell": 1499.0,
+"mrp": 2999.0,
+"qty": 0.0
+},
+{
+"name": "BOAT PB300 LITE CARBON BLACK 10,000MAH",
+"code": "8905650093636",
+"cat": "POWER BANK",
+"sell": 1400.0,
+"mrp": 3999.0,
+"qty": 3.0
+},
+{
+"name": "BOAT PB400 20000 MAH POWERBANK STEEL BLUE",
+"code": "8905650050486",
+"cat": "POWER BANK",
+"sell": 2400.0,
+"mrp": 4499.0,
+"qty": 2.0
+},
+{
+"name": "BOAT PB400 PRO 20000 MAH POWERBANK STEEL BLUE",
+"code": "8905650089943",
+"cat": "",
+"sell": 2600.0,
+"mrp": 4999.0,
+"qty": 0.0
+},
+{
+"name": "BOAT PB435 TURBO 35W ONYX BLACK 20,000 MAH",
+"code": "8905650103977",
+"cat": "POWER BANK",
+"sell": 2499.0,
+"mrp": 5499.0,
+"qty": 1.0
+},
+{
+"name": "BOAT PRIMAIA ACE METALLIC BLACK",
+"code": "8905650051780",
+"cat": "BOAT WATCH",
+"sell": 2800.0,
+"mrp": 9999.0,
+"qty": 0.0
+},
+{
+"name": "BOAT ROCKERZ 103 PRO ACTIVE BLACK",
+"code": "8904130898563",
+"cat": "BOAT ROCKERZ",
+"sell": 1400.0,
+"mrp": 2490.0,
+"qty": 0.0
+},
+{
+"name": "BOAT ROCKERZ 109 ACTIVE BLACK",
+"code": "8905650049169",
+"cat": "BOAT ROCKERZ",
+"sell": 1600.0,
+"mrp": 2490.0,
+"qty": 0.0
+},
+{
+"name": "BOAT ROCKERZ 195 PRO",
+"code": "8904130898624",
+"cat": "BOAT WIRED EARPHONES",
+"sell": 1799.0,
+"mrp": 2990.0,
+"qty": 0.0
+},
+{
+"name": "BOAT ROCKERZ 195 PRO FIERY BLACK",
+"code": "8904130898600",
+"cat": "BOAT ROCKERZ",
+"sell": 1750.0,
+"mrp": 2990.0,
+"qty": 4.0
+},
+{
+"name": "BOAT ROCKERZ 200 (ACTIVE BLACK)",
+"code": "8905650107005",
+"cat": "",
+"sell": 1300.0,
+"mrp": 2499.0,
+"qty": 7.0
+},
+{
+"name": "BOAT ROCKERZ 200 ACTIVE BLACK",
+"code": "89056501070",
+"cat": "NECKBAND",
+"sell": 1650.0,
+"mrp": 2499.0,
+"qty": 0.0
+},
+{
+"name": "BOAT ROCKERZ 210 ANC ONYXBLACK",
+"code": "8905650089837",
+"cat": "NECKBAND",
+"sell": 2350.0,
+"mrp": 5990.0,
+"qty": 1.0
+},
+{
+"name": "BOAT ROCKERZ 255 ANC RAVEN BLACK",
+"code": "8905650057881",
+"cat": "BOAT ROCKERZ",
+"sell": 2600.0,
+"mrp": 6990.0,
+"qty": 1.0
+},
+{
+"name": "BOAT ROCKERZ 255 MAX MAVERICK MAROON",
+"code": "8905650021233",
+"cat": "NECKBAND",
+"sell": 1650.0,
+"mrp": 3990.0,
+"qty": 0.0
+},
+{
+"name": "BOAT ROCKERZ 255 TOUCH DEEP BLUE",
+"code": "8905650026818",
+"cat": "BOAT ROCKERZ",
+"sell": 1550.0,
+"mrp": 4990.0,
+"qty": 0.0
+},
+{
+"name": "BOAT ROCKERZ 255 TOUCH PITCH BLACK",
+"code": "8905650026825",
+"cat": "BOAT ROCKERZ",
+"sell": 1550.0,
+"mrp": 4990.0,
+"qty": 0.0
+},
+{
+"name": "BOAT ROCKERZ 255 Z PLUS SLATE GREY",
+"code": "8905650084283",
+"cat": "NECKBAND",
+"sell": 1800.0,
+"mrp": 4490.0,
+"qty": 0.0
+},
+{
+"name": "BOAT ROCKERZ 261 PRO INK BLACK",
+"code": "8905650077131",
+"cat": "BOAT ROCKERZ",
+"sell": 2400.0,
+"mrp": 5999.0,
+"qty": 3.0
+},
+{
+"name": "BOAT ROCKERZ 268 ACTIVE BLACK",
+"code": "8905650040517",
+"cat": "BOAT ROCKERZ",
+"sell": 1450.0,
+"mrp": 2990.0,
+"qty": 0.0
+},
+{
+"name": "BOAT ROCKERZ 268 COOL BLUE",
+"code": "8905650040524",
+"cat": "NECKBAND",
+"sell": 1700.0,
+"mrp": 2990.0,
+"qty": 0.0
+},
+{
+"name": "BOAT ROCKERZ 2689 FERN GREEN",
+"code": "8905650040531",
+"cat": "BOAT ROCKERZ",
+"sell": 1700.0,
+"mrp": 2990.0,
+"qty": 0.0
+},
+{
+"name": "BOAT ROCKERZ 280 ANC GUNMETAL BLACK",
+"code": "8905650037579",
+"cat": "BOAT ROCKERZ",
+"sell": 2150.0,
+"mrp": 4990.0,
+"qty": 0.0
+},
+{
+"name": "BOAT ROCKERZ 411 ACTIVE BLACK",
+"code": "8905650103045",
+"cat": "OVERHEAD",
+"sell": 1900.0,
+"mrp": 2999.0,
+"qty": 0.0
+},
+{
+"name": "BOAT ROCKERZ 412 ACTIVE BLACK",
+"code": "8905650103052",
+"cat": "OVERHEAD",
+"sell": 2200.0,
+"mrp": 2999.0,
+"qty": 0.0
+},
+{
+"name": "BOAT ROCKERZ 413 BLACK AND RED",
+"code": "8905650103953",
+"cat": "OVERHEAD",
+"sell": 2400.0,
+"mrp": 2990.0,
+"qty": 0.0
+},
+{
+"name": "BOAT ROCKERZ 421 BLACK SABRE",
+"code": "8905650103878",
+"cat": "ZEBRONICS EARBUDS",
+"sell": 2199.0,
+"mrp": 2490.0,
+"qty": -1.0
+},
+{
+"name": "BOAT ROCKERZ 425 TECHNO PURPLE",
+"code": "8905650084177",
+"cat": "BOAT ROCKERZ",
+"sell": 2000.0,
+"mrp": 2999.0,
+"qty": 0.0
+},
+{
+"name": "BOAT ROCKERZ 450R AQUA BLUE",
+"code": "8904130868382",
+"cat": "BOAT ROCKERZ",
+"sell": 2300.0,
+"mrp": 3990.0,
+"qty": 0.0
+},
+{
+"name": "BOAT ROCKERZ 450R LUSCIOUS BLACK",
+"code": "8904130868405",
+"cat": "OVERHEAD",
+"sell": 2300.0,
+"mrp": 3990.0,
+"qty": 0.0
+},
+{
+"name": "BOAT ROCKERZ 550 ACTIVE BLACK",
+"code": "8904130850714",
+"cat": "OVERHEAD",
+"sell": 2600.0,
+"mrp": 4999.0,
+"qty": 0.0
+},
+{
+"name": "BOAT ROCKERZ 550 ARMY GREEN",
+"code": "8904130862144",
+"cat": "OVERHEAD",
+"sell": 2699.0,
+"mrp": 4999.0,
+"qty": 0.0
+},
+{
+"name": "BOAT ROCKERZ 551 ANC BLACK",
+"code": "8905650012354",
+"cat": "BOAT ROCKERZ",
+"sell": 3700.0,
+"mrp": 7990.0,
+"qty": 0.0
+},
+{
+"name": "BOAT ROCKERZ APEX STELLAR BLACK",
+"code": "8905650019902",
+"cat": "",
+"sell": 1200.0,
+"mrp": 3990.0,
+"qty": 4.0
+},
+{
+"name": "BOAT ROCKERZ PRINE 210 ANC COSMIC BLACK",
+"code": "8905650116168",
+"cat": "BOAT ROCKERZ",
+"sell": 2200.0,
+"mrp": 5990.0,
+"qty": 2.0
+},
+{
+"name": "BOAT ROCKERZ SUMMIT CLASSIC BLACK",
+"code": "8905650085945",
+"cat": "BOAT ROCKERZ",
+"sell": 1099.0,
+"mrp": 4490.0,
+"qty": 0.0
+},
+{
+"name": "BOAT ROCKERZ TRENDZ BLACK SABRE",
+"code": "8905650125931",
+"cat": "",
+"sell": 1750.0,
+"mrp": 2999.0,
+"qty": 0.0
+},
+{
+"name": "BOAT STONE 108 RAGING BLACK",
+"code": "8905650102789",
+"cat": "",
+"sell": 1600.0,
+"mrp": 2990.0,
+"qty": 1.0
+},
+{
+"name": "BOAT STONE 358 PRO RAGING BLACK",
+"code": "8905650076578",
+"cat": "",
+"sell": 2450.0,
+"mrp": 4990.0,
+"qty": 0.0
+},
+{
+"name": "BOAT STONE BEAM MIDNIGHT BLACK",
+"code": "8905650028911",
+"cat": "SPEAKERS",
+"sell": 2500.0,
+"mrp": 4990.0,
+"qty": 1.0
+},
+{
+"name": "BOAT STONE UNO RAGING BLACK",
+"code": "8905650086119",
+"cat": "BOAT SPEAKERS",
+"sell": 1199.0,
+"mrp": 2990.0,
+"qty": 3.0
+},
+{
+"name": "BOAT STORM CALL 3 ACTIVE BLACK",
+"code": "8905650068832",
+"cat": "WATCH",
+"sell": 2100.0,
+"mrp": 8499.0,
+"qty": 0.0
+},
+{
+"name": "BOAT STORM CALL 3PLUS Active Black",
+"code": "8905650084122",
+"cat": "BOAT WATCH",
+"sell": 1900.0,
+"mrp": 7499.0,
+"qty": 0.0
+},
+{
+"name": "BOAT TAG BLACK",
+"code": "8905650102505",
+"cat": "OTHER",
+"sell": 1999.0,
+"mrp": 3499.0,
+"qty": 3.0
+},
+{
+"name": "BOAT ULTIMA EMBER BOLD BLACK",
+"code": "8905650099676",
+"cat": "WATCH",
+"sell": 3200.0,
+"mrp": 8999.0,
+"qty": 0.0
+},
+{
+"name": "BOAT ULTIMA EMBER STEEL BLACK",
+"code": "8905650099720",
+"cat": "WATCH",
+"sell": 3400.0,
+"mrp": 9499.0,
+"qty": 1.0
+},
+{
+"name": "BOAT ULTIMA GLO ULTRA BRIGHT AMOLED DISPLAY BLACK",
+"code": "8905650132335",
+"cat": "",
+"sell": 3100.0,
+"mrp": 6999.0,
+"qty": 1.0
+},
+{
+"name": "BOAT ULTIMA REGAL ACTIVE BLACK",
+"code": "8905650085723",
+"cat": "WATCH",
+"sell": 3200.0,
+"mrp": 9999.0,
+"qty": 0.0
+},
+{
+"name": "BOAT ULTIMA REGAL STEEL BLACK",
+"code": "8905650085716",
+"cat": "BOAT WATCH",
+"sell": 3200.0,
+"mrp": 10999.0,
+"qty": 0.0
+},
+{
+"name": "BOAT ULTIMA SUMMIT AMOLED DISPLAY ONYX BLACK",
+"code": "8905650117363",
+"cat": "",
+"sell": 2800.0,
+"mrp": 8999.0,
+"qty": 2.0
+},
+{
+"name": "BOAT ULTIMA SUMMIT AMOLED DISPLAY STEEL BLACK",
+"code": "8905650117417",
+"cat": "",
+"sell": 2800.0,
+"mrp": 9499.0,
+"qty": 0.0
+},
+{
+"name": "BOAT WATCH STORM CALL BLUETOOTH CALLING",
+"code": "8905650098860",
+"cat": "WATCH",
+"sell": 1999.0,
+"mrp": 7990.0,
+"qty": 0.0
+},
+{
+"name": "BOAT WAVE ASTRA 3 Active Black",
+"code": "8905650068771",
+"cat": "BOAT WATCH",
+"sell": 2400.0,
+"mrp": 8500.0,
+"qty": 0.0
+},
+{
+"name": "BOAT WAVE ASTRA 4 ACTIVE BLACK",
+"code": "8905650132793",
+"cat": "",
+"sell": 2400.0,
+"mrp": 5999.0,
+"qty": 1.0
+},
+{
+"name": "BOAT WAVE AURA Active Black",
+"code": "8905650099737",
+"cat": "BOAT WATCH",
+"sell": 2700.0,
+"mrp": 8999.0,
+"qty": 0.0
+},
+{
+"name": "BOAT WAVE FORCE 3 ACTIVE BLACK",
+"code": "8905650051575",
+"cat": "BOAT WATCH",
+"sell": 3200.0,
+"mrp": 9999.0,
+"qty": 0.0
+},
+{
+"name": "BOAT WAVE GLORY ACTIVE BLACK",
+"code": "8905650035728",
+"cat": "BOAT WATCH",
+"sell": 3200.0,
+"mrp": 6499.0,
+"qty": 0.0
+},
+{
+"name": "BOAT WAVE GLORY PRO ACTIVE BLACK",
+"code": "8905650051841",
+"cat": "BOAT WATCH",
+"sell": 3400.0,
+"mrp": 10999.0,
+"qty": 0.0
+},
+{
+"name": "BOAT WCDV 20W PD WHITE",
+"code": "8905650005356",
+"cat": "CHARGER",
+"sell": 999.0,
+"mrp": 1990.0,
+"qty": 5.0
+},
+{
+"name": "BOAT WCDV 22.5W QCPD WHITE",
+"code": "8905650018981",
+"cat": "",
+"sell": 950.0,
+"mrp": 2490.0,
+"qty": 5.0
+},
+{
+"name": "BOAt stone 193 pro RAGING BLACK",
+"code": "8905650087178",
+"cat": "SPEAKERS",
+"sell": 1550.0,
+"mrp": 2990.0,
+"qty": 0.0
+},
+{
+"name": "CABLE PROTACTOR",
+"code": "",
+"cat": "OTHER",
+"sell": 30.0,
+"mrp": 0.0,
+"qty": 37.0
+},
+{
+"name": "CABLE PROTECTOR 80",
+"code": "",
+"cat": "",
+"sell": 80.0,
+"mrp": 0.0,
+"qty": -61.0
+},
+{
+"name": "CAM SKIN 1200",
+"code": "",
+"cat": "",
+"sell": 1200.0,
+"mrp": 0.0,
+"qty": 18.0
+},
+{
+"name": "CAMARA LENCE SKIN 600",
+"code": "",
+"cat": "",
+"sell": 600.0,
+"mrp": 0.0,
+"qty": -1.0
+},
+{
+"name": "CAMERA GLASS",
+"code": "",
+"cat": "OTHER",
+"sell": 165.5,
+"mrp": 0.0,
+"qty": 258.0,
+"merged": 2
+},
+{
+"name": "CAMERA GLASS 300",
+"code": "",
+"cat": "",
+"sell": 300.0,
+"mrp": 0.0,
+"qty": 44.0
+},
+{
+"name": "CAR HOOK MOBILE PHONE HOLDER",
+"code": "CAR HOOK",
+"cat": "PHONE HOLDER",
+"sell": 350.0,
+"mrp": 399.0,
+"qty": 5.0
+},
+{
+"name": "CAR SEAT AROMA THERAPY",
+"code": "CAR SEAT AROMA THERAPY",
+"cat": "OTHER",
+"sell": 899.0,
+"mrp": 0.0,
+"qty": 1.0
+},
+{
+"name": "CARD READER",
+"code": "",
+"cat": "OTHER",
+"sell": 50.0,
+"mrp": 100.0,
+"qty": 1.0
+},
+{
+"name": "CASE 750",
+"code": "",
+"cat": "",
+"sell": 750.0,
+"mrp": 0.0,
+"qty": -1.0
+},
+{
+"name": "CH 12 RIOTEL 3.1 A",
+"code": "HC 12",
+"cat": "CHARGER",
+"sell": 450.0,
+"mrp": 599.0,
+"qty": 7.0
+},
+{
+"name": "CH-16 AMAQQ TYPE MICRO",
+"code": "6589446585554",
+"cat": "CHARGER",
+"sell": 300.0,
+"mrp": 349.0,
+"qty": 8.0
+},
+{
+"name": "CH-22 AMAQ V8",
+"code": "6589446583558",
+"cat": "CHARGER",
+"sell": 300.0,
+"mrp": 349.0,
+"qty": 9.0
+},
+{
+"name": "CHARGER CASE",
+"code": "",
+"cat": "",
+"sell": 350.0,
+"mrp": 0.0,
+"qty": -2.0
+},
+{
+"name": "CHARGER PROTECTOR",
+"code": "CHARGER PROTECTOR",
+"cat": "CHARGER",
+"sell": 250.0,
+"mrp": 300.0,
+"qty": 9.0
+},
+{
+"name": "CMF BY NOTHING BUDS 2",
+"code": "6974434225060",
+"cat": "BOAT AIRDOPES",
+"sell": 2900.0,
+"mrp": 2999.0,
+"qty": 0.0
+},
+{
+"name": "CMF BY NOTHING BUDS 2 A",
+"code": "6974434225169",
+"cat": "",
+"sell": 2450.0,
+"mrp": 2499.0,
+"qty": 0.0
+},
+{
+"name": "CMF BY NOTHING BUDS DAEK GREY",
+"code": "6974434221796",
+"cat": "AIRPODS",
+"sell": 2600.0,
+"mrp": 2999.0,
+"qty": 1.0
+},
+{
+"name": "CMF BY NOTHING NECKBAND PRON DARK GREY",
+"code": "6974434222106",
+"cat": "NECKBAND",
+"sell": 2250.0,
+"mrp": 2499.0,
+"qty": 0.0
+},
+{
+"name": "DCO CAR HOLDER X0-C98C",
+"code": "6920680827152",
+"cat": "PHONE HOLDER",
+"sell": 750.0,
+"mrp": 0.0,
+"qty": 0.0
+},
+{
+"name": "DH 1208 WIRELESS SPEAKER",
+"code": "",
+"cat": "SPEAKERS",
+"sell": 499.0,
+"mrp": 0.0,
+"qty": -1.0
+},
+{
+"name": "DIYARA 2.1A FAST MICRO USB CHARGER",
+"code": "DY-211",
+"cat": "CHARGER",
+"sell": 250.0,
+"mrp": 299.0,
+"qty": 9.0
+},
+{
+"name": "DUV C TO C CABLE",
+"code": "DT-055",
+"cat": "CHARGER",
+"sell": 300.0,
+"mrp": 0.0,
+"qty": 17.0
+},
+{
+"name": "EVM 128 GB ENSTORE + USB 3.2 GEN 1",
+"code": "746935611750",
+"cat": "EVM PEN",
+"sell": 1380.0,
+"mrp": 3499.0,
+"qty": 0.0
+},
+{
+"name": "EVM 128 GB MEMORY CARD",
+"code": "744109738142",
+"cat": "MEMORY CARD",
+"sell": 1150.0,
+"mrp": 2899.0,
+"qty": 2.0
+},
+{
+"name": "EVM 128 PENDRIVE",
+"code": "744109738029",
+"cat": "EVM",
+"sell": 1150.0,
+"mrp": 2199.0,
+"qty": -1.0
+},
+{
+"name": "EVM 16 GB PENDRIVE",
+"code": "746935610494",
+"cat": "EVM",
+"sell": 470.0,
+"mrp": 629.0,
+"qty": 1.0
+},
+{
+"name": "EVM 256 GB PENDRIVE 3.2GEN 1",
+"code": "744109738340",
+"cat": "",
+"sell": 1999.0,
+"mrp": 4499.0,
+"qty": 1.0
+},
+{
+"name": "EVM 32 GB ENSTORE PLUS USB 3.2 GEN 1",
+"code": "746935611736",
+"cat": "EVM",
+"sell": 680.0,
+"mrp": 1999.0,
+"qty": 0.0
+},
+{
+"name": "EVM 32 GB MEMORY CARD",
+"code": "744109738128",
+"cat": "EVM",
+"sell": 580.0,
+"mrp": 699.0,
+"qty": -1.0
+},
+{
+"name": "EVM 32 GB PENDRIVE",
+"code": "746935610500",
+"cat": "EVM",
+"sell": 580.0,
+"mrp": 729.0,
+"qty": 1.0
+},
+{
+"name": "EVM 64 GB ENSTORE PLUS USB 3.2 GEN 1",
+"code": "746935611743",
+"cat": "EVM",
+"sell": 980.0,
+"mrp": 2499.0,
+"qty": 0.0
+},
+{
+"name": "EVM 64 GB MEMORY CARD",
+"code": "744109738135",
+"cat": "EVM",
+"sell": 850.0,
+"mrp": 999.0,
+"qty": 1.0
+},
+{
+"name": "EVM 64 GB PENDRIVE",
+"code": "746935610517",
+"cat": "EVM",
+"sell": 850.0,
+"mrp": 1029.0,
+"qty": 1.0
+},
+{
+"name": "EVM 8 GB MEMORY CARD",
+"code": "746935610593",
+"cat": "SANDISK",
+"sell": 350.0,
+"mrp": 449.0,
+"qty": -1.0
+},
+{
+"name": "EVM 8 GB PENDRIVE",
+"code": "746935610487",
+"cat": "EVM PEN",
+"sell": 350.0,
+"mrp": 0.0,
+"qty": 1.0
+},
+{
+"name": "EVM16 GB MEMORY CARD",
+"code": "746935610418",
+"cat": "EVM",
+"sell": 450.0,
+"mrp": 599.0,
+"qty": 3.0
+},
+{
+"name": "FINGER GLOW",
+"code": "945049167127",
+"cat": "",
+"sell": 20.0,
+"mrp": 0.0,
+"qty": -66.0
+},
+{
+"name": "FINGER SLEEV",
+"code": "",
+"cat": "OTHER",
+"sell": 20.0,
+"mrp": 20.0,
+"qty": -36.0,
+"merged": 2
+},
+{
+"name": "FITEAR MOBILE STAND FG 12",
+"code": "6971545511129",
+"cat": "PHONE HOLDER",
+"sell": 650.0,
+"mrp": 0.0,
+"qty": 2.0
+},
+{
+"name": "FITGEAR TRIPOD FG-888",
+"code": "",
+"cat": "OTHER",
+"sell": 1400.0,
+"mrp": 0.0,
+"qty": 1.0
+},
+{
+"name": "FLIP 250",
+"code": "FLIP 250",
+"cat": "",
+"sell": 250.0,
+"mrp": 0.0,
+"qty": 154.0
+},
+{
+"name": "FLIP 300",
+"code": "FLIP 300",
+"cat": "",
+"sell": 300.0,
+"mrp": 0.0,
+"qty": 659.0
+},
+{
+"name": "FOLDING DESKTOP PHONE STAND",
+"code": "dESIGNED BY rd, india",
+"cat": "MOBILE STAND",
+"sell": 450.0,
+"mrp": 599.0,
+"qty": -1.0
+},
+{
+"name": "FULL GLUE UV CURVE DISPLAY PROTECTER",
+"code": "",
+"cat": "TEMPERED GLASS",
+"sell": 800.0,
+"mrp": 0.0,
+"qty": 170.0
+},
+{
+"name": "GUDER BIKE MOUNT Q003",
+"code": "QOO 3",
+"cat": "PHONE HOLDER",
+"sell": 550.0,
+"mrp": 0.0,
+"qty": 2.0
+},
+{
+"name": "HDMI CABLE",
+"code": "HDMI CABLE",
+"cat": "OTHER",
+"sell": 350.0,
+"mrp": 0.0,
+"qty": 0.0
+},
+{
+"name": "HEADSET JACK TYPE CTO 3.",
+"code": "",
+"cat": "OTHER",
+"sell": 350.0,
+"mrp": 0.0,
+"qty": 20.0
+},
+{
+"name": "HF 100",
+"code": "HF 100",
+"cat": "OTHER",
+"sell": 100.0,
+"mrp": 150.0,
+"qty": -272.0
+},
+{
+"name": "HF 150",
+"code": "",
+"cat": "",
+"sell": 150.0,
+"mrp": 0.0,
+"qty": -3.0
+},
+{
+"name": "HF 250",
+"code": "",
+"cat": "",
+"sell": 250.0,
+"mrp": 0.0,
+"qty": -5.0
+},
+{
+"name": "HP PENDRIVE 3.0",
+"code": "8809143710614",
+"cat": "HP",
+"sell": 720.0,
+"mrp": 899.0,
+"qty": -3.0
+},
+{
+"name": "HYTROGEL",
+"code": "",
+"cat": "OTHER",
+"sell": 505.01,
+"mrp": 0.0,
+"qty": 389.0,
+"merged": 3
+},
+{
+"name": "HYTROGEL MATTE",
+"code": "",
+"cat": "OTHER",
+"sell": 750.0,
+"mrp": 0.0,
+"qty": 200.0
+},
+{
+"name": "IPHONE 13 128",
+"code": "",
+"cat": "",
+"sell": 28318.82,
+"mrp": 0.0,
+"qty": 1.0
+},
+{
+"name": "IPHONE CONVERTABLE CASE 350",
+"code": "",
+"cat": "",
+"sell": 350.0,
+"mrp": 0.0,
+"qty": 39.0
+},
+{
+"name": "IPHONE PREMIUM GLASS",
+"code": "",
+"cat": "TEMPERED GLASS",
+"sell": 200.0,
+"mrp": 0.0,
+"qty": 299.0
+},
+{
+"name": "IVON IV BT104 WIRELESS NECKBAND",
+"code": "",
+"cat": "NECKBAND",
+"sell": 399.0,
+"mrp": 0.0,
+"qty": 13.0
+},
+{
+"name": "K 35 WIRELESS MICROPHONE",
+"code": "K35",
+"cat": "OTHER",
+"sell": 850.0,
+"mrp": 999.0,
+"qty": 1.0
+},
+{
+"name": "KEYCHAIN LIGHT",
+"code": "679834835638",
+"cat": "OTHER",
+"sell": 299.0,
+"mrp": 350.0,
+"qty": 2.0
+},
+{
+"name": "LANDMARK BING LM-BT1092",
+"code": "",
+"cat": "",
+"sell": 499.0,
+"mrp": 0.0,
+"qty": 18.0
+},
+{
+"name": "LANDMARK LM TBS7009 DANCE 60W SPEAKER",
+"code": "",
+"cat": "",
+"sell": 2999.0,
+"mrp": 0.0,
+"qty": 0.0
+},
+{
+"name": "LANDMARK LM TBS7010 BEAT2 40W SPEAKER",
+"code": "",
+"cat": "",
+"sell": 2499.0,
+"mrp": 3299.0,
+"qty": 0.0
+},
+{
+"name": "LANDMARK MUSIC BAR 29 20W LM-BT1194",
+"code": "1023572301077",
+"cat": "",
+"sell": 899.0,
+"mrp": 0.0,
+"qty": 1.0
+},
+{
+"name": "LANDMARK PANTHER 30W LM-BT1095",
+"code": "2023052301077",
+"cat": "",
+"sell": 1399.0,
+"mrp": 0.0,
+"qty": 1.0
+},
+{
+"name": "LAP SKIN 1200",
+"code": "",
+"cat": "",
+"sell": 1200.0,
+"mrp": 0.0,
+"qty": 23.0
+},
+{
+"name": "LDNIO ATA CABLE V8",
+"code": "LDNIO V8",
+"cat": "OTHER",
+"sell": 350.0,
+"mrp": 0.0,
+"qty": 1.0
+},
+{
+"name": "LDNIO CAR MOUNTWITH CHARGER",
+"code": "6933138600177",
+"cat": "CAR HOLDER",
+"sell": 950.0,
+"mrp": 1099.0,
+"qty": 0.0
+},
+{
+"name": "LDNIO DATA CABLE IOS",
+"code": "6933138691915",
+"cat": "CABLE",
+"sell": 400.0,
+"mrp": 500.0,
+"qty": 3.0
+},
+{
+"name": "LDNIO LS553 TYPE C",
+"code": "6933138691304",
+"cat": "CABLE",
+"sell": 250.0,
+"mrp": 299.0,
+"qty": 15.0
+},
+{
+"name": "LM BT1116 PARTY POP",
+"code": "",
+"cat": "",
+"sell": 999.0,
+"mrp": 0.0,
+"qty": 2.0
+},
+{
+"name": "LM BT1129",
+"code": "2022040107059",
+"cat": "",
+"sell": 699.0,
+"mrp": 0.0,
+"qty": 0.0
+},
+{
+"name": "LOCAL CABLE 150",
+"code": "",
+"cat": "CABLE",
+"sell": 150.0,
+"mrp": 0.0,
+"qty": -16.0
+},
+{
+"name": "LOCAL TRIPOD STAND",
+"code": "",
+"cat": "",
+"sell": 450.0,
+"mrp": 0.0,
+"qty": 0.0
+},
+{
+"name": "LOCAL TYPE C CABLE 100",
+"code": "LOCAL TYPE C 100",
+"cat": "OTHER",
+"sell": 100.0,
+"mrp": 0.0,
+"qty": -8.0
+},
+{
+"name": "LOCAL V8 100",
+"code": "LOCAL V8 100",
+"cat": "",
+"sell": 100.0,
+"mrp": 0.0,
+"qty": -102.0
+},
+{
+"name": "LUNAR PEAK SILVER",
+"code": "8905650048568",
+"cat": "BOAT WATCH",
+"sell": 2900.0,
+"mrp": 6999.0,
+"qty": 0.0
+},
+{
+"name": "MA 100B 20W BLACK",
+"code": "8904363807654",
+"cat": "ZEBRONICS CHARGERS",
+"sell": 600.0,
+"mrp": 650.0,
+"qty": 0.0
+},
+{
+"name": "MAK POWER C CABLE 25W",
+"code": "",
+"cat": "",
+"sell": 150.0,
+"mrp": 0.0,
+"qty": 0.0
+},
+{
+"name": "MAKPOWER CH 101 18W V8 CHARGER",
+"code": "",
+"cat": "CHARGER",
+"sell": 450.0,
+"mrp": 599.0,
+"qty": 8.0
+},
+{
+"name": "MOTO BUDS 2",
+"code": "840493613758",
+"cat": "",
+"sell": 3800.0,
+"mrp": 0.0,
+"qty": -1.0
+},
+{
+"name": "MOTO TURBO POWER 33W CHARGER",
+"code": "840493623177",
+"cat": "",
+"sell": 1700.0,
+"mrp": 0.0,
+"qty": 1.0
+},
+{
+"name": "MOTO TURBO POWER 68W CHARGER",
+"code": "840493623184",
+"cat": "MOTO CHARGER",
+"sell": 2400.0,
+"mrp": 6999.0,
+"qty": 0.0
+},
+{
+"name": "MT 200",
+"code": "MT 200",
+"cat": "TEMPERED GLASS",
+"sell": 200.0,
+"mrp": 0.0,
+"qty": 468.0
+},
+{
+"name": "MT 250",
+"code": "564982683677",
+"cat": "",
+"sell": 250.0,
+"mrp": 0.0,
+"qty": 459.0
+},
+{
+"name": "MT 800",
+"code": "MT 800",
+"cat": "",
+"sell": 800.0,
+"mrp": 900.0,
+"qty": 98.0
+},
+{
+"name": "N-111 NAYRA 2.8A",
+"code": "",
+"cat": "CHARGER",
+"sell": 250.0,
+"mrp": 399.0,
+"qty": 9.0
+},
+{
+"name": "NAYARA 2.4A CHARGER WITH MICRO USB CABLE",
+"code": "N-CH45",
+"cat": "CHARGER",
+"sell": 250.0,
+"mrp": 0.0,
+"qty": -4.0
+},
+{
+"name": "NAYARA SINGLE USB CHARGER MICRO",
+"code": "N-CH-1201",
+"cat": "CHARGER",
+"sell": 299.0,
+"mrp": 399.0,
+"qty": 7.0
+},
+{
+"name": "NAYARA SINGLE USB CHARGER TYPE C",
+"code": "N-CH-120",
+"cat": "",
+"sell": 350.0,
+"mrp": 399.0,
+"qty": 3.0
+},
+{
+"name": "NEEPHO NP 01",
+"code": "8435712689533",
+"cat": "OTHER",
+"sell": 350.0,
+"mrp": 400.0,
+"qty": 3.0
+},
+{
+"name": "NEEPHO NP-3180",
+"code": "",
+"cat": "",
+"sell": 1200.0,
+"mrp": 0.0,
+"qty": 0.0
+},
+{
+"name": "NEEPHO PHONE HOLDER",
+"code": "8435712689564",
+"cat": "PHONE HOLDER",
+"sell": 250.0,
+"mrp": 499.0,
+"qty": 0.0
+},
+{
+"name": "NEEPHO TRIPOD NP-3170S",
+"code": "",
+"cat": "OTHER",
+"sell": 1300.0,
+"mrp": 0.0,
+"qty": 0.0
+},
+{
+"name": "NOISE BUDS R1 MATTE BLACK",
+"code": "8906174622623",
+"cat": "",
+"sell": 2200.0,
+"mrp": 2999.0,
+"qty": 2.0
+},
+{
+"name": "NOISE COLORFIT ICON ARC JET BLACK",
+"code": "8906146815473",
+"cat": "",
+"sell": 2500.0,
+"mrp": 4999.0,
+"qty": 3.0,
+"merged": 2
+},
+{
+"name": "NOISE COLORFIT VICTOR 2 SPACE BLUE",
+"code": "8906174622333",
+"cat": "",
+"sell": 3400.0,
+"mrp": 7999.0,
+"qty": 0.0
+},
+{
+"name": "NOISE GO BUDS CARBON GREEN",
+"code": "8906174627918",
+"cat": "",
+"sell": 1550.0,
+"mrp": 2999.0,
+"qty": 0.0
+},
+{
+"name": "NOISE NOISEFIT VORTEX PLUS ELITE EDITION ELITE BLACK",
+"code": "8906174621565",
+"cat": "",
+"sell": 3800.0,
+"mrp": 7999.0,
+"qty": 0.0
+},
+{
+"name": "NOISE VIEW BUDS METALLIC BLACK",
+"code": "",
+"cat": "",
+"sell": 3200.0,
+"mrp": 6999.0,
+"qty": 1.0
+},
+{
+"name": "NOTHING CMF POWER 33 W",
+"code": "6974434226999",
+"cat": "CHARGER",
+"sell": 1450.0,
+"mrp": 1499.0,
+"qty": 3.0
+},
+{
+"name": "NOTHING POWER 45 W",
+"code": "6974434220454",
+"cat": "CHARGER",
+"sell": 2699.0,
+"mrp": 2999.0,
+"qty": -1.0
+},
+{
+"name": "NOTHING POWER 65 W",
+"code": "6974434221130",
+"cat": "CHARGER",
+"sell": 3300.0,
+"mrp": 3999.0,
+"qty": -6.0
+},
+{
+"name": "ONEPLUS BULLETS WIRELESS Z2 ACOUSTIC RED",
+"code": "6921815620402",
+"cat": "ONE PLUS",
+"sell": 2250.0,
+"mrp": 2299.0,
+"qty": 0.0
+},
+{
+"name": "ONEPLUS BULLETS WIRELESS Z2 ANC BOOMN BLACK",
+"code": "6921815625407",
+"cat": "ONE PLUS",
+"sell": 2400.0,
+"mrp": 2499.0,
+"qty": 0.0
+},
+{
+"name": "ONEPLUS BULLETS WIRELESS Z2 MAGICO BLACK",
+"code": "6921815620396",
+"cat": "ONE PLUS",
+"sell": 2250.0,
+"mrp": 2299.0,
+"qty": 0.0
+},
+{
+"name": "OPPO 120W SOPER VOOC CHARGER",
+"code": "",
+"cat": "CHARGER",
+"sell": 899.0,
+"mrp": 2499.0,
+"qty": 1.0
+},
+{
+"name": "OTG",
+"code": "",
+"cat": "OTHER",
+"sell": 80.0,
+"mrp": 100.0,
+"qty": -64.0
+},
+{
+"name": "P",
+"code": "",
+"cat": "OTHER",
+"sell": 250.0,
+"mrp": 0.0,
+"qty": 485.0
+},
+{
+"name": "P 150",
+"code": "P 150",
+"cat": "POUCHES",
+"sell": 150.0,
+"mrp": 0.0,
+"qty": -1525.0
+},
+{
+"name": "P 200",
+"code": "P 200",
+"cat": "POUCHES",
+"sell": 200.0,
+"mrp": 0.0,
+"qty": 3223.0
+},
+{
+"name": "P 250",
+"code": "P 250",
+"cat": "",
+"sell": 250.0,
+"mrp": 0.0,
+"qty": -650.0
+},
+{
+"name": "P 350 (Premium IPHONE ANDROID)",
+"code": "",
+"cat": "POUCHES",
+"sell": 350.0,
+"mrp": 0.0,
+"qty": 272.0
+},
+{
+"name": "P 450 ( PREMIUM MAGSAFE)",
+"code": "",
+"cat": "",
+"sell": 450.0,
+"mrp": 0.0,
+"qty": 115.0
+},
+{
+"name": "P 550 ( PREMIUM MAGSAFE)",
+"code": "",
+"cat": "",
+"sell": 550.0,
+"mrp": 0.0,
+"qty": 189.0
+},
+{
+"name": "P 600 ( PREMIUM MAGSAFE)",
+"code": "",
+"cat": "",
+"sell": 600.0,
+"mrp": 0.0,
+"qty": 199.0
+},
+{
+"name": "POP",
+"code": "",
+"cat": "OTHER",
+"sell": 38.0,
+"mrp": 0.0,
+"qty": 10.0,
+"merged": 2
+},
+{
+"name": "POWER BANK CABLE MICRO",
+"code": "POWER BANK CABLE",
+"cat": "OTHER",
+"sell": 100.0,
+"mrp": 150.0,
+"qty": 7.0
+},
+{
+"name": "POWER BANK CABLE TYPE C",
+"code": "POWER BANK CABLE C",
+"cat": "OTHER",
+"sell": 100.0,
+"mrp": 150.0,
+"qty": 8.0
+},
+{
+"name": "PREMIUM CASE 650",
+"code": "",
+"cat": "",
+"sell": 650.0,
+"mrp": 0.0,
+"qty": -1.0
+},
+{
+"name": "PRIVACY 450",
+"code": "",
+"cat": "",
+"sell": 450.0,
+"mrp": 0.0,
+"qty": 165.0
+},
+{
+"name": "RAIN COVER 60",
+"code": "RAIN COVER",
+"cat": "OTHER",
+"sell": 60.0,
+"mrp": 0.0,
+"qty": -39.0
+},
+{
+"name": "RD AUDIO CABLE TYPE-C AUX 3.5MM",
+"code": "",
+"cat": "",
+"sell": 450.0,
+"mrp": 699.0,
+"qty": 4.0
+},
+{
+"name": "RD AUX CABLE 2 M",
+"code": "AUX 12",
+"cat": "CABLE",
+"sell": 299.0,
+"mrp": 349.0,
+"qty": 0.0
+},
+{
+"name": "RD BIKE MOBILE HOLDER",
+"code": "G 340",
+"cat": "PHONE HOLDER",
+"sell": 550.0,
+"mrp": 699.0,
+"qty": 1.0
+},
+{
+"name": "RD C TO AUX 3.5MM",
+"code": "",
+"cat": "",
+"sell": 300.0,
+"mrp": 0.0,
+"qty": 10.0
+},
+{
+"name": "RD ELITE BLUETOOTH NECKBAND E-220",
+"code": "",
+"cat": "NECKBAND",
+"sell": 499.0,
+"mrp": 0.0,
+"qty": 3.0
+},
+{
+"name": "RD LOCAL TYPE C CABLE",
+"code": "",
+"cat": "",
+"sell": 199.0,
+"mrp": 0.0,
+"qty": 9.0
+},
+{
+"name": "RD LOCAL TYPE C HEADSET",
+"code": "",
+"cat": "",
+"sell": 199.0,
+"mrp": 699.0,
+"qty": 10.0
+},
+{
+"name": "RD MOBILE HOLDER BS 150",
+"code": "BS 150",
+"cat": "PHONE HOLDER",
+"sell": 550.0,
+"mrp": 799.0,
+"qty": 0.0
+},
+{
+"name": "RD MOTORCYCLE PHONE HOLDER",
+"code": "BS 160",
+"cat": "PHONE HOLDER",
+"sell": 650.0,
+"mrp": 999.0,
+"qty": 2.0
+},
+{
+"name": "RD PC 35",
+"code": "PC 35",
+"cat": "OTG CONECTOR",
+"sell": 120.0,
+"mrp": 249.0,
+"qty": 9.0
+},
+{
+"name": "RD TYPE C MICRO CONNECTOR",
+"code": "RD",
+"cat": "OTHER",
+"sell": 120.0,
+"mrp": 199.0,
+"qty": 10.0
+},
+{
+"name": "RD TYPE C TO LIGHTINING C- 19",
+"code": "",
+"cat": "",
+"sell": 350.0,
+"mrp": 599.0,
+"qty": -3.0
+},
+{
+"name": "RD WIRELESS NECKBAND E 280",
+"code": "",
+"cat": "HEADPHONES",
+"sell": 499.0,
+"mrp": 899.0,
+"qty": 9.0
+},
+{
+"name": "RD WIRELESS NECKBAND MELOX M-142",
+"code": "",
+"cat": "NECKBAND",
+"sell": 499.0,
+"mrp": 0.0,
+"qty": 7.0
+},
+{
+"name": "REALME BUDS T01 BLACK",
+"code": "240918902406000924",
+"cat": "REALME BUDS",
+"sell": 1400.0,
+"mrp": 2999.0,
+"qty": 0.0
+},
+{
+"name": "REMAX RM 512I",
+"code": "6954851225935",
+"cat": "OTHER",
+"sell": 400.0,
+"mrp": 599.0,
+"qty": 4.0
+},
+{
+"name": "RING LIGHT 12 INCH",
+"code": "RING LIGHT",
+"cat": "",
+"sell": 700.0,
+"mrp": 0.0,
+"qty": 1.0
+},
+{
+"name": "RIOTEL 2.1 A",
+"code": "",
+"cat": "CHARGER",
+"sell": 250.0,
+"mrp": 499.0,
+"qty": 5.0
+},
+{
+"name": "RIOTEL 25 W ADPTOR",
+"code": "",
+"cat": "",
+"sell": 650.0,
+"mrp": 999.0,
+"qty": 4.0
+},
+{
+"name": "RIOTEL 65 W HC 65",
+"code": "HC 65",
+"cat": "CHARGER",
+"sell": 899.0,
+"mrp": 999.0,
+"qty": -2.0
+},
+{
+"name": "RIOTEL 80 W",
+"code": "HC 80",
+"cat": "CHARGER",
+"sell": 950.0,
+"mrp": 999.0,
+"qty": 0.0
+},
+{
+"name": "S01 V TYPE MICRO",
+"code": "6976883930137",
+"cat": "CABLE",
+"sell": 150.0,
+"mrp": 300.0,
+"qty": 33.0
+},
+{
+"name": "S01T TYPE C",
+"code": "6976883930151",
+"cat": "CABLE",
+"sell": 150.0,
+"mrp": 300.0,
+"qty": 43.0
+},
+{
+"name": "SAM 25W ADAPTOR",
+"code": "8806094913729",
+"cat": "",
+"sell": 1550.0,
+"mrp": 0.0,
+"qty": -2.0
+},
+{
+"name": "SAM 45W ADAPTOR WITH CABLE",
+"code": "8806095471785",
+"cat": "",
+"sell": 3400.0,
+"mrp": 0.0,
+"qty": 0.0
+},
+{
+"name": "SANDISK 128 MEMORY CARD",
+"code": "619659200480",
+"cat": "SANDISK",
+"sell": 1200.0,
+"mrp": 1600.0,
+"qty": 0.0
+},
+{
+"name": "SANDISK 128 PENDRIVE",
+"code": "",
+"cat": "SANDISK",
+"sell": 1250.0,
+"mrp": 0.0,
+"qty": 0.0
+},
+{
+"name": "SANDISK 128 PENDRIVE USB TO C",
+"code": "619659177607",
+"cat": "SANDISK",
+"sell": 1600.0,
+"mrp": 1800.0,
+"qty": 0.0
+},
+{
+"name": "SANDISK 16 GB MEMORY CARD",
+"code": "619659052775",
+"cat": "SANDISK",
+"sell": 480.0,
+"mrp": 500.0,
+"qty": 0.0
+},
+{
+"name": "SANDISK 16 GB PENDRIVE",
+"code": "619659129743",
+"cat": "SANDISK",
+"sell": 450.0,
+"mrp": 500.0,
+"qty": 0.0
+},
+{
+"name": "SANDISK 256 PENDRIVE",
+"code": "619659177614",
+"cat": "SANDISK",
+"sell": 2600.0,
+"mrp": 3300.0,
+"qty": 0.0
+},
+{
+"name": "SANDISK 32 GB MEMORY CARD",
+"code": "619659061647",
+"cat": "SANDISK",
+"sell": 580.0,
+"mrp": 600.0,
+"qty": 0.0
+},
+{
+"name": "SANDISK 32 GB PENDRIVE",
+"code": "619659141028",
+"cat": "SANDISK",
+"sell": 530.0,
+"mrp": 550.0,
+"qty": 1.0
+},
+{
+"name": "SANDISK 64 GB SD CARD",
+"code": "619659200473",
+"cat": "MEMMORY CARD",
+"sell": 880.0,
+"mrp": 900.0,
+"qty": 0.0
+},
+{
+"name": "SANDISK 64 GB SDXC UHS I CARD",
+"code": "619659185282",
+"cat": "SANDISK",
+"sell": 850.0,
+"mrp": 1000.0,
+"qty": 1.0
+},
+{
+"name": "SANDISK 64GB PENDRIVE",
+"code": "619659141035",
+"cat": "SANDISK",
+"sell": 680.0,
+"mrp": 700.0,
+"qty": 0.0
+},
+{
+"name": "SANDISK 64GB USB TO C",
+"code": "619659177591",
+"cat": "SANDISK",
+"sell": 1100.0,
+"mrp": 1200.0,
+"qty": 0.0
+},
+{
+"name": "SANDISK 8 GB MEMORO CARD",
+"code": "619659052362",
+"cat": "SANDISK",
+"sell": 380.0,
+"mrp": 450.0,
+"qty": 0.0
+},
+{
+"name": "SANDISK 8 GB PEDRIVE",
+"code": "619659129736",
+"cat": "SANDISK",
+"sell": 350.0,
+"mrp": 450.0,
+"qty": 0.0
+},
+{
+"name": "SANDISK SDHC UHS I CARD 32 GB",
+"code": "619659185275",
+"cat": "MEMIRY",
+"sell": 630.0,
+"mrp": 700.0,
+"qty": 0.0
+},
+{
+"name": "SECTION CUP CAR MOBILE STAND RT-699",
+"code": "6969522642256",
+"cat": "PHONE HOLDER",
+"sell": 550.0,
+"mrp": 0.0,
+"qty": 0.0
+},
+{
+"name": "SILCONE 250",
+"code": "932988346220",
+"cat": "",
+"sell": 250.0,
+"mrp": 0.0,
+"qty": 989.0
+},
+{
+"name": "SILCONE CASE 350",
+"code": "743096392631",
+"cat": "",
+"sell": 350.0,
+"mrp": 0.0,
+"qty": 622.0
+},
+{
+"name": "SILICON 450",
+"code": "SILICON 450",
+"cat": "POUCH",
+"sell": 450.0,
+"mrp": 0.0,
+"qty": -150.0
+},
+{
+"name": "SKIN",
+"code": "",
+"cat": "OTHER",
+"sell": 182.63,
+"mrp": 0.0,
+"qty": 1010.0,
+"merged": 3
+},
+{
+"name": "SOLAR CAR REAGRANCE",
+"code": "W 06",
+"cat": "OTHER",
+"sell": 800.0,
+"mrp": 999.0,
+"qty": 0.0
+},
+{
+"name": "SONIC POD 22",
+"code": "8904363819298",
+"cat": "",
+"sell": 1900.0,
+"mrp": 2299.0,
+"qty": 5.0
+},
+{
+"name": "SUCTION CUP CAR MOBILE HOLDER RT-914",
+"code": "6985685215632",
+"cat": "PHONE HOLDER",
+"sell": 550.0,
+"mrp": 0.0,
+"qty": 2.0
+},
+{
+"name": "T 100",
+"code": "410872950298",
+"cat": "TEMPERED GLASS",
+"sell": 100.0,
+"mrp": 0.0,
+"qty": 3407.0
+},
+{
+"name": "T 150",
+"code": "T 150",
+"cat": "TEMPERED GLASS",
+"sell": 150.0,
+"mrp": 0.0,
+"qty": -1005.0
+},
+{
+"name": "T 200",
+"code": "T 200",
+"cat": "OTHER",
+"sell": 200.0,
+"mrp": 0.0,
+"qty": 41.0
+},
+{
+"name": "T 250",
+"code": "T 250",
+"cat": "OTHER",
+"sell": 250.0,
+"mrp": 0.0,
+"qty": 706.0
+},
+{
+"name": "T 300",
+"code": "",
+"cat": "",
+"sell": 300.0,
+"mrp": 0.0,
+"qty": 40.0
+},
+{
+"name": "T 400",
+"code": "T 400",
+"cat": "",
+"sell": 400.0,
+"mrp": 0.0,
+"qty": 290.0
+},
+{
+"name": "T 450",
+"code": "",
+"cat": "OTHER",
+"sell": 450.0,
+"mrp": 0.0,
+"qty": 69.0
+},
+{
+"name": "T 550",
+"code": "",
+"cat": "",
+"sell": 550.0,
+"mrp": 0.0,
+"qty": -4.0
+},
+{
+"name": "TAB CASE",
+"code": "",
+"cat": "",
+"sell": 900.0,
+"mrp": 0.0,
+"qty": 13.0
+},
+{
+"name": "TAB SKIN 1000",
+"code": "",
+"cat": "",
+"sell": 1000.0,
+"mrp": 0.0,
+"qty": 19.0
+},
+{
+"name": "TANGO 18 W CTYPE",
+"code": "HC-20",
+"cat": "",
+"sell": 350.0,
+"mrp": 0.0,
+"qty": -1.0
+},
+{
+"name": "TANGO PODS 8",
+"code": "6803307208278",
+"cat": "HEADPHONES",
+"sell": 350.0,
+"mrp": 999.0,
+"qty": 5.0
+},
+{
+"name": "TANGO-PODS4 CTYPE HEADPHONE",
+"code": "6873307206031",
+"cat": "HEADPHONES",
+"sell": 350.0,
+"mrp": 0.0,
+"qty": -3.0
+},
+{
+"name": "TARGET BIKE HOLDER",
+"code": "6926442511000",
+"cat": "PHONE HOLDER",
+"sell": 350.0,
+"mrp": 399.0,
+"qty": 1.0
+},
+{
+"name": "TICON PD-PAX 45 W",
+"code": "8904733443733",
+"cat": "CHARGER",
+"sell": 950.0,
+"mrp": 1100.0,
+"qty": 0.0
+},
+{
+"name": "TICON TYPE C",
+"code": "8904733444433",
+"cat": "OTHER",
+"sell": 399.0,
+"mrp": 0.0,
+"qty": 15.0
+},
+{
+"name": "TICON USB3.0 LIGHNING",
+"code": "8904733444457",
+"cat": "",
+"sell": 350.0,
+"mrp": 0.0,
+"qty": 9.0
+},
+{
+"name": "TRANSLINK FLASH DRIVE 2.0",
+"code": "",
+"cat": "",
+"sell": 1700.0,
+"mrp": 0.0,
+"qty": -5.0
+},
+{
+"name": "TREAMS BT DONGLE TRM BR 08",
+"code": "trmbr-08",
+"cat": "OTHER",
+"sell": 450.0,
+"mrp": 599.0,
+"qty": 4.0
+},
+{
+"name": "TREAMS C TO C CABLE LOCAL TS",
+"code": "",
+"cat": "",
+"sell": 350.0,
+"mrp": 0.0,
+"qty": 10.0
+},
+{
+"name": "TREAMS CARREADER",
+"code": "trmotg-017",
+"cat": "OTHER",
+"sell": 249.0,
+"mrp": 0.0,
+"qty": 4.0
+},
+{
+"name": "TREAMS CTO 3.5MM JUCK",
+"code": "trmjc-1050000",
+"cat": "CABLE",
+"sell": 350.0,
+"mrp": 450.0,
+"qty": 0.0
+},
+{
+"name": "TREAMS JC 102",
+"code": "trmjc-102",
+"cat": "OTHER",
+"sell": 400.0,
+"mrp": 500.0,
+"qty": 5.0
+},
+{
+"name": "TREAMS MOBILE HOLDER",
+"code": "TRM ST 1009",
+"cat": "PHONE HOLDER",
+"sell": 650.0,
+"mrp": 999.0,
+"qty": 3.0
+},
+{
+"name": "TREAMS OTG ADAPTOR 3.0",
+"code": "trmotg-07",
+"cat": "OTHER",
+"sell": 150.0,
+"mrp": 300.0,
+"qty": -9.0
+},
+{
+"name": "TREAMS TRM-12",
+"code": "trm otg-12",
+"cat": "",
+"sell": 249.0,
+"mrp": 0.0,
+"qty": 6.0
+},
+{
+"name": "TRM AUX 203 3IN 1 AUX CABLE",
+"code": "trmaux-203",
+"cat": "CABLE",
+"sell": 450.0,
+"mrp": 499.0,
+"qty": 0.0
+},
+{
+"name": "U&I AUX CABLE 2 M",
+"code": "659629800760",
+"cat": "CABLE",
+"sell": 140.0,
+"mrp": 150.0,
+"qty": -1.0
+},
+{
+"name": "U&I MICRO TO USB OTG",
+"code": "UIOC 09",
+"cat": "OTHER",
+"sell": 80.0,
+"mrp": 150.0,
+"qty": 8.0
+},
+{
+"name": "ULTRA WATCH 2.0",
+"code": "",
+"cat": "WATCH",
+"sell": 799.0,
+"mrp": 0.0,
+"qty": 5.0
+},
+{
+"name": "ULTRA WATCH 8+1",
+"code": "ULTRA WATCH 8+1",
+"cat": "WATCH",
+"sell": 1499.0,
+"mrp": 0.0,
+"qty": 0.0
+},
+{
+"name": "ULTRAPODS MAX 499",
+"code": "",
+"cat": "AIRPODS",
+"sell": 499.0,
+"mrp": 0.0,
+"qty": 5.0
+},
+{
+"name": "UNIVERSAL DOCK LDNIO",
+"code": "6933138660041",
+"cat": "OTHER",
+"sell": 400.0,
+"mrp": 449.0,
+"qty": 2.0
+},
+{
+"name": "USB C HEADSET JACK ADAPTER",
+"code": "USB C HEADSET JACK",
+"cat": "OTHER",
+"sell": 250.0,
+"mrp": 0.0,
+"qty": 20.0
+},
+{
+"name": "USB LAMP",
+"code": "USBLAMP 30",
+"cat": "",
+"sell": 30.0,
+"mrp": 0.0,
+"qty": -8.0
+},
+{
+"name": "UT 65S 65W CABLE",
+"code": "8904363816655",
+"cat": "CABLE",
+"sell": 499.0,
+"mrp": 799.0,
+"qty": 4.0
+},
+{
+"name": "UV CURVED DISPLAY PROTECTER",
+"code": "",
+"cat": "TEMPERED GLASS",
+"sell": 800.0,
+"mrp": 0.0,
+"qty": -547.0
+},
+{
+"name": "V8 MICRO CHARGER 00",
+"code": "V8",
+"cat": "CHARGER",
+"sell": 100.0,
+"mrp": 100.0,
+"qty": 981.0
+},
+{
+"name": "VIVO 120W FLASH CHARGER",
+"code": "",
+"cat": "CHARGER",
+"sell": 899.0,
+"mrp": 2499.0,
+"qty": 1.0
+},
+{
+"name": "VOLTRON 22W ADAPTER WITH TYPE V CABLE",
+"code": "",
+"cat": "",
+"sell": 450.0,
+"mrp": 0.0,
+"qty": 7.0
+},
+{
+"name": "WATCH STRAP",
+"code": "WATCH STRAP",
+"cat": "OTHER",
+"sell": 300.0,
+"mrp": 0.0,
+"qty": 11.0
+},
+{
+"name": "WATERPROOOF CASE FOR PHONE HOLDER",
+"code": "M3 PHONE HOLDER WATERPROOF",
+"cat": "",
+"sell": 850.0,
+"mrp": 999.0,
+"qty": 0.0
+},
+{
+"name": "X1 BT SPEAKER",
+"code": "",
+"cat": "",
+"sell": 499.0,
+"mrp": 0.0,
+"qty": 5.0
+},
+{
+"name": "XO C107",
+"code": "6920680830770",
+"cat": "PHONE HOLDER",
+"sell": 450.0,
+"mrp": 650.0,
+"qty": 0.0
+},
+{
+"name": "XO C70 CAR HOLDER",
+"code": "XO C70",
+"cat": "PHONE HOLDER",
+"sell": 550.0,
+"mrp": 0.0,
+"qty": 1.0
+},
+{
+"name": "XO C98B MAGNETIC CENTER CONSOLE PHONE HOLDER",
+"code": "6920680827138",
+"cat": "PHONE HOLDER",
+"sell": 900.0,
+"mrp": 0.0,
+"qty": 3.0
+},
+{
+"name": "XO S32 WIRED HEADPHONE WHITE",
+"code": "6920680899159",
+"cat": "",
+"sell": 2200.0,
+"mrp": 2999.0,
+"qty": 0.0
+},
+{
+"name": "XO-NB230",
+"code": "6920680833528",
+"cat": "CABLE",
+"sell": 350.0,
+"mrp": 499.0,
+"qty": 2.0
+},
+{
+"name": "ZEB",
+"code": "",
+"cat": "",
+"sell": 0.0,
+"mrp": 0.0,
+"qty": 0.0
+},
+{
+"name": "ZEB 200 HM HEADPHONE WITH MIC",
+"code": "8906108619231",
+"cat": "ZEBRONICS WIRED HEADPHONES",
+"sell": 700.0,
+"mrp": 799.0,
+"qty": 1.0
+},
+{
+"name": "ZEB 65 W GAN 3IN1 MULTI ADAPTER",
+"code": "8904363811384",
+"cat": "CHARGER",
+"sell": 2900.0,
+"mrp": 4499.0,
+"qty": 0.0
+},
+{
+"name": "ZEB AEON HEADPHONE ANC",
+"code": "8904363816778",
+"cat": "ZEBRONICS EARBUDS",
+"sell": 2600.0,
+"mrp": 3299.0,
+"qty": 1.0
+},
+{
+"name": "ZEB ASTRA 20R",
+"code": "8904363826180",
+"cat": "ZEB SPEAKERS",
+"sell": 1700.0,
+"mrp": 4999.0,
+"qty": 1.0
+},
+{
+"name": "ZEB ASTRA 40 SPEAKER",
+"code": "8904363820225",
+"cat": "SPEAKERS",
+"sell": 1999.0,
+"mrp": 2999.0,
+"qty": 3.0
+},
+{
+"name": "ZEB BARREL 100",
+"code": "8904363805901",
+"cat": "SPEAKER",
+"sell": 3600.0,
+"mrp": 399.0,
+"qty": 0.0
+},
+{
+"name": "ZEB BARREL 150",
+"code": "8904363814491",
+"cat": "ZEB SPEAKERS",
+"sell": 2200.0,
+"mrp": 2499.0,
+"qty": 0.0
+},
+{
+"name": "ZEB BARREL 90",
+"code": "8904363814484",
+"cat": "ZEB SPEAKERS",
+"sell": 1800.0,
+"mrp": 1999.0,
+"qty": 1.0
+},
+{
+"name": "ZEB BEAST EARBUDS",
+"code": "8904363816617",
+"cat": "ZEBRONICS WIRED HEADPHONES",
+"sell": 1400.0,
+"mrp": 1699.0,
+"qty": 0.0
+},
+{
+"name": "ZEB BEETLES EARBUDS",
+"code": "8904363816549",
+"cat": "ZEBRONICS WIRED HEADPHONES",
+"sell": 1499.0,
+"mrp": 2699.0,
+"qty": 1.0
+},
+{
+"name": "ZEB BMH 120",
+"code": "8904363821659",
+"cat": "OTHER",
+"sell": 480.0,
+"mrp": 699.0,
+"qty": 7.0
+},
+{
+"name": "ZEB BMH110 BIKE MOBILE HOLDER",
+"code": "8904363820645",
+"cat": "",
+"sell": 550.0,
+"mrp": 699.0,
+"qty": 0.0
+},
+{
+"name": "ZEB BOOM WIRELESS HEADPHONE",
+"code": "8904363815979",
+"cat": "ZEBRONICS WIRELESS HEADPHONES",
+"sell": 1400.0,
+"mrp": 1599.0,
+"qty": 1.0
+},
+{
+"name": "ZEB BRO PLUS",
+"code": "8906108618371",
+"cat": "OTHER",
+"sell": 400.0,
+"mrp": 449.0,
+"qty": 28.0
+},
+{
+"name": "ZEB BUDDY 100",
+"code": "8904363804478",
+"cat": "ZEB SPEAKERS",
+"sell": 2650.0,
+"mrp": 2799.0,
+"qty": 0.0
+},
+{
+"name": "ZEB BUDDY 500",
+"code": "8904363807097",
+"cat": "ZEB SPEAKERS",
+"sell": 4300.0,
+"mrp": 4499.0,
+"qty": 0.0
+},
+{
+"name": "ZEB BUDS C18",
+"code": "8904363829105",
+"cat": "HP",
+"sell": 549.0,
+"mrp": 599.0,
+"qty": 1.0
+},
+{
+"name": "ZEB BUDS C2",
+"code": "8904363802092",
+"cat": "ZEBRONICS WIRED HEADPHONES",
+"sell": 600.0,
+"mrp": 699.0,
+"qty": -1.0
+},
+{
+"name": "ZEB BUDS C2 TYPE C",
+"code": "8904363802085",
+"cat": "ZEBRONICS WIRED EARPHONES",
+"sell": 650.0,
+"mrp": 699.0,
+"qty": 3.0
+},
+{
+"name": "ZEB BUDS C8",
+"code": "8904363822908",
+"cat": "ZEBRONICS EARBUDS",
+"sell": 450.0,
+"mrp": 599.0,
+"qty": 1.0
+},
+{
+"name": "ZEB BUDS C9",
+"code": "8904363822892",
+"cat": "ZEBRONICS WIRED HEADPHONES",
+"sell": 550.0,
+"mrp": 559.0,
+"qty": -11.0
+},
+{
+"name": "ZEB CC242A3 CAR CHARGER",
+"code": "8904363803747",
+"cat": "CAR HOLDER",
+"sell": 350.0,
+"mrp": 449.0,
+"qty": -12.0
+},
+{
+"name": "ZEB CC48 PRO 48W CAR CHARGER",
+"code": "8904363819915",
+"cat": "CHARGER",
+"sell": 899.0,
+"mrp": 999.0,
+"qty": 0.0
+},
+{
+"name": "ZEB CC90 CARCHARGER",
+"code": "8904363815887",
+"cat": "",
+"sell": 1200.0,
+"mrp": 1899.0,
+"qty": 1.0
+},
+{
+"name": "ZEB CHIME EARBUDS",
+"code": "8904363814361",
+"cat": "ZEBRONICS WIRED HEADPHONES",
+"sell": 1650.0,
+"mrp": 2499.0,
+"qty": 5.0
+},
+{
+"name": "ZEB CHIME R BLACK",
+"code": "8904363827347",
+"cat": "ZEBRONICS EARBUDS",
+"sell": 1350.0,
+"mrp": 4999.0,
+"qty": 1.0
+},
+{
+"name": "ZEB CIRCLE SMART WATCH WITH BT CALLING",
+"code": "8904363814057",
+"cat": "WATCH",
+"sell": 2099.0,
+"mrp": 7999.0,
+"qty": 4.0
+},
+{
+"name": "ZEB COROLLA",
+"code": "8906108613673",
+"cat": "OTHER",
+"sell": 350.0,
+"mrp": 399.0,
+"qty": 2.0
+},
+{
+"name": "ZEB COUNTY 2",
+"code": "zar13mr14753",
+"cat": "SPEAKER",
+"sell": 750.0,
+"mrp": 999.0,
+"qty": 1.0
+},
+{
+"name": "ZEB COUNTY 7 SPEAKER",
+"code": "8904363819359",
+"cat": "SPEAKER",
+"sell": 1200.0,
+"mrp": 1399.0,
+"qty": -1.0
+},
+{
+"name": "ZEB COUNTY 8",
+"code": "8904363820096",
+"cat": "SPEAKER",
+"sell": 950.0,
+"mrp": 1099.0,
+"qty": 2.0
+},
+{
+"name": "ZEB COUNTY PLUS",
+"code": "8904363822786",
+"cat": "SPEAKER",
+"sell": 1100.0,
+"mrp": 1249.0,
+"qty": 0.0
+},
+{
+"name": "ZEB DAWN 50 SPEAKER",
+"code": "8904363811452",
+"cat": "SPEAKER",
+"sell": 1700.0,
+"mrp": 1999.0,
+"qty": 1.0
+},
+{
+"name": "ZEB DELIGHT 20",
+"code": "8904363804652",
+"cat": "SPEAKER",
+"sell": 1800.0,
+"mrp": 1999.0,
+"qty": 0.0
+},
+{
+"name": "ZEB DELIGHT BT SPEAKER",
+"code": "8906108611624",
+"cat": "SPEAKERS",
+"sell": 750.0,
+"mrp": 899.0,
+"qty": -1.0
+},
+{
+"name": "ZEB DRIVECAST",
+"code": "8904363827705",
+"cat": "",
+"sell": 0.0,
+"mrp": 4999.0,
+"qty": 0.0
+},
+{
+"name": "ZEB ENERGI SAFE 10R2",
+"code": "8904363822496",
+"cat": "",
+"sell": 1800.0,
+"mrp": 4499.0,
+"qty": 0.0
+},
+{
+"name": "ZEB ENERGIPOD 20R2 200,000 MAH",
+"code": "8904363822052",
+"cat": "POWER BANK",
+"sell": 1999.0,
+"mrp": 3599.0,
+"qty": 1.0
+},
+{
+"name": "ZEB ESCAPE 90 BLACK",
+"code": "8904363826937",
+"cat": "ZEBRONICS NECKBANDS",
+"sell": 899.0,
+"mrp": 1699.0,
+"qty": 2.0
+},
+{
+"name": "ZEB FEAST 550",
+"code": "",
+"cat": "",
+"sell": 5800.0,
+"mrp": 9999.0,
+"qty": -1.0
+},
+{
+"name": "ZEB FIT 380 CH BLACK",
+"code": "8904363807592",
+"cat": "ZEB WATCHES",
+"sell": 2700.0,
+"mrp": 5499.0,
+"qty": 4.0
+},
+{
+"name": "ZEB FIT 4220 CH SMART WATCH",
+"code": "8904363803037",
+"cat": "WATCH",
+"sell": 2900.0,
+"mrp": 7999.0,
+"qty": 1.0
+},
+{
+"name": "ZEB FIT S2",
+"code": "8904363828085",
+"cat": "",
+"sell": 2550.0,
+"mrp": 6999.0,
+"qty": 5.0
+},
+{
+"name": "ZEB FLAUNT PRO SMART WATCH",
+"code": "8904363811285",
+"cat": "ZEB WATCHES",
+"sell": 2200.0,
+"mrp": 4999.0,
+"qty": 0.0
+},
+{
+"name": "ZEB JUKE BAR 1610 BT SPEAKER",
+"code": "8904363821581",
+"cat": "SPEAKERS",
+"sell": 3300.0,
+"mrp": 3999.0,
+"qty": 1.0
+},
+{
+"name": "ZEB JUKE BAR 500",
+"code": "8904363809435",
+"cat": "ZEB SPEAKERS",
+"sell": 9499.0,
+"mrp": 17999.0,
+"qty": 2.0
+},
+{
+"name": "ZEB LTAUX 10",
+"code": "8904363821925",
+"cat": "OTG CONECTOR",
+"sell": 450.0,
+"mrp": 999.0,
+"qty": 7.0
+},
+{
+"name": "ZEB MA101B 35W PD",
+"code": "8904363816211",
+"cat": "CHARGER",
+"sell": 1399.0,
+"mrp": 1899.0,
+"qty": 5.0
+},
+{
+"name": "ZEB MA108B 25 W CHARGER",
+"code": "8904363821598",
+"cat": "CHARGER",
+"sell": 1050.0,
+"mrp": 1099.0,
+"qty": 4.0
+},
+{
+"name": "ZEB MA200 MICRO USB",
+"code": "8904363816983",
+"cat": "CHARGER",
+"sell": 350.0,
+"mrp": 449.0,
+"qty": -98.0
+},
+{
+"name": "ZEB MA200 TYPE C",
+"code": "8904363816990",
+"cat": "",
+"sell": 450.0,
+"mrp": 499.0,
+"qty": -11.0
+},
+{
+"name": "ZEB MA203 PRO 33W",
+"code": "8904363823028",
+"cat": "ZEBRONICS CHARGERS",
+"sell": 950.0,
+"mrp": 1499.0,
+"qty": 1.0
+},
+{
+"name": "ZEB MA204 PRO TYPE C ADAPTER WITH CABLE",
+"code": "8904363827569",
+"cat": "ZEBRONICS CHARGERS",
+"sell": 1300.0,
+"mrp": 2499.0,
+"qty": -5.0
+},
+{
+"name": "ZEB MAGBOOST MAGNETIC CHARGING PAD",
+"code": "8904363820676",
+"cat": "WIRELEES CHARGING",
+"sell": 1999.0,
+"mrp": 4499.0,
+"qty": 1.0
+},
+{
+"name": "ZEB MB 10,000 S15",
+"code": "8904363816716",
+"cat": "POWER BANK",
+"sell": 999.0,
+"mrp": 2099.0,
+"qty": 1.0
+},
+{
+"name": "ZEB MB10000 S10",
+"code": "8904363812800",
+"cat": "ZEB POWERBANK",
+"sell": 1650.0,
+"mrp": 1999.0,
+"qty": 4.0
+},
+{
+"name": "ZEB MB10000 S10 PRO",
+"code": "8904363823615",
+"cat": "ZEB POWERBANK",
+"sell": 899.0,
+"mrp": 1999.0,
+"qty": 18.0
+},
+{
+"name": "ZEB MELO BT SSPEAKER",
+"code": "8904363816266",
+"cat": "SPEAKER",
+"sell": 2499.0,
+"mrp": 3999.0,
+"qty": 0.0
+},
+{
+"name": "ZEB MTS200",
+"code": "8904363819137",
+"cat": "",
+"sell": 600.0,
+"mrp": 699.0,
+"qty": 2.0
+},
+{
+"name": "ZEB MTS250 FOLDABLE MOBILE HOLDER",
+"code": "8904363820652",
+"cat": "",
+"sell": 550.0,
+"mrp": 599.0,
+"qty": 4.0
+},
+{
+"name": "ZEB MUSIC BOMB 20",
+"code": "8904363812022",
+"cat": "SPEAKER",
+"sell": 2300.0,
+"mrp": 2999.0,
+"qty": 1.0
+},
+{
+"name": "ZEB MW 56 10000 MAH POWER BANK",
+"code": "8904363812695",
+"cat": "POWER BANK",
+"sell": 1950.0,
+"mrp": 2299.0,
+"qty": 2.0
+},
+{
+"name": "ZEB OPERA",
+"code": "8904363815153",
+"cat": "ZEBRONICS WIRED HEADPHONES",
+"sell": 250.0,
+"mrp": 299.0,
+"qty": 10.0
+},
+{
+"name": "ZEB OTG 2",
+"code": "8904363821932",
+"cat": "OTG CONECTOR",
+"sell": 550.0,
+"mrp": 899.0,
+"qty": 0.0
+},
+{
+"name": "ZEB PARADISE NEO BLACK",
+"code": "8904363822724",
+"cat": "ZEBRONICS WIRELESS HEADPHONES",
+"sell": 1699.0,
+"mrp": 1799.0,
+"qty": 0.0
+},
+{
+"name": "ZEB PB 17 10,000MAH",
+"code": "8904363823554",
+"cat": "POWER BANK",
+"sell": 999.0,
+"mrp": 1649.0,
+"qty": 15.0
+},
+{
+"name": "ZEB PIXAPLAY 62 PROJECTOR",
+"code": "",
+"cat": "",
+"sell": 7500.0,
+"mrp": 12999.0,
+"qty": -2.0
+},
+{
+"name": "ZEB PODS 131",
+"code": "8904363819182",
+"cat": "ZEBRONICS EARBUDS",
+"sell": 1700.0,
+"mrp": 2499.0,
+"qty": 0.0
+},
+{
+"name": "ZEB PODS 141 PRO",
+"code": "8904363823950",
+"cat": "ZEBRONICS EARBUDS",
+"sell": 0.0,
+"mrp": 4999.0,
+"qty": 2.0
+},
+{
+"name": "ZEB PODS 141 R",
+"code": "8904363826340",
+"cat": "ZEBRONICS EARBUDS",
+"sell": 0.0,
+"mrp": 4999.0,
+"qty": 3.0
+},
+{
+"name": "ZEB PODS ZI 12",
+"code": "8904363823820",
+"cat": "ZEBRONICS EARBUDS",
+"sell": 1300.0,
+"mrp": 2799.0,
+"qty": 2.0
+},
+{
+"name": "ZEB POWER BANK MB20000 R2",
+"code": "",
+"cat": "",
+"sell": 1800.0,
+"mrp": 1999.0,
+"qty": 0.0
+},
+{
+"name": "ZEB R5 PRO POWER BANK MB20,000MAH",
+"code": "8904363813890",
+"cat": "",
+"sell": 1900.0,
+"mrp": 2999.0,
+"qty": 3.0
+},
+{
+"name": "ZEB R8 MB 20000 MAH",
+"code": "8904363818758",
+"cat": "ZEB POWERBANK",
+"sell": 1800.0,
+"mrp": 0.0,
+"qty": 1.0
+},
+{
+"name": "ZEB RAGA S1 BLACK",
+"code": "8904363823073",
+"cat": "ZEBRONICS NECKBANDS",
+"sell": 1250.0,
+"mrp": 1999.0,
+"qty": 1.0
+},
+{
+"name": "ZEB RC 45 A 4IN 1 MULTI DEVICE",
+"code": "8904363811377",
+"cat": "OTHER",
+"sell": 2500.0,
+"mrp": 2999.0,
+"qty": 1.0
+},
+{
+"name": "ZEB S14 MB10,000 MAH",
+"code": "8904363816709",
+"cat": "POWER BANK",
+"sell": 1499.0,
+"mrp": 2099.0,
+"qty": 1.0
+},
+{
+"name": "ZEB S5 10000 MAH POWER BANK",
+"code": "8904363815528",
+"cat": "ZEB POWERBANK",
+"sell": 1300.0,
+"mrp": 1599.0,
+"qty": 0.0
+},
+{
+"name": "ZEB S9 MB10000",
+"code": "zch33nv28654",
+"cat": "POWER BANK",
+"sell": 1200.0,
+"mrp": 1599.0,
+"qty": 0.0
+},
+{
+"name": "ZEB S9 PRO 10,000 MAH",
+"code": "8904363823639",
+"cat": "POWER BANK",
+"sell": 1200.0,
+"mrp": 1599.0,
+"qty": 5.0
+},
+{
+"name": "ZEB SARGAM BT SPEAKER",
+"code": "8904363811476",
+"cat": "ZEB SPEAKERS",
+"sell": 3800.0,
+"mrp": 6499.0,
+"qty": 1.0
+},
+{
+"name": "ZEB SMART WATCH FIT 180CH",
+"code": "8904363807523",
+"cat": "WATCH",
+"sell": 2100.0,
+"mrp": 3999.0,
+"qty": 0.0
+},
+{
+"name": "ZEB SOUND BAR SONATA 2",
+"code": "",
+"cat": "ZEB SPEAKERS",
+"sell": 4999.0,
+"mrp": 11999.0,
+"qty": 0.0
+},
+{
+"name": "ZEB SOUND BOMB X1",
+"code": "8904363809909",
+"cat": "",
+"sell": 1900.0,
+"mrp": 3999.0,
+"qty": 1.0
+},
+{
+"name": "ZEB SOUNDFEAST 500",
+"code": "8904363804133",
+"cat": "ZEB SPEAKERS",
+"sell": 5300.0,
+"mrp": 9499.0,
+"qty": 0.0
+},
+{
+"name": "ZEB SOUNT FEAST 51",
+"code": "8904363805932",
+"cat": "SPEAKER",
+"sell": 2200.0,
+"mrp": 2799.0,
+"qty": 2.0
+},
+{
+"name": "ZEB THUMB 400 BT SPEAKERWITH MIC",
+"code": "8904363814507",
+"cat": "SPEAKERS",
+"sell": 6899.0,
+"mrp": 10499.0,
+"qty": 0.0
+},
+{
+"name": "ZEB THUMB 501 BT SPEAKER",
+"code": "8904363814521",
+"cat": "SPEAKER",
+"sell": 6499.0,
+"mrp": 9999.0,
+"qty": 1.0
+},
+{
+"name": "ZEB THUMP 200",
+"code": "8904363806991",
+"cat": "SPEAKERS",
+"sell": 6600.0,
+"mrp": 7999.0,
+"qty": 1.0
+},
+{
+"name": "ZEB TIRE INFLATOR 17T14",
+"code": "8904363823547",
+"cat": "TIRE INFLATOR",
+"sell": 2600.0,
+"mrp": 5999.0,
+"qty": 1.0
+},
+{
+"name": "ZEB TL20 IOS CABLE",
+"code": "8904363812657",
+"cat": "CABLE",
+"sell": 499.0,
+"mrp": 699.0,
+"qty": -11.0
+},
+{
+"name": "ZEB TRAVEMATE 150",
+"code": "8904363826456",
+"cat": "ZEBRONICS CHARGERS",
+"sell": 950.0,
+"mrp": 1599.0,
+"qty": 1.0
+},
+{
+"name": "ZEB TRAVMATE 120",
+"code": "8904363827088",
+"cat": "ZEBRONICS CHARGERS",
+"sell": 600.0,
+"mrp": 999.0,
+"qty": 1.0
+},
+{
+"name": "ZEB TT 100 TYPE C T C 100W CABLE BRIDED BLACK",
+"code": "8904363819700",
+"cat": "CABLE",
+"sell": 600.0,
+"mrp": 999.0,
+"qty": 0.0
+},
+{
+"name": "ZEB TT65 C TO C FAST CHARGING CABLE",
+"code": "8904363812664",
+"cat": "ZEBRONICS CABLES",
+"sell": 450.0,
+"mrp": 0.0,
+"qty": -5.0
+},
+{
+"name": "ZEB UCCL60 4IN 1 CABLE",
+"code": "8904363815931",
+"cat": "",
+"sell": 480.0,
+"mrp": 799.0,
+"qty": 0.0
+},
+{
+"name": "ZEB UMLCC1205",
+"code": "8904363815726",
+"cat": "ZEBRONICS CABLES",
+"sell": 350.0,
+"mrp": 999.0,
+"qty": 1.0
+},
+{
+"name": "ZEB UNBEATABLE 2",
+"code": "8904363814002",
+"cat": "WATCH",
+"sell": 2000.0,
+"mrp": 6999.0,
+"qty": 0.0
+},
+{
+"name": "ZEB UT 65",
+"code": "8904363812633",
+"cat": "CABLE",
+"sell": 499.0,
+"mrp": 699.0,
+"qty": 6.0
+},
+{
+"name": "ZEB VITA BAR 301",
+"code": "8904363824230",
+"cat": "",
+"sell": 2800.0,
+"mrp": 34999.0,
+"qty": -1.0
+},
+{
+"name": "ZEB WCP1001S",
+"code": "8904363802498",
+"cat": "CHARGER",
+"sell": 1300.0,
+"mrp": 1799.0,
+"qty": 1.0
+},
+{
+"name": "ZEB WCS1500S WIRELESS CHARGING STAND",
+"code": "8904363802504",
+"cat": "CHARGER",
+"sell": 2150.0,
+"mrp": 2449.0,
+"qty": 1.0
+},
+{
+"name": "ZEB YOGA 111",
+"code": "8904363819403",
+"cat": "",
+"sell": 1200.0,
+"mrp": 2499.0,
+"qty": 4.0
+},
+{
+"name": "ZEB ZEST 11 BT SPEAKER",
+"code": "zeg01uv9701",
+"cat": "SPEAKER",
+"sell": 1100.0,
+"mrp": 1299.0,
+"qty": 1.0
+},
+{
+"name": "ZEBCOUNTY 5",
+"code": "zar15ps00131",
+"cat": "SPEAKERS",
+"sell": 900.0,
+"mrp": 1049.0,
+"qty": 1.0
+},
+{
+"name": "ZEBRONICS 700HB 7IN 1 USB",
+"code": "8904363815009",
+"cat": "ZEBRONICS COMPUTER ACCESSORIES",
+"sell": 900.0,
+"mrp": 1399.0,
+"qty": 0.0
+},
+{
+"name": "ZEBRONICS 90HB USB HUB",
+"code": "8904363803600",
+"cat": "ZEBRONICS COMPUTER ACCESSORIES",
+"sell": 450.0,
+"mrp": 499.0,
+"qty": 0.0
+},
+{
+"name": "ZEBRONICS ARIA BLACK",
+"code": "8904363815184",
+"cat": "ZEBRONICS WIRED EARPHONES",
+"sell": 450.0,
+"mrp": 499.0,
+"qty": 3.0
+},
+{
+"name": "ZEBRONICS ASC100 AUX CABLE",
+"code": "8906108614915",
+"cat": "",
+"sell": 140.0,
+"mrp": 149.0,
+"qty": 4.0
+},
+{
+"name": "ZEBRONICS BANG BLUE",
+"code": "8906108615905",
+"cat": "ZEBRONICS WIRELESS HEADPHONES",
+"sell": 1450.0,
+"mrp": 1799.0,
+"qty": 0.0
+},
+{
+"name": "ZEBRONICS BLOOM BLACK METAL GREY",
+"code": "8904363807820",
+"cat": "ZEBRONICS WIRED HEADPHONES",
+"sell": 250.0,
+"mrp": 299.0,
+"qty": 0.0
+},
+{
+"name": "ZEBRONICS BOLD WIRELESS MOUSE",
+"code": "8906108616971",
+"cat": "ZEBRONICS COMPUTER ACCESSORIES",
+"sell": 400.0,
+"mrp": 449.0,
+"qty": 0.0
+},
+{
+"name": "ZEBRONICS BRO BLACK",
+"code": "8906108613413",
+"cat": "ZEBRONICS WIRED EARPHONES",
+"sell": 350.0,
+"mrp": 399.0,
+"qty": 15.0
+},
+{
+"name": "ZEBRONICS BUDS 30 BLLACK",
+"code": "8904363806953",
+"cat": "ZEBRONICS WIRED HEADPHONES",
+"sell": 450.0,
+"mrp": 499.0,
+"qty": 8.0
+},
+{
+"name": "ZEBRONICS CALYX BLACK",
+"code": "8906108613659",
+"cat": "ZEBRONICS WIRED HEADPHONES",
+"sell": 350.0,
+"mrp": 399.0,
+"qty": 10.0
+},
+{
+"name": "ZEBRONICS CC38 38W CAR CHARGER",
+"code": "8904363810677",
+"cat": "",
+"sell": 700.0,
+"mrp": 799.0,
+"qty": 0.0
+},
+{
+"name": "ZEBRONICS CC48 48W CAR CHARGER",
+"code": "8904363815863",
+"cat": "ZEBRONICS CHARGERS",
+"sell": 750.0,
+"mrp": 899.0,
+"qty": 1.0
+},
+{
+"name": "ZEBRONICS CC60 60W CAR CHARGER",
+"code": "8904363815870",
+"cat": "",
+"sell": 850.0,
+"mrp": 1099.0,
+"qty": 2.0
+},
+{
+"name": "ZEBRONICS COMFORT PLUS OPTICAL MOUSE",
+"code": "8906108610672",
+"cat": "ZEBRONICS COMPUTER ACCESSORIES",
+"sell": 250.0,
+"mrp": 299.0,
+"qty": 0.0
+},
+{
+"name": "ZEBRONICS COMPANION105",
+"code": "8904363808506",
+"cat": "ZEBRONICS COMPUTER ACCESSORIES",
+"sell": 950.0,
+"mrp": 1199.0,
+"qty": 1.0
+},
+{
+"name": "ZEBRONICS COMPANION200",
+"code": "8904363810943",
+"cat": "ZEBRONICS COMPUTER ACCESSORIES",
+"sell": 1550.0,
+"mrp": 1899.0,
+"qty": 1.0
+},
+{
+"name": "ZEBRONICS COUNTY 6 BT SPEAKER",
+"code": "8904363819304",
+"cat": "ZEB SPEAKERS",
+"sell": 850.0,
+"mrp": 899.0,
+"qty": -2.0
+},
+{
+"name": "ZEBRONICS CTAUX10 TYPE C TO 3.5MM JACK",
+"code": "8904363817430",
+"cat": "",
+"sell": 450.0,
+"mrp": 599.0,
+"qty": 1.0
+},
+{
+"name": "ZEBRONICS DAZZLE WIRELESS MOUSE",
+"code": "8906108617534",
+"cat": "ZEBRONICS COMPUTER ACCESSORIES",
+"sell": 300.0,
+"mrp": 329.0,
+"qty": 1.0
+},
+{
+"name": "ZEBRONICS ENERGISAFE 10R6 POWER BANK",
+"code": "8904363831498",
+"cat": "POWER BANK",
+"sell": 2199.0,
+"mrp": 4999.0,
+"qty": 0.0
+},
+{
+"name": "ZEBRONICS ESCAPE 10 GREY",
+"code": "8904363815610",
+"cat": "ZEBRONICS NECKBANDS",
+"sell": 950.0,
+"mrp": 1199.0,
+"qty": 3.0
+},
+{
+"name": "ZEBRONICS ESCAPE 40 BLACK",
+"code": "8904363815573",
+"cat": "ZEBRONICS NECKBANDS",
+"sell": 850.0,
+"mrp": 1399.0,
+"qty": 2.0
+},
+{
+"name": "ZEBRONICS FIT S1 SMART WATCH",
+"code": "8904363828061",
+"cat": "WATCH",
+"sell": 2400.0,
+"mrp": 5999.0,
+"qty": -2.0
+},
+{
+"name": "ZEBRONICS HEAT BUSTER 200 PORTABLE HAND FAN",
+"code": "8904363824445",
+"cat": "PORTABLE FAN",
+"sell": 1100.0,
+"mrp": 1499.0,
+"qty": 2.0
+},
+{
+"name": "ZEBRONICS HEAT BUSTER 300 PORTABLE DESK FAN",
+"code": "",
+"cat": "",
+"sell": 1600.0,
+"mrp": 0.0,
+"qty": 0.0
+},
+{
+"name": "ZEBRONICS HYDRA BT CALLING SMART WATCH",
+"code": "8904363814071",
+"cat": "WATCH",
+"sell": 2600.0,
+"mrp": 8999.0,
+"qty": 2.0
+},
+{
+"name": "ZEBRONICS ICONIC SMART AMOLED SMART WATCH",
+"code": "8904363813982",
+"cat": "WATCH",
+"sell": 2300.0,
+"mrp": 8999.0,
+"qty": 4.0
+},
+{
+"name": "ZEBRONICS JIGGLE BLACK",
+"code": "8904363814323",
+"cat": "ZEBRONICS EARBUDS",
+"sell": 1350.0,
+"mrp": 2499.0,
+"qty": 1.0
+},
+{
+"name": "ZEBRONICS JUGGLE USB OPTICAL MOUSE",
+"code": "8904363809152",
+"cat": "ZEBRONICS COMPUTER ACCESSORIES",
+"sell": 350.0,
+"mrp": 399.0,
+"qty": -1.0
+},
+{
+"name": "ZEBRONICS K20 WIRED KEYBOARD",
+"code": "8906108610542",
+"cat": "ZEBRONICS COMPUTER ACCESSORIES",
+"sell": 350.0,
+"mrp": 399.0,
+"qty": 3.0
+},
+{
+"name": "ZEBRONICS LT200 TYPE C TO IOS CABLE",
+"code": "8904363816976",
+"cat": "ZEBRONICS CHARGERS",
+"sell": 450.0,
+"mrp": 749.0,
+"qty": 0.0
+},
+{
+"name": "ZEBRONICS MA100B TYPE C CHARGER WHITE",
+"code": "8904363807653",
+"cat": "ZEBRONICS CHARGERS",
+"sell": 600.0,
+"mrp": 649.0,
+"qty": 1.0
+},
+{
+"name": "ZEBRONICS MA102B MICRO USB CHARGER",
+"code": "8904363819434",
+"cat": "ZEBRONICS CHARGERS",
+"sell": 350.0,
+"mrp": 449.0,
+"qty": -10.0
+},
+{
+"name": "ZEBRONICS MA102B TYPE C WHITE",
+"code": "8904363819441",
+"cat": "ZEBRONICS CHARGERS",
+"sell": 450.0,
+"mrp": 499.0,
+"qty": 10.0
+},
+{
+"name": "ZEBRONICS MA104B TYPE C 20W PD ADAPTER WHITE",
+"code": "8904363812817",
+"cat": "ZEBRONICS CHARGERS",
+"sell": 850.0,
+"mrp": 999.0,
+"qty": 1.0
+},
+{
+"name": "ZEBRONICS MA202 TYPE C 25W PD ADAPTER WHITE",
+"code": "8904363813746",
+"cat": "ZEBRONICS CHARGERS",
+"sell": 1050.0,
+"mrp": 1099.0,
+"qty": 1.0
+},
+{
+"name": "ZEBRONICS MA203 30W CHARGER",
+"code": "8904363812886",
+"cat": "ZEBRONICS CHARGERS",
+"sell": 950.0,
+"mrp": 1299.0,
+"qty": 0.0
+},
+{
+"name": "ZEBRONICS MAGBOOST 3 IN 1 MAGNETIC CHARGING PAD",
+"code": "8904363824117",
+"cat": "WIRELEES CHARGING",
+"sell": 1900.0,
+"mrp": 4499.0,
+"qty": 3.0
+},
+{
+"name": "ZEBRONICS METEOROID BLACK",
+"code": "8904363816563",
+"cat": "ZEBRONICS EARBUDS",
+"sell": 1600.0,
+"mrp": 1999.0,
+"qty": 0.0
+},
+{
+"name": "ZEBRONICS MU240 MICRO USB CABLE",
+"code": "8904363812763",
+"cat": "ZEBRONICS CHARGERS",
+"sell": 250.0,
+"mrp": 299.0,
+"qty": 11.0
+},
+{
+"name": "ZEBRONICS MU300C MICRO USB CABLE",
+"code": "8904363808537",
+"cat": "ZEBRONICS CHARGERS",
+"sell": 300.0,
+"mrp": 399.0,
+"qty": 14.0
+},
+{
+"name": "ZEBRONICS MW70 10000 MAH BLACK",
+"code": "8904363818888",
+"cat": "ZEB POWERBANK",
+"sell": 2450.0,
+"mrp": 3999.0,
+"qty": 0.0
+},
+{
+"name": "ZEBRONICS PARADISE NEO R (BLACK)",
+"code": "8904363826333",
+"cat": "",
+"sell": 1499.0,
+"mrp": 4999.0,
+"qty": 1.0
+},
+{
+"name": "ZEBRONICS PARADISE PLUS BLACK",
+"code": "8904363818550",
+"cat": "ZEBRONICS WIRELESS HEADPHONES",
+"sell": 1650.0,
+"mrp": 1999.0,
+"qty": 1.0
+},
+{
+"name": "ZEBRONICS PIXIE BT SPEAKER",
+"code": "8904363816273",
+"cat": "",
+"sell": 850.0,
+"mrp": 999.0,
+"qty": 0.0
+},
+{
+"name": "ZEBRONICS PODS 1 ANC BLACK",
+"code": "8904363810981",
+"cat": "ZEBRONICS EARBUDS",
+"sell": 1999.0,
+"mrp": 4499.0,
+"qty": 1.0
+},
+{
+"name": "ZEBRONICS PODS 121 BLACK",
+"code": "8904363819212",
+"cat": "ZEBRONICS EARBUDS",
+"sell": 1350.0,
+"mrp": 1999.0,
+"qty": 3.0
+},
+{
+"name": "ZEBRONICS STORM BLACK",
+"code": "8906108613567",
+"cat": "ZEBRONICS WIRED HEADPHONES",
+"sell": 650.0,
+"mrp": 799.0,
+"qty": 0.0
+},
+{
+"name": "ZEBRONICS STYLUS LITE",
+"code": "",
+"cat": "PEN",
+"sell": 900.0,
+"mrp": 1299.0,
+"qty": 2.0
+},
+{
+"name": "ZEBRONICS THUNDER NEO BLACK",
+"code": "",
+"cat": "",
+"sell": 1400.0,
+"mrp": 0.0,
+"qty": -1.0
+},
+{
+"name": "ZEBRONICS TU240P PLUS TYPE C CABLE",
+"code": "8904363819984",
+"cat": "ZEBRONICS CHARGERS",
+"sell": 250.0,
+"mrp": 399.0,
+"qty": 1.0
+},
+{
+"name": "ZEBRONICS TULIP BLACK",
+"code": "8906108618944",
+"cat": "ZEBRONICS WIRED EARPHONES",
+"sell": 300.0,
+"mrp": 459.0,
+"qty": 1.0
+},
+{
+"name": "ZEBRONICS UC80P 80WTYPE C CALE",
+"code": "8904363816938",
+"cat": "ZEBRONICS CHARGERS",
+"sell": 750.0,
+"mrp": 899.0,
+"qty": 9.0
+},
+{
+"name": "ZEBRONICS ULC300V IOS CABLE",
+"code": "8904363812558",
+"cat": "ZEBRONICS CHARGERS",
+"sell": 300.0,
+"mrp": 699.0,
+"qty": -2.0
+},
+{
+"name": "ZEBRONICS USB150 WF1 WIFI DINGLE",
+"code": "8906108619934",
+"cat": "ZEBRONICS COMPUTER ACCESSORIES",
+"sell": 450.0,
+"mrp": 499.0,
+"qty": -1.0
+},
+{
+"name": "ZEBRONICS WAVLET 50 WIRELESS MIC",
+"code": "8904363827798",
+"cat": "WIRELESS MIC",
+"sell": 2400.0,
+"mrp": 3999.0,
+"qty": 0.0
+},
+{
+"name": "ZEBRONICS YOGA 2 BLACK",
+"code": "8904363805246",
+"cat": "ZEBRONICS NECKBANDS",
+"sell": 1350.0,
+"mrp": 1699.0,
+"qty": 2.0
+},
+{
+"name": "ZEBRONICS YOGA 9 BLACK",
+"code": "8904363809602",
+"cat": "ZEBRONICS NECKBANDS",
+"sell": 1100.0,
+"mrp": 2999.0,
+"qty": 4.0
+},
+{
+"name": "ZEBRONICS-HOME THEATRE - ZEB JUKE BAR 7000 DWS PRO",
+"code": "",
+"cat": "ZEB SPEAKERS",
+"sell": 8999.0,
+"mrp": 0.0,
+"qty": 0.0
+},
+{
+"name": "charger 100",
+"code": "",
+"cat": "",
+"sell": 100.0,
+"mrp": 0.0,
+"qty": 425.0
+},
+{
+"name": "sim igter",
+"code": "",
+"cat": "",
+"sell": 5.0,
+"mrp": 0.0,
+"qty": 8.0
+},
+{
+"name": "zeb stylus lite",
+"code": "",
+"cat": "",
+"sell": 900.0,
+"mrp": 1299.0,
+"qty": 1.0
+}
+]

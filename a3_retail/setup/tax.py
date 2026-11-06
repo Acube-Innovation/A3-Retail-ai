@@ -273,10 +273,14 @@ def ensure_gst_settings():
 
 	settings = frappe.get_single("GST Settings")
 	changed = False
+	# `round_off_gst_values` is deliberately not here. It was, set to 1, and a
+	# deploy turned it back on every time the shop turned it off — their call to
+	# make, not the installer's, and india_compliance's own default is off
+	# anyway. `patches/gst_round_off_off.py` switched it off once; nothing
+	# asserts it on a migrate now.
 	for field, value in (
 		("enable_e_invoice", 0),
 		("enable_e_waybill", 1),
-		("round_off_gst_values", 1),
 		("enable_reverse_charge_in_sales", 0),
 	):
 		if settings.meta.has_field(field) and settings.get(field) != value:
