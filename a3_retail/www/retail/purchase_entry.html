@@ -155,6 +155,13 @@
 						<input id="p-notes" type="text" maxlength="200"></div>
 
 					<button class="btn btn-primary btn-wide" id="p-save">{{ _("Save Purchase") }}</button>
+					{#- A rep with forty lines and a customer walking in at line
+					    twelve. Held, the work survives a reload, a switched
+					    till and a closed tab; nothing posts until Save. -#}
+					<button class="btn btn-outline btn-wide" id="p-hold" type="button">
+						{{ _("Hold — save as draft") }}</button>
+					<button class="btn btn-quiet btn-wide" id="p-drafts" type="button">
+						{{ _("Held purchases") }}</button>
 					<p class="msg" id="work-msg"></p>
 				</section>
 			</aside>
@@ -173,6 +180,18 @@ window.addEventListener("DOMContentLoaded", function () {
 {#- Reps arrive with a dozen lines, and the question on each one is the same:
     what does it cost, what do we sell it for, how many are on the shelf. Asked
     side by side in a list you can run down, rather than one search at a time. -#}
+<div class="modal" id="drafts-modal" hidden>
+	<div class="modal-card">
+		<header class="modal-head">
+			<h3>{{ _("Held purchases") }}</h3>
+			<button class="modal-x" data-close aria-label="{{ _('Close') }}">&times;</button>
+		</header>
+		<p class="modal-note">{{ _("Nothing here has posted. Open one to finish it, or throw it away.") }}</p>
+		<ul class="simple-list" id="drafts-body"></ul>
+		<button class="btn btn-quiet btn-block" data-close>{{ _("Close") }}</button>
+	</div>
+</div>
+
 <div class="modal" id="pick-modal" hidden>
 	<div class="modal-card">
 		<header class="modal-head">

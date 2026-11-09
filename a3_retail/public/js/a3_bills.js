@@ -200,11 +200,14 @@ window.BILLS = (function () {
 	}
 
 	// ------------------------------------------------------------- actions
-	/** One print path for the whole application: the counter's own link. */
+	/** One print path for the whole application: straight to the printer.
+	 *
+	 *  Not a PDF in a new tab. The counter presses Print with a customer in
+	 *  front of them; the dialog belongs over the till, and a tab left open
+	 *  behind every reprint is somebody else's bill still on the screen.
+	 */
 	function print(name) {
-		window.open("/api/method/frappe.utils.print_format.download_pdf"
-			+ "?doctype=Sales%20Invoice&name=" + encodeURIComponent(name)
-			+ "&format=Retail%20Tax%20Invoice&no_letterhead=0", "_blank");
+		A3.printDoc({ doctype: "Sales Invoice", name, format: "Retail Tax Invoice" });
 	}
 
 	function more(row) {

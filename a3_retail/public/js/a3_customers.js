@@ -491,25 +491,45 @@ window.CUST = (function () {
 	}
 
 	// ------------------------------------------------------- new / edit
+	/** Every box on the customer form, so neither opening it fresh nor opening
+	 *  it on somebody can leave one holding the last person's details. */
+	const CUSTOMER_FIELDS = ["c-mobile", "c-name", "c-email", "c-address",
+		"c-city", "c-state", "c-pin", "c-pan", "c-gstin"];
+
 	function newCustomer() {
 		state.editing = null;
 		$("customer-modal-title").textContent = "New customer";
-		["c-mobile", "c-name", "c-email", "c-address", "c-city", "c-pin", "c-gstin"]
-			.forEach((id) => { $(id).value = ""; });
+		CUSTOMER_FIELDS.forEach((id) => { if ($(id)) $(id).value = ""; });
 		$("c-gstin-note").textContent = "";
 		$("customer-modal").hidden = false;
 		$("c-mobile").focus();
 	}
 
+	/**
+	 * Open the form on somebody already on file, with what is held in it.
+	 *
+	 * Every box is filled, not just the name and the number. Save sends the
+	 * whole form, so a box this leaves empty is not merely missing from the
+	 * screen — it is an empty value on its way to the record, and the address
+	 * the shop took down last month goes with it.
+	 */
 	function editCustomer() {
+		const person = state.profile || {};
+		const address = person.address_parts || {};
 		state.editing = state.customer;
-		$("customer-modal-title").textContent = "Edit " + state.profile.customer_name;
-		$("c-mobile").value = state.profile.mobile_no || "";
-		$("c-name").value = state.profile.customer_name || "";
-		$("c-email").value = state.profile.email || "";
-		$("c-address").value = "";
-		$("c-gstin").value = state.profile.gstin || "";
-		$("c-gstin-note").textContent = "";
+		$("customer-modal-title").textContent = "Edit " + (person.customer_name || "");
+		$("c-mobile").value = person.mobile_no || "";
+		$("c-name").value = person.customer_name || "";
+		$("c-email").value = person.email || "";
+		$("c-address").value = address.address_line1 || "";
+		$("c-city").value = address.city || "";
+		$("c-state").value = address.state || "";
+		$("c-pin").value = address.pincode || "";
+		if ($("c-pan")) $("c-pan").value = person.pan || "";
+		$("c-gstin").value = person.gstin || address.gstin || "";
+		$("c-gstin-note").textContent = address.state
+			? "On file — " + [address.city, address.state].filter(Boolean).join(", ")
+			: "";
 		$("customer-modal").hidden = false;
 		$("c-name").focus();
 	}

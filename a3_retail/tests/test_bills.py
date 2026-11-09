@@ -55,9 +55,14 @@ class TestBillsPages(FrappeTestCase):
 		folder = frappe.get_app_path("a3_retail", "public", "js")
 		for script in ("a3_bills.js", "a3_invoice.js"):
 			body = open(os.path.join(folder, script)).read()
-			self.assertIn("Retail%20Tax%20Invoice", body) if script == "a3_bills.js" \
+			self.assertIn("Retail Tax Invoice", body) if script == "a3_bills.js" \
 				else self.assertIn("print_url", body)
 			self.assertNotIn("<table class=\"print", body, "no second print template")
+			# Printing opens the printer dialog over the till. A bill that goes
+			# to a tab instead is two more steps with a customer waiting, and
+			# the tab is left behind on the till afterwards.
+			self.assertIn("A3.printDoc", body)
+			self.assertNotIn('window.open(url, "_blank")', body)
 
 		api = open(frappe.get_app_path("a3_retail", "api", "bills.py")).read()
 		self.assertIn("from a3_retail.api.pos import print_url", api)

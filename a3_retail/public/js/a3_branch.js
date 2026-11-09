@@ -924,9 +924,81 @@ window.A3 = (function () {
 		}).observe(document.body, { childList: true, subtree: true });
 	}
 
+	// ----------------------------------------------------------- printing
+	/**
+	 * Read a document out of whichever print link we were handed.
+	 *
+	 * The server hands back a `download_pdf` address in a dozen places. Both
+	 * that and a `/printview` address carry the same four things in the query
+	 * string, so one reader covers either and callers need not care which they
+	 * were given.
+	 */
+	function printParts(url) {
+		const query = String(url || "").split("?")[1] || "";
+		const params = new URLSearchParams(query);
+		return {
+			doctype: params.get("doctype") || "",
+			name: params.get("name") || "",
+			format: params.get("format") || "",
+			letterhead: params.get("no_letterhead") === "1" ? "1" : "0",
+		};
+	}
+
+	/** The address of the printable page for a document. */
+	function printUrl(options) {
+		const parts = typeof options === "string" ? printParts(options) : (options || {});
+		const query = new URLSearchParams({
+			doctype: parts.doctype || "",
+			name: parts.name || "",
+			format: parts.format || "",
+			no_letterhead: parts.letterhead || parts.no_letterhead || "0",
+			_lang: "en",
+		});
+		if (!parts.format) query.delete("format");
+		return "/printview?" + query.toString();
+	}
+
+	/**
+	 * Send a document to the printer.
+	 *
+	 * The counter presses Print because a customer is standing there waiting
+	 * for a piece of paper. Opening a PDF in a second tab puts two more steps
+	 * in the way — find the tab, find its own print button — and leaves the tab
+	 * behind afterwards. So the page is loaded into an iframe nobody sees and
+	 * the printer dialog comes straight up over the till, which is what
+	 * pressing Print is understood to mean everywhere else.
+	 *
+	 * `trigger_print` is Frappe's own flag: its print view calls `window.print()`
+	 * once the format has rendered, so the dialog never opens on a half-drawn
+	 * page. Printing from an iframe is same-origin, so no popup blocker is in
+	 * play and nothing has to be allowed first.
+	 */
+	function printDoc(options) {
+		const src = printUrl(options) + "&trigger_print=1";
+		const frame = document.createElement("iframe");
+		frame.setAttribute("aria-hidden", "true");
+		frame.style.cssText =
+			"position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden";
+		// A printer dialog blocks this thread, so the tidy-up is hung off the
+		// frame rather than a timer that would fire while the dialog is open.
+		frame.addEventListener("load", function () {
+			setTimeout(function () {
+				if (frame.parentNode) frame.parentNode.removeChild(frame);
+			}, 60000);
+		});
+		frame.src = src;
+		document.body.appendChild(frame);
+		return frame;
+	}
+
+	/** The same page, opened to look at rather than to print. */
+	function viewDoc(options) {
+		window.open(printUrl(options), "_blank");
+	}
+
 	return {
 		call, login, logout, money, shortTime, csrfToken, plain, toast,
 		mountBranchPicker, datePicker, mountDates, photoPicker, filterSheet,
-		fitNumbers,
+		fitNumbers, printDoc, viewDoc, printUrl, printParts,
 	};
 })();

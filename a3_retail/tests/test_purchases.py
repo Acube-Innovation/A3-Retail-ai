@@ -193,11 +193,13 @@ class TestWhatTheSupplierIsOwed(FrappeTestCase):
 	"""
 
 	def test_the_bill_carries_gst(self):
+		"""Taxed in the builder both doors go through — Save and Hold alike."""
 		import inspect
 
-		source = inspect.getsource(purchases.create)
+		source = inspect.getsource(purchases._build)
 		self.assertIn("_apply_tax(doc, employee)", source,
 		              "a purchase has to be taxed before it posts")
+		self.assertIn("_build(data, employee", inspect.getsource(purchases.create))
 
 	def test_the_rate_comes_off_the_items(self):
 		import inspect

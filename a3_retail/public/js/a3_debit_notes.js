@@ -212,7 +212,7 @@
 		$("rows").innerHTML = `
 			<table class="bill-table">
 				<thead><tr><th>Debit note</th><th>Supplier</th><th>Date</th>
-					<th>Lines</th><th class="num">Value</th></tr></thead>
+					<th>Lines</th><th class="num">Value</th><th></th></tr></thead>
 				<tbody>${rows.map((r) => `
 					<tr>
 						<td>${esc(r.name)}</td>
@@ -220,10 +220,38 @@
 						<td>${esc(r.posting_date)}</td>
 						<td>${esc(r.line_count)}</td>
 						<td class="num">${money(r.amount)}</td>
+						<td class="num"><button class="btn btn-quiet dn-bill"
+							data-name="${esc(r.name)}"
+							data-who="${esc(r.supplier_name || r.supplier)}"
+							data-amount="${esc(r.amount)}">Bill</button></td>
 					</tr>`).join("")}
 				</tbody>
 			</table>`;
+		$("rows").querySelectorAll(".dn-bill").forEach((node) =>
+			node.addEventListener("click", () => openBill(node.dataset)));
 	}
+
+	/**
+	 * The debit note as the supplier is given it.
+	 *
+	 * Printed on the shop's own purchase-bill format rather than ERPNext's
+	 * standard one — a debit note is a Purchase Invoice underneath, and the
+	 * supplier's accounts office is matching it against the bill it reverses.
+	 * Both ways of opening it are offered because the two are different jobs:
+	 * checking a figure before ringing the distributor, and putting a copy in
+	 * the envelope with the goods.
+	 */
+	function openBill(row) {
+		const doc = { doctype: "Purchase Invoice", name: row.name,
+		              format: "A3 Purchase Invoice" };
+		$("bill-title").textContent = row.name;
+		$("bill-note").textContent = `${row.who} · ${money(Number(row.amount) || 0)}`;
+		$("bill-print").onclick = () => { closeBill(); A3.printDoc(doc); };
+		$("bill-view").onclick = () => { closeBill(); A3.viewDoc(doc); };
+		$("bill-modal").hidden = false;
+	}
+
+	function closeBill() { $("bill-modal").hidden = true; }
 
 	// ---------------------------------------------------------------- save
 	async function save() {
@@ -255,7 +283,7 @@
 				+ `${result.supplier}. They now owe `
 				+ `${money(Math.abs(result.supplier_outstanding))}`
 				+ `${result.supplier_outstanding < 0 ? " to us" : " from us"}.`, "ok");
-			window.open(result.print_url, "_blank");
+			A3.printDoc(result.print_url);
 			reset();
 			load();
 		} catch (error) {
@@ -362,6 +390,8 @@
 		$("si-save").addEventListener("click", saveSchemeItem);
 		$("si-modal").querySelectorAll("[data-close]").forEach((b) =>
 			b.addEventListener("click", () => { $("si-modal").hidden = true; }));
+		$("bill-modal").querySelectorAll("[data-close]").forEach((b) =>
+			b.addEventListener("click", closeBill));
 
 		$("d-save").addEventListener("click", save);
 		$("refresh").addEventListener("click", load);

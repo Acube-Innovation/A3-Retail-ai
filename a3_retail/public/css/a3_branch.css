@@ -3048,3 +3048,7 @@ kbd { display: inline-block; min-width: 17px; padding: 1px 5px; margin: 0 1px;
 
 /* The one action in the list that destroys something reads like it. */
 .simple-list .linkish.is-danger { color: var(--danger, #e11d48); }
+
+/* A row's own action, sized to sit inside a table line rather than stand a
+   row up to the height of a form button. Debit Notes uses it for Bill. */
+.bill-table .btn { padding: 4px 12px; font-size: 13px; line-height: 1.5; }

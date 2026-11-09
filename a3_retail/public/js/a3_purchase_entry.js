@@ -42,6 +42,10 @@
 		        canCreateItem: false, billNoRequired: false },
 		pick: { hits: [], chosen: new Map(), cursor: -1 },
 		imei: { row: -1, rows: [] },
+		// The held bill this screen is finishing, if it was opened from one.
+		// Saving or holding again writes back to it rather than starting a
+		// second document with the same goods on it.
+		draft: null,
 	};
 	let supplierTimer = null;
 	let pickTimer = null;
@@ -720,6 +724,116 @@
 	}
 
 	// ----------------------------------------------------------------- saving
+	/** Everything on the screen, in the shape both Save and Hold send. */
+	function entryPayload() {
+		return {
+			supplier: state.supplier,
+			bill_no: $("bill-no").value.trim(),
+			date: $("p-date").value,
+			notes: $("p-notes").value.trim(),
+			paid_amount: num($("paid").value),
+			mode_of_payment: $("p-mode").value,
+			items: state.lines.map((l) => ({
+				item_code: l.item_code, qty: l.qty, rate: l.rate,
+				selling_rate: l.sell || 0,
+				serials: l.has_serial ? l.serials : [],
+			})),
+		};
+	}
+
+	/**
+	 * Put the entry aside without posting it.
+	 *
+	 * Less is asked of a held bill than a finished one — no distributor's bill
+	 * number, no IMEIs yet — because those are usually exactly what is still
+	 * missing when the counter has to stop. Nothing moves in stock or the
+	 * ledger until Save Purchase.
+	 */
+	async function hold() {
+		if (state.saving) return;
+		if (!state.supplier) return note("Choose who the stock was bought from.", "error");
+		if (!state.lines.length) return note("Add what came in before holding it.", "error");
+		state.saving = true;
+		$("p-hold").disabled = true;
+		note("Holding\u2026");
+		try {
+			const held = await A3.call("a3_retail.api.purchases.save_draft",
+				{ payload: entryPayload(), draft: state.draft });
+			state.draft = held.draft;
+			note(`Held as ${held.draft} \u2014 ${held.lines} line`
+				+ `${held.lines === 1 ? "" : "s"}, ${money(held.grand_total)}.`
+				+ " Nothing has posted.", "ok");
+		} catch (error) {
+			note(error.message || "Could not hold it.", "error");
+		} finally {
+			state.saving = false;
+			$("p-hold").disabled = false;
+		}
+	}
+
+	async function openDrafts() {
+		$("drafts-modal").hidden = false;
+		$("drafts-body").innerHTML = "<li>Loading\u2026</li>";
+		try {
+			const rows = await A3.call("a3_retail.api.purchases.drafts", { limit: 20 });
+			if (!rows.length) {
+				$("drafts-body").innerHTML = "<li>Nothing is being held.</li>";
+				return;
+			}
+			$("drafts-body").innerHTML = rows.map((r) => `
+				<li>
+					<button class="linkish draft-open" data-name="${esc(r.name)}">
+						<strong>${esc(r.supplier_name || r.supplier)}</strong>
+						<small>${esc(r.name)} \u00b7 ${esc(r.line_count)} line${
+							r.line_count === 1 ? "" : "s"} \u00b7 ${money(r.grand_total)}
+							\u00b7 ${shortDate(r.modified)}</small>
+					</button>
+					<button class="linkish is-danger draft-drop"
+						data-name="${esc(r.name)}">Throw away</button>
+				</li>`).join("");
+			$("drafts-body").querySelectorAll(".draft-open").forEach((n) =>
+				n.addEventListener("click", () => openDraft(n.dataset.name)));
+			$("drafts-body").querySelectorAll(".draft-drop").forEach((n) =>
+				n.addEventListener("click", () => dropDraft(n.dataset.name)));
+		} catch (error) {
+			$("drafts-body").innerHTML =
+				`<li>${esc(error.message || "Could not read the held purchases.")}</li>`;
+		}
+	}
+
+	async function openDraft(name) {
+		try {
+			const held = await A3.call("a3_retail.api.purchases.load_draft", { name });
+			state.draft = held.draft;
+			state.lines = held.items.map((i) => ({
+				item_code: i.item_code, item_name: i.item_name, qty: i.qty,
+				rate: i.rate, sell: i.sell || 0, uom: i.uom,
+				has_serial: !!i.has_serial, serials: i.serials || [],
+			}));
+			pickSupplier(held.supplier, held.supplier_name || held.supplier, null);
+			$("bill-no").value = held.bill_no || "";
+			if (held.date) $("p-date").value = held.date;
+			$("p-notes").value = held.notes || "";
+			paintLines();
+			refreshTotals();
+			$("drafts-modal").hidden = true;
+			note(`${held.draft} opened. Finish it and press Save Purchase.`, "ok");
+		} catch (error) {
+			note(error.message || "Could not open that held purchase.", "error");
+		}
+	}
+
+	async function dropDraft(name) {
+		try {
+			await A3.call("a3_retail.api.purchases.discard_draft", { name });
+			if (state.draft === name) state.draft = null;
+			openDrafts();
+			say(name + " thrown away.", "ok");
+		} catch (error) {
+			note(error.message || "Could not throw it away.", "error");
+		}
+	}
+
 	async function save() {
 		if (state.saving) return;
 		if (!state.supplier) return note("Choose who the stock was bought from.", "error");
@@ -744,21 +858,8 @@
 		$("p-save").disabled = true;
 		note("Saving…");
 		try {
-			const result = await A3.call("a3_retail.api.purchases.create", {
-				payload: {
-					supplier: state.supplier,
-					bill_no: $("bill-no").value.trim(),
-					date: $("p-date").value,
-					notes: $("p-notes").value.trim(),
-					paid_amount: num($("paid").value),
-					mode_of_payment: $("p-mode").value,
-					items: state.lines.map((l) => ({
-						item_code: l.item_code, qty: l.qty, rate: l.rate,
-						selling_rate: l.sell || 0,
-						serials: l.has_serial ? l.serials : [],
-					})),
-				},
-			});
+			const result = await A3.call("a3_retail.api.purchases.create",
+				{ payload: entryPayload(), draft: state.draft });
 			note(`${result.purchase} saved — ${money(result.grand_total)}`
 				+ (result.outstanding > 0 ? `, ${money(result.outstanding)} still owed.` : ", settled."),
 				"ok");
@@ -940,6 +1041,10 @@
 		});
 
 		$("p-save").addEventListener("click", save);
+		$("p-hold").addEventListener("click", hold);
+		$("p-drafts").addEventListener("click", openDrafts);
+		$("drafts-modal").querySelectorAll("[data-close]").forEach((b) =>
+			b.addEventListener("click", () => { $("drafts-modal").hidden = true; }));
 		paintLines();
 	}
 

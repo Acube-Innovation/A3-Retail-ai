@@ -111,9 +111,12 @@ window.BOOKING = (function () {
 
 		$("top-actions").insertAdjacentHTML("afterbegin", `
 			<button class="btn btn-primary btn-icon" id="print-top">${icon("print")} Print</button>
+			<button class="btn btn-outline btn-icon" id="print-top-thermal">${
+				icon("print")} Thermal</button>
 			<a class="btn btn-outline btn-icon" href="/retail/service?booking=${
 				encodeURIComponent(data.name)}">${icon("wrench")} Open at the counter</a>`);
-		$("print-top").addEventListener("click", print);
+		$("print-top").addEventListener("click", () => print(false));
+		$("print-top-thermal").addEventListener("click", () => print(true));
 
 		$("body").innerHTML = `
 			<section class="svc-panel wb" id="wb"></section>
@@ -236,6 +239,8 @@ window.BOOKING = (function () {
 				<a class="btn btn-quiet btn-icon" href="/retail/bookings">${icon("back")} Back to Bookings</a>
 				<button class="btn btn-primary btn-icon" id="print-bottom">${
 					icon("print")} Print Acknowledgement</button>
+				<button class="btn btn-outline btn-icon" id="print-bottom-thermal">${
+					icon("print")} Thermal</button>
 				<a class="btn btn-outline btn-icon" href="/retail/service?booking=${
 					encodeURIComponent(data.name)}">${icon("wrench")} Open at the counter</a>
 				${data.can.take_money && totals.balance > 0
@@ -258,7 +263,8 @@ window.BOOKING = (function () {
 
 		paintWork();
 
-		$("print-bottom").addEventListener("click", print);
+		$("print-bottom").addEventListener("click", () => print(false));
+		$("print-bottom-thermal").addEventListener("click", () => print(true));
 		if ($("collect")) $("collect").addEventListener("click", askPayment);
 		if ($("add-note")) $("add-note").addEventListener("click", askNote);
 		if ($("otp")) $("otp").addEventListener("click", resendOtp);
@@ -359,9 +365,12 @@ window.BOOKING = (function () {
 						? `<button class="btn btn-invoice btn-icon" id="wb-invoice">${
 							icon("print")} Generate the bill</button>` : ""}
 					${data.sales_invoice
-						? `<a class="btn btn-outline btn-icon" target="_blank"
-						      href="${esc(data.invoice_url || "#")}">${
-							icon("print")} Print ${esc(data.sales_invoice)}</a>` : ""}
+						? `<button class="btn btn-outline btn-icon" id="wb-print-invoice"
+						      data-url="${esc(data.invoice_url || "")}">${
+							icon("print")} Print ${esc(data.sales_invoice)}</button>
+						   <button class="btn btn-outline btn-icon" id="wb-print-invoice-thermal"
+						      data-url="${esc(data.invoice_url || "")}">${
+							icon("print")} Thermal</button>` : ""}
 					${data.can.deliver
 						? `<button class="btn btn-primary btn-icon" id="wb-deliver">${
 							icon("wrench")} Hand over to the customer</button>` : ""}
@@ -377,6 +386,17 @@ window.BOOKING = (function () {
 		if ($("wb-acc-back")) $("wb-acc-back").addEventListener("click", accessoriesBack);
 		if ($("wb-deliver")) $("wb-deliver").addEventListener("click", askHandOver);
 		if ($("wb-invoice")) $("wb-invoice").addEventListener("click", billNow);
+		// The repair bill, on either paper, straight to the printer.
+		if ($("wb-print-invoice"))
+			$("wb-print-invoice").addEventListener("click", function () {
+				if (this.dataset.url) A3.printDoc(this.dataset.url);
+			});
+		if ($("wb-print-invoice-thermal"))
+			$("wb-print-invoice-thermal").addEventListener("click", function () {
+				if (!this.dataset.url) return;
+				A3.printDoc(Object.assign({}, A3.printParts(this.dataset.url),
+					{ format: "Retail Receipt (Thermal)" }));
+			});
 		host.querySelectorAll(".wb-step").forEach((node) => {
 			node.addEventListener("click", () => takeStep(node.dataset.step,
 			                                             node.dataset.reason === "1"));
@@ -521,7 +541,7 @@ window.BOOKING = (function () {
 			toast(made.created === false
 				? "Already billed on " + made.sales_invoice
 				: "Billed — " + made.sales_invoice, "ok");
-			if (made.print_url) window.open(made.print_url, "_blank");
+			if (made.print_url) A3.printDoc(made.print_url);
 			reload();
 		} catch (error) {
 			toast(error.message || "Could not bill it.", "error");
@@ -970,11 +990,16 @@ window.BOOKING = (function () {
 	}
 
 	// ------------------------------------------------------------- actions
-	async function print() {
+	/** The slip on A4, or on the 80mm roll — straight to the printer either
+	 *  way, rather than a PDF in a tab to be found and printed from. */
+	async function print(thermal) {
 		try {
 			const url = state.data.print_url
 				|| await A3.call("a3_retail.api.bookings.print_url", { name: state.name });
-			window.open(url, "_blank");
+			const parts = A3.printParts(url);
+			A3.printDoc(thermal === true
+				? Object.assign({}, parts, { format: "Job Card Receipt (Thermal)" })
+				: parts);
 		} catch (error) {
 			toast(error.message, "error");
 		}
