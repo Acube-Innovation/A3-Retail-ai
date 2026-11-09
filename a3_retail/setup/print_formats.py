@@ -75,7 +75,12 @@ A4_CSS = """
 """
 
 THERMAL_CSS = """
-@page { size: 80mm auto; margin: 2mm; }
+/* A real height, not `auto`: `size: 80mm auto` is not valid CSS — the
+   two-value form takes two lengths — so a browser drops the whole declaration
+   and prints the slip on whatever paper it was last set to. Templates that
+   know their own length emit a tighter one through `a3_thermal.styles()`;
+   this is the roll's worth that never clips. */
+@page { size: 80mm 297mm; margin: 2mm; }
 .print-format { width: 76mm; font-family: "DejaVu Sans Mono", "Courier New", monospace;
 	font-size: 8pt; color: #000; }
 .print-format .letter-head, .print-format .letter-head-footer { display: none !important; }

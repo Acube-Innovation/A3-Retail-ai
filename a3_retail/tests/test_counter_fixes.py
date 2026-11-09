@@ -257,3 +257,73 @@ class TestTheFormatsThoseButtonsName(FrappeTestCase):
 			self.assertTrue(
 				frappe.db.exists("Print Format", {"name": name, "doc_type": doctype}),
 				f"{name} is not installed for {doctype}")
+
+
+class TestTheSheetAndTheRoll(FrappeTestCase):
+	"""1 · 4 — the paper the bill comes out on."""
+
+	def _format(self, name: str) -> str:
+		return open(frappe.get_app_path("a3_retail", "templates", "print_formats", name),
+		            encoding="utf-8").read()
+
+	def test_the_invoice_measures_its_own_blank(self):
+		"""The browser prints this now, and a figure calibrated against
+		wkhtmltopdf left 53mm of white at the foot of every bill. The blank is
+		its own table so the slack has nowhere else to go — stretching the
+		items table instead put it into the SUB TOTAL row."""
+		body = self._format("retail_tax_invoice.html")
+		self.assertIn('class="sheet gap"', body)
+		self.assertIn(".mbb > table.gap { flex: 1 1 auto; }", body)
+		self.assertIn("min-height: calc(297mm - 12mm)", body)
+
+	def test_the_blank_is_not_inside_the_items_table(self):
+		body = self._format("retail_tax_invoice.html")
+		items = body[body.index('class="sheet items"'):]
+		items = items[:items.index('class="sheet gap"')]
+		self.assertNotIn('class="fill"', items)
+
+	def test_wkhtmltopdf_still_gets_its_measured_height(self):
+		"""`download_pdf` — the copy that goes out by WhatsApp — has no
+		flexbox to read, so the figure stays."""
+		body = self._format("retail_tax_invoice.html")
+		self.assertIn("fill_height", body)
+		self.assertIn('style="height:{{ fill_height }}px"', body)
+
+	def test_the_three_stacked_tables_share_one_set_of_columns(self):
+		body = self._format("retail_tax_invoice.html")
+		self.assertEqual(body.count("<colgroup>"), 3)
+
+	def test_a_thermal_page_names_a_real_height(self):
+		"""`size: 80mm auto` is not valid CSS, so a browser drops it and prints
+		the slip on whatever paper it was last set to — A4, in the shop's
+		case."""
+		from a3_retail import print_helpers
+
+		# The rule itself, not the comment next to it explaining why.
+		thermal = self._format("a3_thermal.html")
+		self.assertNotIn("@page { size: 80mm auto", thermal)
+		self.assertIn("size: 80mm {{ height or 297 }}mm", thermal)
+
+		setup = open(frappe.get_app_path("a3_retail", "setup", "print_formats.py"),
+		             encoding="utf-8").read()
+		self.assertNotIn("@page { size: 80mm auto", setup)
+		self.assertIn("size: 80mm 297mm", setup)
+		self.assertTrue(hasattr(print_helpers, "a3_thermal_height"))
+
+	def test_the_roll_is_long_enough_for_what_is_on_it(self):
+		from a3_retail.print_helpers import a3_thermal_height
+
+		short = frappe._dict(items=[frappe._dict(item_code="X")], payments=[], taxes=[])
+		long = frappe._dict(items=[frappe._dict(item_code="X")] * 12, payments=[], taxes=[])
+		self.assertGreaterEqual(a3_thermal_height(short), 120)
+		self.assertGreater(a3_thermal_height(long), a3_thermal_height(short))
+		self.assertLessEqual(a3_thermal_height(long), 900)
+
+	def test_a_figure_on_the_roll_never_wraps(self):
+		""""₹ 1,200.00" broken over two lines reads as two amounts."""
+		thermal = self._format("a3_thermal.html")
+		self.assertIn("white-space: nowrap", thermal)
+		self.assertIn("table-layout: fixed", thermal)
+		receipt = self._format("pos_receipt.html")
+		self.assertIn("<colgroup>", receipt)
+		self.assertIn('"{:g}".format(row.qty|float)', receipt)

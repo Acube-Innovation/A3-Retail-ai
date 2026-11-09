@@ -110,6 +110,29 @@
 	.mbb .imei { color: #666; font-size: 9pt; }
 	/* Height comes from the template: see `fill_height` above. */
 	.mbb .fill td { padding: 0; }
+
+	/* --- the sheet reaches the bottom of the page -------------------------
+	   Two engines print this. The counter's Print button renders it in the
+	   browser; `download_pdf` — the copy that goes out by WhatsApp or email —
+	   still goes through wkhtmltopdf 0.12.6, which has no flexbox and keeps
+	   the measured `fill_height` above.
+
+	   So the browser is given a rule wkhtmltopdf cannot read, and measures the
+	   gap itself instead of being told: the sheet is a column one page tall,
+	   the items table takes whatever is left over, and inside it every row
+	   stays at its content height except the blank one, which absorbs the
+	   remainder. Nothing here is calibrated, so nothing here goes stale when
+	   a line of the header grows. */
+	@media print {
+		.mbb { display: flex; flex-direction: column;
+			min-height: calc(297mm - 12mm); }
+		.mbb > table { flex: 0 0 auto; }
+		/* The blank is the one thing that gives. Everything else is as tall as
+		   what is in it. */
+		.mbb > table.gap { flex: 1 1 auto; }
+		/* Beats the inline height wkhtmltopdf is given. */
+		.mbb > table.gap td { height: auto !important; }
+	}
 	.mbb .sum th { background: #efefef; text-align: center; font-size: 9.5pt; }
 	.mbb .tot td { font-weight: bold; background: #efefef; }
 	.mbb .sign { height: 86px; text-align: center; vertical-align: bottom; }
@@ -208,15 +231,20 @@
 
 	{#- what was sold -#}
 	<table class="sheet items" style="border-top:none">
+		{#- One set of column widths for the three stacked tables, so the rules
+		    line up down the sheet whichever engine lays it out. -#}
+		<colgroup><col style="width:7%"><col style="width:34%"><col style="width:11%"><col
+			style="width:9%"><col style="width:12%"><col style="width:13%"><col
+			style="width:14%"></colgroup>
 		<thead>
 			<tr>
-				<th style="width:7%">S.NO.</th>
+				<th>S.NO.</th>
 				<th>ITEMS</th>
-				<th style="width:11%">HSN</th>
-				<th style="width:9%">QTY.</th>
-				<th style="width:12%">RATE</th>
-				<th style="width:13%">TAX</th>
-				<th style="width:14%">AMOUNT</th>
+				<th>HSN</th>
+				<th>QTY.</th>
+				<th>RATE</th>
+				<th>TAX</th>
+				<th>AMOUNT</th>
 			</tr>
 		</thead>
 		<tbody>
@@ -241,12 +269,35 @@
 				<td class="num">{{ "{:,.2f}".format(line_net + line_tax) }}</td>
 			</tr>
 			{% endfor %}
-			{#- The blank space below the items is not one empty box: every column
-			    rule runs down to the totals, as on the sheet the shop has always
-			    used. Seven cells, not a colspan. -#}
-			<tr class="fill"><td style="height:{{ fill_height }}px"></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
 		</tbody>
-		<tfoot>
+	</table>
+
+	{#- The blank below the items is not one empty box: every column rule runs
+	    down to the totals, as on the sheet the shop has always used. Seven
+	    cells, not a colspan.
+
+	    Its own table, and that matters. Stretching the items table instead put
+	    the slack into the SUB TOTAL and BALANCE rows as well — a browser shares
+	    a table's spare height out among all its rows and treats a row `height`
+	    as a minimum, not a cap. A table of one row has nowhere else to put it.
+	    The inline height is what wkhtmltopdf uses, having no flexbox to read
+	    the rule below. -#}
+	<table class="sheet gap" style="border-top:none">
+		{#- One set of column widths for the three stacked tables, so the rules
+		    line up down the sheet whichever engine lays it out. -#}
+		<colgroup><col style="width:7%"><col style="width:34%"><col style="width:11%"><col
+			style="width:9%"><col style="width:12%"><col style="width:13%"><col
+			style="width:14%"></colgroup>
+		<tr class="fill"><td style="height:{{ fill_height }}px"></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+	</table>
+
+	<table class="sheet tot-table" style="border-top:none">
+		{#- One set of column widths for the three stacked tables, so the rules
+		    line up down the sheet whichever engine lays it out. -#}
+		<colgroup><col style="width:7%"><col style="width:34%"><col style="width:11%"><col
+			style="width:9%"><col style="width:12%"><col style="width:13%"><col
+			style="width:14%"></colgroup>
+		<tbody>
 			{#- What came off, and what it came off. A customer handed a bill for
 			    14,999 on goods marked 17,999 wants to see the 3,000 — the old
 			    software showed it and its absence here reads as an error. Shown
@@ -287,7 +338,7 @@
 				<td></td>
 				<td class="num">₹ {{ "{:,.2f}".format(doc.outstanding_amount|float) }}</td>
 			</tr>
-		</tfoot>
+		</tbody>
 	</table>
 
 	{#- the statutory HSN summary -#}

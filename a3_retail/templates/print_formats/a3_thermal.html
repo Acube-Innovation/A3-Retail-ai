@@ -5,9 +5,14 @@
   single narrow column and the paper is cut when the content ends.
 -#}
 
-{%- macro styles() -%}
+{#- `height` is the roll length this slip needs, in millimetres. A thermal
+    page has to name a real one: `size: 80mm auto` is not valid CSS — the
+    two-value form takes two lengths — so a browser drops the declaration and
+    prints the receipt on whatever paper it was last set to, which is how an
+    80mm slip came out on A4. -#}
+{%- macro styles(height=0) -%}
 <style>
-	@page { size: 80mm auto; margin: 2mm; }
+	@page { size: 80mm {{ height or 297 }}mm; margin: 2mm; }
 	.print-format { width: 76mm; font-family: "DejaVu Sans Mono", "Courier New", monospace;
 		font-size: 8pt; color: #000; line-height: 1.35; }
 	.t-center { text-align: center; }
@@ -15,10 +20,17 @@
 	.t-bold { font-weight: 700; }
 	.t-big { font-size: 10pt; font-weight: 700; }
 	.t-rule { border-top: 1px dashed #000; margin: 4px 0; }
-	table.t-items { width: 100%; border-collapse: collapse; }
+	table.t-items { width: 100%; border-collapse: collapse; table-layout: fixed; }
 	table.t-items th { border-bottom: 1px solid #000; text-align: left; padding: 2px 0;
 		font-size: 7.5pt; }
 	table.t-items td { padding: 2px 0; vertical-align: top; }
+	/* A figure never wraps. "₹ 1,200.00" broke over two lines in the amount
+	   column, which on a receipt reads as two amounts. The name column is the
+	   only one allowed to run on, so it takes whatever the figures do not. */
+	table.t-items td.t-right, table.t-items th.t-right { white-space: nowrap; }
+	table.t-items col.t-qty { width: 14%; }
+	table.t-items col.t-amt { width: 30%; }
+	table.t-items td.t-name { word-break: break-word; }
 	table.t-kv { width: 100%; border-collapse: collapse; }
 	table.t-kv td { padding: 1px 0; vertical-align: top; }
 	table.t-kv td.t-k { width: 38%; }

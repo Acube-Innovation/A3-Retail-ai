@@ -1,16 +1,19 @@
 {% import "a3_retail/templates/print_formats/a3_thermal.html" as t %}
-{{ t.styles() }}
+{{ t.styles(a3_thermal_height(doc)) }}
 {{ t.shop_header(doc.get("branch")) }}
 <div class="t-center t-bold">TAX INVOICE</div>
 {{ t.kv([("Bill", doc.name), ("Date", frappe.format(doc.posting_date, {"fieldtype": "Date"})),
          ("Customer", doc.customer_name), ("Mobile", doc.get("contact_mobile"))]) }}
 <div class="t-rule"></div>
 <table class="t-items">
+	{#- Fixed columns, so the figures line up down the slip whatever the item
+	    is called. The name column takes what is left. -#}
+	<colgroup><col><col class="t-qty"><col class="t-amt"></colgroup>
 	<thead><tr><th>Item</th><th class="t-right">Qty</th><th class="t-right">Amount</th></tr></thead>
 	<tbody>
 	{% for row in doc.items %}
-		<tr><td>{{ row.item_name }}{% if a3_serials(row) %}<div class="t-small">IMEI {{ a3_serials(row) }}</div>{% endif %}</td>
-			<td class="t-right">{{ row.qty }}</td><td class="t-right">{{ a3_money(row.amount) }}</td></tr>
+		<tr><td class="t-name">{{ row.item_name }}{% if a3_serials(row) %}<div class="t-small">IMEI {{ a3_serials(row) }}</div>{% endif %}</td>
+			<td class="t-right">{{ "{:g}".format(row.qty|float) }}</td><td class="t-right">{{ a3_money(row.amount) }}</td></tr>
 	{% endfor %}
 	</tbody>
 </table>
