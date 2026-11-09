@@ -428,7 +428,10 @@ class TestPaymentLinesOnThePrint(FrappeTestCase):
 	def test_the_invoice_prints_only_received_and_balance(self):
 		html = open(frappe.get_app_path(
 			"a3_retail", "templates", "print_formats", "retail_tax_invoice.html")).read()
-		foot = html[html.index("<tfoot>"):html.index("</tfoot>")]
+		# The totals are their own table since the blank above them became one,
+		# so that the blank can take the page's spare height and they cannot.
+		foot = html[html.index('class="sheet tot-table"'):]
+		foot = foot[:foot.index("</table>")]
 		self.assertLess(foot.index("RECEIVED AMOUNT"), foot.index("BALANCE AMOUNT"))
 		self.assertNotIn("a3_received_lines(doc)", foot)
 
