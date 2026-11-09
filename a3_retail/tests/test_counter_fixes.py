@@ -327,3 +327,93 @@ class TestTheSheetAndTheRoll(FrappeTestCase):
 		receipt = self._format("pos_receipt.html")
 		self.assertIn("<colgroup>", receipt)
 		self.assertIn('"{:g}".format(row.qty|float)', receipt)
+
+
+class TestWorkingTheOtherCounter(FrappeTestCase):
+	"""7 · two tills in one shop, and one person working both."""
+
+	def test_a_branch_knows_which_shop_it_stands_in(self):
+		self.assertTrue(frappe.db.has_column("Branch Profile", "site"))
+
+	def test_the_site_is_read_off_the_branch_name(self):
+		from a3_retail.patches import branch_sites_and_counter_switching as sites
+
+		self.assertEqual(sites._site_of("PhoneXpert Sales UK"), "UK")
+		self.assertEqual(sites._site_of("PhoneXpert Accessories UK"), "UK")
+		self.assertEqual(sites._site_of("PhoneXpert Services PSLA"), "PSLA")
+		# Its own place, with nothing to switch to.
+		self.assertEqual(sites._site_of("PhoneXpert Distribution"), "Distribution")
+		self.assertIsNone(sites._site_of("PhoneXpert"))
+
+	def test_permission_is_asked_for_before_anything_is_offered(self):
+		"""The flag is the gate; the site only says where it reaches."""
+		import inspect
+
+		from a3_retail.api import staff
+
+		source = inspect.getsource(staff._counters_at_the_same_site)
+		self.assertIn("a3_can_switch_counter", source)
+		self.assertIn('"site"', source)
+		# And never beyond the person's own site.
+		self.assertIn('filters={"site": site', source)
+
+	def test_a_till_without_the_flag_sees_only_its_own_branch(self):
+		from a3_retail.api import staff
+
+		self.assertEqual(
+			staff._counters_at_the_same_site({"name": "NO-SUCH-EMPLOYEE"}, "PhoneXpert Sales UK"),
+			[])
+
+	def test_the_picker_is_already_on_the_screens(self):
+		"""Nothing new to draw: the top bar has had a branch picker all along,
+		shown when the session says there is more than one to pick."""
+		helper = _js("a3_branch.js")
+		self.assertIn("mountBranchPicker", helper)
+		self.assertIn("staff.switch_branch", helper)
+		self.assertIn("can_switch_branch", helper)
+
+
+class TestTheAppleShelf(FrappeTestCase):
+	"""5 · an iPhone that cannot be matched to the piece that was sold."""
+
+	def test_scope_is_the_shop_s_own_filing_not_the_item_name(self):
+		"""Reading names would have swept in BOAT AIRPODS and IPHONE PREMIUM
+		TEMPERED GLASS — a screen protector with 211 on the shelf."""
+		from a3_retail.patches import apple_items_serialised as apple
+
+		self.assertEqual(apple.GROUPS, ("APPLE", "APPLE EARPODS", "APPLE ADAPTOR"))
+		self.assertEqual(apple.BRAND, "Apple")
+		items = apple._apple_items()
+		for name in items:
+			group = frappe.db.get_value("Item", name, "item_group")
+			brand = frappe.db.get_value("Item", name, "brand")
+			self.assertTrue(group in apple.GROUPS or brand == apple.BRAND, name)
+
+	def test_a_screen_guard_is_never_in_scope(self):
+		from a3_retail.patches import apple_items_serialised as apple
+
+		for name in apple._apple_items():
+			self.assertNotIn("TEMPERED", (name or "").upper())
+
+	def test_a_charge_is_not_a_thing_with_a_serial_number(self):
+		from a3_retail.patches import apple_items_serialised as apple
+
+		if frappe.db.exists("Item", "CARD CHARGES"):
+			self.assertTrue(apple._is_a_charge("CARD CHARGES"))
+
+	def test_stock_on_the_shelf_is_left_alone(self):
+		"""Those pieces were counted in without IMEIs and could never produce
+		one. `can_serialise` is the gate, and the patch names what it skipped."""
+		import inspect
+
+		from a3_retail.patches import apple_items_serialised as apple
+
+		source = inspect.getsource(apple.execute)
+		self.assertIn("can_serialise(item)", source)
+		self.assertIn("on_hand(item)", source)
+		self.assertIn("still holding stock", source)
+
+	def test_both_patches_run_on_a_deploy(self):
+		registered = open(frappe.get_app_path("a3_retail", "patches.txt")).read()
+		self.assertIn("a3_retail.patches.apple_items_serialised", registered)
+		self.assertIn("a3_retail.patches.branch_sites_and_counter_switching", registered)

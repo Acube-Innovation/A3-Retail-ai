@@ -25,15 +25,45 @@ def permitted_branches(employee: dict | None = None) -> list[str]:
 	seeing another's work. Head-office roles are branch-agnostic by design
 	(`overrides.employee.GLOBAL_ROLES`), so an owner or admin gets the whole
 	chain and can move between counters.
+
+	The exception is a shop with two tills in it. Sales and Accessories at UK
+	are one address and often one person, and signing out and back in between
+	a phone sale and a screen guard is half a minute each time, dozens of times
+	a day. Somebody marked as able to work the other counter gets the counters
+	at their own site as well — their own, and nothing beyond that site.
 	"""
 	from a3_retail.utils.permissions import user_is_unrestricted
 
-	if not user_is_unrestricted():
-		return [employee["branch"]] if employee and employee.get("branch") else []
+	if user_is_unrestricted():
+		return frappe.get_all(
+			"Branch Profile",
+			filters={"is_active": 1},
+			pluck="branch",
+			order_by="branch",
+		)
 
+	home = employee.get("branch") if employee else None
+	if not home:
+		return []
+	return [home] + _counters_at_the_same_site(employee, home)
+
+
+def _counters_at_the_same_site(employee: dict, home: str) -> list[str]:
+	"""The other tills in this person's own shop, if they may work them."""
+	if not frappe.db.has_column("Employee", "a3_can_switch_counter"):
+		return []
+	if not cint(frappe.db.get_value("Employee", employee.get("name"),
+	                                "a3_can_switch_counter")):
+		return []
+	if not frappe.db.has_column("Branch Profile", "site"):
+		return []
+
+	site = frappe.db.get_value("Branch Profile", {"branch": home}, "site")
+	if not site:
+		return []
 	return frappe.get_all(
 		"Branch Profile",
-		filters={"is_active": 1},
+		filters={"site": site, "is_active": 1, "branch": ["!=", home]},
 		pluck="branch",
 		order_by="branch",
 	)
