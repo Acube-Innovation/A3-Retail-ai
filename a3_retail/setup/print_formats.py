@@ -21,7 +21,7 @@ THERMAL_STYLE = "A3 Retail Thermal 80mm"
 FORMATS = [
 	("Job Card Receipt (Thermal)", "Service Job Card", "job_card_receipt_thermal", "80mm"),
 	# The sticker that goes on the device, read by a scanner on the bench.
-	("Job Card Label", "Service Job Card", "job_card_label", "40x20mm"),
+	("Job Card Label", "Service Job Card", "job_card_label", "50x25mm"),
 	("Job Card Acknowledgement", "Service Job Card", "job_card_acknowledgement", "A5"),
 	("Service Estimate", "Service Estimate", "service_estimate", "A4"),
 	("Service Invoice", "Sales Invoice", "service_tax_invoice", "A4"),
@@ -58,10 +58,10 @@ FORMATS = [
 	("Courier Manifest", "Courier Dispatch", "courier_manifest", "A4"),
 ]
 
-THERMAL_SIZES = {"80mm", "40x20mm"}
+THERMAL_SIZES = {"80mm", "50x25mm"}
 # Sizes that are a label rather than a roll: no page furniture, no margins
 # worth the name, and the page box is the sticker itself.
-LABEL_SIZES = {"40x20mm"}
+LABEL_SIZES = {"50x25mm"}
 
 A4_CSS = """
 .print-format { font-family: "Inter", "Helvetica Neue", Helvetica, sans-serif; font-size: 9.5pt;

@@ -471,10 +471,10 @@ class TestTheDeviceSticker(FrappeTestCase):
 		the bench reads it first time."""
 		from a3_retail.utils.qr import LABEL_DOTS_PER_MM, barcode_dot_width
 
-		width = barcode_dot_width("26-00053", 36)
-		self.assertEqual(width, 35.75)
+		width = barcode_dot_width("26-00053", 46)
 		# 123 modules plus ten of quiet zone each side, two dots to a module.
-		self.assertEqual(width * LABEL_DOTS_PER_MM, 286)
+		# The millimetre figure follows from the dots, not the other way round.
+		self.assertEqual(round(width * LABEL_DOTS_PER_MM), 286)
 
 	def _barcode_svg(self, text: str = "26-00053", height: float = 9.0) -> str:
 		import base64
@@ -501,9 +501,14 @@ class TestTheDeviceSticker(FrappeTestCase):
 		meaningful ratio, so without width and height on the element itself
 		`height: auto` falls back to the 300x150 every SVG gets by default —
 		which came out as 14mm of bars running off the foot of the sticker."""
-		svg = self._barcode_svg()
-		self.assertIn('width="35.75mm"', svg)
-		self.assertIn('height="9.0mm"', svg)
+		from a3_retail.print_helpers import a3_label_barcode_mm
+		from a3_retail.utils.qr import LABEL_DOTS_PER_MM
+
+		svg = self._barcode_svg(height=11.0)
+		width = a3_label_barcode_mm("26-00053", 46)
+		self.assertIn(f'width="{width}mm"', svg)
+		self.assertIn('height="11.0mm"', svg)
+		self.assertEqual(round(width * LABEL_DOTS_PER_MM), 286)
 
 	def test_the_bars_are_whole_modules_wide(self):
 		"""Not the width it was asked for — the bars it actually drew."""
@@ -539,7 +544,9 @@ class TestTheDeviceSticker(FrappeTestCase):
 		self.assertIn("{{ doc.name }}", self._label())
 
 	def test_the_sticker_is_small_enough_for_a_phone(self):
-		self.assertIn("width: {{ sticker_mm }}mm; height: 0.79in", self._label())
+		label = self._label()
+		self.assertIn("width: {{ cell_mm }}mm;", label)
+		self.assertIn("height: {{ tall_pt }}pt;", label)
 
 	def test_the_page_is_the_whole_liner_not_one_sticker(self):
 		"""The roll is two stickers across. Sent a 40mm page the printer
@@ -548,53 +555,80 @@ class TestTheDeviceSticker(FrappeTestCase):
 		the printer fixes that, so the page is the full liner and each sticker
 		is placed on it here."""
 		label = self._label()
-		self.assertIn("@page { size: {{ web_in }}in 0.79in; margin: 0; }", label)
-		self.assertIn("{{ sticker(doc, edge_mm) }}", label)
+		self.assertIn("@page { size: {{ page_pt }}pt {{ tall_pt }}pt; margin: 0; }", label)
+		self.assertIn("{{ sticker(doc, first_mm) }}", label)
 		self.assertIn("{{ sticker(doc, second_mm) }}", label)
 
 	def test_neither_sticker_is_laid_over_the_gap(self):
-		"""Both copies must sit inside their own sticker, with the gap clear."""
+		"""The roll is two stickers across, and a cell wider than the printer
+		can reach — or a pair placed further apart than the page is wide —
+		puts half a label in the gap between them, which is what the shop
+		first saw."""
 		import re
 
+		from a3_retail.utils.qr import LABEL_DOTS_PER_MM
+
 		label = self._label()
-		def number(name):
-			found = re.search(r"set " + name + r" = ([\d.]+)", label)
+
+		def number(name, pattern=r"([\d.]+)"):
+			found = re.search(r"set " + name + r" = " + pattern, label)
 			self.assertIsNotNone(found, f"{name} is no longer declared")
 			return float(found.group(1))
 
-		web = number("web_in") * 25.4
-		edge, sticker, gap = number("edge_mm"), number("sticker_mm"), number("gap_mm")
-		second = edge + sticker + gap
-		self.assertLessEqual(edge + sticker, second, "the two stickers overlap")
-		self.assertLessEqual(second + sticker, web,
-		                     "the second sticker runs off the end of the page")
-		# And the symbol itself has to fit the sticker it is placed on.
-		from a3_retail.print_helpers import a3_label_barcode_mm
-		self.assertLessEqual(a3_label_barcode_mm("26-00053", 36), sticker)
+		page = number("page_pt") * 25.4 / 72
+		sticker, gap = number("sticker_mm"), number("gap_mm")
+		cell = number("cell_dots") / LABEL_DOTS_PER_MM
 
-	def test_the_page_is_declared_where_the_renderer_will_not_rescale_it(self):
-		"""Chrome rounds a page box to the nearest hundredth of an inch, and a
-		page it has to round is a page something downstream then rescales —
-		which is where a barcode's bars stop landing on whole dots. Both sides
-		are declared at a number Chrome would have rounded to anyway."""
+		# What is drawn has to sit inside its sticker...
+		self.assertLessEqual(cell, sticker,
+		                     "a cell is wider than the sticker it is drawn on")
+		# ...the pair has to fit the page the head can print...
+		self.assertLessEqual(sticker + gap + cell, page,
+		                     "the second sticker runs off the end of the page")
+		# ...and the symbol has to fit the cell it is centred in.
+		from a3_retail.print_helpers import a3_label_barcode_mm
+		self.assertLessEqual(a3_label_barcode_mm("26-00053", sticker - 4), cell)
+
+	def test_the_cell_is_an_even_number_of_dots(self):
+		"""So the margin that centres the symbol inside it is a whole number
+		of dots too. Half a dot either side and an edge rounds the wrong way."""
+		import re
+
+		cell = re.search(r"set cell_dots = (\d+)", self._label())
+		self.assertIsNotNone(cell, "cell_dots is no longer declared")
+		self.assertEqual(int(cell.group(1)) % 2, 0)
+
+	def test_the_page_is_a_whole_number_of_inches(self):
+		"""Not a style point — it is what keeps the bars on whole dots.
+
+		A driver rasterises a page at `inches x 203`, so only a whole number
+		of inches comes out as a whole number of dots, and only then does the
+		scale land on exactly the 203/25.4 the symbol is laid out in. At any
+		other width the two disagree by about a tenth of a percent, which was
+		enough to lose a dot out of the middle of the stop pattern on one of
+		the two stickers — and which edge it falls on depends on the number
+		being encoded, so it cannot be tuned out.
+
+		Points, not inches, because points are the one unit Chrome will not
+		round: asked for 4.09in it returned 294pt, which is 4.0833in.
+		"""
 		import re
 
 		label = self._label()
-		self.assertIn("@page { size: {{ web_in }}in 0.79in; margin: 0; }", label)
-		web = re.search(r"set web_in = ([\d.]+)", label)
-		self.assertIsNotNone(web, "web_in is no longer declared")
-		for side in (web.group(1), "0.79"):
-			hundredths = float(side) * 100
-			self.assertEqual(hundredths, round(hundredths),
-			                 f"{side}in is not a whole number of hundredths of an inch")
+		self.assertIn("@page { size: {{ page_pt }}pt {{ tall_pt }}pt; margin: 0; }", label)
+		page = re.search(r"set page_pt = (\d+)", label)
+		self.assertIsNotNone(page, "page_pt is no longer declared")
+		self.assertEqual(int(page.group(1)) % 72, 0,
+		                 "the page is not a whole number of inches, so the "
+		                 "raster scale will not match the barcode's")
 
 	def test_the_bars_are_drawn_to_size_not_stretched(self):
 		"""Forcing an `<img>` to a width and a height squashes the bars. The
 		symbol is drawn in the print head's own dots and then placed at exactly
 		the width it was drawn, so nothing downstream resamples it."""
 		label = self._label()
-		self.assertIn("a3_label_barcode_mm(scan, 36)", label)
-		self.assertIn("a3_label_barcode(scan, 9)", label)
+		self.assertIn("a3_label_barcode_mm(scan, sticker_mm - 4)", label)
+		self.assertIn("a3_label_barcode(scan, 11)", label)
 		self.assertIn('style="width: {{ bar_mm }}mm"', label)
 		self.assertIn("height: auto", label)
 		self.assertNotIn("width: 38mm", label)
@@ -603,7 +637,7 @@ class TestTheDeviceSticker(FrappeTestCase):
 		"""The number is printed for a person, and a hand scanner whose aiming
 		line catches it would try to read those strokes as bars."""
 		label = self._label()
-		self.assertIn(".lbl .code { margin: 0.5mm -1.5mm 0.6mm;", label)
+		self.assertIn(".lbl .code { margin: 0.6mm -1.5mm;", label)
 
 	def test_a_label_does_not_get_the_roll_s_stylesheet(self):
 		"""The 80mm roll's CSS pins `.print-format` to 76mm. On a 40mm sticker
@@ -618,8 +652,8 @@ class TestTheDeviceSticker(FrappeTestCase):
 	def test_the_format_is_registered_at_the_sticker_s_size(self):
 		setup = open(frappe.get_app_path("a3_retail", "setup", "print_formats.py"),
 		             encoding="utf-8").read()
-		self.assertIn('"job_card_label", "40x20mm"', setup)
-		self.assertIn('LABEL_SIZES = {"40x20mm"}', setup)
+		self.assertIn('"job_card_label", "50x25mm"', setup)
+		self.assertIn('LABEL_SIZES = {"50x25mm"}', setup)
 
 
 class TestTheThermalSlip(FrappeTestCase):

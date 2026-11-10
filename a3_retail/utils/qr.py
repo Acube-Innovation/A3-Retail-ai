@@ -222,16 +222,22 @@ def barcode_data_uri(text: str, height: float = 12.0, module_width: float = 0.26
 	return f"data:image/png;base64,{encoded}"
 
 
-# The shop's label printer is a TVS LP 46 Neo, which is an SNBC BTP-U100t
-# underneath. It is sold as 203dpi, but the print head is built to a round
-# metric pitch — eight dots to the millimetre, which is 203.2dpi — and that is
-# the number to work in. Taking the 203 at face value puts every module
-# boundary a fraction of a dot out, and the rasteriser then rounds neighbouring
-# bars in opposite directions; eight to the millimetre makes a two-dot module
-# exactly a quarter of a millimetre and lands every edge on a whole dot.
+# The shop's label printer is a TVS LP 46 Neo, an SNBC BTP-U100t underneath.
+# Its head is built to a round metric pitch — eight dots to the millimetre,
+# which is 203.2dpi — but it is *sold* as 203dpi, and 203 is the number every
+# driver carries. A page is therefore rasterised at 203/25.4 dots to the
+# millimetre, not 8, and the tenth of a percent between those two is not
+# academic: computing a symbol at 8 and having it drawn at 203/25.4 left a
+# quarter of a dot of drift across the barcode, which is enough for an edge to
+# round the wrong way and an element to come out a dot wide or narrow.
 #
-# The printer's own ZPL agrees: CUPS asks it for `^PW320` to fill a 40mm label.
-LABEL_DOTS_PER_MM = 8
+# So the figure here is the renderer's, not the hardware's. The symbol is laid
+# out in the dots the driver will actually produce; the head then lays those
+# dots down at its own slightly finer pitch, which makes the printed symbol
+# about four hundredths of a millimetre narrower than asked for and is not
+# visible on a sticker. Being right about this is also what makes it portable:
+# the shop's Windows driver calls itself 203dpi too.
+LABEL_DOTS_PER_MM = 203 / 25.4
 
 
 def barcode_dot_width(text: str, max_mm: float,
