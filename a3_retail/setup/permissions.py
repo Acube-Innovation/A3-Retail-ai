@@ -218,6 +218,13 @@ PERMISSION_MATRIX: dict[str, dict[str, str]] = {
 		"Sales Executive": "L",
 		"Reception Executive": "L",
 		"Accounts Executive": "L",
+		# A repair is billed from the service counter, so the two roles that
+		# finish one need the same select the sales counter has. Without it a
+		# technician closing their own job card is told the account "does not
+		# have doctype access" at the moment of checkout, which reads as the
+		# bill being refused.
+		"Service Manager": "L",
+		"Technician": "L",
 	},
 	"Customer": {
 		"A3 Retail Admin": "CRUD",

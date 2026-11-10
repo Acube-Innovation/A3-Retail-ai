@@ -28,6 +28,7 @@ SERVICE_TYPES = ("Service Only", "Sales & Service")
 class BranchProfile(Document):
 	def validate(self):
 		self.set_state_code()
+		self.set_site()
 		self.validate_branch_code()
 		self.validate_cost_center()
 		self.validate_warehouses()
@@ -52,6 +53,19 @@ class BranchProfile(Document):
 			self.state_code = gstin[:2]
 		else:
 			self.state_code = None
+
+	def set_site(self):
+		"""Which shop this counter stands in, read off the branch's own name.
+
+		Counters sharing a site are one address — "PhoneXpert Sales UK" and
+		"PhoneXpert Accessories UK" are two tills in one shop — and staff
+		marked as able to work the other counter move between them without
+		signing out. Filled in only when it is blank, so a site typed by hand
+		is never overwritten.
+		"""
+		if (self.site or "").strip():
+			return
+		self.site = site_of(self.branch) or None
 
 	def validate_branch_code(self):
 		code = (self.branch_code or "").strip().upper()
@@ -120,6 +134,14 @@ class BranchProfile(Document):
 				warehouse.parent_warehouse = parent
 				warehouse.company = self.company
 				warehouse.is_group = 0
+				# Named here, or ERPNext works it out from the company default
+				# on every purchase and says so in the middle of whatever
+				# dialog the counter is in: "Expense Head changed to Stock In
+				# Hand - PT because account ... is not linked to warehouse".
+				# It is the same account either way; this only stops it
+				# guessing out loud.
+				warehouse.account = frappe.db.get_value(
+					"Company", self.company, "default_inventory_account")
 				warehouse.flags.ignore_permissions = True
 				warehouse.insert(ignore_permissions=True)
 				full_name = warehouse.name
@@ -146,6 +168,20 @@ class BranchProfile(Document):
 
 		if self.pos_profile and frappe.db.has_column("POS Profile", "custom_branch"):
 			frappe.db.set_value("POS Profile", self.pos_profile, "custom_branch", self.branch, update_modified=False)
+
+
+#: A counter's name reads "PhoneXpert <counter> <site>". Anything that does not
+#: come apart that way keeps whatever is left of it.
+COUNTERS = ("Sales", "Accessories", "Services", "Service", "Distribution")
+
+
+def site_of(branch: str) -> str | None:
+	"""The address part of a branch name — what is left after the counter."""
+	words = (branch or "").split()
+	if len(words) < 2:
+		return None
+	rest = [word for word in words[1:] if word not in COUNTERS]
+	return " ".join(rest) if rest else " ".join(words[1:])
 
 
 def get_or_create_branch_group(company: str) -> str:

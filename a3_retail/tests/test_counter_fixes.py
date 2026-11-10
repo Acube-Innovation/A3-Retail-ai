@@ -593,3 +593,58 @@ class TestTheThermalSlip(FrappeTestCase):
 	def test_the_terms_come_from_the_same_place_as_the_a4_sheet(self):
 		"""Two slips for one sale must not say different things."""
 		self.assertIn('profile.get("invoice_terms") or a3_terms(doc)', self._receipt())
+
+
+class TestOpeningABranch(FrappeTestCase):
+	"""What a new counter needs, and how much of it it makes for itself."""
+
+	def test_a_branch_name_comes_apart_the_same_way_everywhere(self):
+		"""One definition, on the doctype. The patch that backfilled the
+		existing branches calls this rather than keeping its own copy."""
+		from a3_retail.a3_retail_operations.doctype.branch_profile.branch_profile import (
+			site_of,
+		)
+		from a3_retail.patches import branch_sites_and_counter_switching as patch
+
+		self.assertEqual(site_of("PhoneXpert Sales UK"), "UK")
+		self.assertEqual(site_of("PhoneXpert Accessories Neyyattinkara"), "Neyyattinkara")
+		self.assertEqual(patch._site_of("PhoneXpert Services PSLA"), "PSLA")
+
+	def test_a_new_profile_fills_its_own_site_in(self):
+		"""The backfill patch runs once. A branch opened after it would never
+		get a site, and its staff would never see the counter picker."""
+		import inspect
+
+		from a3_retail.a3_retail_operations.doctype.branch_profile import branch_profile
+
+		self.assertIn("self.set_site()",
+		              inspect.getsource(branch_profile.BranchProfile.validate))
+		source = inspect.getsource(branch_profile.BranchProfile.set_site)
+		# Never over a site somebody typed.
+		self.assertIn('if (self.site or "").strip():', source)
+
+	def test_a_new_warehouse_is_told_its_stock_account(self):
+		"""Left blank, ERPNext works it out from the company default on every
+		purchase and says so in the middle of whatever dialog the counter is
+		in. The patch that named the existing eleven runs once."""
+		import inspect
+
+		from a3_retail.a3_retail_operations.doctype.branch_profile import branch_profile
+
+		source = inspect.getsource(branch_profile.BranchProfile.create_branch_warehouses)
+		self.assertIn("default_inventory_account", source)
+
+	def test_whoever_bills_a_repair_can_reach_a_pos_profile(self):
+		"""ERPNext lists POS Profiles under the user's own permissions while
+		pricing an invoice. A service counter bills repairs, so the roles that
+		finish one need the same select the sales counter has."""
+		from a3_retail.setup.permissions import PERMISSION_MATRIX
+
+		raisers = {role for role, flags in PERMISSION_MATRIX["Sales Invoice"].items()
+		           if "C" in flags}
+		reachable = set(PERMISSION_MATRIX["POS Profile"])
+		missing = {r for r in raisers if r not in reachable
+		           and not PERMISSION_MATRIX["POS Profile"].get(r)}
+		# Accounts Manager reads it outright rather than by select.
+		missing -= {"Accounts Manager"}
+		self.assertEqual(missing, set(), f"cannot reach a POS Profile: {missing}")
