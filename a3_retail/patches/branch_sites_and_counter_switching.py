@@ -26,9 +26,11 @@ their own site is not offered at all.
 import frappe
 from frappe.utils import cint
 
-#: How a branch name reads: "PhoneXpert <counter> <site>". Anything that does
-#: not come apart that way keeps whatever site it already has.
-COUNTERS = ("Sales", "Accessories", "Services", "Service", "Distribution")
+# One definition of how a branch name comes apart, on the doctype that now
+# fills `site` in for itself when a new branch is made.
+from a3_retail.a3_retail_operations.doctype.branch_profile.branch_profile import (  # noqa: E402
+	site_of as _site_of_branch,
+)
 
 
 def execute():
@@ -65,11 +67,7 @@ def _site_of(branch: str) -> str | None:
 	"PhoneXpert Sales UK" and "PhoneXpert Accessories UK" are both UK;
 	"PhoneXpert Distribution" is its own place and keeps its whole name.
 	"""
-	words = (branch or "").split()
-	if len(words) < 2:
-		return None
-	rest = [w for w in words[1:] if w not in COUNTERS]
-	return " ".join(rest) if rest else " ".join(words[1:])
+	return _site_of_branch(branch)
 
 
 def _grant_the_shared_sites() -> int:

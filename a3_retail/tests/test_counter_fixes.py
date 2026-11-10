@@ -417,3 +417,234 @@ class TestTheAppleShelf(FrappeTestCase):
 		registered = open(frappe.get_app_path("a3_retail", "patches.txt")).read()
 		self.assertIn("a3_retail.patches.apple_items_serialised", registered)
 		self.assertIn("a3_retail.patches.branch_sites_and_counter_switching", registered)
+
+
+class TestTheDeviceSticker(FrappeTestCase):
+	"""The label that goes on the customer's phone while it is on the bench."""
+
+	def _label(self) -> str:
+		return open(frappe.get_app_path("a3_retail", "templates", "print_formats",
+		                                "job_card_label.html"), encoding="utf-8").read()
+
+	def test_one_barcode_helper_not_two(self):
+		"""`print_helpers` carried two `a3_barcode` functions and the second
+		shadowed the first, so every label was drawn by the wrong one."""
+		source = open(frappe.get_app_path("a3_retail", "print_helpers.py"),
+		              encoding="utf-8").read()
+		self.assertEqual(source.count("\ndef a3_barcode("), 1)
+
+	def test_the_barcode_carries_the_short_number(self):
+		from a3_retail.print_helpers import a3_scan_code
+
+		self.assertEqual(a3_scan_code("JC-SVP-26-00053"), "26-00053")
+		self.assertEqual(a3_scan_code("JC-SLP-26-000123"), "26-000123")
+		# Anything not shaped that way is left whole rather than guessed at.
+		self.assertEqual(a3_scan_code("ODD"), "ODD")
+		self.assertEqual(a3_scan_code(""), "")
+
+	def test_the_short_number_still_finds_the_job_card(self):
+		"""Every screen searches document numbers by what they contain, and
+		`JC-SVP-26-00053` contains `26-00053`."""
+		from a3_retail.print_helpers import a3_scan_code
+
+		for name in frappe.get_all("Service Job Card", pluck="name", limit=20):
+			self.assertIn(a3_scan_code(name), name)
+
+	def test_the_short_number_is_still_unique(self):
+		from a3_retail.print_helpers import a3_scan_code
+
+		names = frappe.get_all("Service Job Card", pluck="name", limit=0)
+		if not names:
+			self.skipTest("no job cards on this site")
+		codes = [a3_scan_code(n) for n in names]
+		self.assertEqual(len(set(codes)), len(codes))
+
+	def test_the_bars_are_wide_enough_for_a_label_printer(self):
+		"""0.25mm is the usual floor for Code 128, and it is what lets a plain
+		203 dpi printer lay each bar down as exactly two dots."""
+		from a3_retail.print_helpers import a3_barcode_module_mm
+
+		# 38mm of the 40mm sticker, as the template asks for.
+		module = a3_barcode_module_mm("26-00053", 38)
+		self.assertGreaterEqual(module, 0.25)
+		dots_203 = module / (25.4 / 203)
+		dots_300 = module / (25.4 / 300)
+		self.assertGreaterEqual(dots_203, 2.0)
+		self.assertGreaterEqual(dots_300, 3.0)
+
+	def test_the_whole_number_is_still_printed_for_a_person(self):
+		self.assertIn("{{ doc.name }}", self._label())
+
+	def test_the_sticker_is_small_enough_for_a_phone(self):
+		label = self._label()
+		self.assertIn("@page { size: 40mm 20mm; margin: 0; }", label)
+		self.assertIn("width: 40mm; height: 20mm", label)
+
+	def test_the_bars_are_drawn_to_size_not_stretched(self):
+		"""Forcing an `<img>` to a width and a height squashes the bars; the
+		symbol is drawn at the width it will be printed at instead."""
+		label = self._label()
+		self.assertIn("a3_barcode(a3_scan_code(doc.name), 8, 38)", label)
+		self.assertIn("width: 38mm; height: auto", label)
+
+	def test_a_label_does_not_get_the_roll_s_stylesheet(self):
+		"""The 80mm roll's CSS pins `.print-format` to 76mm. On a 40mm sticker
+		that is a container twice the width of the paper, and the browser
+		shrinks the lot to fit."""
+		setup = open(frappe.get_app_path("a3_retail", "setup", "print_formats.py"),
+		             encoding="utf-8").read()
+		self.assertIn("LABEL_CSS", setup)
+		self.assertIn("LABEL_CSS if size in LABEL_SIZES", setup)
+		self.assertNotIn("width: 76mm", setup.split("LABEL_CSS")[1].split('"""')[1])
+
+	def test_the_format_is_registered_at_the_sticker_s_size(self):
+		setup = open(frappe.get_app_path("a3_retail", "setup", "print_formats.py"),
+		             encoding="utf-8").read()
+		self.assertIn('"job_card_label", "40x20mm"', setup)
+		self.assertIn('LABEL_SIZES = {"40x20mm"}', setup)
+
+
+class TestTheThermalSlip(FrappeTestCase):
+	"""The receipt, in the shape PhoneXpert's customers already know it.
+
+	It reproduces what myBillBook printed for years. A customer comparing an
+	old slip with a new one should not be able to tell which software wrote it.
+	"""
+
+	def _receipt(self) -> str:
+		return open(frappe.get_app_path("a3_retail", "templates", "print_formats",
+		                                "pos_receipt.html"), encoding="utf-8").read()
+
+	def test_it_carries_every_block_the_old_slip_had(self):
+		body = self._receipt()
+		for piece in ("TAX INVOICE", "Invoice No", "Bill To", "Place of Supply",
+		              "Qty", "Rate", "Amt", "Sub Total", "Taxable Amount",
+		              "Balance Amount", "Terms and conditions",
+		              "Thank you for your purchase"):
+			self.assertIn(piece, body, piece)
+
+	def test_the_face_is_proportional_not_monospace(self):
+		"""Courier is about 40% wider per character, so an item name wrapped
+		twice as often and every wrap is another line of roll."""
+		body = self._receipt()
+		self.assertIn("font-family: Helvetica, Arial, sans-serif", body)
+		# The declaration, not the comment beside it explaining why.
+		self.assertNotIn("font-family: \"DejaVu Sans Mono\"", body)
+
+	def test_it_beats_frappe_s_cell_padding(self):
+		"""Frappe forces 6px on every cell with `!important` — 3.2mm of air a
+		row, which over a receipt is centimetres of roll."""
+		body = self._receipt()
+		self.assertIn("padding: 0.15mm 0 !important", body)
+
+	def test_the_page_has_no_margin_for_a_browser_header(self):
+		"""Chrome prints the date across the top and the URL along the bottom
+		whenever the page leaves it room — somebody else's address on the
+		shop's bill."""
+		body = self._receipt()
+		self.assertIn("mm; margin: 0; }", body)
+
+	def test_the_slip_measures_its_own_length(self):
+		"""No formula gets it right: what makes one receipt longer than another
+		is how many lines the branch's terms run to and how often a name wraps.
+		Estimating split the total onto a second slip or fed blank roll."""
+		body = self._receipt()
+		self.assertIn('querySelector(".r")', body)
+		self.assertIn("getBoundingClientRect().height", body)
+		self.assertIn("@page { size: 80mm ", body)
+		# Into the body, where it beats the format's own rule.
+		self.assertIn("document.body.appendChild(sheet)", body)
+
+	def test_gst_is_labelled_the_way_a_customer_reads_it(self):
+		from a3_retail.print_helpers import a3_gst_lines
+
+		doc = frappe._dict(taxes=[
+			frappe._dict(account_head="Output Tax CGST - PT", rate=9, tax_amount=22.88),
+			frappe._dict(account_head="Output Tax SGST - PT", rate=9, tax_amount=22.88),
+		])
+		self.assertEqual([label for label, _a in a3_gst_lines(doc)],
+		                 ["CGST @9%", "SGST @9%"])
+
+	def test_an_igst_bill_says_igst(self):
+		from a3_retail.print_helpers import a3_gst_lines
+
+		doc = frappe._dict(taxes=[
+			frappe._dict(account_head="Output Tax IGST - PT", rate=18, tax_amount=152.54)])
+		self.assertEqual([label for label, _a in a3_gst_lines(doc)], ["IGST @18%"])
+
+	def test_a_line_shows_the_rate_it_carries(self):
+		from a3_retail.print_helpers import a3_line_gst_rate
+
+		doc = frappe._dict(net_total=12711.01, taxes=[
+			frappe._dict(account_head="Output Tax CGST - PT", tax_amount=1144.0),
+			frappe._dict(account_head="Output Tax SGST - PT", tax_amount=1144.0),
+		])
+		self.assertEqual(a3_line_gst_rate(frappe._dict(), doc), 18.0)
+		# Nothing to work from is no guess at all.
+		self.assertEqual(a3_line_gst_rate(frappe._dict()), 0.0)
+
+	def test_place_of_supply_reads_as_a_place(self):
+		from a3_retail.print_helpers import a3_place_of_supply
+
+		self.assertEqual(a3_place_of_supply(frappe._dict(place_of_supply="32-Kerala")),
+		                 "Kerala")
+		self.assertEqual(a3_place_of_supply(frappe._dict(place_of_supply="")), "")
+
+	def test_the_terms_come_from_the_same_place_as_the_a4_sheet(self):
+		"""Two slips for one sale must not say different things."""
+		self.assertIn('profile.get("invoice_terms") or a3_terms(doc)', self._receipt())
+
+
+class TestOpeningABranch(FrappeTestCase):
+	"""What a new counter needs, and how much of it it makes for itself."""
+
+	def test_a_branch_name_comes_apart_the_same_way_everywhere(self):
+		"""One definition, on the doctype. The patch that backfilled the
+		existing branches calls this rather than keeping its own copy."""
+		from a3_retail.a3_retail_operations.doctype.branch_profile.branch_profile import (
+			site_of,
+		)
+		from a3_retail.patches import branch_sites_and_counter_switching as patch
+
+		self.assertEqual(site_of("PhoneXpert Sales UK"), "UK")
+		self.assertEqual(site_of("PhoneXpert Accessories Neyyattinkara"), "Neyyattinkara")
+		self.assertEqual(patch._site_of("PhoneXpert Services PSLA"), "PSLA")
+
+	def test_a_new_profile_fills_its_own_site_in(self):
+		"""The backfill patch runs once. A branch opened after it would never
+		get a site, and its staff would never see the counter picker."""
+		import inspect
+
+		from a3_retail.a3_retail_operations.doctype.branch_profile import branch_profile
+
+		self.assertIn("self.set_site()",
+		              inspect.getsource(branch_profile.BranchProfile.validate))
+		source = inspect.getsource(branch_profile.BranchProfile.set_site)
+		# Never over a site somebody typed.
+		self.assertIn('if (self.site or "").strip():', source)
+
+	def test_a_new_warehouse_is_told_its_stock_account(self):
+		"""Left blank, ERPNext works it out from the company default on every
+		purchase and says so in the middle of whatever dialog the counter is
+		in. The patch that named the existing eleven runs once."""
+		import inspect
+
+		from a3_retail.a3_retail_operations.doctype.branch_profile import branch_profile
+
+		source = inspect.getsource(branch_profile.BranchProfile.create_branch_warehouses)
+		self.assertIn("default_inventory_account", source)
+
+	def test_whoever_bills_a_repair_can_reach_a_pos_profile(self):
+		"""ERPNext lists POS Profiles under the user's own permissions while
+		pricing an invoice. A service counter bills repairs, so the roles that
+		finish one need the same select the sales counter has."""
+		from a3_retail.setup.permissions import PERMISSION_MATRIX
+
+		raisers = {role for role, flags in PERMISSION_MATRIX["Sales Invoice"].items()
+		           if "C" in flags}
+		reachable = set(PERMISSION_MATRIX["POS Profile"])
+		missing = {r for r in raisers if r not in reachable
+		           and not PERMISSION_MATRIX["POS Profile"].get(r)}
+		# Accounts Manager reads it outright rather than by select.
+		missing -= {"Accounts Manager"}
+		self.assertEqual(missing, set(), f"cannot reach a POS Profile: {missing}")

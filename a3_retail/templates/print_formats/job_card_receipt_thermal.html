@@ -3,7 +3,8 @@
 {{ t.shop_header(doc.branch) }}
 <div class="t-center t-big">JOB CARD</div>
 <div class="t-center">{{ doc.name }}</div>
-{% if a3_barcode(doc.name) %}<div class="t-qr"><img src="{{ a3_barcode(doc.name) }}" style="width:180px;height:44px"></div>{% endif %}
+{%- set bars = a3_barcode(a3_scan_code(doc.name), 8, 60) -%}
+{% if bars %}<div class="t-qr"><img src="{{ bars }}" style="width:60mm;height:auto"></div>{% endif %}
 <div class="t-rule"></div>
 {{ t.kv([
 	("Received", frappe.format(doc.received_on, {"fieldtype": "Datetime"})),

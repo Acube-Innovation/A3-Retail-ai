@@ -1,41 +1,51 @@
-{#- The sticker that goes on the device while it is on the bench.
+{#- The sticker that goes on the device itself.
 
     Read by a scanner, not by a person: the barcode carries the job card
     number, which is what the technician's screen and the delivery counter
     both search by. The two lines of text are for the human holding the
     tray — whose phone is this, and which phone is it.
 
-    Sized for a 50 x 25mm label roll. Nothing on it is optional: a label that
-    needs a second glance to tell two Samsungs apart is not worth printing.
+    Sized for a 40 x 20mm label roll, because it lives on the back of a
+    customer's phone and a bigger one covers a camera. Everything on it earns
+    its place: a label that needs a second glance to tell two Samsungs apart
+    is not worth printing.
+
+    The barcode carries `26-00053` rather than the whole `JC-SVP-26-00053`.
+    See `a3_scan_code` — the `JC` and the branch are the same on every sticker
+    a branch prints, so they cost bars and say nothing, and the search finds
+    the card either way. At this size that is the difference between bars a
+    scanner reads first time and bars it has to be coaxed over.
 -#}
 <style>
-	@page { size: 50mm 25mm; margin: 0; }
-	/* The print view carries Frappe's own toolbar. On a 50mm sticker that is
-	   a third of the label given over to a link nobody can press. */
+	@page { size: 40mm 20mm; margin: 0; }
 	/* The print view carries a Print / Get PDF banner — `.action-banner`, and
 	   `.print-hide` only hides it in Frappe's own print stylesheet, which a
-	   custom page size does not pull in. On a 50mm sticker it was a third of
+	   custom page size does not pull in. On a sticker this size it was half
 	   the label given over to a link nobody can press. */
 	.action-banner, .print-hide { display: none !important; }
 	html, body, .print-format, .print-format-gutter {
 		margin: 0 !important; padding: 0 !important; background: #fff !important;
 		border: 0 !important; box-shadow: none !important; }
-	.lbl { width: 50mm; height: 25mm; padding: 1.5mm 2mm; box-sizing: border-box;
+	.lbl { width: 40mm; height: 20mm; padding: 1mm 1.5mm; box-sizing: border-box;
 	       font-family: Helvetica, Arial, sans-serif; color: #000;
 	       display: block; overflow: hidden; }
-	.lbl .who { font-size: 8pt; font-weight: bold; line-height: 1.15;
+	.lbl .who { font-size: 6.5pt; font-weight: bold; line-height: 1.1;
 	            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-	.lbl .what { font-size: 7pt; line-height: 1.15; white-space: nowrap;
+	.lbl .what { font-size: 5.5pt; line-height: 1.1; white-space: nowrap;
 	             overflow: hidden; text-overflow: ellipsis; }
-	/* Pulled out to the label's edges: a Code 128 of a job card number is
-	   about two hundred bars, and over 46mm each one is a quarter of a
-	   millimetre wide — right at what a cheap scanner can resolve. The two
-	   millimetres the padding was taking are worth more to the barcode than
-	   to the margin. */
-	.lbl .code { margin: 0.6mm -2mm 0; text-align: center; }
-	.lbl .code img { height: 9mm; width: 100%; display: block; }
-	.lbl .num { font-size: 7pt; letter-spacing: .4px; text-align: center;
-	            font-family: "DejaVu Sans Mono", monospace; }
+	/* Pulled out to the label's edges. Every tenth of a millimetre here is
+	   width the bars get to be, and the bars are the only thing on this
+	   sticker that has to work from a distance. */
+	.lbl .code { margin: 0.5mm -1.5mm 0; text-align: center; }
+	/* 6mm: GS1 asks for a Code 128 to stand at least 15% of its own length,
+	   which over 37mm of bars is 5.6mm. */
+	/* Width in millimetres and the height left to follow it. The bars are
+	   drawn to this width already (see below), so nothing is being stretched —
+	   this only pins the drawing to the paper's own units. Setting a height as
+	   well is what squashed them before. */
+	.lbl .code img { width: 38mm; height: auto; display: inline-block; }
+	.lbl .num { font-size: 5.5pt; letter-spacing: .2px; text-align: center;
+	            font-family: "DejaVu Sans Mono", monospace; line-height: 1.1; }
 </style>
 
 <div class="lbl">
@@ -49,8 +59,10 @@
 		{%- if doc.imei_1 %} · {{ doc.imei_1[-6:] }}{% endif -%}
 	</div>
 	<div class="code">
-		{%- set bars = a3_barcode(doc.name, 9) -%}
+		{#- 38 of the sticker's 40mm, leaving a millimetre clear each side. -#}
+		{%- set bars = a3_barcode(a3_scan_code(doc.name), 8, 38) -%}
 		{% if bars %}<img src="{{ bars }}">{% endif %}
 	</div>
+	{#- The whole number, for the person reading it off the bench. -#}
 	<div class="num">{{ doc.name }}</div>
 </div>
