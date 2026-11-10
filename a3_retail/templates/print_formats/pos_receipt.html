@@ -1,29 +1,224 @@
-{% import "a3_retail/templates/print_formats/a3_thermal.html" as t %}
-{{ t.styles(a3_thermal_height(doc)) }}
-{{ t.shop_header(doc.get("branch")) }}
-<div class="t-center t-bold">TAX INVOICE</div>
-{{ t.kv([("Bill", doc.name), ("Date", frappe.format(doc.posting_date, {"fieldtype": "Date"})),
-         ("Customer", doc.customer_name), ("Mobile", doc.get("contact_mobile"))]) }}
-<div class="t-rule"></div>
-<table class="t-items">
-	{#- Fixed columns, so the figures line up down the slip whatever the item
-	    is called. The name column takes what is left. -#}
-	<colgroup><col><col class="t-qty"><col class="t-amt"></colgroup>
-	<thead><tr><th>Item</th><th class="t-right">Qty</th><th class="t-right">Amount</th></tr></thead>
-	<tbody>
-	{% for row in doc.items %}
-		<tr><td class="t-name">{{ row.item_name }}{% if a3_serials(row) %}<div class="t-small">IMEI {{ a3_serials(row) }}</div>{% endif %}</td>
-			<td class="t-right">{{ "{:g}".format(row.qty|float) }}</td><td class="t-right">{{ a3_money(row.amount) }}</td></tr>
-	{% endfor %}
-	</tbody>
-</table>
-<div class="t-rule"></div>
-{{ t.kv(a3_thermal_total_lines(doc)) }}
-<div class="t-bold t-right t-big">TOTAL {{ a3_money(doc.grand_total) }}</div>
-{% if doc.get("payments") %}
-<div class="t-rule"></div>
-{{ t.kv(a3_payment_lines(doc)) }}
-{% endif %}
-<div class="t-small">{{ a3_words(doc.grand_total, doc.currency) }}</div>
-{{ t.qr(a3_payment_qr(doc), "Scan to pay") }}
-{{ t.footer("Thank you. Goods once sold are exchangeable only per policy.") }}
+{#- The thermal slip, in the shape PhoneXpert's customers already know.
+
+    This reproduces the receipt myBillBook printed for years, line for line and
+    in the same order, because the shop asked for exactly that and because a
+    customer comparing an old slip with a new one should not be able to tell
+    which software wrote it.
+
+    Two things about the old slip are worth saying out loud, since both were
+    wrong here before and both are why ours ran to three times the length:
+
+    A proportional face, not a monospace one. Courier is about 40% wider per
+    character, so "ZEBRONICS ULC300V 3A IOS CABLE" wrapped four times where it
+    should wrap twice, and every wrap is another line of roll.
+
+    Tight leading. The old slip sets its lines about 1.15 apart; ours were at
+    1.35 with a 38% label column of air down the left, which on a receipt is
+    paper nobody reads.
+-#}
+{%- set profile = a3_branch_profile(doc.get("branch")) or {} -%}
+{%- set company = frappe.db.get_single_value("Global Defaults", "default_company") -%}
+{%- set shop = profile.get("trade_name") or company or "" -%}
+{%- set addr = [profile.get("address_line1"), profile.get("address_line2"),
+                [profile.get("city"), profile.get("pincode")]|select|join(" "),
+                profile.get("state")]|select|list -%}
+{%- set paid = (doc.rounded_total|float or doc.grand_total|float)
+               - (doc.outstanding_amount|float) -%}
+<style>
+	/* The page is as wide as the roll and as long as what is on it; the
+	   height comes from `a3_thermal_height`, because `size: 80mm auto` is not
+	   valid CSS and a browser throws the whole declaration away.
+
+	   Margin zero, and the side gap is padding instead. Chrome prints its own
+	   header and footer — the date across the top, the address and `1/1` along
+	   the bottom — whenever the page has margins to put them in, and on a
+	   receipt that is somebody else's URL on the shop's bill. */
+	@page { size: 80mm {{ a3_thermal_height(doc) }}mm; margin: 0; }
+	.print-format { width: auto; max-width: none; margin: 0; padding: 0; }
+	.print-format .letter-head, .print-format .letter-head-footer { display: none !important; }
+	.action-banner, .print-hide { display: none !important; }
+
+	.r { width: 74mm; margin: 0 auto; padding: 1.5mm 0 2.5mm;
+	     font-family: Helvetica, Arial, sans-serif; font-size: 6.6pt;
+	     line-height: 1.12; color: #000; }
+	.r .mid { text-align: center; }
+	.r .right { text-align: right; }
+	.r .b { font-weight: bold; }
+	.r .shop { font-size: 9pt; font-weight: bold; margin-bottom: 0.6mm; }
+	.r .head { font-size: 7.6pt; font-weight: bold; margin: 0.8mm 0; }
+	.r .small { font-size: 5.8pt; }
+	/* The old slip rules its sections off with a dashed line; the one under
+	   the shop's address is solid. */
+	.r hr { border: 0; border-top: 1px dashed #000; margin: 0.9mm 0; }
+	.r hr.solid { border-top: 1px solid #000; }
+
+	.r table { width: 100%; border-collapse: collapse; }
+	/* `!important`, because Frappe forces 6px on every cell with it — 3.2mm of
+	   air per row, which on a receipt of twenty rows is six centimetres of
+	   roll and the single reason ours ran so much longer than the old one. */
+	.r td, .r th { padding: 0.15mm 0 !important; vertical-align: top; }
+
+	/* Key on the left, value on the right, both hugging their own edge —
+	   `Invoice No : P/SL/26-27/7560` with nothing wasted between them. */
+	.r .kv td { white-space: nowrap; }
+	.r .kv td.v { white-space: normal; width: 100%; }
+
+	/* The item table. Fixed columns so the figures line up down the slip
+	   whatever the item is called, and the name column takes what is left. */
+	.r .items { table-layout: fixed; }
+	.r .items th { border-bottom: 1px dashed #000; font-weight: bold;
+	               text-align: left; padding-bottom: 0.6mm !important; }
+	.r .items col.n { width: 4mm; }
+	.r .items col.q { width: 11mm; }
+	.r .items col.r { width: 13.5mm; }
+	.r .items col.a { width: 12.5mm; }
+	.r .items td.name { word-break: break-word; }
+	.r .items td.num, .r .items th.num { text-align: right; white-space: nowrap; }
+	.r .items tr.line td { padding-top: 0.9mm !important; }
+
+	/* Totals: label left, figure hard right, never wrapping. */
+	.r .tot td.f { text-align: right; white-space: nowrap; }
+	.r .terms { margin-top: 1.5mm; }
+	.r .terms .t { white-space: pre-line; }
+</style>
+
+<div class="r">
+
+	{#- who is billing -#}
+	<div class="mid shop">{{ shop }}</div>
+	<div class="mid">
+		{%- for line in addr %}{{ line }}{% if not loop.last %},<br>{% endif %}{% endfor -%}
+	</div>
+	{% if profile.get("phone") %}<div class="mid">Phone No : {{ profile.phone }}</div>{% endif %}
+	{% if profile.get("gstin") %}<div class="mid">GST : {{ profile.gstin }}</div>{% endif %}
+	<hr class="solid">
+
+	<div class="mid head">TAX INVOICE</div>
+
+	{#- what bill, when, and to whom -#}
+	<table class="kv">
+		<tr><td>Invoice No :&nbsp;</td><td class="v">{{ doc.name }}</td></tr>
+		<tr>
+			<td>Date :&nbsp;</td>
+			<td class="v">{{ frappe.utils.formatdate(doc.posting_date, "dd/MM/yyyy") }}</td>
+			<td class="right">Time&nbsp;:&nbsp;{{ (doc.posting_time|string)[:5] }}</td>
+		</tr>
+		<tr><td class="b">Bill To :&nbsp;</td><td class="v">{{ doc.customer_name or "" }}</td></tr>
+		{% set mobile = doc.get("contact_mobile") or doc.get("a3_customer_mobile") %}
+		{% if mobile %}<tr><td>Ph. :&nbsp;</td><td class="v">{{ mobile }}</td></tr>{% endif %}
+		{% set place = a3_place_of_supply(doc) %}
+		{% if place %}<tr><td>Place of Supply :&nbsp;</td><td class="v">{{ place }}</td></tr>{% endif %}
+	</table>
+	<hr>
+
+	{#- what was sold -#}
+	<table class="items">
+		<colgroup><col class="n"><col><col class="q"><col class="r"><col class="a"></colgroup>
+		<thead>
+			<tr>
+				<th>#</th><th>Item</th>
+				<th class="num">Qty</th><th class="num">Rate</th><th class="num">Amt</th>
+			</tr>
+		</thead>
+		<tbody>
+		{% for row in doc.items %}
+			{% set note = a3_line_note(row, doc) %}
+			<tr class="line">
+				<td>{{ loop.index }}</td>
+				<td class="name">{{ row.item_name }}
+					{%- if a3_serials(row) %}<div class="small">IMEI {{ a3_serials(row) }}</div>{% endif -%}
+					{%- if note %}<div class="small">{{ note }}</div>{% endif -%}
+				</td>
+				<td class="num">{{ "{:g}".format(row.qty|float) }} {{ row.uom or row.stock_uom }}</td>
+				<td class="num">{{ "{:,.2f}".format(row.net_rate|float or row.rate|float) }}</td>
+				<td class="num">{{ "{:,.0f}".format(row.amount|float) }}</td>
+			</tr>
+		{% endfor %}
+		</tbody>
+	</table>
+	<hr>
+
+	{#- what it comes to -#}
+	<table class="tot">
+		<tr class="b">
+			<td>Sub Total</td>
+			<td class="f">{{ doc.total_qty|int }}</td>
+			<td class="f">{{ a3_money(doc.total) }}</td>
+		</tr>
+	</table>
+	<hr>
+
+	<table class="tot">
+		<tr><td>Taxable Amount</td><td class="f">{{ a3_money(doc.net_total) }}</td></tr>
+		{% for label, amount in a3_gst_lines(doc) %}
+			<tr><td>{{ label }}</td><td class="f">{{ a3_money(amount) }}</td></tr>
+		{% endfor %}
+		{% if doc.discount_amount|float %}
+			<tr><td>Discount</td><td class="f">&minus; {{ a3_money(doc.discount_amount) }}</td></tr>
+		{% endif %}
+	</table>
+	<hr>
+
+	<table class="tot">
+		<tr class="b">
+			<td>Total</td>
+			<td class="f">{{ a3_money(doc.rounded_total|float or doc.grand_total|float) }}</td>
+		</tr>
+		<tr><td>Received</td><td class="f">{{ a3_money(paid) }}</td></tr>
+	</table>
+	<hr>
+
+	<table class="tot">
+		<tr><td>Balance Amount</td>
+			<td class="f">{{ a3_money(doc.outstanding_amount) }}</td></tr>
+	</table>
+	<hr>
+
+	{#- The branch's own terms, from the same place the A4 sheet takes them so
+	    the two slips never say different things. -#}
+	{% set terms = profile.get("invoice_terms") or a3_terms(doc) %}
+	{% if terms %}
+		<div class="terms">
+			<div class="b">Terms and conditions</div>
+			{% for line in terms.split("\n") %}{% if line.strip() %}
+				<div>{{ line.strip() }}</div>
+			{% endif %}{% endfor %}
+		</div>
+	{% endif %}
+
+	<div class="mid" style="margin-top:2mm">Thank you for your purchase</div>
+</div>
+
+{#- The page is exactly as long as the slip, measured rather than guessed.
+
+    A thermal page has to name a height — `size: 80mm auto` is not valid CSS —
+    and no formula gets it right, because what makes one receipt longer than
+    another is how many lines the branch's own terms run to and how often an
+    item name wraps. Estimating it either cut the total onto a second slip or
+    fed a hand of blank roll after every sale.
+
+    So the slip measures itself the moment it is drawn and writes its own page
+    height. This runs before Frappe's own `window.print()`, which is appended
+    after it. If scripts are blocked the Jinja estimate above still stands, so
+    the worst case is the old behaviour rather than no receipt. -#}
+<script>
+(function () {
+	try {
+		var slip = document.querySelector(".r");
+		if (!slip) return;
+		var mm = slip.getBoundingClientRect().height / (96 / 25.4);
+		/* A couple of millimetres so the last rule is never clipped by
+		   rounding, and a floor so a one-line slip still clears the cutter. */
+		var height = Math.max(Math.ceil(mm) + 3, 60);
+		var sheet = document.createElement("style");
+		sheet.textContent = "@page { size: 80mm " + height + "mm; margin: 0; }";
+		/* Into the body, not the head. The format's own `@page` is written
+		   into the body too, and between two rules of equal weight the later
+		   one wins — a rule in the head is earlier in the document and loses
+		   to it. */
+		document.body.appendChild(sheet);
+	} catch (e) {
+		/* Leave the estimate in place rather than printing nothing. */
+	}
+})();
+</script>

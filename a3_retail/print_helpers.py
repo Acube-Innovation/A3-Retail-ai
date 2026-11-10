@@ -224,6 +224,80 @@ def a3_invoice_total_lines(doc) -> list[tuple]:
 	return lines
 
 
+def a3_gst_lines(doc) -> list[tuple]:
+	"""GST on the slip the way the shop's old software wrote it: "CGST @9%".
+
+	The rate matters to a customer checking the arithmetic, and ERPNext's own
+	description — "Output Tax CGST - PT" — is an account name, not something to
+	hand across a counter.
+	"""
+	lines = []
+	for tax in doc.get("taxes") or []:
+		amount = flt(tax.get("base_tax_amount_after_discount_amount")
+		             or tax.get("tax_amount"))
+		if not amount:
+			continue
+		head = (tax.get("account_head") or tax.get("description") or "").upper()
+		kind = ("IGST" if "IGST" in head else
+		        "CGST" if "CGST" in head else
+		        "SGST" if "SGST" in head else
+		        "CESS" if "CESS" in head else "GST")
+		rate = flt(tax.get("rate"))
+		label = f"{kind} @{rate:g}%" if rate else kind
+		lines.append((label, amount))
+	return lines
+
+
+def a3_line_note(row, doc=None) -> str:
+	"""The small print under an item: its list price and the rate it carries.
+
+	Only what is true of this line. The MRP is shown where the shop sold below
+	its own list price, because that is the only time the two differ and the
+	only time a customer is looking for it.
+	"""
+	bits = []
+	listed = flt(row.get("price_list_rate"))
+	charged = flt(row.get("rate"))
+	if listed and listed > charged + 0.01:
+		bits.append(f"MRP: {listed:,.0f}")
+	rate = a3_line_gst_rate(row, doc)
+	if rate:
+		bits.append(f"GST: {rate:g}%")
+	return ", ".join(bits)
+
+
+def a3_line_gst_rate(row, doc=None) -> float:
+	"""The GST rate on one line.
+
+	Off the line's own tax template where it has one. A counter sale usually
+	does not — the rate comes from the template on the bill as a whole — so the
+	bill's own rate is worked back out of what it carries, which is the figure
+	the customer is reading on the same slip anyway.
+	"""
+	template = row.get("item_tax_template")
+	if template:
+		rates = frappe.get_all("Item Tax Template Detail",
+		                       filters={"parent": template}, pluck="tax_rate")
+		if rates:
+			return flt(sum(rates))
+
+	if doc is None:
+		return 0.0
+	net = flt(doc.get("net_total"))
+	tax = sum(flt(t.get("base_tax_amount_after_discount_amount") or t.get("tax_amount"))
+	          for t in doc.get("taxes") or [])
+	if net <= 0 or tax <= 0:
+		return 0.0
+	# To the nearest half point: GST rates are 5, 12, 18 and 28.
+	return round(tax / net * 200) / 2
+
+
+def a3_place_of_supply(doc) -> str:
+	"""`32-Kerala` is how GST files it; `Kerala` is how a receipt reads."""
+	place = str(doc.get("place_of_supply") or "")
+	return place.split("-", 1)[1].strip() if "-" in place else place
+
+
 def a3_payment_lines(doc) -> list[tuple]:
 	return [
 		(row.get("mode_of_payment") or "Payment", a3_money(row.get("amount")))

@@ -502,3 +502,94 @@ class TestTheDeviceSticker(FrappeTestCase):
 		             encoding="utf-8").read()
 		self.assertIn('"job_card_label", "40x20mm"', setup)
 		self.assertIn('LABEL_SIZES = {"40x20mm"}', setup)
+
+
+class TestTheThermalSlip(FrappeTestCase):
+	"""The receipt, in the shape PhoneXpert's customers already know it.
+
+	It reproduces what myBillBook printed for years. A customer comparing an
+	old slip with a new one should not be able to tell which software wrote it.
+	"""
+
+	def _receipt(self) -> str:
+		return open(frappe.get_app_path("a3_retail", "templates", "print_formats",
+		                                "pos_receipt.html"), encoding="utf-8").read()
+
+	def test_it_carries_every_block_the_old_slip_had(self):
+		body = self._receipt()
+		for piece in ("TAX INVOICE", "Invoice No", "Bill To", "Place of Supply",
+		              "Qty", "Rate", "Amt", "Sub Total", "Taxable Amount",
+		              "Balance Amount", "Terms and conditions",
+		              "Thank you for your purchase"):
+			self.assertIn(piece, body, piece)
+
+	def test_the_face_is_proportional_not_monospace(self):
+		"""Courier is about 40% wider per character, so an item name wrapped
+		twice as often and every wrap is another line of roll."""
+		body = self._receipt()
+		self.assertIn("font-family: Helvetica, Arial, sans-serif", body)
+		# The declaration, not the comment beside it explaining why.
+		self.assertNotIn("font-family: \"DejaVu Sans Mono\"", body)
+
+	def test_it_beats_frappe_s_cell_padding(self):
+		"""Frappe forces 6px on every cell with `!important` — 3.2mm of air a
+		row, which over a receipt is centimetres of roll."""
+		body = self._receipt()
+		self.assertIn("padding: 0.15mm 0 !important", body)
+
+	def test_the_page_has_no_margin_for_a_browser_header(self):
+		"""Chrome prints the date across the top and the URL along the bottom
+		whenever the page leaves it room — somebody else's address on the
+		shop's bill."""
+		body = self._receipt()
+		self.assertIn("mm; margin: 0; }", body)
+
+	def test_the_slip_measures_its_own_length(self):
+		"""No formula gets it right: what makes one receipt longer than another
+		is how many lines the branch's terms run to and how often a name wraps.
+		Estimating split the total onto a second slip or fed blank roll."""
+		body = self._receipt()
+		self.assertIn('querySelector(".r")', body)
+		self.assertIn("getBoundingClientRect().height", body)
+		self.assertIn("@page { size: 80mm ", body)
+		# Into the body, where it beats the format's own rule.
+		self.assertIn("document.body.appendChild(sheet)", body)
+
+	def test_gst_is_labelled_the_way_a_customer_reads_it(self):
+		from a3_retail.print_helpers import a3_gst_lines
+
+		doc = frappe._dict(taxes=[
+			frappe._dict(account_head="Output Tax CGST - PT", rate=9, tax_amount=22.88),
+			frappe._dict(account_head="Output Tax SGST - PT", rate=9, tax_amount=22.88),
+		])
+		self.assertEqual([label for label, _a in a3_gst_lines(doc)],
+		                 ["CGST @9%", "SGST @9%"])
+
+	def test_an_igst_bill_says_igst(self):
+		from a3_retail.print_helpers import a3_gst_lines
+
+		doc = frappe._dict(taxes=[
+			frappe._dict(account_head="Output Tax IGST - PT", rate=18, tax_amount=152.54)])
+		self.assertEqual([label for label, _a in a3_gst_lines(doc)], ["IGST @18%"])
+
+	def test_a_line_shows_the_rate_it_carries(self):
+		from a3_retail.print_helpers import a3_line_gst_rate
+
+		doc = frappe._dict(net_total=12711.01, taxes=[
+			frappe._dict(account_head="Output Tax CGST - PT", tax_amount=1144.0),
+			frappe._dict(account_head="Output Tax SGST - PT", tax_amount=1144.0),
+		])
+		self.assertEqual(a3_line_gst_rate(frappe._dict(), doc), 18.0)
+		# Nothing to work from is no guess at all.
+		self.assertEqual(a3_line_gst_rate(frappe._dict()), 0.0)
+
+	def test_place_of_supply_reads_as_a_place(self):
+		from a3_retail.print_helpers import a3_place_of_supply
+
+		self.assertEqual(a3_place_of_supply(frappe._dict(place_of_supply="32-Kerala")),
+		                 "Kerala")
+		self.assertEqual(a3_place_of_supply(frappe._dict(place_of_supply="")), "")
+
+	def test_the_terms_come_from_the_same_place_as_the_a4_sheet(self):
+		"""Two slips for one sale must not say different things."""
+		self.assertIn('profile.get("invoice_terms") or a3_terms(doc)', self._receipt())

@@ -11,15 +11,22 @@ from a3_retail.setup import print_formats as pf
 from a3_retail.tests.fixtures import ensure_branch
 from a3_retail.utils import qr
 
-A4_FORMATS = [name for name, _dt, _tpl, size in pf.FORMATS if size != "80mm"]
-THERMAL_FORMATS = [name for name, _dt, _tpl, size in pf.FORMATS if size == "80mm"]
+# A sticker is neither: it has no page furniture and no margins worth the name,
+# so it is held to the label rules rather than the sheet's or the roll's.
+LABEL_FORMATS = [name for name, _dt, _tpl, size in pf.FORMATS
+                 if size in pf.LABEL_SIZES]
+THERMAL_FORMATS = [name for name, _dt, _tpl, size in pf.FORMATS
+                   if size in pf.THERMAL_SIZES and size not in pf.LABEL_SIZES]
+A4_FORMATS = [name for name, _dt, _tpl, size in pf.FORMATS
+              if size not in pf.THERMAL_SIZES and size not in pf.LABEL_SIZES]
 
 
 class TestRegister(FrappeTestCase):
 	def test_every_registered_format_exists(self):
 		# Twenty-four at scope 13.3, plus the settlement statement the financing
-		# desk prints, the courier manifest, and the distributor's bill.
-		self.assertEqual(len(pf.FORMATS), 27)
+		# desk prints, the courier manifest, the distributor's bill, the RCM
+		# self-invoice and the salary slip.
+		self.assertEqual(len(pf.FORMATS), 29)
 		for name, doctype, _template, _size in pf.FORMATS:
 			self.assertTrue(frappe.db.exists("Print Format", name), name)
 			self.assertEqual(frappe.db.get_value("Print Format", name, "doc_type"), doctype, name)
@@ -53,6 +60,19 @@ class TestRegister(FrappeTestCase):
 			self.assertEqual(
 				frappe.db.get_value("Print Format", name, "page_number"), "Bottom Center", name
 			)
+
+	def test_a_label_has_no_page_furniture(self):
+		"""A sticker is the page. No page numbers, no margins, and none of the
+		roll's 76mm width — which on a 40mm label is a container twice the
+		width of the paper."""
+		for name in LABEL_FORMATS:
+			row = frappe.db.get_value("Print Format", name,
+			                          ["css", "margin_left", "margin_top", "page_number"],
+			                          as_dict=True)
+			self.assertEqual(row.page_number, "Hide", name)
+			self.assertEqual(row.margin_left, 0, name)
+			self.assertEqual(row.margin_top, 0, name)
+			self.assertNotIn("width: 76mm", row.css, name)
 
 	def test_thermal_formats_are_eighty_millimetres_wide(self):
 		for name in THERMAL_FORMATS:
@@ -219,7 +239,10 @@ class TestRendering(FrappeTestCase):
 	def test_every_format_renders(self):
 		result = pf.smoke_test(as_pdf=False, verbose=False)
 		self.assertEqual(result["failed"], [])
-		self.assertEqual(result["total"], 25)
+		# Every registered format whose doctype is installed on this site.
+		self.assertEqual(result["total"],
+		                 sum(1 for _n, doctype, _t, _s in pf.FORMATS
+		                     if frappe.db.exists("DocType", doctype)))
 
 	def test_a4_output_carries_the_page_counter(self):
 		doc, _real = pf.sample_doc("Service Job Card")
