@@ -302,14 +302,14 @@ class TestTheSheetAndTheRoll(FrappeTestCase):
 		# The rule itself, not the comment next to it explaining why.
 		thermal = self._format("a3_thermal.html")
 		self.assertNotIn("@page { size: 80mm auto", thermal)
-		self.assertIn("size: 80mm {{ height or 150 }}mm", thermal)
+		self.assertIn("size: 72mm {{ height or 150 }}mm", thermal)
 
 		setup = open(frappe.get_app_path("a3_retail", "setup", "print_formats.py"),
 		             encoding="utf-8").read()
 		self.assertNotIn("@page { size: 80mm auto", setup)
 		# One slip's worth, not two. Anywhere this fallback wins the shop used
 		# to get a receipt with a blank slip hanging off the end of it.
-		self.assertIn("size: 80mm 150mm", setup)
+		self.assertIn("size: 72mm 150mm", setup)
 		self.assertNotIn("size: 80mm 297mm", setup)
 		self.assertTrue(hasattr(print_helpers, "a3_thermal_height"))
 
@@ -547,6 +547,18 @@ class TestTheThermalSlip(FrappeTestCase):
 		body = self._receipt()
 		self.assertIn("mm; margin: 0; }", body)
 
+	def test_the_slip_fits_the_print_head_not_the_paper(self):
+		"""An "80mm" thermal printer is 80mm of paper and about 72mm of print
+		head — the shop's RP3200 reports exactly 72mm. A slip laid out at 80
+		runs its right-hand column of figures off the edge."""
+		body = self._receipt()
+		self.assertIn("@page { size: 72mm ", body)
+		self.assertIn("width: 70mm", body)
+		self.assertNotIn("width: 74mm", body)
+		setup = open(frappe.get_app_path("a3_retail", "setup", "print_formats.py"),
+		             encoding="utf-8").read()
+		self.assertIn("size: 72mm 150mm", setup)
+
 	def test_the_slip_measures_its_own_length(self):
 		"""No formula gets it right: what makes one receipt longer than another
 		is how many lines the branch's terms run to and how often a name wraps.
@@ -554,7 +566,7 @@ class TestTheThermalSlip(FrappeTestCase):
 		body = self._receipt()
 		self.assertIn('querySelector(".r")', body)
 		self.assertIn("getBoundingClientRect().height", body)
-		self.assertIn("@page { size: 80mm ", body)
+		self.assertIn("@page { size: 72mm ", body)
 		# Into the body, where it beats the format's own rule.
 		self.assertIn("document.body.appendChild(sheet)", body)
 
