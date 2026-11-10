@@ -302,12 +302,15 @@ class TestTheSheetAndTheRoll(FrappeTestCase):
 		# The rule itself, not the comment next to it explaining why.
 		thermal = self._format("a3_thermal.html")
 		self.assertNotIn("@page { size: 80mm auto", thermal)
-		self.assertIn("size: 80mm {{ height or 297 }}mm", thermal)
+		self.assertIn("size: 80mm {{ height or 150 }}mm", thermal)
 
 		setup = open(frappe.get_app_path("a3_retail", "setup", "print_formats.py"),
 		             encoding="utf-8").read()
 		self.assertNotIn("@page { size: 80mm auto", setup)
-		self.assertIn("size: 80mm 297mm", setup)
+		# One slip's worth, not two. Anywhere this fallback wins the shop used
+		# to get a receipt with a blank slip hanging off the end of it.
+		self.assertIn("size: 80mm 150mm", setup)
+		self.assertNotIn("size: 80mm 297mm", setup)
 		self.assertTrue(hasattr(print_helpers, "a3_thermal_height"))
 
 	def test_the_roll_is_long_enough_for_what_is_on_it(self):
