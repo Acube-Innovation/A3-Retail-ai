@@ -346,7 +346,11 @@ def create(payload) -> dict:
 		# What this took off the supplier's account, which is the number the
 		# counter is actually watching.
 		"supplier_outstanding": _owed(supplier),
-		"print_url": f"/printview?doctype=Purchase%20Invoice&name={doc.name}",
+		# Named, because without it the supplier gets ERPNext's standard
+		# layout instead of the shop's own bill.
+		"print_url": "/printview?doctype=Purchase%20Invoice"
+		             f"&name={frappe.utils.quoted(doc.name)}"
+		             "&format=A3%20Purchase%20Invoice&no_letterhead=0",
 	}
 
 

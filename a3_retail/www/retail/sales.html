@@ -379,11 +379,14 @@
 		<p class="modal-note" id="done-note"></p>
 		{#- Two slips, because an accessory sale does not want an A4 sheet with
 		    an HSN summary on it and a handset sale does. The counter knows
-		    which; nothing here tries to guess from the items. -#}
-		<a class="btn btn-primary btn-block" id="print-invoice" target="_blank" rel="noopener">
-			{{ _("Print invoice (A4)") }}</a>
-		<a class="btn btn-outline btn-block" id="print-thermal" target="_blank" rel="noopener">
-			{{ _("Print receipt (thermal)") }}</a>
+		    which; nothing here tries to guess from the items.
+		    Buttons rather than links: each one opens the printer dialog over
+		    the till instead of a PDF in a tab the counter then has to find,
+		    print from and close. -#}
+		<button class="btn btn-primary btn-block" id="print-invoice" type="button">
+			{{ _("Print invoice (A4)") }}</button>
+		<button class="btn btn-outline btn-block" id="print-thermal" type="button">
+			{{ _("Print receipt (thermal)") }}</button>
 		<button class="btn btn-quiet btn-block" data-close>{{ _("Next customer") }}</button>
 	</div>
 </div>

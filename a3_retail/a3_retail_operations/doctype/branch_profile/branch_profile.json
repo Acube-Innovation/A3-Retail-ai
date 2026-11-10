@@ -11,6 +11,7 @@
   "branch_type",
   "is_head_office",
   "is_active",
+  "site",
   "col_break_1",
   "company",
   "cost_center",
@@ -102,6 +103,13 @@
    "fieldtype": "Check",
    "label": "Active",
    "default": "1",
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "site",
+   "fieldtype": "Data",
+   "label": "Site",
+   "description": "The shop this counter stands in. Counters sharing a site are the same address \u2014 PhoneXpert Sales UK and PhoneXpert Accessories UK are two tills in one shop \u2014 and staff marked as able to switch counters may move between them without signing out.",
    "in_standard_filter": 1
   },
   {

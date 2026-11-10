@@ -124,6 +124,24 @@
 	</div>
 </div>
 
+{#- What to do with one debit note, opened from its row in the list. The
+    supplier asks for the paper copy as often as the shop files it, so looking
+    at it and printing it are both one press from the list. -#}
+<div class="modal" id="bill-modal" hidden>
+	<div class="modal-card">
+		<header class="modal-head">
+			<h3 id="bill-title"></h3>
+			<button class="modal-x" data-close aria-label="{{ _('Close') }}">&times;</button>
+		</header>
+		<p class="modal-note" id="bill-note"></p>
+		<button class="btn btn-primary btn-block" id="bill-print" type="button">
+			{{ _("Print the bill") }}</button>
+		<button class="btn btn-outline btn-block" id="bill-view" type="button">
+			{{ _("View the bill") }}</button>
+		<button class="btn btn-quiet btn-block" data-close>{{ _("Close") }}</button>
+	</div>
+</div>
+
 <div class="modal" id="si-modal" hidden>
 	<div class="modal-card">
 		<header class="modal-head">

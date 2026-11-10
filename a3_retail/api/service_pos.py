@@ -1031,8 +1031,11 @@ def estimate_url(job_card: str) -> str:
 
 
 def _invoice_url(invoice: str) -> str:
+	# "Service Invoice" is what the format is actually called — `Service Tax
+	# Invoice` is the template file's name, and naming that here meant every
+	# repair bill printed on ERPNext's Standard format instead of the shop's.
 	return (
 		"/api/method/frappe.utils.print_format.download_pdf"
 		f"?doctype=Sales%20Invoice&name={frappe.utils.quoted(invoice)}"
-		"&format=Service%20Tax%20Invoice&no_letterhead=0"
+		"&format=Service%20Invoice&no_letterhead=0"
 	)

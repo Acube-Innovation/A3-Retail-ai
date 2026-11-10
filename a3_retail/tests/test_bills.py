@@ -55,9 +55,14 @@ class TestBillsPages(FrappeTestCase):
 		folder = frappe.get_app_path("a3_retail", "public", "js")
 		for script in ("a3_bills.js", "a3_invoice.js"):
 			body = open(os.path.join(folder, script)).read()
-			self.assertIn("Retail%20Tax%20Invoice", body) if script == "a3_bills.js" \
+			self.assertIn("Retail Tax Invoice", body) if script == "a3_bills.js" \
 				else self.assertIn("print_url", body)
 			self.assertNotIn("<table class=\"print", body, "no second print template")
+			# Printing opens the printer dialog over the till. A bill that goes
+			# to a tab instead is two more steps with a customer waiting, and
+			# the tab is left behind on the till afterwards.
+			self.assertIn("A3.printDoc", body)
+			self.assertNotIn('window.open(url, "_blank")', body)
 
 		api = open(frappe.get_app_path("a3_retail", "api", "bills.py")).read()
 		self.assertIn("from a3_retail.api.pos import print_url", api)
@@ -423,7 +428,10 @@ class TestPaymentLinesOnThePrint(FrappeTestCase):
 	def test_the_invoice_prints_only_received_and_balance(self):
 		html = open(frappe.get_app_path(
 			"a3_retail", "templates", "print_formats", "retail_tax_invoice.html")).read()
-		foot = html[html.index("<tfoot>"):html.index("</tfoot>")]
+		# The totals are their own table since the blank above them became one,
+		# so that the blank can take the page's spare height and they cannot.
+		foot = html[html.index('class="sheet tot-table"'):]
+		foot = foot[:foot.index("</table>")]
 		self.assertLess(foot.index("RECEIVED AMOUNT"), foot.index("BALANCE AMOUNT"))
 		self.assertNotIn("a3_received_lines(doc)", foot)
 

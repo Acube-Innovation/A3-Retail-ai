@@ -258,6 +258,41 @@ def a3_thermal_total_lines(doc) -> list[tuple]:
 	return lines
 
 
+def a3_thermal_height(doc, extra_mm: float = 0) -> int:
+	"""How long a roll this receipt needs, in millimetres.
+
+	A thermal page has to declare a real height. `size: 80mm auto` reads like
+	the right thing and is not valid CSS — the two-value form takes two
+	lengths — so Chrome drops the whole declaration and falls back to the
+	paper the browser was last set to, which is how an 80mm receipt came out
+	on A4.
+
+	Estimated rather than measured, because CSS cannot measure. It is
+	deliberately generous: a page a few millimetres too long feeds a little
+	more roll, while one a few too short cuts the total off and prints it on a
+	second slip.
+	"""
+	lines = len(doc.get("items") or [])
+	serial_lines = sum(1 for row in (doc.get("items") or []) if a3_serials(row))
+	tax_lines = len(a3_tax_lines(doc) or [])
+	payments = len(doc.get("payments") or [])
+
+	# Measured off real receipts rendered at 80mm rather than added up from the
+	# stylesheet: a one-line bill comes to 120mm of roll and a seven-line one to
+	# 149mm, which is a 115mm base and about 5mm a line. The 8mm on the end is
+	# slack — a slip a little too long feeds a little more roll, one a little
+	# too short prints its total on a second slip.
+	height = (
+		115                     # header, bill details, totals, QR, footer
+		+ 5 * lines
+		+ 5 * serial_lines
+		+ 4 * (tax_lines + payments)
+		+ 8
+		+ extra_mm
+	)
+	return int(max(120, min(height, 900)))
+
+
 def a3_serial_lines(doc) -> list[str]:
 	"""'Item: IMEI, IMEI' for every line that carries serials."""
 	lines = []

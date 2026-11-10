@@ -286,13 +286,65 @@ def recent(limit: int = 30, filters=None) -> dict:
 
 
 @frappe.whitelist()
-def create(payload) -> dict:
-	"""Record a supplier bill and take the goods into stock."""
+def create(payload, draft: str | None = None) -> dict:
+	"""Record a supplier bill and take the goods into stock.
+
+	`draft` finishes one that was put aside rather than starting a second
+	document: the held bill is filled in from what is on the screen now and
+	submitted, so the number the counter was given does not change and no
+	half-entered copy is left behind.
+	"""
 	employee = _me()
 	require_permission("Purchase Invoice", "create")
 
 	data = frappe.parse_json(payload) if isinstance(payload, str) else (payload or {})
 
+	doc, priced = _build(data, employee, draft=draft, complete=True)
+
+	doc.flags.ignore_permissions = True
+	if doc.get("__islocal") or not doc.name or not frappe.db.exists("Purchase Invoice", doc.name):
+		doc.insert(ignore_permissions=True)
+	else:
+		doc.save(ignore_permissions=True)
+	doc.submit()
+
+	# What the shop last paid, kept on the item so the next purchase of it opens
+	# with the right figure instead of a blank box.
+	from a3_retail.api.stock_control import set_buying_rate, set_selling_rate
+
+	for row in doc.items:
+		set_buying_rate(row.item_code, flt(row.rate))
+		if flt(priced.get(row.item_code)) > 0:
+			set_selling_rate(row.item_code, flt(priced[row.item_code]), employee.branch)
+
+	_stamp_serials(doc, priced)
+
+	# Paid on the spot, or left on the supplier's account to settle later.
+	paid = flt(data.get("paid_amount"))
+	if paid > 0:
+		_settle(doc, paid, data.get("mode_of_payment") or "Cash", employee)
+
+	doc.reload()
+	return {
+		"purchase": doc.name,
+		"supplier": frappe.db.get_value("Supplier", doc.supplier, "supplier_name"),
+		"grand_total": flt(doc.grand_total),
+		"outstanding": flt(doc.outstanding_amount),
+		# Named, or the browser falls back to ERPNext's standard sheet rather
+		# than the one the shop files.
+		"print_url": f"/printview?doctype=Purchase%20Invoice&name={doc.name}"
+		             f"&format=A3%20Purchase%20Invoice&no_letterhead=0",
+	}
+
+
+def _build(data: dict, employee, draft: str | None = None, complete: bool = True):
+	"""Fill a Purchase Invoice in from what the screen sent.
+
+	One builder for both doors into this screen, so a bill put aside and the
+	same bill finished an hour later are the same document built the same way.
+	`complete` is what separates them: a draft is allowed to be short of a bill
+	number or a rate, because that is usually why it is being put aside.
+	"""
 	supplier = (data.get("supplier") or "").strip()
 	if not supplier or not frappe.db.exists("Supplier", supplier):
 		frappe.throw(_("Choose who the stock was bought from."), title=_("Supplier"))
@@ -310,12 +362,25 @@ def create(payload) -> dict:
 	# Saying so here beats the document refusing it afterwards in the compliance
 	# app's words. An unregistered dealer is exempt — there is no credit to claim
 	# and the slip they hand over often has no number on it at all.
+	#
+	# Not asked of a bill being put aside: the number is on the paper copy the
+	# rep is still writing out, and refusing to hold the entry until it exists
+	# is how the lines already keyed get lost.
+	if bill_no.startswith(HELD_MARKER):
+		bill_no = ""
 	if not bill_no and _bill_no_required(supplier):
-		frappe.throw(
-			_("Put the number from the distributor's own bill in — the input GST "
-			  "is claimed against it."),
-			title=_("Supplier bill number"),
-		)
+		if complete:
+			frappe.throw(
+				_("Put the number from the distributor's own bill in — the input GST "
+				  "is claimed against it."),
+				title=_("Supplier bill number"),
+			)
+		# India Compliance asks for the number on every save, not only on
+		# submit, so a held bill has to carry something. A marker, not a guess
+		# at the real number: it is obvious in the desk, the screen never shows
+		# it back, and submitting goes through the branch above, so it cannot
+		# reach a posted bill.
+		bill_no = f"{HELD_MARKER}{frappe.utils.now_datetime():%Y%m%d-%H%M%S}"
 
 	posting = getdate(data.get("date") or nowdate())
 	if posting > getdate(nowdate()):
@@ -327,7 +392,9 @@ def create(payload) -> dict:
 		frappe.throw(_("This branch has no store to receive stock into."), title=_("Warehouse"))
 	cost_center = profile.sales_cost_center or profile.cost_center
 
-	doc = frappe.new_doc("Purchase Invoice")
+	doc = _draft_doc(draft, employee) if draft else frappe.new_doc("Purchase Invoice")
+	doc.set("items", [])
+	doc.set("taxes", [])
 	doc.company = _company()
 	doc.supplier = supplier
 	doc.posting_date = posting
@@ -381,37 +448,144 @@ def create(payload) -> dict:
 	# the bill they just raised cannot be read back or printed.
 	stamp_cost_center(doc, cost_center)
 
+	return doc, priced
+
+
+# ---------------------------------------------------------------------------
+# Bills put aside
+# ---------------------------------------------------------------------------
+#: What a held bill carries where the distributor's number is not known yet.
+HELD_MARKER = "HELD-"
+
+@frappe.whitelist()
+def save_draft(payload, draft: str | None = None) -> dict:
+	"""Put a half-entered purchase aside without posting anything.
+
+	A rep arrives with forty lines and a customer walks in at line twelve. The
+	screen holds that work in the browser and nowhere else, so a reload, a
+	switched till or a closed tab loses the lot and the counter keys it again
+	from the paper.
+
+	It is held as an ordinary draft Purchase Invoice — ERPNext's own word for a
+	document that has not happened yet. Nothing posts to stock or the ledger
+	until it is submitted, and head office can see what is sitting unfinished
+	without being told.
+	"""
+	employee = _me()
+	require_permission("Purchase Invoice", "create")
+
+	data = frappe.parse_json(payload) if isinstance(payload, str) else (payload or {})
+	doc, _priced = _build(data, employee, draft=draft, complete=False)
 	doc.flags.ignore_permissions = True
-	doc.insert(ignore_permissions=True)
-	doc.submit()
+	if doc.get("__islocal") or not doc.name or not frappe.db.exists("Purchase Invoice", doc.name):
+		doc.insert(ignore_permissions=True)
+	else:
+		doc.save(ignore_permissions=True)
 
-	# What the shop last paid, kept on the item so the next purchase of it opens
-	# with the right figure instead of a blank box.
-	from a3_retail.api.stock_control import set_buying_rate, set_selling_rate
-
-	for row in doc.items:
-		set_buying_rate(row.item_code, flt(row.rate))
-		if flt(priced.get(row.item_code)) > 0:
-			set_selling_rate(row.item_code, flt(priced[row.item_code]), employee.branch)
-
-	_stamp_serials(doc, priced)
-
-	# Paid on the spot, or left on the supplier's account to settle later.
-	paid = flt(data.get("paid_amount"))
-	if paid > 0:
-		_settle(doc, paid, data.get("mode_of_payment") or "Cash", employee)
-
-	doc.reload()
 	return {
-		"purchase": doc.name,
-		"supplier": frappe.db.get_value("Supplier", supplier, "supplier_name"),
+		"draft": doc.name,
+		"supplier": frappe.db.get_value("Supplier", doc.supplier, "supplier_name"),
+		"lines": len(doc.items),
 		"grand_total": flt(doc.grand_total),
-		"outstanding": flt(doc.outstanding_amount),
-		# Named, or the browser falls back to ERPNext's standard sheet rather
-		# than the one the shop files.
-		"print_url": f"/printview?doctype=Purchase%20Invoice&name={doc.name}"
-		             f"&format=A3%20Purchase%20Invoice&no_letterhead=0",
 	}
+
+
+@frappe.whitelist()
+def drafts(limit: int = 20) -> list[dict]:
+	"""Purchases this branch has put aside, newest first."""
+	employee = _me()
+	require_permission("Purchase Invoice", "read")
+
+	profile = _profile(employee.branch)
+	if not profile.default_warehouse:
+		return []
+
+	rows = frappe.db.sql(
+		"""
+		select pi.name, pi.supplier, pi.bill_no, pi.posting_date, pi.grand_total,
+		       pi.modified, (select count(*) from `tabPurchase Invoice Item` it
+		                      where it.parent = pi.name) as line_count
+		from `tabPurchase Invoice` pi
+		where pi.docstatus = 0 and ifnull(pi.is_return, 0) = 0
+		  and exists (select 1 from `tabPurchase Invoice Item` it
+		               where it.parent = pi.name and it.warehouse = %(warehouse)s)
+		order by pi.modified desc
+		limit %(limit)s
+		""",
+		{"warehouse": profile.default_warehouse, "limit": min(cint(limit) or 20, 50)},
+		as_dict=True,
+	)
+	for row in rows:
+		row["supplier_name"] = frappe.db.get_value("Supplier", row.supplier, "supplier_name")
+	return rows
+
+
+@frappe.whitelist()
+def load_draft(name: str) -> dict:
+	"""A held purchase, in the shape the screen fills itself from."""
+	employee = _me()
+	require_permission("Purchase Invoice", "read")
+
+	doc = _draft_doc(name, employee)
+	items = []
+	for line in doc.items:
+		serials = [s.strip() for s in (line.serial_no or "").splitlines() if s.strip()]
+		items.append({
+			"item_code": line.item_code,
+			"item_name": line.item_name,
+			"qty": flt(line.qty),
+			"rate": flt(line.rate),
+			"uom": line.uom,
+			"has_serial": bool(frappe.db.get_value("Item", line.item_code, "has_serial_no")),
+			"serials": serials,
+			"sell": _current_selling(line.item_code),
+		})
+
+	return {
+		"draft": doc.name,
+		"supplier": doc.supplier,
+		"supplier_name": frappe.db.get_value("Supplier", doc.supplier, "supplier_name"),
+		# A held bill's marker is ours, not the distributor's — the box opens
+		# empty so nobody submits with it still in.
+		"bill_no": "" if (doc.bill_no or "").startswith(HELD_MARKER) else (doc.bill_no or ""),
+		"date": str(doc.posting_date or nowdate()),
+		"notes": doc.remarks or "",
+		"items": items,
+	}
+
+
+@frappe.whitelist()
+def discard_draft(name: str) -> dict:
+	"""Throw a held purchase away."""
+	employee = _me()
+	require_permission("Purchase Invoice", "create")
+
+	doc = _draft_doc(name, employee)
+	frappe.delete_doc("Purchase Invoice", doc.name, ignore_permissions=True)
+	return {"discarded": name}
+
+
+def _draft_doc(name: str, employee):
+	"""The held purchase, if it is this branch's and still a draft.
+
+	Both halves matter. A submitted bill reopened as a draft would be edited
+	and submitted a second time, and a draft belonging to another counter is
+	not this one's to finish — the same rule every other screen here follows.
+	"""
+	if not name or not frappe.db.exists("Purchase Invoice", name):
+		frappe.throw(_("That held purchase is no longer there."), title=_("Not found"))
+
+	doc = frappe.get_doc("Purchase Invoice", name)
+	if cint(doc.docstatus) != 0:
+		frappe.throw(_("{0} has already been posted.").format(name), title=_("Already done"))
+
+	profile = _profile(employee.branch)
+	warehouses = {line.warehouse for line in doc.items if line.warehouse}
+	if profile.default_warehouse and warehouses and \
+			profile.default_warehouse not in warehouses:
+		frappe.throw(_("{0} was started at another branch.").format(name),
+		             frappe.PermissionError)
+	return doc
 
 
 def _bill_no_required(supplier: str) -> bool:

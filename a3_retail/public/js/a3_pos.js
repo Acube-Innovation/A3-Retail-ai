@@ -1204,11 +1204,14 @@ window.POS = (function () {
 			+ (result.outstanding > 0
 				? ` · ${money(result.outstanding)} still owed` : "");
 		$("done-note").classList.toggle("owes", result.outstanding > 0);
-		$("print-invoice").href = result.print_url;
-		// The same bill, the other slip. Built from the A4 link rather than
-		// asked for separately: one round trip is enough to print either.
-		$("print-thermal").href = result.print_url.replace(
-			/format=[^&]*/, "format=" + encodeURIComponent("Retail Receipt (Thermal)"));
+		// Both slips off the one link the sale came back with: one round trip
+		// is enough to print either. Each goes straight to the printer dialog
+		// rather than opening a PDF in a tab — the customer is standing at the
+		// counter waiting for paper, not for a second tab to be found.
+		const sheet = A3.printParts(result.print_url);
+		$("print-invoice").onclick = () => A3.printDoc(sheet);
+		$("print-thermal").onclick = () => A3.printDoc(
+			Object.assign({}, sheet, { format: "Retail Receipt (Thermal)" }));
 		$("done-modal").hidden = false;
 		// The number is on the card above; the counter behind it is the next
 		// customer's, so a held or reopened bill must not carry over.

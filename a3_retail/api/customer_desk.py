@@ -134,6 +134,13 @@ def profile(customer: str) -> dict:
 		"whatsapp_no": doc.a3_whatsapp_no,
 		"email": doc.email_id,
 		"address": address,
+		# The same address again, in the pieces a form has boxes for. The
+		# header prints the joined string; Edit has to put each part back where
+		# it came from, and a form that opens blank does not just fail to show
+		# what is held — it saves the blanks over it.
+		"address_parts": _address_parts(customer),
+		"gstin": doc.get("gstin"),
+		"pan": doc.get("pan"),
 		"customer_group": doc.customer_group,
 		"customer_since": str(doc.a3_customer_since or getdate(doc.creation)),
 		"total_bookings": bookings,
@@ -147,9 +154,20 @@ def profile(customer: str) -> dict:
 
 
 def _address(customer: str) -> str:
+	row = _address_parts(customer)
+	return ", ".join([part for part in
+	                  (row.get("address_line1"), row.get("city"),
+	                   row.get("state"), row.get("pincode")) if part])
+
+
+def _address_parts(customer: str) -> dict:
+	"""The billing address as its own fields, or an empty dict."""
+	gstin = "a.gstin," if frappe.db.has_column("Address", "gstin") else ""
 	rows = frappe.db.sql(
-		"""
-		select a.address_line1, a.city, a.state, a.pincode from `tabAddress` a
+		f"""
+		select a.name, a.address_line1, a.address_line2, a.city, a.state,
+		       a.pincode, {gstin} a.country
+		from `tabAddress` a
 		join `tabDynamic Link` l on l.parent = a.name
 		where l.link_doctype = 'Customer' and l.link_name = %s
 		order by a.is_primary_address desc, a.modified desc limit 1
@@ -157,11 +175,7 @@ def _address(customer: str) -> str:
 		customer,
 		as_dict=True,
 	)
-	if not rows:
-		return ""
-	row = rows[0]
-	return ", ".join([part for part in
-	                  (row.address_line1, row.city, row.state, row.pincode) if part])
+	return rows[0] if rows else {}
 
 
 def _credit_limit(doc) -> float:

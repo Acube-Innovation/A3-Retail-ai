@@ -293,17 +293,6 @@ def create_sales_invoice(job_card: str) -> dict:
 	if not invoice.items:
 		frappe.throw(_("There is nothing to invoice on {0}.").format(doc.name))
 
-	if doc.tax_template:
-		invoice.taxes_and_charges = doc.tax_template
-		invoice.set_taxes()
-	else:
-		# A repair is a taxable supply like any other. Without this the invoice
-		# went out at the pre-tax amount while the job card had already told the
-		# customer the figure with GST on it.
-		from a3_retail.api.pos import _apply_gst
-
-		_apply_gst(invoice, doc.branch)
-
 	# The role check above is the gate. The document itself is written with
 	# permissions bypassed because pricing a service invoice makes ERPNext read
 	# the income accounts and cost centers that shop-floor staff are deliberately
@@ -311,6 +300,7 @@ def create_sales_invoice(job_card: str) -> dict:
 	# its invoice this way.
 	invoice.flags.ignore_permissions = True
 	invoice.set_missing_values()
+	_apply_service_gst(invoice, doc)
 	_stamp_service_cost_center(invoice, profile)
 	invoice.insert(ignore_permissions=True)
 
@@ -338,6 +328,35 @@ def create_sales_invoice(job_card: str) -> dict:
 
 	return {"sales_invoice": invoice.name, "created": True,
 	        "outstanding": flt(invoice.outstanding_amount)}
+
+
+def _apply_service_gst(invoice, doc) -> None:
+	"""GST on a repair bill, in the direction the supply actually goes.
+
+	A repair is a taxable supply like any other: without this the invoice went
+	out at the pre-tax amount while the job card had already told the customer
+	the figure with GST on it.
+
+	The job card's own template is honoured where it agrees with the customer's
+	place of supply, and ignored where it does not. A counter booking a device
+	in picks an in-state template because that is the normal case, but a device
+	left by somebody from another state is an inter-state supply all the same,
+	and CGST+SGST on one of those is refused outright at save.
+
+	Run after `set_missing_values`, which re-reads the template off the POS
+	profile and would otherwise undo the choice made here.
+	"""
+	from a3_retail.api.pos import _apply_gst, _is_inter_state
+
+	chosen = doc.tax_template
+	if chosen and _is_inter_state(invoice, doc.branch) != ("Out-state" in chosen):
+		chosen = None
+
+	if chosen:
+		invoice.taxes_and_charges = chosen
+		invoice.set_taxes()
+	else:
+		_apply_gst(invoice, doc.branch)
 
 
 def _stamp_service_cost_center(invoice, profile):

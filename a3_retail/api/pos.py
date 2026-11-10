@@ -13,6 +13,8 @@ the desk: IMEI on every device line, the minimum selling price, a sales person o
 the bill (scope 2.5, step 12 P1–P9).
 """
 
+import re
+
 import frappe
 from frappe import _
 from frappe.utils import cint, flt, fmt_money, formatdate, getdate, nowdate
@@ -543,9 +545,12 @@ def _save_address(customer: str, customer_name: str, line1: str, city: str | Non
 		doc.append("links", {"link_doctype": "Customer", "link_name": customer})
 
 	doc.address_line1 = line1
+	# Keep what is held wherever this caller sent nothing. The booking screen
+	# sends no city and no PIN at all, and an empty box on one form must not
+	# wipe an address another form took down.
 	doc.city = city or doc.city or "-"
 	doc.state = state or doc.state
-	doc.pincode = pincode
+	doc.pincode = pincode or doc.pincode
 	doc.country = doc.country or "India"
 	if gstin and doc.meta.has_field("gstin"):
 		# ERPNext prints and files the address's GSTIN, not the customer's.
@@ -1094,12 +1099,7 @@ def _tax_template(invoice, branch: str) -> str | None:
 	if not rate:
 		return None
 
-	state = frappe.db.get_value("Branch Profile", {"branch": branch}, "state_code")
-	customer_gstin = frappe.db.get_value("Customer", invoice.customer, "gstin") \
-		if frappe.db.has_column("Customer", "gstin") else None
-	out_of_state = bool(customer_gstin and state and not str(customer_gstin).startswith(str(state)))
-
-	kind = "Out-state" if out_of_state else "In-state"
+	kind = "Out-state" if _is_inter_state(invoice, branch) else "In-state"
 	for candidate in (f"Output GST {kind} {rate}%", f"Output GST In-state {rate}%"):
 		name = frappe.db.get_value(
 			"Sales Taxes and Charges Template", {"title": candidate, "company": company}, "name"
@@ -1107,6 +1107,68 @@ def _tax_template(invoice, branch: str) -> str | None:
 		if name:
 			return name
 	return None
+
+
+def _is_inter_state(invoice, branch: str) -> bool:
+	"""Is this sale leaving the state the branch sells from?
+
+	It decides CGST+SGST against IGST, and getting it wrong does not produce a
+	wrong bill — it produces no bill at all, because India Compliance refuses
+	the save with "Cannot charge CGST/SGST for inter-state supplies".
+
+	Place of supply is the test, not the buyer's GST number. A registered buyer
+	is taxed on the state in their GSTIN, but a walk-in with no GSTIN at all is
+	taxed on where the goods are delivered — their address — and reading only
+	the GSTIN meant every out-of-state retail customer was billed CGST+SGST and
+	the counter could not complete the sale.
+	"""
+	home = _state_code(frappe.db.get_value("Branch Profile", {"branch": branch}, "state_code"))
+	supply = _supply_state_code(invoice)
+	return bool(home and supply and home != supply)
+
+
+def _supply_state_code(invoice) -> str | None:
+	"""The two-digit state code this sale is supplied to.
+
+	In the order GST itself reads them: the place of supply if India Compliance
+	has already worked one out, then the buyer's registration, then the state on
+	the bill-to address. A walk-in with no address at all gives nothing, and the
+	caller treats that as a local sale — which it almost always is.
+	"""
+	place = invoice.get("place_of_supply") if hasattr(invoice, "get") else None
+	if place and "-" in str(place):
+		return _state_code(str(place).split("-", 1)[0])
+
+	gstin = (invoice.get("billing_address_gstin")
+	         or (frappe.db.get_value("Customer", invoice.customer, "gstin")
+	             if invoice.customer and frappe.db.has_column("Customer", "gstin") else None))
+	if gstin and len(str(gstin)) >= 2 and str(gstin)[:2].isdigit():
+		return _state_code(str(gstin)[:2])
+
+	address = invoice.get("customer_address")
+	state = frappe.db.get_value("Address", address, "state") if address else None
+	if not state and invoice.customer:
+		state = (_primary_address(invoice.customer) or {}).get("state")
+	return _state_code_for(state)
+
+
+def _state_code(value) -> str | None:
+	"""A state code as GST writes it: two digits, zero-padded. 9 is 09."""
+	digits = re.sub(r"\D", "", str(value or ""))
+	return digits.zfill(2) if digits else None
+
+
+def _state_code_for(state_name: str | None) -> str | None:
+	"""The code for a state's name, as India Compliance numbers them."""
+	name = (state_name or "").strip()
+	if not name:
+		return None
+	try:
+		from india_compliance.gst_india.constants import STATE_NUMBERS
+	except ImportError:
+		return None
+	lookup = {key.lower(): number for key, number in STATE_NUMBERS.items()}
+	return _state_code(lookup.get(name.lower()))
 
 
 def _basket_gst_rate(invoice) -> int | None:

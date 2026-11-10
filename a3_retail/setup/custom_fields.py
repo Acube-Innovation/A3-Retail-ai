@@ -466,6 +466,12 @@ HR_FIELDS = {
 		_field("a3_is_counter_terminal", "Counter Terminal Account", "Check", HR_MODULE,
 			insert_after="a3_is_incentive_eligible",
 			description="A shared branch login, not a member of staff."),
+		# Two tills in one shop — sales on one side, accessories on the other —
+		# and one person working both. Ticked, they pick the counter from the
+		# top of the screen instead of signing out and in again all day.
+		_field("a3_can_switch_counter", "May Work the Other Counter", "Check", HR_MODULE,
+			insert_after="a3_is_counter_terminal",
+			description="Lets this person switch to another counter at the same site."),
 		_field("a3_hr_col_break", "", "Column Break", HR_MODULE,
 			insert_after="a3_is_incentive_eligible"),
 		_field("a3_technician_grade", "Technician Grade", "Select", HR_MODULE,

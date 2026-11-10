@@ -943,10 +943,29 @@ window.SVC = (function () {
 
 	/** The device sticker, offered only once there is a job card to put on it. */
 	function showLabel(url) {
-		const link = $("done-label");
-		if (!link) return;
-		link.hidden = !url;
-		if (url) link.href = url;
+		const button = $("done-label");
+		if (!button) return;
+		button.hidden = !url;
+		if (url) button.onclick = () => A3.printDoc(url);
+	}
+
+	/**
+	 * Offer the slip on both papers.
+	 *
+	 * A repair goes out on an A4 sheet when the customer wants the document
+	 * and on the 80mm roll when they want a receipt, exactly as a sale does.
+	 * Both buttons print the same document through the same print view — only
+	 * the format differs — and both open the printer dialog here rather than a
+	 * PDF in a tab.
+	 */
+	function offerPrints(url, thermalFormat) {
+		const parts = A3.printParts(url);
+		$("done-print").onclick = () => A3.printDoc(parts);
+		const thermal = $("done-thermal");
+		if (!thermal) return;
+		thermal.hidden = !thermalFormat;
+		thermal.onclick = () => A3.printDoc(
+			Object.assign({}, parts, { format: thermalFormat }));
 	}
 
 	function done(result) {
@@ -956,16 +975,16 @@ window.SVC = (function () {
 			+ (result.warranty_borne
 				? `${result.warranty_type} — the warranty bears ${money(result.warranty_borne)}`
 				: `balance ${money(result.balance)}`);
-		$("done-print").href = result.print_url;
+		offerPrints(result.print_url, "Job Card Receipt (Thermal)");
 		showLabel(result.label_url);
 		$("done-modal").hidden = false;
 		setTrack(0);
 		say("Job card " + result.job_card + " is open.", "ok");
-		// The estimate is what the customer leaves with, so the print window
+		// The estimate is what the customer leaves with, so the printer dialog
 		// opens on its own rather than waiting to be asked. `printing stays
-		// manual` — this opens the browser's print dialog, it does not send
-		// anything to a printer by itself.
-		if (result.print_url) window.open(result.print_url, "_blank");
+		// manual` — this opens the dialog, it does not send anything to a
+		// printer by itself.
+		if (result.print_url) A3.printDoc(result.print_url);
 	}
 
 	async function generateInvoice() {
@@ -976,7 +995,7 @@ window.SVC = (function () {
 				{ job_card: state.jobCard });
 			$("done-title").textContent = "Invoiced";
 			$("done-note").textContent = `${result.sales_invoice} · ${money(result.grand_total || 0)}`;
-			$("done-print").href = result.print_url;
+			offerPrints(result.print_url, "Retail Receipt (Thermal)");
 			// The repair is finished, so this is the moment the device gets its
 			// sticker — it goes on the bag it is handed back in.
 			showLabel(result.label_url
@@ -1026,9 +1045,8 @@ window.SVC = (function () {
 		if (channel === "Print") {
 			if (!state.jobCard) return stop("Save the booking first — there is no job card to work on yet.",
 			"Nothing booked in yet", "save-booking");
-			return window.open("/api/method/frappe.utils.print_format.download_pdf"
-				+ "?doctype=Service%20Job%20Card&name=" + encodeURIComponent(state.jobCard)
-				+ "&format=Job%20Card%20Acknowledgement", "_blank");
+			return A3.printDoc({ doctype: "Service Job Card", name: state.jobCard,
+				format: "Job Card Acknowledgement" });
 		}
 		if (!state.jobCard) return stop("Save the booking first — there is no job card to work on yet.",
 			"Nothing booked in yet", "save-booking");

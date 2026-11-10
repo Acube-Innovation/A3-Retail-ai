@@ -182,12 +182,12 @@ window.INVOICE = (function () {
 		}
 	}
 
+	/** Straight to the printer dialog, not a PDF in a tab to be hunted for. */
 	function print(thermal) {
-		const url = thermal === true
-			? state.data.print_url.replace(
-				/format=[^&]*/, "format=" + encodeURIComponent("Retail Receipt (Thermal)"))
-			: state.data.print_url;
-		window.open(url, "_blank");
+		const parts = A3.printParts(state.data.print_url);
+		A3.printDoc(thermal === true
+			? Object.assign({}, parts, { format: "Retail Receipt (Thermal)" })
+			: parts);
 	}
 
 	// ---------------------------------------------------------------- load
