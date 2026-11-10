@@ -33,12 +33,16 @@
 	   header and footer — the date across the top, the address and `1/1` along
 	   the bottom — whenever the page has margins to put them in, and on a
 	   receipt that is somebody else's URL on the shop's bill. */
-	@page { size: 80mm {{ a3_thermal_height(doc) }}mm; margin: 0; }
+	/* 72mm, not 80. An "80mm" thermal printer is 80mm of paper and about 72mm
+	   of print head — the shop's RP3200 reports exactly 72mm — so a slip laid out
+	   at 80 is two millimetres wider than the printer can put ink on, and the
+	   right-hand column of figures runs off the edge. */
+	@page { size: 72mm {{ a3_thermal_height(doc) }}mm; margin: 0; }
 	.print-format { width: auto; max-width: none; margin: 0; padding: 0; }
 	.print-format .letter-head, .print-format .letter-head-footer { display: none !important; }
 	.action-banner, .print-hide { display: none !important; }
 
-	.r { width: 74mm; margin: 0 auto; padding: 1.5mm 0 2.5mm;
+	.r { width: 70mm; margin: 0 auto; padding: 1.5mm 0 2.5mm;
 	     font-family: Helvetica, Arial, sans-serif; font-size: 6.6pt;
 	     line-height: 1.12; color: #000; }
 	.r .mid { text-align: center; }
@@ -211,7 +215,7 @@
 		   rounding, and a floor so a one-line slip still clears the cutter. */
 		var height = Math.max(Math.ceil(mm) + 3, 60);
 		var sheet = document.createElement("style");
-		sheet.textContent = "@page { size: 80mm " + height + "mm; margin: 0; }";
+		sheet.textContent = "@page { size: 72mm " + height + "mm; margin: 0; }";
 		/* Into the body, not the head. The format's own `@page` is written
 		   into the body too, and between two rules of equal weight the later
 		   one wins — a rule in the head is earlier in the document and loses

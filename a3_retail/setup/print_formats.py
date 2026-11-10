@@ -84,8 +84,12 @@ THERMAL_CSS = """
    It used to be 297mm, which is about two slips of roll: anywhere that rule
    won — a stale template, a print dialog left on a fixed stock — the shop got
    a receipt with a blank slip hanging off the end of it. */
-@page { size: 80mm 150mm; margin: 2mm; }
-.print-format { width: 76mm; font-family: "DejaVu Sans Mono", "Courier New", monospace;
+/* 72mm, not 80. An "80mm" thermal printer is 80mm of paper and about 72mm
+   of print head — the shop's RP3200 reports exactly 72mm — so a slip laid out
+   at 80 is two millimetres wider than the printer can put ink on, and the
+   right-hand column of figures runs off the edge. */
+@page { size: 72mm 150mm; margin: 2mm; }
+.print-format { width: 68mm; font-family: "DejaVu Sans Mono", "Courier New", monospace;
 	font-size: 8pt; color: #000; }
 .print-format .letter-head, .print-format .letter-head-footer { display: none !important; }
 """
