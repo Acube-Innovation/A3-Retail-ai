@@ -462,33 +462,97 @@ class TestTheDeviceSticker(FrappeTestCase):
 		codes = [a3_scan_code(n) for n in names]
 		self.assertEqual(len(set(codes)), len(codes))
 
-	def test_the_bars_are_wide_enough_for_a_label_printer(self):
-		"""0.25mm is the usual floor for Code 128, and it is what lets a plain
-		203 dpi printer lay each bar down as exactly two dots."""
-		from a3_retail.print_helpers import a3_barcode_module_mm
+	def test_the_bars_land_on_whole_printer_dots(self):
+		"""A print head burns a dot or it does not, so a module that works out
+		at 2.35 dots comes off the roll as a mixture of two and three — and
+		measured on the shop's own head the old sticker put 38 of its narrow
+		bars at a single dot. A scanner takes the narrowest element as the
+		yardstick for every other width, so the spread is what decides whether
+		the bench reads it first time."""
+		from a3_retail.utils.qr import LABEL_DOTS_PER_MM, barcode_dot_width
 
-		# 38mm of the 40mm sticker, as the template asks for.
-		module = a3_barcode_module_mm("26-00053", 38)
-		self.assertGreaterEqual(module, 0.25)
-		dots_203 = module / (25.4 / 203)
-		dots_300 = module / (25.4 / 300)
-		self.assertGreaterEqual(dots_203, 2.0)
-		self.assertGreaterEqual(dots_300, 3.0)
+		width = barcode_dot_width("26-00053", 36)
+		self.assertEqual(width, 35.75)
+		# 123 modules plus ten of quiet zone each side, two dots to a module.
+		self.assertEqual(width * LABEL_DOTS_PER_MM, 286)
+
+	def test_the_barcode_is_painted_in_whole_modules(self):
+		"""Not the width it was asked for — the bars it actually drew."""
+		import base64
+		import io
+
+		from PIL import Image
+
+		from a3_retail.print_helpers import a3_label_barcode
+
+		uri = a3_label_barcode("26-00053", 9)
+		image = Image.open(io.BytesIO(base64.b64decode(uri.split(",", 1)[1])))
+		self.assertEqual(image.size, (286, 72))
+
+		pixels = image.convert("L").load()
+		runs, dark, count = [], pixels[0, 0] < 128, 1
+		for x in range(1, image.size[0]):
+			here = pixels[x, 0] < 128
+			if here == dark:
+				count += 1
+			else:
+				runs.append((dark, count))
+				dark, count = here, 1
+		runs.append((dark, count))
+
+		# Ten modules of quiet zone each side, as GS1 asks for a Code 128.
+		self.assertEqual(runs[0], (False, 20))
+		self.assertEqual(runs[-1], (False, 20))
+		# And every bar and space between them a whole number of modules.
+		for painted, width in runs[1:-1]:
+			self.assertEqual(width % 2, 0,
+			                 f"an element came out {width} dots, which is not a module")
+
+	def test_a_sticker_too_small_for_the_symbol_prints_none(self):
+		"""Rather than a symbol squeezed past the point of being readable."""
+		from a3_retail.utils.qr import barcode_dot_width
+
+		self.assertEqual(barcode_dot_width("26-00053", 20), 0.0)
+		self.assertEqual(barcode_dot_width("", 36), 0.0)
 
 	def test_the_whole_number_is_still_printed_for_a_person(self):
 		self.assertIn("{{ doc.name }}", self._label())
 
 	def test_the_sticker_is_small_enough_for_a_phone(self):
+		"""1.57 x 0.79in is 39.88 x 20.07mm — the 40 x 20mm roll, declared on
+		the hundredth-of-an-inch grid Chrome rounds a page box to. Asking for
+		40mm got a 1.57in page back and a rescale on the way to the print head,
+		and a rescaled page is one where the bars stop landing on whole dots."""
 		label = self._label()
-		self.assertIn("@page { size: 40mm 20mm; margin: 0; }", label)
-		self.assertIn("width: 40mm; height: 20mm", label)
+		self.assertIn("@page { size: 1.57in 0.79in; margin: 0; }", label)
+		self.assertIn("width: 1.57in; height: 0.79in", label)
+
+	def test_the_page_is_declared_where_the_renderer_will_not_rescale_it(self):
+		import re
+
+		page = re.search(r"@page \{ size: ([\d.]+)in ([\d.]+)in", self._label())
+		self.assertIsNotNone(page, "the label no longer declares its page in inches")
+		for side in page.groups():
+			hundredths = float(side) * 100
+			self.assertEqual(hundredths, round(hundredths),
+			                 f"{side}in is not a whole number of hundredths of an inch")
 
 	def test_the_bars_are_drawn_to_size_not_stretched(self):
-		"""Forcing an `<img>` to a width and a height squashes the bars; the
-		symbol is drawn at the width it will be printed at instead."""
+		"""Forcing an `<img>` to a width and a height squashes the bars. The
+		symbol is drawn in the print head's own dots and then placed at exactly
+		the width it was drawn, so nothing downstream resamples it."""
 		label = self._label()
-		self.assertIn("a3_barcode(a3_scan_code(doc.name), 8, 38)", label)
-		self.assertIn("width: 38mm; height: auto", label)
+		self.assertIn("a3_label_barcode_mm(scan, 36)", label)
+		self.assertIn("a3_label_barcode(scan, 9)", label)
+		self.assertIn('style="width: {{ bar_mm }}mm"', label)
+		self.assertIn("height: auto", label)
+		self.assertNotIn("width: 38mm", label)
+
+	def test_the_number_underneath_is_clear_of_the_bars(self):
+		"""The number is printed for a person, and a hand scanner whose aiming
+		line catches it would try to read those strokes as bars."""
+		label = self._label()
+		self.assertIn(".lbl .code { margin: 0.5mm -1.5mm 0.6mm;", label)
 
 	def test_a_label_does_not_get_the_roll_s_stylesheet(self):
 		"""The 80mm roll's CSS pins `.print-format` to 76mm. On a 40mm sticker

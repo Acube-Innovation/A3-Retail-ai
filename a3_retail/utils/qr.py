@@ -220,3 +220,99 @@ def barcode_data_uri(text: str, height: float = 12.0, module_width: float = 0.26
 	})
 	encoded = base64.b64encode(stream.getvalue()).decode()
 	return f"data:image/png;base64,{encoded}"
+
+
+# The shop's label printer is a TVS LP 46 Neo, which is an SNBC BTP-U100t
+# underneath. It is sold as 203dpi, but the print head is built to a round
+# metric pitch — eight dots to the millimetre, which is 203.2dpi — and that is
+# the number to work in. Taking the 203 at face value puts every module
+# boundary a fraction of a dot out, and the rasteriser then rounds neighbouring
+# bars in opposite directions; eight to the millimetre makes a two-dot module
+# exactly a quarter of a millimetre and lands every edge on a whole dot.
+#
+# The printer's own ZPL agrees: CUPS asks it for `^PW320` to fill a 40mm label.
+LABEL_DOTS_PER_MM = 8
+
+
+def barcode_dot_width(text: str, max_mm: float,
+                      dots_per_mm: float = LABEL_DOTS_PER_MM,
+                      module_dots: int = 2, quiet_modules: int = 10) -> float:
+	"""How wide to place a Code 128 so one module is `module_dots` whole dots.
+
+	`quiet_modules` is the clear margin each side, counted in modules; GS1 asks
+	for ten on a Code 128, and it is what a scanner looks for to find the
+	symbol's edges at all.
+
+	Returns 0.0 when the symbol will not fit `max_mm`, so a label can leave the
+	barcode off rather than print one too cramped to read.
+	"""
+	modules = barcode_modules(text)
+	if not modules or module_dots < 1 or dots_per_mm <= 0:
+		return 0.0
+	width = (modules + 2 * quiet_modules) * module_dots / dots_per_mm
+	return round(width, 4) if width <= max_mm else 0.0
+
+
+def barcode_dot_uri(text: str, height_mm: float = 8.0,
+                    dots_per_mm: float = LABEL_DOTS_PER_MM,
+                    module_dots: int = 2, quiet_modules: int = 10) -> str:
+	"""Code 128 painted a dot at a time, every module exactly the same width.
+
+	`barcode_data_uri` asks python-barcode for a symbol in millimetres drawn at
+	a fine resolution, and leaves the printer to scale it down. That reads as
+	the careful thing to do and is not. Measured on the 40mm sticker at the
+	shop's own 203 dots to the inch, it put 38 of the symbol's narrow bars at a
+	single dot, two at two dots and nine at three, and left a quiet zone of
+	1.1mm where ten modules is 2.5mm. A scanner takes the narrowest element it
+	can find as the yardstick for every other width in the symbol, so that
+	spread is not a cosmetic matter: it is the difference between a sticker the
+	bench reads first time and one it gives up on.
+
+	So the bars are laid out here in the printer's own dots. The module pattern
+	comes from python-barcode, which is what it is good at, and each module is
+	then painted as exactly `module_dots` columns of pixels. Nothing is scaled
+	and nothing is rounded, so every bar in the symbol is identical by
+	construction whatever the rasteriser downstream chooses to do.
+
+	The image comes back at its natural size in dots. The label must place it at
+	`barcode_dot_width` millimetres, which is that same size expressed in paper
+	units, so that one pixel lands on one dot.
+	"""
+	if not text:
+		return ""
+
+	try:
+		import barcode
+		from PIL import Image
+	except ImportError:  # pragma: no cover - both ship with the bench
+		frappe.log_error("python-barcode or Pillow is not installed",
+		                 "A3 Retail: barcode")
+		return ""
+
+	if module_dots < 1 or dots_per_mm <= 0:
+		return ""
+
+	pattern = "".join(barcode.get("code128", str(text)).build())
+	if not pattern:
+		return ""
+
+	width = (len(pattern) + 2 * quiet_modules) * module_dots
+	height = max(int(round(flt(height_mm) * dots_per_mm)), 1)
+
+	# Mode "1" is one bit a pixel: a bar is either burnt or it is not, which is
+	# all the print head can do anyway, and it keeps the data URI small enough
+	# to sit in the page without comment.
+	image = Image.new("1", (width, height), 1)
+	pixels = image.load()
+	x = quiet_modules * module_dots
+	for module in pattern:
+		if module == "1":
+			for column in range(x, x + module_dots):
+				for row in range(height):
+					pixels[column, row] = 0
+		x += module_dots
+
+	stream = io.BytesIO()
+	image.save(stream, format="PNG")
+	encoded = base64.b64encode(stream.getvalue()).decode()
+	return f"data:image/png;base64,{encoded}"

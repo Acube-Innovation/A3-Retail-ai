@@ -17,7 +17,16 @@
     scanner reads first time and bars it has to be coaxed over.
 -#}
 <style>
-	@page { size: 40mm 20mm; margin: 0; }
+	/* The sticker is 40 x 20mm, but the page is declared as the nearest
+	   hundredth of an inch — 1.57 x 0.79in is 39.88 x 20.07mm — because that
+	   is the grid Chrome rounds a page box to, and a page it has to rescale is
+	   a page where the barcode's bars stop landing on whole dots. Asking for
+	   40mm got a 1.57in page back and then a 1.003 rescale on the way to the
+	   print head, which spread the narrow bars across one, two and three dots.
+	   Declaring the same number Chrome would have rounded to removes the
+	   rescale, and the eighth of a millimetre lost off the edge of the label
+	   is not visible on it. See `qr.barcode_dot_uri`. */
+	@page { size: 1.57in 0.79in; margin: 0; }
 	/* The print view carries a Print / Get PDF banner — `.action-banner`, and
 	   `.print-hide` only hides it in Frappe's own print stylesheet, which a
 	   custom page size does not pull in. On a sticker this size it was half
@@ -26,7 +35,7 @@
 	html, body, .print-format, .print-format-gutter {
 		margin: 0 !important; padding: 0 !important; background: #fff !important;
 		border: 0 !important; box-shadow: none !important; }
-	.lbl { width: 40mm; height: 20mm; padding: 1mm 1.5mm; box-sizing: border-box;
+	.lbl { width: 1.57in; height: 0.79in; padding: 1mm 1.5mm; box-sizing: border-box;
 	       font-family: Helvetica, Arial, sans-serif; color: #000;
 	       display: block; overflow: hidden; }
 	.lbl .who { font-size: 6.5pt; font-weight: bold; line-height: 1.1;
@@ -36,14 +45,20 @@
 	/* Pulled out to the label's edges. Every tenth of a millimetre here is
 	   width the bars get to be, and the bars are the only thing on this
 	   sticker that has to work from a distance. */
-	.lbl .code { margin: 0.5mm -1.5mm 0; text-align: center; }
-	/* 6mm: GS1 asks for a Code 128 to stand at least 15% of its own length,
-	   which over 37mm of bars is 5.6mm. */
-	/* Width in millimetres and the height left to follow it. The bars are
-	   drawn to this width already (see below), so nothing is being stretched —
-	   this only pins the drawing to the paper's own units. Setting a height as
-	   well is what squashed them before. */
-	.lbl .code img { width: 38mm; height: auto; display: inline-block; }
+	/* The gap under the bars is not spare room: the number below is printed
+	   for a person, and a hand scanner whose aiming line catches it would try
+	   to read those strokes as bars. Half a millimetre is four dots, which is
+	   two modules — wider than any gap inside the symbol, so nothing downstream
+	   can mistake one for the other. */
+	.lbl .code { margin: 0.5mm -1.5mm 0.6mm; text-align: center; }
+	/* The width is set on the element itself rather than here, because it is
+	   worked out from the number being encoded — see the template below. The
+	   height follows it; forcing both is what squashed the bars before.
+
+	   `block`, not `inline-block`: an inline image sits on a text baseline and
+	   the line box keeps room for descenders under it, which on a sticker with
+	   a millimetre to spare was enough to push the number off the bottom. */
+	.lbl .code img { height: auto; display: block; margin: 0 auto; }
 	.lbl .num { font-size: 5.5pt; letter-spacing: .2px; text-align: center;
 	            font-family: "DejaVu Sans Mono", monospace; line-height: 1.1; }
 </style>
@@ -59,9 +74,23 @@
 		{%- if doc.imei_1 %} · {{ doc.imei_1[-6:] }}{% endif -%}
 	</div>
 	<div class="code">
-		{#- 38 of the sticker's 40mm, leaving a millimetre clear each side. -#}
-		{%- set bars = a3_barcode(a3_scan_code(doc.name), 8, 38) -%}
-		{% if bars %}<img src="{{ bars }}">{% endif %}
+		{#- Drawn in the print head's own dots, two of them to a module, and
+		    placed at exactly the width it was drawn — so the browser maps one
+		    pixel to one dot and resamples nothing. The width is not a round
+		    number of millimetres because it is a round number of dots, which
+		    is the number that decides whether a scanner reads this first
+		    time. See `qr.barcode_dot_uri` for what the obvious way did to the
+		    narrow bars. 36mm of the sticker's 40, so there is a little label
+		    either side of the symbol's own quiet zone. -#}
+		{%- set scan = a3_scan_code(doc.name) -%}
+		{%- set bar_mm = a3_label_barcode_mm(scan, 36) -%}
+		{#- 9mm of bar. GS1 asks a Code 128 to stand at least 15% of its own
+		    length, which over 35.75mm is 5.4mm; this is well clear of that, and
+		    a taller bar is easier to put a hand scanner across on the bench.
+		    It is not taller still because the two lines above it and the
+		    number below have to fit the same 20mm. -#}
+		{%- set bars = a3_label_barcode(scan, 9) if bar_mm else "" -%}
+		{% if bars %}<img src="{{ bars }}" style="width: {{ bar_mm }}mm">{% endif %}
 	</div>
 	{#- The whole number, for the person reading it off the bench. -#}
 	<div class="num">{{ doc.name }}</div>

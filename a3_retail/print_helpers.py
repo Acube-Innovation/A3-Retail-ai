@@ -47,6 +47,24 @@ def a3_barcode_module_mm(text: str, width_mm: float, quiet_zone: float = 2.0) ->
 	return round((width_mm - 2 * quiet_zone) / modules, 4) if modules else 0.0
 
 
+def a3_label_barcode(text: str, height_mm: float = 8.0,
+                     module_dots: int = 2) -> str:
+	"""The barcode for a sticker, drawn in the label printer's own dots.
+
+	Use this on anything going to the 203dpi label roll rather than
+	`a3_barcode`, which draws in millimetres and leaves the printer to scale —
+	see `qr.barcode_dot_uri` for what that does to the narrow bars. Place the
+	result at `a3_label_barcode_mm` millimetres wide and nothing is resampled.
+	"""
+	return qr_utils.barcode_dot_uri(text, height_mm=height_mm,
+	                                module_dots=module_dots)
+
+
+def a3_label_barcode_mm(text: str, max_mm: float, module_dots: int = 2) -> float:
+	"""The width to place `a3_label_barcode` at, or 0 when it will not fit."""
+	return qr_utils.barcode_dot_width(text, max_mm, module_dots=module_dots)
+
+
 def a3_scan_code(name: str) -> str:
 	"""The part of a document number worth putting in a barcode.
 
