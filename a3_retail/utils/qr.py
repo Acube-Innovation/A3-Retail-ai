@@ -109,7 +109,74 @@ def barcode(value: str, height: int = 40) -> str:
 	return qr_data_uri(value, scale=3)
 
 
-def barcode_data_uri(text: str, height: float = 12.0, module_width: float = 0.26) -> str:
+def barcode_modules(text: str) -> int:
+	"""How many bars and spaces a Code 128 of `text` comes to.
+
+	What decides whether a barcode fits a label legibly: the symbol is this
+	many modules wide whatever size it is drawn, so the width of one module —
+	and so whether a printer can lay it down cleanly — falls out of this and
+	the space available.
+	"""
+	if not text:
+		return 0
+	try:
+		import barcode
+	except ImportError:  # pragma: no cover - python-barcode ships with the bench
+		return 0
+	return len("".join(barcode.get("code128", str(text)).build()))
+
+
+def barcode_svg_uri(text: str, height: float = 6.0, module_width: float = 0.26,
+                    width_mm: float | None = None, quiet_zone: float = 2.0) -> str:
+	"""SVG data URI of a Code 128 barcode for `text`.
+
+	Vector, not pixels, and on a label that is the whole difference. A barcode
+	drawn as a PNG has to be stretched to the width of the sticker, and the
+	bars land wherever the scaling puts them — a 0.29mm bar that comes out
+	0.24mm beside a 0.34mm one is what a scanner refuses to read. An SVG is
+	redrawn at the printer's own resolution, so every bar is the width it was
+	meant to be.
+
+	Safe because the label is only ever rendered through the browser's print
+	view (`service_pos.label_url`), which draws SVG properly. The PNG above
+	stays for anything that goes through wkhtmltopdf.
+	"""
+	if not text:
+		return ""
+
+	try:
+		import barcode
+	except ImportError:  # pragma: no cover - python-barcode ships with the bench
+		frappe.log_error("python-barcode is not installed", "A3 Retail: barcode")
+		return ""
+
+	# `width_mm` is the room the label has for the symbol. python-barcode's SVG
+	# carries no viewBox, so it will not scale to its box — stretching the
+	# `<img>` leaves the drawing at natural size in the corner. The bars are
+	# sized to fit here instead, which is better anyway: every module comes out
+	# the width it was asked for rather than whatever the scaling rounded it to.
+	modules = barcode_modules(text)
+	if width_mm and modules:
+		module_width = max((float(width_mm) - 2 * quiet_zone) / modules, 0.1)
+
+	stream = io.BytesIO()
+	# No writer argument: python-barcode draws SVG by default.
+	code = barcode.get("code128", str(text))
+	code.write(stream, options={
+		"module_height": height,
+		"module_width": module_width,
+		# The number is printed under the code by the label itself, in the
+		# shop's own type, rather than in whatever this library defaults to.
+		"write_text": False,
+		"quiet_zone": quiet_zone,
+	})
+	encoded = base64.b64encode(stream.getvalue()).decode()
+	return f"data:image/svg+xml;base64,{encoded}"
+
+
+def barcode_data_uri(text: str, height: float = 12.0, module_width: float = 0.26,
+                     width_mm: float | None = None, quiet_zone: float = 2.0,
+                     dpi: int = 600) -> str:
 	"""PNG data URI of a Code 128 barcode for `text`.
 
 	A label printer is pointed at a shelf or a repair bay and the number is
@@ -130,6 +197,14 @@ def barcode_data_uri(text: str, height: float = 12.0, module_width: float = 0.26
 		frappe.log_error("python-barcode is not installed", "A3 Retail: barcode")
 		return ""
 
+	# `width_mm` is the room the label has for the symbol: the bars are drawn
+	# to fill exactly that, rather than being drawn at some other size and
+	# stretched to fit. Stretching is what turns a 0.28mm bar into a 0.24mm one
+	# beside a 0.34mm one, which is a barcode a scanner argues with.
+	modules = barcode_modules(text)
+	if width_mm and modules:
+		module_width = max((float(width_mm) - 2 * quiet_zone) / modules, 0.1)
+
 	stream = io.BytesIO()
 	code = barcode.get("code128", str(text), writer=ImageWriter())
 	code.write(stream, options={
@@ -138,7 +213,10 @@ def barcode_data_uri(text: str, height: float = 12.0, module_width: float = 0.26
 		# The number is printed under the code by the label itself, in the
 		# shop's own type, rather than in whatever this library defaults to.
 		"write_text": False,
-		"quiet_zone": 2.0,
+		"quiet_zone": quiet_zone,
+		# Drawn far finer than any label printer, so that scaling it down to
+		# the printer's own dots can only ever lose detail it does not need.
+		"dpi": dpi,
 	})
 	encoded = base64.b64encode(stream.getvalue()).decode()
 	return f"data:image/png;base64,{encoded}"

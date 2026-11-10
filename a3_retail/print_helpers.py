@@ -23,9 +23,50 @@ def a3_tracking_qr(doc, scale: int = 3) -> str:
 	return qr_utils.tracking_qr(doc, scale=scale)
 
 
-def a3_barcode(text: str, height: float = 12.0) -> str:
-	"""A Code 128 barcode, for a label a scanner will read rather than a person."""
-	return qr_utils.barcode_data_uri(text, height=height)
+def a3_barcode(text: str, height: float = 12.0, width_mm: float | None = None) -> str:
+	"""A Code 128 barcode, for a label a scanner will read rather than a person.
+
+	`width_mm` is the room the label has for it; give it and the bars are drawn
+	to fill exactly that, so the sticker never has to stretch them.
+	"""
+	return qr_utils.barcode_data_uri(text, height=height, width_mm=width_mm)
+
+
+def a3_barcode_svg(text: str, height: float = 6.0, width_mm: float | None = None) -> str:
+	"""The same Code 128, drawn as vector and sized to the room it has.
+
+	`width_mm` is what the label can give the symbol; the bars are drawn to
+	fill exactly that. See `qr.barcode_svg_uri`.
+	"""
+	return qr_utils.barcode_svg_uri(text, height=height, width_mm=width_mm)
+
+
+def a3_barcode_module_mm(text: str, width_mm: float, quiet_zone: float = 2.0) -> float:
+	"""How wide one bar comes out, for a label that wants to check its own work."""
+	modules = qr_utils.barcode_modules(text)
+	return round((width_mm - 2 * quiet_zone) / modules, 4) if modules else 0.0
+
+
+def a3_scan_code(name: str) -> str:
+	"""The part of a document number worth putting in a barcode.
+
+	A job card is `JC-SVP-26-00053`. All fifteen characters come to two hundred
+	Code 128 modules, and on a sticker small enough to live on the back of a
+	phone each bar works out thinner than a printer can lay down cleanly.
+
+	The branch and the `JC` are the same on every label a branch prints, so
+	they cost bars and carry nothing: dropping them leaves `26-00053`, which is
+	123 modules — a third narrower — and is still unique. It also still finds
+	the job card, because every screen searches document numbers by what they
+	contain, and `JC-SVP-26-00053` contains `26-00053`.
+
+	The whole number is printed underneath in words a person can read, so
+	nothing is lost to the counter.
+	"""
+	parts = (name or "").split("-")
+	# JC · branch · year · serial. Anything shaped otherwise is left whole
+	# rather than guessed at.
+	return "-".join(parts[2:]) if len(parts) >= 4 else (name or "")
 
 
 def a3_tracking_url(doc) -> str:
@@ -38,10 +79,6 @@ def a3_upi_qr(amount, note: str = "", scale: int = 3) -> str:
 
 def a3_payment_qr(doc, scale: int = 3) -> str:
 	return qr_utils.payment_qr(doc, scale=scale)
-
-
-def a3_barcode(value: str, height: int = 40) -> str:
-	return qr_utils.barcode(value, height=height)
 
 
 # ------------------------------------------------------------------- lookups

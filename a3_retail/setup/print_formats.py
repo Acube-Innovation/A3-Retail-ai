@@ -21,7 +21,7 @@ THERMAL_STYLE = "A3 Retail Thermal 80mm"
 FORMATS = [
 	("Job Card Receipt (Thermal)", "Service Job Card", "job_card_receipt_thermal", "80mm"),
 	# The sticker that goes on the device, read by a scanner on the bench.
-	("Job Card Label", "Service Job Card", "job_card_label", "50x25mm"),
+	("Job Card Label", "Service Job Card", "job_card_label", "40x20mm"),
 	("Job Card Acknowledgement", "Service Job Card", "job_card_acknowledgement", "A5"),
 	("Service Estimate", "Service Estimate", "service_estimate", "A4"),
 	("Service Invoice", "Sales Invoice", "service_tax_invoice", "A4"),
@@ -58,10 +58,10 @@ FORMATS = [
 	("Courier Manifest", "Courier Dispatch", "courier_manifest", "A4"),
 ]
 
-THERMAL_SIZES = {"80mm", "50x25mm"}
+THERMAL_SIZES = {"80mm", "40x20mm"}
 # Sizes that are a label rather than a roll: no page furniture, no margins
 # worth the name, and the page box is the sticker itself.
-LABEL_SIZES = {"50x25mm"}
+LABEL_SIZES = {"40x20mm"}
 
 A4_CSS = """
 .print-format { font-family: "Inter", "Helvetica Neue", Helvetica, sans-serif; font-size: 9.5pt;
@@ -83,6 +83,18 @@ THERMAL_CSS = """
 @page { size: 80mm 297mm; margin: 2mm; }
 .print-format { width: 76mm; font-family: "DejaVu Sans Mono", "Courier New", monospace;
 	font-size: 8pt; color: #000; }
+.print-format .letter-head, .print-format .letter-head-footer { display: none !important; }
+"""
+
+
+LABEL_CSS = """
+/* A die-cut sticker, not a roll. The page box and every measurement on it
+   come from the label's own template, so nothing is set here that could fight
+   them — in particular no width. The 80mm roll's stylesheet pins
+   `.print-format` to 76mm, and on a 40mm sticker that is a container almost
+   twice the width of the paper, which Chrome then shrinks to fit: the bars
+   came out two thirds of the width they were drawn at. */
+.print-format { width: auto; max-width: none; padding: 0; margin: 0; }
 .print-format .letter-head, .print-format .letter-head-footer { display: none !important; }
 """
 
@@ -216,7 +228,7 @@ def _upsert_format(name: str, doctype: str, template: str, size: str) -> bool:
 		"custom_format": 1,
 		"disabled": 0,
 		"html": html,
-		"css": THERMAL_CSS if thermal else A4_CSS,
+		"css": LABEL_CSS if size in LABEL_SIZES else (THERMAL_CSS if thermal else A4_CSS),
 		"font_size": 8 if thermal else 9,
 		# 6mm, not 12/18. The sheet is a bill, and the shop wants it to reach
 		# the edges of the paper rather than float in the middle of it. Six is

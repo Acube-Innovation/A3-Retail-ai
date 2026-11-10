@@ -417,3 +417,88 @@ class TestTheAppleShelf(FrappeTestCase):
 		registered = open(frappe.get_app_path("a3_retail", "patches.txt")).read()
 		self.assertIn("a3_retail.patches.apple_items_serialised", registered)
 		self.assertIn("a3_retail.patches.branch_sites_and_counter_switching", registered)
+
+
+class TestTheDeviceSticker(FrappeTestCase):
+	"""The label that goes on the customer's phone while it is on the bench."""
+
+	def _label(self) -> str:
+		return open(frappe.get_app_path("a3_retail", "templates", "print_formats",
+		                                "job_card_label.html"), encoding="utf-8").read()
+
+	def test_one_barcode_helper_not_two(self):
+		"""`print_helpers` carried two `a3_barcode` functions and the second
+		shadowed the first, so every label was drawn by the wrong one."""
+		source = open(frappe.get_app_path("a3_retail", "print_helpers.py"),
+		              encoding="utf-8").read()
+		self.assertEqual(source.count("\ndef a3_barcode("), 1)
+
+	def test_the_barcode_carries_the_short_number(self):
+		from a3_retail.print_helpers import a3_scan_code
+
+		self.assertEqual(a3_scan_code("JC-SVP-26-00053"), "26-00053")
+		self.assertEqual(a3_scan_code("JC-SLP-26-000123"), "26-000123")
+		# Anything not shaped that way is left whole rather than guessed at.
+		self.assertEqual(a3_scan_code("ODD"), "ODD")
+		self.assertEqual(a3_scan_code(""), "")
+
+	def test_the_short_number_still_finds_the_job_card(self):
+		"""Every screen searches document numbers by what they contain, and
+		`JC-SVP-26-00053` contains `26-00053`."""
+		from a3_retail.print_helpers import a3_scan_code
+
+		for name in frappe.get_all("Service Job Card", pluck="name", limit=20):
+			self.assertIn(a3_scan_code(name), name)
+
+	def test_the_short_number_is_still_unique(self):
+		from a3_retail.print_helpers import a3_scan_code
+
+		names = frappe.get_all("Service Job Card", pluck="name", limit=0)
+		if not names:
+			self.skipTest("no job cards on this site")
+		codes = [a3_scan_code(n) for n in names]
+		self.assertEqual(len(set(codes)), len(codes))
+
+	def test_the_bars_are_wide_enough_for_a_label_printer(self):
+		"""0.25mm is the usual floor for Code 128, and it is what lets a plain
+		203 dpi printer lay each bar down as exactly two dots."""
+		from a3_retail.print_helpers import a3_barcode_module_mm
+
+		# 38mm of the 40mm sticker, as the template asks for.
+		module = a3_barcode_module_mm("26-00053", 38)
+		self.assertGreaterEqual(module, 0.25)
+		dots_203 = module / (25.4 / 203)
+		dots_300 = module / (25.4 / 300)
+		self.assertGreaterEqual(dots_203, 2.0)
+		self.assertGreaterEqual(dots_300, 3.0)
+
+	def test_the_whole_number_is_still_printed_for_a_person(self):
+		self.assertIn("{{ doc.name }}", self._label())
+
+	def test_the_sticker_is_small_enough_for_a_phone(self):
+		label = self._label()
+		self.assertIn("@page { size: 40mm 20mm; margin: 0; }", label)
+		self.assertIn("width: 40mm; height: 20mm", label)
+
+	def test_the_bars_are_drawn_to_size_not_stretched(self):
+		"""Forcing an `<img>` to a width and a height squashes the bars; the
+		symbol is drawn at the width it will be printed at instead."""
+		label = self._label()
+		self.assertIn("a3_barcode(a3_scan_code(doc.name), 8, 38)", label)
+		self.assertIn("width: 38mm; height: auto", label)
+
+	def test_a_label_does_not_get_the_roll_s_stylesheet(self):
+		"""The 80mm roll's CSS pins `.print-format` to 76mm. On a 40mm sticker
+		that is a container twice the width of the paper, and the browser
+		shrinks the lot to fit."""
+		setup = open(frappe.get_app_path("a3_retail", "setup", "print_formats.py"),
+		             encoding="utf-8").read()
+		self.assertIn("LABEL_CSS", setup)
+		self.assertIn("LABEL_CSS if size in LABEL_SIZES", setup)
+		self.assertNotIn("width: 76mm", setup.split("LABEL_CSS")[1].split('"""')[1])
+
+	def test_the_format_is_registered_at_the_sticker_s_size(self):
+		setup = open(frappe.get_app_path("a3_retail", "setup", "print_formats.py"),
+		             encoding="utf-8").read()
+		self.assertIn('"job_card_label", "40x20mm"', setup)
+		self.assertIn('LABEL_SIZES = {"40x20mm"}', setup)
