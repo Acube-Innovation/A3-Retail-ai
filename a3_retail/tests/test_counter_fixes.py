@@ -476,37 +476,57 @@ class TestTheDeviceSticker(FrappeTestCase):
 		# 123 modules plus ten of quiet zone each side, two dots to a module.
 		self.assertEqual(width * LABEL_DOTS_PER_MM, 286)
 
-	def test_the_barcode_is_painted_in_whole_modules(self):
-		"""Not the width it was asked for — the bars it actually drew."""
+	def _barcode_svg(self, text: str = "26-00053", height: float = 9.0) -> str:
 		import base64
-		import io
-
-		from PIL import Image
 
 		from a3_retail.print_helpers import a3_label_barcode
 
-		uri = a3_label_barcode("26-00053", 9)
-		image = Image.open(io.BytesIO(base64.b64decode(uri.split(",", 1)[1])))
-		self.assertEqual(image.size, (286, 72))
+		uri = a3_label_barcode(text, height)
+		self.assertTrue(uri.startswith("data:image/svg+xml;base64,"), uri[:40])
+		return base64.b64decode(uri.split(",", 1)[1]).decode()
 
-		pixels = image.convert("L").load()
-		runs, dark, count = [], pixels[0, 0] < 128, 1
-		for x in range(1, image.size[0]):
-			here = pixels[x, 0] < 128
-			if here == dark:
-				count += 1
-			else:
-				runs.append((dark, count))
-				dark, count = here, 1
-		runs.append((dark, count))
+	def test_the_barcode_is_vector_not_a_bitmap(self):
+		"""A bitmap only survives if it lands at one image pixel per printer
+		dot, and nothing between the template and the head promises that —
+		Chrome rounds the page box, CUPS rounds the raster, the shop's Windows
+		driver rounds differently again. Miss by a third of a dot and the
+		resampler interpolates, and a one-bit image interpolated comes out as
+		bars with dotted edges. Rectangles have nothing to resample."""
+		svg = self._barcode_svg()
+		self.assertIn("shape-rendering=\"crispEdges\"", svg)
+		self.assertIn("<rect", svg)
 
-		# Ten modules of quiet zone each side, as GS1 asks for a Code 128.
-		self.assertEqual(runs[0], (False, 20))
-		self.assertEqual(runs[-1], (False, 20))
-		# And every bar and space between them a whole number of modules.
-		for painted, width in runs[1:-1]:
-			self.assertEqual(width % 2, 0,
-			                 f"an element came out {width} dots, which is not a module")
+	def test_the_barcode_carries_its_own_size(self):
+		"""`preserveAspectRatio="none"` tells a browser the viewBox carries no
+		meaningful ratio, so without width and height on the element itself
+		`height: auto` falls back to the 300x150 every SVG gets by default —
+		which came out as 14mm of bars running off the foot of the sticker."""
+		svg = self._barcode_svg()
+		self.assertIn('width="35.75mm"', svg)
+		self.assertIn('height="9.0mm"', svg)
+
+	def test_the_bars_are_whole_modules_wide(self):
+		"""Not the width it was asked for — the bars it actually drew."""
+		import re
+
+		svg = self._barcode_svg()
+		box = re.search(r'viewBox="0 0 ([\d.]+) ([\d.]+)"', svg)
+		self.assertIsNotNone(box)
+		# 123 modules of symbol plus ten of quiet zone each side.
+		self.assertEqual(float(box.group(1)), 143)
+
+		bars = [(float(m.group(1)), float(m.group(2)))
+		        for m in re.finditer(r'<rect x="([\d.]+)" y="0" width="([\d.]+)"', svg)]
+		self.assertTrue(bars, "the symbol drew no bars at all")
+		for x, width in bars:
+			# The viewBox is in modules, so every edge must be a whole one.
+			self.assertEqual(x, int(x), f"a bar starts at module {x}")
+			self.assertEqual(width, int(width), f"a bar is {width} modules wide")
+			# Code 128 has no element wider than four modules.
+			self.assertLessEqual(width, 4)
+		# Ten clear modules each side, as GS1 asks for a Code 128.
+		self.assertEqual(min(x for x, _ in bars), 10)
+		self.assertEqual(max(x + w for x, w in bars), 133)
 
 	def test_a_sticker_too_small_for_the_symbol_prints_none(self):
 		"""Rather than a symbol squeezed past the point of being readable."""
@@ -519,20 +539,51 @@ class TestTheDeviceSticker(FrappeTestCase):
 		self.assertIn("{{ doc.name }}", self._label())
 
 	def test_the_sticker_is_small_enough_for_a_phone(self):
-		"""1.57 x 0.79in is 39.88 x 20.07mm — the 40 x 20mm roll, declared on
-		the hundredth-of-an-inch grid Chrome rounds a page box to. Asking for
-		40mm got a 1.57in page back and a rescale on the way to the print head,
-		and a rescaled page is one where the bars stop landing on whole dots."""
-		label = self._label()
-		self.assertIn("@page { size: 1.57in 0.79in; margin: 0; }", label)
-		self.assertIn("width: 1.57in; height: 0.79in", label)
+		self.assertIn("width: {{ sticker_mm }}mm; height: 0.79in", self._label())
 
-	def test_the_page_is_declared_where_the_renderer_will_not_rescale_it(self):
+	def test_the_page_is_the_whole_liner_not_one_sticker(self):
+		"""The roll is two stickers across. Sent a 40mm page the printer
+		centres it on the web and it lands straddling the gap between them —
+		half the label on each, which is what the shop first saw. Nothing on
+		the printer fixes that, so the page is the full liner and each sticker
+		is placed on it here."""
+		label = self._label()
+		self.assertIn("@page { size: {{ web_in }}in 0.79in; margin: 0; }", label)
+		self.assertIn("{{ sticker(doc, edge_mm) }}", label)
+		self.assertIn("{{ sticker(doc, second_mm) }}", label)
+
+	def test_neither_sticker_is_laid_over_the_gap(self):
+		"""Both copies must sit inside their own sticker, with the gap clear."""
 		import re
 
-		page = re.search(r"@page \{ size: ([\d.]+)in ([\d.]+)in", self._label())
-		self.assertIsNotNone(page, "the label no longer declares its page in inches")
-		for side in page.groups():
+		label = self._label()
+		def number(name):
+			found = re.search(r"set " + name + r" = ([\d.]+)", label)
+			self.assertIsNotNone(found, f"{name} is no longer declared")
+			return float(found.group(1))
+
+		web = number("web_in") * 25.4
+		edge, sticker, gap = number("edge_mm"), number("sticker_mm"), number("gap_mm")
+		second = edge + sticker + gap
+		self.assertLessEqual(edge + sticker, second, "the two stickers overlap")
+		self.assertLessEqual(second + sticker, web,
+		                     "the second sticker runs off the end of the page")
+		# And the symbol itself has to fit the sticker it is placed on.
+		from a3_retail.print_helpers import a3_label_barcode_mm
+		self.assertLessEqual(a3_label_barcode_mm("26-00053", 36), sticker)
+
+	def test_the_page_is_declared_where_the_renderer_will_not_rescale_it(self):
+		"""Chrome rounds a page box to the nearest hundredth of an inch, and a
+		page it has to round is a page something downstream then rescales —
+		which is where a barcode's bars stop landing on whole dots. Both sides
+		are declared at a number Chrome would have rounded to anyway."""
+		import re
+
+		label = self._label()
+		self.assertIn("@page { size: {{ web_in }}in 0.79in; margin: 0; }", label)
+		web = re.search(r"set web_in = ([\d.]+)", label)
+		self.assertIsNotNone(web, "web_in is no longer declared")
+		for side in (web.group(1), "0.79"):
 			hundredths = float(side) * 100
 			self.assertEqual(hundredths, round(hundredths),
 			                 f"{side}in is not a whole number of hundredths of an inch")

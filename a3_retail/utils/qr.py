@@ -253,6 +253,77 @@ def barcode_dot_width(text: str, max_mm: float,
 	return round(width, 4) if width <= max_mm else 0.0
 
 
+def barcode_bars_uri(text: str, height_mm: float = 9.0,
+                     module_dots: int = 2, quiet_modules: int = 10,
+                     dots_per_mm: float = LABEL_DOTS_PER_MM) -> str:
+	"""Code 128 as vector bars, which a renderer cannot dither.
+
+	A bitmap barcode only survives if it lands on the paper at exactly one
+	image pixel per printer dot. Nothing in the chain between this template and
+	the print head will promise that: Chrome rounds a page box to the nearest
+	hundredth of an inch, CUPS rounds the raster to whole dots at a nominal
+	203dpi that is not quite the head's 203.2, and the shop's Windows driver
+	will round differently again. Miss by a third of a dot and the resampler
+	starts interpolating, and a one-bit image interpolated comes out as bars
+	with dotted, ragged edges — which is what a 2-up sticker showed down its
+	middle third, where the drift reached half a dot.
+
+	Drawn as rectangles there is nothing to resample. `shape-rendering` of
+	`crispEdges` turns off anti-aliasing, so every bar is laid down solid and
+	its edges snap to whichever dot they land nearest. A bar may come out a dot
+	wider or narrower than its neighbour, which a scanner takes in its stride
+	because it reads the symbol's widths relative to each other — but no bar is
+	ever a grey smear, which is what it cannot read.
+
+	The `viewBox` is in modules, so the symbol's proportions are exact whatever
+	width the label places it at, and `preserveAspectRatio="none"` keeps the
+	bars filling that width rather than being letterboxed inside it.
+	"""
+	if not text:
+		return ""
+
+	try:
+		import barcode
+	except ImportError:  # pragma: no cover - python-barcode ships with the bench
+		frappe.log_error("python-barcode is not installed", "A3 Retail: barcode")
+		return ""
+
+	if module_dots < 1 or dots_per_mm <= 0:
+		return ""
+
+	pattern = "".join(barcode.get("code128", str(text)).build())
+	if not pattern:
+		return ""
+
+	# Height in module units, so the viewBox stays in one set of units.
+	module_mm = module_dots / dots_per_mm
+	tall = max(round(flt(height_mm) / module_mm, 3), 1)
+	wide = len(pattern) + 2 * quiet_modules
+
+	rects, run_start = [], None
+	for index, module in enumerate(pattern + "0"):
+		if module == "1" and run_start is None:
+			run_start = index
+		elif module != "1" and run_start is not None:
+			rects.append(f'<rect x="{quiet_modules + run_start}" y="0"'
+			             f' width="{index - run_start}" height="{tall}"/>')
+			run_start = None
+
+	# The width and height are stated on the element, in millimetres, because
+	# `preserveAspectRatio="none"` tells a browser the viewBox carries no
+	# meaningful aspect ratio — and with nothing to go on, `height: auto` in the
+	# label falls back to the 300x150 default every SVG without dimensions gets,
+	# which came out at 14mm of bars running off the bottom of the sticker.
+	width_mm = round(wide * module_mm, 4)
+	svg = (f'<svg xmlns="http://www.w3.org/2000/svg"'
+	       f' width="{width_mm}mm" height="{round(flt(height_mm), 4)}mm"'
+	       f' viewBox="0 0 {wide} {tall}"'
+	       f' preserveAspectRatio="none" shape-rendering="crispEdges"'
+	       f' fill="#000">{"".join(rects)}</svg>')
+	encoded = base64.b64encode(svg.encode()).decode()
+	return f"data:image/svg+xml;base64,{encoded}"
+
+
 def barcode_dot_uri(text: str, height_mm: float = 8.0,
                     dots_per_mm: float = LABEL_DOTS_PER_MM,
                     module_dots: int = 2, quiet_modules: int = 10) -> str:

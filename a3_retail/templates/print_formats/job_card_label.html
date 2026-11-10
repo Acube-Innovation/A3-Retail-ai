@@ -5,28 +5,55 @@
     both search by. The two lines of text are for the human holding the
     tray — whose phone is this, and which phone is it.
 
-    Sized for a 40 x 20mm label roll, because it lives on the back of a
-    customer's phone and a bigger one covers a camera. Everything on it earns
-    its place: a label that needs a second glance to tell two Samsungs apart
-    is not worth printing.
+    Sized for a 40 x 20mm label, because it lives on the back of a customer's
+    phone and a bigger one covers a camera. Everything on it earns its place:
+    a label that needs a second glance to tell two Samsungs apart is not worth
+    printing.
 
     The barcode carries `26-00053` rather than the whole `JC-SVP-26-00053`.
     See `a3_scan_code` — the `JC` and the branch are the same on every sticker
     a branch prints, so they cost bars and say nothing, and the search finds
     the card either way. At this size that is the difference between bars a
     scanner reads first time and bars it has to be coaxed over.
+
+    THE ROLL IS TWO ACROSS, and that is why this page is as wide as the whole
+    liner rather than one sticker. Sent a 40mm page, the printer centres it on
+    the web and it comes out straddling the gap between the two stickers —
+    half the label on each, which is what the shop first saw. Nothing on the
+    printer fixes that: it decides where a narrow page goes. So the page is
+    the full liner and each sticker is placed on it by hand, which puts the
+    position under this template's control and makes it something that can be
+    measured off a test print.
+
+    Both stickers are printed, with the same job card on each. A feed advances
+    the whole row whether one is used or two, so the second is spent either
+    way — one goes on the phone, the other on the job bag it travels in.
 -#}
+
+{#- ----------------------------------------------------------------------
+    The roll. Measure these with a ruler if the stock ever changes, and
+    nothing else in this file needs touching. `web_in` is in inches because
+    the page box is; see the note on `@page` below.
+    ------------------------------------------------------------------- -#}
+{%- set web_in = 3.39 -%}          {#- 86.1mm: the liner, to the nearest hundredth
+                                       of an inch. The page is the width of the web on
+                                       purpose — the printer centres what it is given,
+                                       and a page the same size as the paper makes that
+                                       centring a no-op instead of a shift to correct. -#}
+{%- set edge_mm = 0.9 -%}          {#- liner edge to the first sticker -#}
+{%- set sticker_mm = 40.0 -%}      {#- one sticker -#}
+{%- set gap_mm = 3.4 -%}           {#- between the two stickers -#}
+{%- set second_mm = edge_mm + sticker_mm + gap_mm -%}
+
 <style>
-	/* The sticker is 40 x 20mm, but the page is declared as the nearest
-	   hundredth of an inch — 1.57 x 0.79in is 39.88 x 20.07mm — because that
-	   is the grid Chrome rounds a page box to, and a page it has to rescale is
-	   a page where the barcode's bars stop landing on whole dots. Asking for
-	   40mm got a 1.57in page back and then a 1.003 rescale on the way to the
-	   print head, which spread the narrow bars across one, two and three dots.
-	   Declaring the same number Chrome would have rounded to removes the
-	   rescale, and the eighth of a millimetre lost off the edge of the label
-	   is not visible on it. See `qr.barcode_dot_uri`. */
-	@page { size: 1.57in 0.79in; margin: 0; }
+	/* The page is the whole liner, and it is declared as a round number of
+	   hundredths of an inch because that is the grid Chrome rounds a page box
+	   to. Asking for a size it has to round got a rescale on the way to the
+	   print head — a 1.003 zoom — and a rescaled page is one where the
+	   barcode's bars stop landing on whole dots. Declaring the number Chrome
+	   would have rounded to anyway removes the rescale. See
+	   `qr.barcode_dot_uri`. */
+	@page { size: {{ web_in }}in 0.79in; margin: 0; }
 	/* The print view carries a Print / Get PDF banner — `.action-banner`, and
 	   `.print-hide` only hides it in Frappe's own print stylesheet, which a
 	   custom page size does not pull in. On a sticker this size it was half
@@ -35,25 +62,33 @@
 	html, body, .print-format, .print-format-gutter {
 		margin: 0 !important; padding: 0 !important; background: #fff !important;
 		border: 0 !important; box-shadow: none !important; }
-	.lbl { width: 1.57in; height: 0.79in; padding: 1mm 1.5mm; box-sizing: border-box;
+
+	.web { position: relative; width: {{ web_in }}in; height: 0.79in;
+	       overflow: hidden; }
+	/* Each sticker is placed at the millimetre it actually sits at on the
+	   liner, rather than laid out in flow, so that moving one after a test
+	   print is a change to one number above. */
+	.lbl { position: absolute; top: 0; width: {{ sticker_mm }}mm; height: 0.79in;
+	       padding: 1mm 1.5mm; box-sizing: border-box;
 	       font-family: Helvetica, Arial, sans-serif; color: #000;
-	       display: block; overflow: hidden; }
+	       overflow: hidden; }
 	.lbl .who { font-size: 6.5pt; font-weight: bold; line-height: 1.1;
 	            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 	.lbl .what { font-size: 5.5pt; line-height: 1.1; white-space: nowrap;
 	             overflow: hidden; text-overflow: ellipsis; }
-	/* Pulled out to the label's edges. Every tenth of a millimetre here is
+	/* Pulled out to the sticker's edges. Every tenth of a millimetre here is
 	   width the bars get to be, and the bars are the only thing on this
-	   sticker that has to work from a distance. */
-	/* The gap under the bars is not spare room: the number below is printed
+	   sticker that has to work from a distance.
+
+	   The gap under the bars is not spare room: the number below is printed
 	   for a person, and a hand scanner whose aiming line catches it would try
 	   to read those strokes as bars. Half a millimetre is four dots, which is
-	   two modules — wider than any gap inside the symbol, so nothing downstream
-	   can mistake one for the other. */
+	   two modules — wider than any gap inside the symbol, so nothing
+	   downstream can mistake one for the other. */
 	.lbl .code { margin: 0.5mm -1.5mm 0.6mm; text-align: center; }
 	/* The width is set on the element itself rather than here, because it is
-	   worked out from the number being encoded — see the template below. The
-	   height follows it; forcing both is what squashed the bars before.
+	   worked out from the number being encoded — see below. The height
+	   follows it; forcing both is what squashed the bars before.
 
 	   `block`, not `inline-block`: an inline image sits on a text baseline and
 	   the line box keeps room for descenders under it, which on a sticker with
@@ -63,7 +98,9 @@
 	            font-family: "DejaVu Sans Mono", monospace; line-height: 1.1; }
 </style>
 
-<div class="lbl">
+{#- One sticker's worth, so the two cannot drift apart. -#}
+{%- macro sticker(doc, left_mm) -%}
+<div class="lbl" style="left: {{ left_mm }}mm">
 	<div class="who">{{ doc.customer_name or "—" }}</div>
 	{#- The model usually carries the make already — "Samsung Samsung S24" is
 	    what naming it twice looks like on a sticker this size. -#}
@@ -94,4 +131,10 @@
 	</div>
 	{#- The whole number, for the person reading it off the bench. -#}
 	<div class="num">{{ doc.name }}</div>
+</div>
+{%- endmacro -%}
+
+<div class="web">
+	{{ sticker(doc, edge_mm) }}
+	{{ sticker(doc, second_mm) }}
 </div>
