@@ -77,10 +77,14 @@ A4_CSS = """
 THERMAL_CSS = """
 /* A real height, not `auto`: `size: 80mm auto` is not valid CSS — the
    two-value form takes two lengths — so a browser drops the whole declaration
-   and prints the slip on whatever paper it was last set to. Templates that
-   know their own length emit a tighter one through `a3_thermal.styles()`;
-   this is the roll's worth that never clips. */
-@page { size: 80mm 297mm; margin: 2mm; }
+   and prints the slip on whatever paper it was last set to.
+
+   150mm, not a sheet's worth. Every slip here declares its own height, and the
+   receipt measures itself, so this is only ever the floor nobody should reach.
+   It used to be 297mm, which is about two slips of roll: anywhere that rule
+   won — a stale template, a print dialog left on a fixed stock — the shop got
+   a receipt with a blank slip hanging off the end of it. */
+@page { size: 80mm 150mm; margin: 2mm; }
 .print-format { width: 76mm; font-family: "DejaVu Sans Mono", "Courier New", monospace;
 	font-size: 8pt; color: #000; }
 .print-format .letter-head, .print-format .letter-head-footer { display: none !important; }
