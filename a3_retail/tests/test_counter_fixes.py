@@ -462,33 +462,182 @@ class TestTheDeviceSticker(FrappeTestCase):
 		codes = [a3_scan_code(n) for n in names]
 		self.assertEqual(len(set(codes)), len(codes))
 
-	def test_the_bars_are_wide_enough_for_a_label_printer(self):
-		"""0.25mm is the usual floor for Code 128, and it is what lets a plain
-		203 dpi printer lay each bar down as exactly two dots."""
-		from a3_retail.print_helpers import a3_barcode_module_mm
+	def test_the_bars_land_on_whole_printer_dots(self):
+		"""A print head burns a dot or it does not, so a module that works out
+		at 2.35 dots comes off the roll as a mixture of two and three — and
+		measured on the shop's own head the old sticker put 38 of its narrow
+		bars at a single dot. A scanner takes the narrowest element as the
+		yardstick for every other width, so the spread is what decides whether
+		the bench reads it first time."""
+		from a3_retail.utils.qr import LABEL_DOTS_PER_MM, barcode_dot_width
 
-		# 38mm of the 40mm sticker, as the template asks for.
-		module = a3_barcode_module_mm("26-00053", 38)
-		self.assertGreaterEqual(module, 0.25)
-		dots_203 = module / (25.4 / 203)
-		dots_300 = module / (25.4 / 300)
-		self.assertGreaterEqual(dots_203, 2.0)
-		self.assertGreaterEqual(dots_300, 3.0)
+		width = barcode_dot_width("26-00053", 46)
+		# 123 modules plus ten of quiet zone each side, two dots to a module.
+		# The millimetre figure follows from the dots, not the other way round.
+		self.assertEqual(round(width * LABEL_DOTS_PER_MM), 286)
+
+	def _barcode_svg(self, text: str = "26-00053", height: float = 9.0) -> str:
+		import base64
+
+		from a3_retail.print_helpers import a3_label_barcode
+
+		uri = a3_label_barcode(text, height)
+		self.assertTrue(uri.startswith("data:image/svg+xml;base64,"), uri[:40])
+		return base64.b64decode(uri.split(",", 1)[1]).decode()
+
+	def test_the_barcode_is_vector_not_a_bitmap(self):
+		"""A bitmap only survives if it lands at one image pixel per printer
+		dot, and nothing between the template and the head promises that —
+		Chrome rounds the page box, CUPS rounds the raster, the shop's Windows
+		driver rounds differently again. Miss by a third of a dot and the
+		resampler interpolates, and a one-bit image interpolated comes out as
+		bars with dotted edges. Rectangles have nothing to resample."""
+		svg = self._barcode_svg()
+		self.assertIn("shape-rendering=\"crispEdges\"", svg)
+		self.assertIn("<rect", svg)
+
+	def test_the_barcode_carries_its_own_size(self):
+		"""`preserveAspectRatio="none"` tells a browser the viewBox carries no
+		meaningful ratio, so without width and height on the element itself
+		`height: auto` falls back to the 300x150 every SVG gets by default —
+		which came out as 14mm of bars running off the foot of the sticker."""
+		from a3_retail.print_helpers import a3_label_barcode_mm
+		from a3_retail.utils.qr import LABEL_DOTS_PER_MM
+
+		svg = self._barcode_svg(height=11.0)
+		width = a3_label_barcode_mm("26-00053", 46)
+		self.assertIn(f'width="{width}mm"', svg)
+		self.assertIn('height="11.0mm"', svg)
+		self.assertEqual(round(width * LABEL_DOTS_PER_MM), 286)
+
+	def test_the_bars_are_whole_modules_wide(self):
+		"""Not the width it was asked for — the bars it actually drew."""
+		import re
+
+		svg = self._barcode_svg()
+		box = re.search(r'viewBox="0 0 ([\d.]+) ([\d.]+)"', svg)
+		self.assertIsNotNone(box)
+		# 123 modules of symbol plus ten of quiet zone each side.
+		self.assertEqual(float(box.group(1)), 143)
+
+		bars = [(float(m.group(1)), float(m.group(2)))
+		        for m in re.finditer(r'<rect x="([\d.]+)" y="0" width="([\d.]+)"', svg)]
+		self.assertTrue(bars, "the symbol drew no bars at all")
+		for x, width in bars:
+			# The viewBox is in modules, so every edge must be a whole one.
+			self.assertEqual(x, int(x), f"a bar starts at module {x}")
+			self.assertEqual(width, int(width), f"a bar is {width} modules wide")
+			# Code 128 has no element wider than four modules.
+			self.assertLessEqual(width, 4)
+		# Ten clear modules each side, as GS1 asks for a Code 128.
+		self.assertEqual(min(x for x, _ in bars), 10)
+		self.assertEqual(max(x + w for x, w in bars), 133)
+
+	def test_a_sticker_too_small_for_the_symbol_prints_none(self):
+		"""Rather than a symbol squeezed past the point of being readable."""
+		from a3_retail.utils.qr import barcode_dot_width
+
+		self.assertEqual(barcode_dot_width("26-00053", 20), 0.0)
+		self.assertEqual(barcode_dot_width("", 36), 0.0)
 
 	def test_the_whole_number_is_still_printed_for_a_person(self):
 		self.assertIn("{{ doc.name }}", self._label())
 
 	def test_the_sticker_is_small_enough_for_a_phone(self):
 		label = self._label()
-		self.assertIn("@page { size: 40mm 20mm; margin: 0; }", label)
-		self.assertIn("width: 40mm; height: 20mm", label)
+		self.assertIn("width: {{ cell_mm }}mm;", label)
+		self.assertIn("height: {{ tall_pt }}pt;", label)
+
+	def test_the_page_is_the_whole_liner_not_one_sticker(self):
+		"""The roll is two stickers across. Sent a 40mm page the printer
+		centres it on the web and it lands straddling the gap between them —
+		half the label on each, which is what the shop first saw. Nothing on
+		the printer fixes that, so the page is the full liner and each sticker
+		is placed on it here."""
+		label = self._label()
+		self.assertIn("@page { size: {{ page_pt }}pt {{ tall_pt }}pt; margin: 0; }", label)
+		self.assertIn("{{ sticker(doc, first_mm) }}", label)
+		self.assertIn("{{ sticker(doc, second_mm) }}", label)
+
+	def test_neither_sticker_is_laid_over_the_gap(self):
+		"""The roll is two stickers across, and a cell wider than the printer
+		can reach — or a pair placed further apart than the page is wide —
+		puts half a label in the gap between them, which is what the shop
+		first saw."""
+		import re
+
+		from a3_retail.utils.qr import LABEL_DOTS_PER_MM
+
+		label = self._label()
+
+		def number(name, pattern=r"([\d.]+)"):
+			found = re.search(r"set " + name + r" = " + pattern, label)
+			self.assertIsNotNone(found, f"{name} is no longer declared")
+			return float(found.group(1))
+
+		page = number("page_pt") * 25.4 / 72
+		sticker, gap = number("sticker_mm"), number("gap_mm")
+		cell = number("cell_dots") / LABEL_DOTS_PER_MM
+
+		# What is drawn has to sit inside its sticker...
+		self.assertLessEqual(cell, sticker,
+		                     "a cell is wider than the sticker it is drawn on")
+		# ...the pair has to fit the page the head can print...
+		self.assertLessEqual(sticker + gap + cell, page,
+		                     "the second sticker runs off the end of the page")
+		# ...and the symbol has to fit the cell it is centred in.
+		from a3_retail.print_helpers import a3_label_barcode_mm
+		self.assertLessEqual(a3_label_barcode_mm("26-00053", sticker - 4), cell)
+
+	def test_the_cell_is_an_even_number_of_dots(self):
+		"""So the margin that centres the symbol inside it is a whole number
+		of dots too. Half a dot either side and an edge rounds the wrong way."""
+		import re
+
+		cell = re.search(r"set cell_dots = (\d+)", self._label())
+		self.assertIsNotNone(cell, "cell_dots is no longer declared")
+		self.assertEqual(int(cell.group(1)) % 2, 0)
+
+	def test_the_page_is_a_whole_number_of_inches(self):
+		"""Not a style point — it is what keeps the bars on whole dots.
+
+		A driver rasterises a page at `inches x 203`, so only a whole number
+		of inches comes out as a whole number of dots, and only then does the
+		scale land on exactly the 203/25.4 the symbol is laid out in. At any
+		other width the two disagree by about a tenth of a percent, which was
+		enough to lose a dot out of the middle of the stop pattern on one of
+		the two stickers — and which edge it falls on depends on the number
+		being encoded, so it cannot be tuned out.
+
+		Points, not inches, because points are the one unit Chrome will not
+		round: asked for 4.09in it returned 294pt, which is 4.0833in.
+		"""
+		import re
+
+		label = self._label()
+		self.assertIn("@page { size: {{ page_pt }}pt {{ tall_pt }}pt; margin: 0; }", label)
+		page = re.search(r"set page_pt = (\d+)", label)
+		self.assertIsNotNone(page, "page_pt is no longer declared")
+		self.assertEqual(int(page.group(1)) % 72, 0,
+		                 "the page is not a whole number of inches, so the "
+		                 "raster scale will not match the barcode's")
 
 	def test_the_bars_are_drawn_to_size_not_stretched(self):
-		"""Forcing an `<img>` to a width and a height squashes the bars; the
-		symbol is drawn at the width it will be printed at instead."""
+		"""Forcing an `<img>` to a width and a height squashes the bars. The
+		symbol is drawn in the print head's own dots and then placed at exactly
+		the width it was drawn, so nothing downstream resamples it."""
 		label = self._label()
-		self.assertIn("a3_barcode(a3_scan_code(doc.name), 8, 38)", label)
-		self.assertIn("width: 38mm; height: auto", label)
+		self.assertIn("a3_label_barcode_mm(scan, sticker_mm - 4)", label)
+		self.assertIn("a3_label_barcode(scan, 11)", label)
+		self.assertIn('style="width: {{ bar_mm }}mm"', label)
+		self.assertIn("height: auto", label)
+		self.assertNotIn("width: 38mm", label)
+
+	def test_the_number_underneath_is_clear_of_the_bars(self):
+		"""The number is printed for a person, and a hand scanner whose aiming
+		line catches it would try to read those strokes as bars."""
+		label = self._label()
+		self.assertIn(".lbl .code { margin: 0.6mm -1.5mm;", label)
 
 	def test_a_label_does_not_get_the_roll_s_stylesheet(self):
 		"""The 80mm roll's CSS pins `.print-format` to 76mm. On a 40mm sticker
@@ -503,8 +652,8 @@ class TestTheDeviceSticker(FrappeTestCase):
 	def test_the_format_is_registered_at_the_sticker_s_size(self):
 		setup = open(frappe.get_app_path("a3_retail", "setup", "print_formats.py"),
 		             encoding="utf-8").read()
-		self.assertIn('"job_card_label", "40x20mm"', setup)
-		self.assertIn('LABEL_SIZES = {"40x20mm"}', setup)
+		self.assertIn('"job_card_label", "50x25mm"', setup)
+		self.assertIn('LABEL_SIZES = {"50x25mm"}', setup)
 
 
 class TestTheThermalSlip(FrappeTestCase):
