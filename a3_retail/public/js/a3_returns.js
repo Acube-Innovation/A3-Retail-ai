@@ -138,12 +138,17 @@
 			</tr>`).join("");
 
 		$("rows").querySelectorAll("[data-act='print']").forEach((node) => {
-			node.addEventListener("click", async () => {
+			// `stock_control.print_url` names a format for stock documents and
+			// purchases but not for a Sales Invoice, so a credit note fell
+			// through it to ERPNext's own sheet — and it answers with a
+			// `download_pdf` address, which is a PDF in a tab rather than the
+			// printer. Both are why this went the long way round; the format
+			// is named here and `printDoc` opens the printer over the list.
+			node.addEventListener("click", () => {
 				const name = node.closest("tr").dataset.name;
 				try {
-					const url = await A3.call("a3_retail.api.stock_control.print_url",
-					                          { doctype: "Sales Invoice", name });
-					window.open(url, "_blank");
+					A3.printDoc({ doctype: "Sales Invoice", name,
+					              format: "Retail Tax Invoice" });
 				} catch (error) { toast(error.message, "error"); }
 			});
 		});
@@ -304,7 +309,11 @@
 				+ (result.refunded ? `, ${money2(result.refunded)} refunded` : "")
 				+ (result.credit_left ? `, ${money2(result.credit_left)} left as credit` : "")
 				+ ".", "ok");
-			window.open(result.print_url, "_blank");
+			// The printer, not a PDF tab to find, print from and close. The
+			// credit note is already on the list behind this modal, with View
+			// and Print on its own row, so nothing has to be opened to reach
+			// it again.
+			A3.printDoc(result.print_url);
 			// It is already on the list, so close and let it repaint.
 			setTimeout(() => {
 				$("return-modal").hidden = true;

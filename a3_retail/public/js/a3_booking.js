@@ -54,6 +54,7 @@ window.BOOKING = (function () {
 	function icon(name) {
 		const paths = {
 			print: '<path d="M7 9V4h10v5"/><rect x="4" y="9" width="16" height="7" rx="2"/><path d="M7 14h10v6H7z"/>',
+			barcode: '<path d="M4 6v12M7 6v12M10 6v8M13 6v12M16 6v8M19 6v12"/>',
 			wrench: '<path d="M14.7 6.3a4 4 0 0 0 5 5L21 21H10L4.3 15.3a4 4 0 0 1 5-5z"/><path d="M9 9l6 6"/>',
 			cash: '<rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/>',
 			chat: '<path d="M20 15a2 2 0 0 1-2 2H8l-4 4V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2z"/>',
@@ -113,10 +114,13 @@ window.BOOKING = (function () {
 			<button class="btn btn-primary btn-icon" id="print-top">${icon("print")} Print</button>
 			<button class="btn btn-outline btn-icon" id="print-top-thermal">${
 				icon("print")} Thermal</button>
+			<button class="btn btn-outline btn-icon" id="print-top-label">${
+				icon("barcode")} Print Barcode</button>
 			<a class="btn btn-outline btn-icon" href="/retail/service?booking=${
 				encodeURIComponent(data.name)}">${icon("wrench")} Open at the counter</a>`);
 		$("print-top").addEventListener("click", () => print(false));
 		$("print-top-thermal").addEventListener("click", () => print(true));
+		$("print-top-label").addEventListener("click", printBarcode);
 
 		$("body").innerHTML = `
 			<section class="svc-panel wb" id="wb"></section>
@@ -241,6 +245,8 @@ window.BOOKING = (function () {
 					icon("print")} Print Acknowledgement</button>
 				<button class="btn btn-outline btn-icon" id="print-bottom-thermal">${
 					icon("print")} Thermal</button>
+				<button class="btn btn-outline btn-icon" id="print-bottom-label">${
+					icon("barcode")} Print Barcode</button>
 				<a class="btn btn-outline btn-icon" href="/retail/service?booking=${
 					encodeURIComponent(data.name)}">${icon("wrench")} Open at the counter</a>
 				${data.can.take_money && totals.balance > 0
@@ -265,6 +271,7 @@ window.BOOKING = (function () {
 
 		$("print-bottom").addEventListener("click", () => print(false));
 		$("print-bottom-thermal").addEventListener("click", () => print(true));
+		$("print-bottom-label").addEventListener("click", printBarcode);
 		if ($("collect")) $("collect").addEventListener("click", askPayment);
 		if ($("add-note")) $("add-note").addEventListener("click", askNote);
 		if ($("otp")) $("otp").addEventListener("click", resendOtp);
@@ -993,13 +1000,25 @@ window.BOOKING = (function () {
 	/** The slip on A4, or on the 80mm roll — straight to the printer either
 	 *  way, rather than a PDF in a tab to be found and printed from. */
 	async function print(thermal) {
+		return printAs(thermal === true ? "Job Card Receipt (Thermal)" : null);
+	}
+
+	/** The sticker that goes on the device, off the same roll the job card's
+	 *  own label uses — two across, so one goes on the phone and the other on
+	 *  the bag it travels in. A booking is a Service Job Card underneath, so
+	 *  it is the same format and nothing new is set up on the printer. */
+	async function printBarcode() {
+		return printAs("Job Card Label");
+	}
+
+	/** One route to the printer for all three buttons. `format` of null is the
+	 *  A4 sheet the address already names. */
+	async function printAs(format) {
 		try {
 			const url = state.data.print_url
 				|| await A3.call("a3_retail.api.bookings.print_url", { name: state.name });
 			const parts = A3.printParts(url);
-			A3.printDoc(thermal === true
-				? Object.assign({}, parts, { format: "Job Card Receipt (Thermal)" })
-				: parts);
+			A3.printDoc(format ? Object.assign({}, parts, { format }) : parts);
 		} catch (error) {
 			toast(error.message, "error");
 		}

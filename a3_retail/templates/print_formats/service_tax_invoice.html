@@ -1,5 +1,9 @@
 {% import "a3_retail/templates/print_formats/a3_base.html" as base %}
-{% set is_service = doc.get("a3_job_card") %}
+{#- A Sales Invoice keeps the repair in `a3_service_job_card`. It was read
+    here as `a3_job_card`, which a Sales Invoice does not have, so every
+    repair bill printed the manufacturer warranty instead of the shop's own
+    and never named the job card it came from. -#}
+{% set is_service = doc.get("a3_service_job_card") %}
 {{ base.styles() }}
 {{ base.title_band(doc, "Tax Invoice · Service", a3_payment_qr(doc), "Scan to pay") }}
 {{ base.party_block(
@@ -7,8 +11,32 @@
 	"Invoice Details",
 	'Date: ' ~ frappe.format(doc.posting_date, {"fieldtype": "Date"}) ~
 	'<br>Branch: ' ~ (doc.get("branch") or "") ~
-	('<br>Job Card: ' ~ doc.get("a3_job_card") if doc.get("a3_job_card") else "") ~
+	('<br>Job Card: ' ~ is_service if is_service else "") ~
 	('<br>IRN: ' ~ doc.get("irn") if doc.get("irn") else "")) }}
+{#- The device, as the shop's own paper service bill takes it down: what came
+    in, its number, what the customer said was wrong with it, what came with
+    it, and anything paid up front. A repair billed off a Sales Invoice alone
+    read as a shop sale with one line on it, and the customer walked out with
+    nothing in writing about their own phone. -#}
+{%- set intake = a3_job_card_intake(doc) -%}
+{% if intake %}
+<div class="a3-block">
+	<h4>Device</h4>
+	<table class="a3-kv">
+		{% if intake.device %}<tr><td class="a3-k">Make &amp; model</td><td>{{ intake.device }}</td></tr>{% endif %}
+		{% if intake.imei %}<tr><td class="a3-k">IMEI / Serial</td><td>{{ intake.imei }}</td></tr>{% endif %}
+		{% if intake.symptom %}<tr><td class="a3-k">Symptom</td><td>{{ intake.symptom }}</td></tr>{% endif %}
+		{% if intake.issues %}<tr><td class="a3-k">Reported</td><td>{{ intake.issues }}</td></tr>{% endif %}
+		{% if intake.condition %}<tr><td class="a3-k">Condition</td><td>{{ intake.condition }}</td></tr>{% endif %}
+		{% if intake.accessories %}<tr><td class="a3-k">Received with</td><td>{{ intake.accessories }}</td></tr>{% endif %}
+		{% if intake.lock %}<tr><td class="a3-k">Lock code</td><td>{{ intake.lock }}</td></tr>{% endif %}
+		{% if intake.advance %}<tr><td class="a3-k">Advance paid</td><td>{{ a3_money(intake.advance) }}</td></tr>{% endif %}
+		{% if intake.received_on %}<tr><td class="a3-k">Booked in</td><td>{{
+			frappe.format(intake.received_on, {"fieldtype": "Datetime"}) }}{%
+			if intake.received_by %} · {{ intake.received_by }}{% endif %}</td></tr>{% endif %}
+	</table>
+</div>
+{% endif %}
 {{ base.items_table(doc.items, [("Item", "item_name", ""), ("HSN", "gst_hsn_code", ""), ("Qty", "qty", "num"), ("Rate", "rate", "money"), ("Amount", "amount", "money")]) }}
 {% set imei_rows = a3_serial_lines(doc) %}
 {% if imei_rows %}<div class="a3-block"><h4>IMEI / Serial</h4>{{ imei_rows|join("<br>") }}</div>{% endif %}

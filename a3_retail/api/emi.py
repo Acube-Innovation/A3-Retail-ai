@@ -571,36 +571,85 @@ def _financiers(data: dict) -> dict:
 
 
 # ------------------------------------------------------------------ EMI sales
+def _sales_filters(data: dict) -> tuple[str, dict]:
+	"""The same filter bar, read against the bill rather than an application."""
+	employee = _me()
+	conditions = ["si.docstatus = 1", "ifnull(si.a3_finance_partner, '') != ''"]
+	values = {"branch": employee.branch}
+
+	wants_all = (data.get("branch") or "current") == "all"
+	if not wants_all or not _may_see_every_branch():
+		conditions.append("si.branch = %(branch)s")
+	elif data.get("branch") not in (None, "", "all", "current"):
+		conditions.append("si.branch = %(named_branch)s")
+		values["named_branch"] = data["branch"]
+
+	if data.get("query"):
+		conditions.append("(si.name like %(like)s or si.customer_name like %(like)s"
+		                  " or si.contact_mobile like %(like)s"
+		                  " or si.a3_finance_partner like %(like)s)")
+		values["like"] = f"%{data['query']}%"
+
+	if data.get("from_date"):
+		conditions.append("si.posting_date >= %(from_date)s")
+		values["from_date"] = getdate(data["from_date"])
+	if data.get("to_date"):
+		conditions.append("si.posting_date <= %(to_date)s")
+		values["to_date"] = getdate(data["to_date"])
+
+	if data.get("partner"):
+		conditions.append("si.a3_finance_partner = %(partner)s")
+		values["partner"] = data["partner"]
+
+	return " and ".join(conditions), values
+
+
 def _sales(data: dict, page: int, size: int) -> dict:
-	"""Sales that actually went out on finance, and what each is owed."""
-	where, values = _filters(data)
+	"""Sales that went out on finance, as the shop actually makes them.
+
+	This read `EMI Application` and showed nothing, because the counter does
+	not raise one. At the till it picks EMI and a financier: the bill carries
+	the partner, and the money arrives as a payment named `EMI - <financier>`
+	with whatever the customer put down beside it. Sixty-nine such bills were
+	on file while this register sat empty.
+
+	So the bill is the row. An application is joined where one exists — a shop
+	working the full apply, approve and disburse route still sees its scheme
+	and what the financier has settled — and the rest is read off the invoice
+	and the payments against it:
+
+	  financed      what came in under an `EMI - ...` mode
+	  down payment  the rest of the bill, which the customer put down
+	"""
+	where, values = _sales_filters(data)
 	size = size if size in PAGE_SIZES else 20
 	values.update({"start": (page - 1) * size, "size": size})
 
-	# A sale on finance is one the financier has disbursed. Most carry the
-	# invoice they were raised against; the ones seeded or keyed in before the
-	# invoice exists still belong on this list, with the invoice column empty.
-	clause = (f"{where} and (e.status in %(sold)s "
-	          f"or (e.sales_invoice is not null and e.sales_invoice != ''))")
-	values["sold"] = [DISBURSED, SETTLED]
 	total = frappe.db.sql(
-		f"select count(*) from `tabEMI Application` e where {clause}", values)[0][0]
+		f"select count(*) from `tabSales Invoice` si where {where}", values)[0][0]
 
 	rows = frappe.db.sql(
 		f"""
-		select e.name, e.sales_invoice, e.disbursement_date, e.customer, e.customer_name,
-		       e.finance_partner, e.emi_scheme, e.invoice_total, e.down_payment,
-		       e.loan_amount, e.amount_received, e.status, e.settlement, e.branch,
-		       si.grand_total, si.posting_date, si.docstatus as invoice_docstatus,
-		       (select group_concat(ai.item_name separator ', ')
-		          from `tabEMI Application Item` ai where ai.parent = e.name) as products,
-		       (select group_concat(ai.serial_no separator ', ')
-		          from `tabEMI Application Item` ai
-		         where ai.parent = e.name and ai.serial_no != '') as imei
-		from `tabEMI Application` e
-		left join `tabSales Invoice` si on si.name = e.sales_invoice
-		where {clause}
-		order by e.disbursement_date desc, e.creation desc
+		select si.name as sales_invoice, si.posting_date, si.customer, si.customer_name,
+		       si.a3_finance_partner as finance_partner, si.grand_total as invoice_total,
+		       si.branch,
+		       e.name as application, e.emi_scheme, e.status, e.amount_received,
+		       e.settlement, e.disbursement_date,
+		       (select group_concat(it.item_name separator ', ')
+		          from `tabSales Invoice Item` it where it.parent = si.name) as products,
+		       (select group_concat(it.serial_no separator ', ')
+		          from `tabSales Invoice Item` it
+		         where it.parent = si.name and ifnull(it.serial_no, '') != '') as imei,
+		       (select sum(per.allocated_amount)
+		          from `tabPayment Entry Reference` per
+		          join `tabPayment Entry` pe on pe.name = per.parent
+		         where per.reference_name = si.name and pe.docstatus = 1
+		           and pe.mode_of_payment like 'EMI%%') as financed
+		from `tabSales Invoice` si
+		left join `tabEMI Application` e
+		       on e.sales_invoice = si.name and e.docstatus < 2
+		where {where}
+		order by si.posting_date desc, si.creation desc
 		limit %(start)s, %(size)s
 		""",
 		values,
@@ -608,10 +657,19 @@ def _sales(data: dict, page: int, size: int) -> dict:
 	)
 
 	for row in rows:
-		row["expected"] = money(flt(row.loan_amount))
+		# What the financier put in is what arrived under an EMI mode. Where
+		# none has arrived yet the application's own figure stands, and failing
+		# both the whole bill is taken as financed rather than shown as zero.
+		financed = flt(row.financed) or flt(row.get("loan_amount")) or flt(row.invoice_total)
+		paid_down = flt(row.invoice_total) - financed
+
+		row["name"] = row.application          # the Application column links this
+		row["loan_amount"] = money(financed)
+		row["down_payment"] = money(max(paid_down, 0))
+		row["customer_paid"] = row["down_payment"]
+		row["expected"] = money(financed)
 		row["received"] = money(flt(row.amount_received))
-		row["customer_paid"] = money(flt(row.invoice_total) - flt(row.loan_amount))
-		row["settlement_state"] = _settlement_state(row)
+		row["settlement_state"] = _settlement_state(row) if row.application else "Billed"
 		row["tone"] = {"Settled": "pill-good", "Pending Settlement": "pill-warn",
 		               "Partially Settled": "pill-warn", "Cancelled": "pill-bad"}.get(
 			row["settlement_state"], "pill-sky")

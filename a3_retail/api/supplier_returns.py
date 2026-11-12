@@ -192,15 +192,29 @@ def recent(limit: int = 30, filters=None) -> dict:
 	require_permission("Purchase Invoice", "read")
 
 	profile = _profile(employee.branch)
-	if not profile.default_warehouse:
-		return {"branch": employee.branch, "rows": []}
 
 	data = frappe.parse_json(filters) if isinstance(filters, str) else (filters or {})
-	values = {"warehouse": profile.default_warehouse,
+	values = {"branch": employee.branch,
 	          "limit": min(cint(limit) or 30, 100)}
+
+	# Which notes are this branch's is answered by the branch stamped on the
+	# document, not by where the goods came off a shelf.
+	#
+	# A scheme note is the name of an offer rather than a box — `create` gives
+	# it no warehouse on any line, on purpose — so a list that asked "has a
+	# line in this branch's store" could never match one, and every scheme the
+	# shop raised was missing from this list however well it had saved.
+	#
+	# The warehouse test stays as a second way in, for notes raised before the
+	# branch was stamped on them, so nothing already on file drops off.
+	mine = ["pi.branch = %(branch)s"]
+	if profile.default_warehouse:
+		values["warehouse"] = profile.default_warehouse
+		mine.append("(ifnull(pi.branch, '') = '' and exists ("
+		            "select 1 from `tabPurchase Invoice Item` it"
+		            " where it.parent = pi.name and it.warehouse = %(warehouse)s))")
 	where = ["pi.is_return = 1", "pi.docstatus < 2",
-	         "exists (select 1 from `tabPurchase Invoice Item` it"
-	         " where it.parent = pi.name and it.warehouse = %(warehouse)s)"]
+	         "(" + " or ".join(mine) + ")"]
 	where += date_window(data, "pi.posting_date", values)
 	query = (data.get("query") or "").strip()
 	if query:

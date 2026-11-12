@@ -548,9 +548,15 @@ def print_url(name: str) -> str:
 
 
 def _invoice_url(invoice: str) -> str:
+	"""The repair bill, on the shop's service sheet.
+
+	`pos.print_url` defaults to the Retail Tax Invoice, which is the sheet for
+	a counter sale — so a repair billed through a booking came out on it, with
+	no device, no symptom and no job card named on it anywhere.
+	"""
 	from a3_retail.api.pos import print_url as invoice_print_url
 
-	return invoice_print_url(invoice)
+	return invoice_print_url(invoice, print_format="Service Invoice")
 
 
 # ---------------------------------------------------------------------------

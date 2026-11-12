@@ -299,9 +299,14 @@ window.EMI = (function () {
 	const PAINT = {};
 
 	PAINT.overview = function (data) {
+		// The whole heading opens the tab, not just the words "See all". A
+		// counter reading "Recent EMI sales" and wanting the rest of them
+		// clicks the card, and nothing happening reads as a dead screen.
+		// `data-go-tab` is delegated, so the button inside still works.
 		const list = (title, rows, render, empty, action) => `
 			<section class="svc-panel emi-card">
-				<div class="panel-head"><h2>${title}</h2>
+				<div class="panel-head${action ? " is-clickable" : ""}"${
+					action ? ` data-go-tab="${action}" role="button" tabindex="0"` : ""}><h2>${title}</h2>
 					${action ? `<button class="linkish" data-go-tab="${action}">See all</button>` : ""}</div>
 				${rows.length ? `<div class="row-list">${rows.map(render).join("")}</div>`
 					: `<div class="cust-none">${empty}</div>`}
@@ -524,8 +529,11 @@ window.EMI = (function () {
 					encodeURIComponent(row.sales_invoice)}">${esc(row.sales_invoice)}</a>`
 				: '<span class="faint">not linked</span>' },
 			{ label: "Date", cell: (row) => esc(day(row.disbursement_date || row.posting_date)) },
-			{ label: "Application", cell: (row) =>
-				`<a href="#" data-open="${esc(row.name)}">${esc(row.name)}</a>` },
+			// Most EMI sales are billed at the till without an application ever
+			// being raised, so this is blank far more often than not.
+			{ label: "Application", cell: (row) => row.name
+				? `<a href="#" data-open="${esc(row.name)}">${esc(row.name)}</a>`
+				: '<span class="faint">—</span>' },
 			{ label: "Customer", cell: (row) => esc(row.customer_name || row.customer) },
 			{ label: "Product", cell: (row) => esc((row.products || "—").slice(0, 36)) },
 			{ label: "IMEI", cell: (row) => esc(row.imei || "—") },
@@ -2217,6 +2225,16 @@ window.EMI = (function () {
 		document.body.addEventListener("click", (event) => {
 			const goer = event.target.closest("[data-go-tab]");
 			if (goer) setTab(goer.dataset.goTab);
+		});
+		// A card heading carries `tabindex`, so it has to answer the keyboard
+		// as well — a thing that takes focus and then does nothing is worse
+		// than one that never took it.
+		document.body.addEventListener("keydown", (event) => {
+			if (event.key !== "Enter" && event.key !== " ") return;
+			const goer = event.target.closest(".panel-head[data-go-tab]");
+			if (!goer) return;
+			event.preventDefault();
+			setTab(goer.dataset.goTab);
 		});
 
 		$("new-application").addEventListener("click", () => openWizard(null));

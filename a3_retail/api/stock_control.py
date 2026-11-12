@@ -1763,6 +1763,10 @@ def print_url(doctype: str, name: str) -> str:
 		"Stock Request": "Stock Transfer Note",
 		"Stock Entry": "Stock Transfer Note",
 		"Purchase Invoice": "A3 Purchase Invoice",
+		# Without this a Sales Invoice — a credit note raised off the returns
+		# screen is one — fell through to ERPNext's own sheet, which is not
+		# the shop's and carries none of its branding.
+		"Sales Invoice": "Retail Tax Invoice",
 	}
 	query = {"doctype": doctype, "name": name, "no_letterhead": 0, "_lang": "en"}
 	chosen = formats.get(doctype)

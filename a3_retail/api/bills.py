@@ -536,6 +536,15 @@ def _timeline(doc) -> list[dict]:
 	"""What happened to this bill, in the order it happened."""
 	events = [{"label": _("Created"), "at": str(doc.creation)[:16]}]
 
+	# Who stands behind the handset, named on the bill's own history rather
+	# than only in the sale screen that took it. A customer ringing three
+	# months later asks the counter who they are insured with, and the bill is
+	# what the counter has open.
+	insurer = doc.get("a3_insured_by")
+	if insurer:
+		events.append({"label": _("Insured by"),
+		               "at": str(doc.creation)[:16], "note": insurer})
+
 	if cint(doc.docstatus) >= 1:
 		submitted = frappe.db.get_value(
 			"Version", {"ref_doctype": "Sales Invoice", "docname": doc.name}, "creation",
