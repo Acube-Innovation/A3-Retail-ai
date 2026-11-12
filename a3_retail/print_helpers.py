@@ -9,7 +9,7 @@ format is hard to debug, and the sandbox makes non-trivial Jinja awkward.
 """
 
 import frappe
-from frappe.utils import flt, fmt_money, getdate, money_in_words
+from frappe.utils import cint, flt, fmt_money, getdate, money_in_words
 
 from a3_retail.utils import qr as qr_utils
 
@@ -483,3 +483,77 @@ def a3_daymonth(value) -> str:
 	if not value:
 		return ""
 	return getdate(value).strftime("%d/%m/%Y")
+
+
+def a3_job_card_intake(doc) -> dict:
+	"""What the shop's paper service bill asks for, off the job card behind
+	this invoice.
+
+	The pad the counter used for years takes the device, its IMEI, the symptom
+	as the customer described it, what came with it, the lock code the customer
+	handed over and any advance. None of that is on a Sales Invoice, so a
+	repair bill printed from one read as a shop sale with a line item on it and
+	the customer had nothing in writing about their own phone.
+
+	Returns `{}` when the invoice is not a repair, so the block simply does not
+	appear on an ordinary sale.
+	"""
+	# A Sales Invoice keeps it in `a3_service_job_card`; the delivery note and
+	# the estimate use `a3_job_card`. Both are tried so one helper serves all
+	# of them — and so that naming it wrongly cannot silently print nothing,
+	# which is what the Warranty block on this very sheet had been doing.
+	card = ""
+	if hasattr(doc, "get"):
+		card = (doc.get("a3_service_job_card") or doc.get("a3_job_card") or "").strip()
+	if not card or not frappe.db.exists("Service Job Card", card):
+		return {}
+
+	job = frappe.get_doc("Service Job Card", card)
+
+	make = (job.get("brand") or "").strip()
+	model = (job.get("device_model") or "").strip()
+	# "Samsung Samsung S24" is what naming the make twice looks like.
+	device = model if (make and model.lower().startswith(make.lower())) else \
+		" ".join(part for part in (make, model) if part)
+
+	imeis = [str(job.get(field) or "").strip()
+	         for field in ("imei_1", "imei_2")]
+	imeis = [imei for imei in imeis if imei]
+
+	issues = [str(row.get("issue") or row.get("service_issue_type") or "").strip()
+	          for row in (job.get("reported_issues") or [])]
+	issues = [issue for issue in issues if issue]
+
+	# What came in with the phone — the pad's Battery and Sim Tray boxes.
+	with_it = []
+	for row in (job.get("device_condition_checklist") or []):
+		if not cint(row.get("received")):
+			continue
+		named = (row.get("accessory") or "").strip()
+		if named:
+			with_it.append(named + (f" ({row.get('condition')})"
+			                        if row.get("condition") else ""))
+
+	# A Password field is encrypted at rest, so it is asked for rather than
+	# read off the document.
+	try:
+		lock = job.get_password("device_password", raise_exception=False)
+	except Exception:
+		lock = None
+
+	received_by = frappe.db.get_value("Employee", job.get("received_by"),
+	                                  "employee_name") if job.get("received_by") else None
+
+	return {
+		"job_card": job.name,
+		"device": device or None,
+		"imei": " · ".join(imeis) or None,
+		"symptom": (job.get("complaint_description") or "").strip() or None,
+		"issues": ", ".join(issues) or None,
+		"condition": (job.get("physical_condition") or "").strip() or None,
+		"accessories": ", ".join(with_it) or None,
+		"lock": (lock or "").strip() or None,
+		"advance": flt(job.get("advance_amount")) or 0,
+		"received_on": job.get("received_on"),
+		"received_by": received_by,
+	}

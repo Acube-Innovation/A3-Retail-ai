@@ -3052,3 +3052,9 @@ kbd { display: inline-block; min-width: 17px; padding: 1px 5px; margin: 0 1px;
 /* A row's own action, sized to sit inside a table line rather than stand a
    row up to the height of a form button. Debit Notes uses it for Bill. */
 .bill-table .btn { padding: 4px 12px; font-size: 13px; line-height: 1.5; }
+
+/* A card heading that opens a tab says so, and answers the keyboard the way
+   the button inside it does. */
+.panel-head.is-clickable { cursor: pointer; }
+.panel-head.is-clickable:hover h2 { text-decoration: underline; }
+.panel-head.is-clickable:focus-visible { outline: 2px solid #f08a24; outline-offset: 2px; }

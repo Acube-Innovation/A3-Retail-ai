@@ -240,3 +240,120 @@ class TestWhoInsuredIt(FrappeTestCase):
 
 	def test_the_field_it_reads_exists(self):
 		self.assertTrue(frappe.get_meta("Sales Invoice").has_field("a3_insured_by"))
+
+
+class TestTheBookingBarcode(FrappeTestCase):
+	"""6 · The sticker, from the booking as well as the job card."""
+
+	def test_the_button_is_on_both_ends_of_the_page(self):
+		body = _script("a3_booking.js")
+		for button in ("print-top-label", "print-bottom-label"):
+			self.assertIn(f'id="{button}"', body)
+			self.assertIn(f'$("{button}").addEventListener("click", printBarcode)', body)
+
+	def test_it_prints_the_sticker_the_job_card_already_uses(self):
+		"""A booking is a Service Job Card underneath, so it is the same roll
+		and nothing new is set up on the printer."""
+		body = _script("a3_booking.js")
+		self.assertIn('return printAs("Job Card Label")', body)
+		self.assertTrue(frappe.db.exists("Print Format", "Job Card Label"))
+
+	def test_the_three_buttons_share_one_route_to_the_printer(self):
+		"""Print, Thermal and Print Barcode differ only by the format they
+		name, so they go through one function rather than three copies."""
+		body = _script("a3_booking.js")
+		self.assertIn("async function printAs(format)", body)
+
+		sheet = body[body.index("async function print(thermal)"):]
+		sheet = sheet[:sheet.index("\n\t}")]
+		self.assertIn("printAs(", sheet)
+		self.assertNotIn("A3.printDoc(", sheet)
+
+		label = body[body.index("async function printBarcode()"):]
+		label = label[:label.index("\n\t}")]
+		self.assertIn('printAs("Job Card Label")', label)
+		self.assertNotIn("A3.printDoc(", label)
+
+		route = body[body.index("async function printAs(format)"):]
+		route = route[:route.index("\n\t}")]
+		self.assertIn("A3.printDoc(", route)
+
+
+class TestTheRepairBill(FrappeTestCase):
+	"""7 · A repair billed on the shop's service sheet, with the device on it."""
+
+	def test_a_booking_s_invoice_names_the_service_format(self):
+		body = _source("api", "bookings.py")
+		self.assertIn('print_format="Service Invoice"', body)
+
+	def test_the_sheet_reads_the_field_a_sales_invoice_actually_has(self):
+		"""It looked for `a3_job_card`, which a Sales Invoice does not carry,
+		so `is_service` was always false: no job card was ever named and every
+		repair printed the manufacturer warranty instead of the shop's own."""
+		body = _source("templates", "print_formats", "service_tax_invoice.html")
+		self.assertIn('doc.get("a3_service_job_card")', body)
+		self.assertNotIn('set is_service = doc.get("a3_job_card")', body)
+		self.assertTrue(frappe.get_meta("Sales Invoice").has_field("a3_service_job_card"))
+
+	def test_the_device_block_carries_the_paper_form_s_fields(self):
+		body = _source("templates", "print_formats", "service_tax_invoice.html")
+		self.assertIn("a3_job_card_intake(doc)", body)
+		for label in ("Make &amp; model", "IMEI / Serial", "Symptom", "Condition",
+		              "Received with", "Lock code", "Advance paid", "Booked in"):
+			self.assertIn(label, body, f"the sheet no longer prints {label}")
+
+	def test_the_block_is_absent_on_an_ordinary_sale(self):
+		from a3_retail.print_helpers import a3_job_card_intake
+
+		sale = frappe.db.sql("""select name from `tabSales Invoice`
+		                        where ifnull(a3_service_job_card,'') = '' limit 1""")
+		if not sale:
+			self.skipTest("every invoice on this site is a repair")
+		self.assertEqual(a3_job_card_intake(frappe.get_doc("Sales Invoice", sale[0][0])), {})
+
+	def test_a_real_repair_fills_it(self):
+		from a3_retail.print_helpers import a3_job_card_intake
+
+		repair = frappe.db.sql("""select name from `tabSales Invoice`
+		                          where ifnull(a3_service_job_card,'') <> ''
+		                          order by creation desc limit 1""")
+		if not repair:
+			self.skipTest("no repair bill on this site")
+		intake = a3_job_card_intake(frappe.get_doc("Sales Invoice", repair[0][0]))
+		self.assertTrue(intake, "the repair bill found no job card behind it")
+		self.assertTrue(intake.get("job_card"))
+		self.assertIn("device", intake)
+
+
+class TestTheEmiSalesReport(FrappeTestCase):
+	"""10 · The register of what went out on finance."""
+
+	def test_the_whole_card_opens_it_not_just_the_words_see_all(self):
+		body = _script("a3_emi.js")
+		self.assertIn('data-go-tab="${action}" role="button" tabindex="0"', body)
+		self.assertIn("is-clickable", body)
+
+	def test_a_heading_that_takes_focus_answers_the_keyboard(self):
+		body = _script("a3_emi.js")
+		self.assertIn('.panel-head[data-go-tab]', body)
+		self.assertIn('event.key !== "Enter" && event.key !== " "', body)
+
+	def test_the_report_filters_by_date_and_financier(self):
+		body = _script("a3_emi.js")
+		row = body[body.index("sales: ["):]
+		row = row[:row.index("]")]
+		for wanted in ("from-date", "to-date", "partner"):
+			self.assertIn(wanted, row, f"the EMI Sales tab no longer offers {wanted}")
+
+	def test_a_row_is_one_emi_sale(self):
+		body = _source("api", "emi.py")
+		sales = body[body.index("def _sales("):]
+		sales = sales[:sales.index("\n\n\n")]
+		for column in ("sales_invoice", "disbursement_date", "customer_name",
+		               "finance_partner", "loan_amount", "down_payment", "status"):
+			self.assertIn(column, sales, f"{column} is no longer on the report")
+
+	def test_the_clickable_heading_is_styled_as_one(self):
+		css = open(frappe.get_app_path("a3_retail", "public", "css", "a3_branch.css"),
+		           encoding="utf-8").read()
+		self.assertIn(".panel-head.is-clickable { cursor: pointer; }", css)
