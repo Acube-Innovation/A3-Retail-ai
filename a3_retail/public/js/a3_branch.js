@@ -996,9 +996,74 @@ window.A3 = (function () {
 		window.open(printUrl(options), "_blank");
 	}
 
+	// ------------------------------------------------------------ PIN codes
+	/** India Post's reply, reduced to what a bill needs.
+	 *
+	 *  Mirrors `customer._parse_pincode` so both routes to the directory hand
+	 *  the screen the same four fields. */
+	function parsePincode(payload, code, fallback) {
+		const block = Array.isArray(payload) ? (payload[0] || {}) : {};
+		const offices = block.PostOffice || [];
+		if (block.Status !== "Success" || !offices.length) {
+			return fallback || { pincode: code, found: false, offices: [],
+				note: "No post office is listed under " + code + "." };
+		}
+		const names = [];
+		offices.forEach((office) => {
+			const name = (office.Name || "").trim();
+			if (name && names.indexOf(name) < 0) names.push(name);
+		});
+		const first = offices[0];
+		return {
+			pincode: code, found: true,
+			state: (first.State || "").trim() || null,
+			// India Post calls it District; on a bill it is the city line.
+			city: (first.District || "").trim() || null,
+			offices: names,
+			office: names[0] || null,
+		};
+	}
+
+	/** State, district and post offices for a PIN code.
+	 *
+	 *  The site answers first, because it caches a code for a month: a counter
+	 *  typing the same PIN all day reaches India Post once rather than once a
+	 *  till. When the site cannot reach the directory the counter asks for
+	 *  itself — the shop's server is not always allowed out, which is what
+	 *  "Could not reach the PIN code directory" meant, while the machine at
+	 *  the counter is plainly online because it is running this page. India
+	 *  Post serves browsers directly for exactly this.
+	 *
+	 *  It matters beyond the typing it saves: the state decides whether a bill
+	 *  carries CGST and SGST or IGST, and a counter in Kerala keying a Tamil
+	 *  Nadu customer has no reason to notice the state box still says Kerala.
+	 */
+	async function pincode(code) {
+		const six = String(code || "").replace(/\D/g, "");
+		if (six.length !== 6) return { pincode: six, found: false, offices: [] };
+
+		let info = null;
+		try {
+			info = await call("a3_retail.api.customer.pincode_info", { pincode: six });
+		} catch (error) { info = null; }
+		if (info && info.found) return info;
+
+		try {
+			const reply = await fetch("https://api.postalpincode.in/pincode/" + six,
+			                          { mode: "cors", credentials: "omit" });
+			if (!reply.ok) throw new Error(String(reply.status));
+			return parsePincode(await reply.json(), six, info);
+		} catch (error) {
+			// Neither route answered. The counter types the address itself,
+			// exactly as it did before any of this existed.
+			return info || { pincode: six, found: false, offices: [],
+				note: "Could not reach the PIN code directory just now." };
+		}
+	}
+
 	return {
 		call, login, logout, money, shortTime, csrfToken, plain, toast,
 		mountBranchPicker, datePicker, mountDates, photoPicker, filterSheet,
-		fitNumbers, printDoc, viewDoc, printUrl, printParts,
+		fitNumbers, printDoc, viewDoc, printUrl, printParts, pincode,
 	};
 })();

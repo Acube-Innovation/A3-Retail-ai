@@ -109,12 +109,38 @@ window.POS = (function () {
 			: date.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "2-digit" });
 	};
 
-	function cardLines(item) {
+	/** The name as it should read on screen.
+	 *
+	 * Two things come off it. The brand, when the name repeats it — the card
+	 * prints the brand on its own line above, and "Samsung Samsung A17" is
+	 * what naming it twice looks like.
+	 *
+	 * And the item's own code, when the name ends in it. The shop's filing
+	 * carries the code inside the name on some lines — `TEMPERED - 150  T150`
+	 * is item `T150` — so a screen showing the name reads as the same thing
+	 * listed twice. That is what the counter reported as a duplicate item;
+	 * there is only ever one record behind it.
+	 */
+	function displayName(item) {
+		let name = (item.item_name || item.item_code || "").trim();
 		const brand = item.brand || "";
-		let name = item.item_name || item.item_code;
 		if (brand && name.toLowerCase().startsWith(brand.toLowerCase() + " ")) {
 			name = name.slice(brand.length + 1);
 		}
+		const code = (item.item_code || "").trim();
+		if (code && name.length > code.length
+			&& name.slice(-code.length).toLowerCase() === code.toLowerCase()) {
+			// Only the separators that join a code to a name, so a name that
+			// genuinely ends in a word is left alone.
+			const trimmed = name.slice(0, -code.length).replace(/[\s·,\-–—]+$/, "");
+			if (trimmed) name = trimmed;
+		}
+		return name.trim() || item.item_code || "";
+	}
+
+	function cardLines(item) {
+		const brand = item.brand || "";
+		const name = displayName(item);
 		let tag = "";
 		if (item.is_device) tag = "IMEI";
 		else if (item.is_plan) tag = item.item_group || "Plan";
@@ -334,7 +360,7 @@ window.POS = (function () {
 						? `<img class="${isPhoto(line.image) ? "is-photo" : ""}" src="${esc(line.image)}" alt="">`
 						: ""}</div>
 						<div>
-							<div class="bill-name">${esc(line.item_name)}</div>
+							<div class="bill-name">${esc(displayName(line))}</div>
 							${line.serials.length
 								? `<div class="bill-imei">IMEI: ${line.serials.map(esc).join(", ")}</div>` : ""}
 						</div>
@@ -584,9 +610,7 @@ window.POS = (function () {
 		amount.setAttribute("aria-label", "Amount paid by " + line.mode);
 		amount.addEventListener("input", () => {
 			state.splits[index].amount = Number(amount.value) || 0;
-			// Whatever the customer puts down is money the financier no longer
-			// has to lend, so the financed line absorbs the difference.
-			rebalanceAgainstEmi(index);
+			rebalanceSplit(index);
 			paintTotals();
 		});
 		wrap.append(rupee, amount);
@@ -727,6 +751,13 @@ window.POS = (function () {
 		state.financier = partner.partner;
 	}
 
+	/** Write a line's amount back into the box the counter can see. */
+	function showSplitAmount(index) {
+		const box = $("split-lines").children[index];
+		const input = box && box.querySelector("input");
+		if (input) input.value = state.splits[index].amount || "";
+	}
+
 	/** The financed line carries whatever the customer has not put down. */
 	function rebalanceAgainstEmi(changedIndex) {
 		const emi = state.splits.findIndex((l) => l.kind === "emi");
@@ -735,9 +766,41 @@ window.POS = (function () {
 		const others = state.splits.reduce(
 			(sum, l, i) => i === emi ? sum : sum + (Number(l.amount) || 0), 0);
 		state.splits[emi].amount = Math.max(payable - others, 0);
-		const box = $("split-lines").children[emi];
-		const input = box && box.querySelector("input");
-		if (input) input.value = state.splits[emi].amount || "";
+		showSplitAmount(emi);
+	}
+
+	/** Typing on one line takes the difference off another, so a split always
+	 *  adds up to the bill.
+	 *
+	 *  A financed line absorbs it first where there is one: what the customer
+	 *  puts down is money the financier no longer has to lend. Failing that it
+	 *  comes off the line *above* the one being typed on, because that is the
+	 *  one the counter is splitting — they had the whole bill on a single line
+	 *  and added a second to take part of it. Without this the second line was
+	 *  simply added to the first and the tally read "Over the bill", leaving
+	 *  the counter to work out the remainder and type it in themselves.
+	 */
+	function rebalanceSplit(changedIndex) {
+		const emi = state.splits.findIndex((l) => l.kind === "emi");
+		if (emi >= 0 && emi !== changedIndex) { rebalanceAgainstEmi(changedIndex); return; }
+
+		let absorb = -1;
+		for (let i = changedIndex - 1; i >= 0; i -= 1) {
+			if (state.splits[i].kind !== "emi") { absorb = i; break; }
+		}
+		// Typing on the first line instead: the one under it gives way.
+		if (absorb < 0) {
+			for (let i = changedIndex + 1; i < state.splits.length; i += 1) {
+				if (state.splits[i].kind !== "emi") { absorb = i; break; }
+			}
+		}
+		if (absorb < 0) return;
+
+		const payable = totals().grand;
+		const others = state.splits.reduce(
+			(sum, l, i) => i === absorb ? sum : sum + (Number(l.amount) || 0), 0);
+		state.splits[absorb].amount = Math.max(payable - others, 0);
+		showSplitAmount(absorb);
 	}
 
 	/** Seed the split with the balance still owing on the next unused mode. */
@@ -874,6 +937,11 @@ window.POS = (function () {
 		if (!name) { $("nc-note").textContent = "The customer needs a name."; return; }
 		try {
 			const saved = await A3.call("a3_retail.api.pos.save_customer", {
+				// This form adds somebody new. The same endpoint serves Edit,
+				// where a retyped name must land — so it is told which it is,
+				// and an add against a number already on file is refused
+				// rather than quietly renaming whoever holds it.
+				mode: "create",
 				mobile_no: $("nc-mobile").value.trim(),
 				customer_name: name,
 				email: $("nc-email").value.trim(),
@@ -934,7 +1002,11 @@ window.POS = (function () {
 
 		let info;
 		try {
-			info = await A3.call("a3_retail.api.customer.pincode_info", { pincode: code });
+			// `A3.pincode` asks the site first and the counter's own browser
+			// after, so a server that is not allowed out to India Post no
+			// longer leaves the address — and the state the GST turns on —
+			// for the counter to type from memory.
+			info = await A3.pincode(code);
 		} catch (error) {
 			return;   // a PIN that cannot be checked is not a reason to stop a sale
 		}
@@ -1333,6 +1405,9 @@ window.POS = (function () {
 			if (bill.discount_on) {
 				$("discount-on").value = bill.discount_on;
 			}
+			// The person who served the customer travels with the bill. A held
+			// bill reopened without this was re-credited to whoever finished it.
+			setSoldBy(bill.sold_by);
 			state.postingDate = bill.posting_date || null;
 			showBillDate();
 			setChip("Editing " + bill.invoice, "warn");
@@ -1545,6 +1620,17 @@ window.POS = (function () {
 		});
 		$("seller-row").hidden = false;
 		paintTotals();
+	}
+
+	/** Credit this bill to a particular person, without disturbing the one the
+	 *  till remembers for the next sale. Only the picker's own `change` writes
+	 *  that, and setting `value` here does not fire it. */
+	function setSoldBy(employee) {
+		const select = $("sold-by");
+		if (!select || !employee) return;
+		if (![...select.options].some((o) => o.value === employee)) return;
+		select.value = employee;
+		state.soldBy = employee;
 	}
 
 	function start(options) {

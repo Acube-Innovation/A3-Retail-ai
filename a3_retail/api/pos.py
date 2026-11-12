@@ -445,18 +445,38 @@ def loyalty(customer: str) -> dict:
 def save_customer(mobile_no: str, customer_name: str, email: str | None = None,
                   address_line1: str | None = None, city: str | None = None,
                   pincode: str | None = None, state: str | None = None,
-                  gstin: str | None = None, pan: str | None = None) -> dict:
+                  gstin: str | None = None, pan: str | None = None,
+                  mode: str = "edit") -> dict:
 	"""Create the walk-in, or fill in what we did not have before.
 
 	A `gstin` makes this a registered buyer and the bill a B2B one. It goes on
 	the billing address as well as the customer, because that is where ERPNext
 	reads the number it prints and files, and the state it derives place of
 	supply from.
+
+	`mode` is what tells the two callers apart, and it matters. The till's Edit
+	button and the till's Add customer form both arrive here, and for an edit a
+	name typed over an old one has to land. For an add it must not: a counter
+	keying a number that is already on file under somebody else was silently
+	renaming that customer, so the previous owner of the number lost their name
+	and the shop had one record where it thought it had two. An add is refused
+	and the existing customer named instead.
 	"""
 	employee = _me()
 	require_permission("Customer", "create")
 
-	from a3_retail.api.customer import get_or_create, gstin_state, validate_gstin
+	from a3_retail.api.customer import (get_or_create, gstin_state, validate_gstin,
+	                                    validate_mobile)
+
+	if (mode or "edit").strip().lower() == "create":
+		already = frappe.db.get_value(
+			"Customer", {"a3_mobile_no": validate_mobile(mobile_no)},
+			["name", "customer_name"], as_dict=True)
+		if already:
+			frappe.throw(
+				_("{0} is already on file as {1}. Search for them instead of "
+				  "adding a second record.").format(mobile_no, already.customer_name),
+				title=_("Customer already exists"))
 
 	gstin = validate_gstin(gstin)
 	customer = get_or_create(
@@ -864,9 +884,19 @@ def load_invoice(invoice: str) -> dict:
 	paid = [{"mode_of_payment": row.mode_of_payment, "amount": flt(row.amount)}
 	        for row in (doc.get("payments") or []) if flt(row.amount) > 0]
 	payment = (doc.get("payments") or [None])[0]
+	# Who the bill was credited to, handed back as the Employee the counter's
+	# picker is keyed on rather than the Sales Person it is stored as. Without
+	# it a held bill reopened at the till came back with the seller box empty,
+	# and finishing it credited the sale to whoever happened to be signed in
+	# rather than to the person who served the customer.
+	team = doc.get("sales_team") or []
+	sold_by = frappe.db.get_value(
+		"Sales Person", team[0].sales_person, "employee") if team else None
+
 	return {
 		"payments": paid,
 		"is_split": len(paid) > 1,
+		"sold_by": sold_by,
 		# What was in the payment panel when the bill was held; the counter puts
 		# it back exactly instead of starting the tender again.
 		"tender": read_held_tender(doc),
