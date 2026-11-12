@@ -529,8 +529,11 @@ window.EMI = (function () {
 					encodeURIComponent(row.sales_invoice)}">${esc(row.sales_invoice)}</a>`
 				: '<span class="faint">not linked</span>' },
 			{ label: "Date", cell: (row) => esc(day(row.disbursement_date || row.posting_date)) },
-			{ label: "Application", cell: (row) =>
-				`<a href="#" data-open="${esc(row.name)}">${esc(row.name)}</a>` },
+			// Most EMI sales are billed at the till without an application ever
+			// being raised, so this is blank far more often than not.
+			{ label: "Application", cell: (row) => row.name
+				? `<a href="#" data-open="${esc(row.name)}">${esc(row.name)}</a>`
+				: '<span class="faint">—</span>' },
 			{ label: "Customer", cell: (row) => esc(row.customer_name || row.customer) },
 			{ label: "Product", cell: (row) => esc((row.products || "—").slice(0, 36)) },
 			{ label: "IMEI", cell: (row) => esc(row.imei || "—") },

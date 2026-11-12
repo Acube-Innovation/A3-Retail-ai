@@ -9,6 +9,7 @@ button ships silently otherwise; where it was in the API it calls the API.
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
+from frappe.utils import flt
 
 
 def _script(name: str) -> str:
@@ -345,13 +346,60 @@ class TestTheEmiSalesReport(FrappeTestCase):
 		for wanted in ("from-date", "to-date", "partner"):
 			self.assertIn(wanted, row, f"the EMI Sales tab no longer offers {wanted}")
 
-	def test_a_row_is_one_emi_sale(self):
+	def test_a_row_is_one_bill_not_one_application(self):
+		"""The counter does not raise an EMI Application. It picks EMI and a
+		financier at the till, and the bill carries the partner while the money
+		arrives as `EMI - <financier>`. Reading applications showed nothing."""
 		body = _source("api", "emi.py")
-		sales = body[body.index("def _sales("):]
+		sales = body[body.index("def _sales(data"):]
 		sales = sales[:sales.index("\n\n\n")]
-		for column in ("sales_invoice", "disbursement_date", "customer_name",
-		               "finance_partner", "loan_amount", "down_payment", "status"):
+		self.assertIn("from `tabSales Invoice` si", sales)
+		self.assertIn("a3_finance_partner", sales)
+		# The application is joined where there is one, not required.
+		self.assertIn("left join `tabEMI Application` e", sales)
+		for column in ("sales_invoice", "customer_name", "finance_partner",
+		               "loan_amount", "down_payment"):
 			self.assertIn(column, sales, f"{column} is no longer on the report")
+
+	def test_the_financier_s_share_comes_off_the_payments(self):
+		body = _source("api", "emi.py")
+		sales = body[body.index("def _sales(data"):]
+		sales = sales[:sales.index("\n\n\n")]
+		self.assertIn("pe.mode_of_payment like 'EMI%%'", sales)
+
+	def test_the_report_answers_for_the_bills_on_this_site(self):
+		from a3_retail.api.emi import _sales
+
+		billed = frappe.db.sql("""select si.branch, count(*) n from `tabSales Invoice` si
+		                          where si.docstatus = 1
+		                            and ifnull(si.a3_finance_partner,'') <> ''
+		                          group by si.branch order by n desc limit 1""", as_dict=True)
+		if not billed:
+			self.skipTest("no EMI bill on this site")
+
+		# The register answers for whoever is at the till, so the test stands
+		# at one — Administrator has no employee behind it.
+		till = frappe.db.get_value(
+			"Employee", {"branch": billed[0].branch, "status": "Active",
+			             "user_id": ["is", "set"]}, "user_id")
+		if not till:
+			self.skipTest(f"no till user at {billed[0].branch}")
+
+		was = frappe.session.user
+		try:
+			frappe.set_user(till)
+			out = _sales({}, 1, 5)
+		finally:
+			frappe.set_user(was)
+		self.assertGreater(out["total"], 0,
+		                   "the register is empty while EMI bills are on file")
+		row = out["rows"][0]
+		self.assertTrue(row["sales_invoice"])
+		self.assertTrue(row["finance_partner"])
+		# Gross is the bill; financed plus what the customer put down is it.
+		self.assertAlmostEqual(
+			flt(row["loan_amount"]) + flt(row["down_payment"]),
+			flt(row["invoice_total"]), places=2)
 
 	def test_the_clickable_heading_is_styled_as_one(self):
 		css = open(frappe.get_app_path("a3_retail", "public", "css", "a3_branch.css"),
