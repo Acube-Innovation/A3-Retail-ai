@@ -21,3 +21,4 @@ a3_retail.patches.accessories_uk_opening_stock
 a3_retail.patches.gst_round_off_off
 a3_retail.patches.branch_sites_and_counter_switching
 a3_retail.patches.apple_items_serialised
+a3_retail.patches.service_bill_letterhead

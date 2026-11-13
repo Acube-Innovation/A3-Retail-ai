@@ -113,8 +113,9 @@ def a3_branch_profile(branch: str) -> dict:
 	profile = frappe.db.get_value(
 		"Branch Profile",
 		{"branch": branch},
-		["name", "branch", "trade_name", "signature", "invoice_terms", "address",
-		 "contact_no", "branch_email", "gstin", "letter_head"],
+		["name", "branch", "trade_name", "service_tagline", "signature",
+		 "invoice_terms", "address", "contact_no", "branch_email", "gstin",
+		 "letter_head"],
 		as_dict=True,
 	)
 	if not profile:
@@ -127,6 +128,8 @@ def a3_branch_profile(branch: str) -> dict:
 		# called in the system — "PhoneXpert Digital store & Care" rather than
 		# "PhoneXpert Sales PSLA".
 		"trade_name": profile.get("trade_name") or profile.branch,
+		# The line under the shop's name on a service bill.
+		"service_tagline": profile.get("service_tagline") or "",
 		"signature": profile.get("signature"),
 		"invoice_terms": profile.get("invoice_terms"),
 		"phone": profile.contact_no,
@@ -557,3 +560,93 @@ def a3_job_card_intake(doc) -> dict:
 		"received_on": job.get("received_on"),
 		"received_by": received_by,
 	}
+
+
+# ---------------------------------------------------------------------------
+# The service bill
+# ---------------------------------------------------------------------------
+# The five terms off PhoneXpert's own pad, Malayalam first because that is what
+# the pad prints, with an English reading under each for anyone who does not
+# read Malayalam. They are held here rather than in the branch's own terms box
+# because they are the same on every pad the shop has ever printed, and because
+# a pair of languages does not fit a single plain-text field.
+SERVICE_TERMS = [
+	(
+		"\u0d2e\u0d4a\u0d2c\u0d48\u0d7d \u0d2e\u0d1f\u0d15\u0d4d\u0d15\u0d3f "
+		"\u0d35\u0d3e\u0d19\u0d4d\u0d19\u0d41\u0d28\u0d4d\u0d28 \u0d38\u0d2e\u0d2f\u0d02 "
+		"\u0d08 \u0d2c\u0d3f\u0d7d \u0d24\u0d3f\u0d30\u0d3f\u0d1a\u0d4d\u0d1a\u0d4d "
+		"\u0d28\u0d7d\u0d15\u0d47\u0d23\u0d4d\u0d1f\u0d24\u0d3e\u0d23\u0d4d.",
+		"This bill must be produced when the phone is collected.",
+	),
+	(
+		"\u0d38\u0d4d\u0d2a\u0d46\u0d2f\u0d7c \u0d15\u0d3f\u0d1f\u0d4d\u0d1f\u0d3e"
+		"\u0d24\u0d4d\u0d24\u0d24\u0d3f\u0d28\u0d3e\u0d7d \u0d15\u0d3e\u0d32\u0d24\u0d3e"
+		"\u0d2e\u0d38\u0d02 \u0d28\u0d47\u0d30\u0d3f\u0d1f\u0d41\u0d15\u0d2f\u0d3e"
+		"\u0d23\u0d46\u0d19\u0d4d\u0d15\u0d3f\u0d7d \u0d1e\u0d19\u0d4d\u0d19\u0d7e "
+		"\u0d09\u0d24\u0d4d\u0d24\u0d30\u0d35\u0d3e\u0d26\u0d3f\u0d15\u0d33\u0d32\u0d4d\u0d32.",
+		"We are not responsible for delays caused by spare parts being unavailable.",
+	),
+	(
+		"\u0d2c\u0d3f\u0d7d \u0d24\u0d3f\u0d2f\u0d24\u0d3f \u0d2e\u0d41\u0d24\u0d7d "
+		"\u0d12\u0d30\u0d41 \u0d2e\u0d3e\u0d38\u0d24\u0d4d\u0d24\u0d3f\u0d28\u0d41"
+		"\u0d33\u0d4d\u0d33\u0d3f\u0d7d \u0d2e\u0d4a\u0d2c\u0d48\u0d7d "
+		"\u0d15\u0d48\u0d2a\u0d4d\u0d2a\u0d31\u0d4d\u0d31\u0d3e\u0d24\u0d4d\u0d24 "
+		"\u0d2a\u0d15\u0d4d\u0d37\u0d02 \u0d05\u0d24\u0d3f\u0d28\u0d41\u0d2e\u0d47\u0d7d "
+		"\u0d1e\u0d19\u0d4d\u0d19\u0d7e\u0d15\u0d4d\u0d15\u0d4d \u0d2f\u0d3e\u0d24\u0d4a"
+		"\u0d30\u0d41\u0d35\u0d3f\u0d27 \u0d09\u0d24\u0d4d\u0d24\u0d30\u0d35\u0d3e\u0d26\u0d3f"
+		"\u0d24\u0d4d\u0d35\u0d35\u0d41\u0d02 \u0d09\u0d23\u0d4d\u0d1f\u0d3e\u0d2f\u0d3f"
+		"\u0d30\u0d3f\u0d15\u0d4d\u0d15\u0d41\u0d28\u0d4d\u0d28\u0d24\u0d32\u0d4d\u0d32.",
+		"If the phone is not collected within one month of the bill date, we accept "
+		"no responsibility for it thereafter.",
+	),
+	(
+		"\u0d36\u0d30\u0d3f\u0d2f\u0d3e\u0d15\u0d4d\u0d15\u0d2a\u0d4d\u0d2a\u0d46"
+		"\u0d1f\u0d41\u0d28\u0d4d\u0d28 \u0d2e\u0d4a\u0d2c\u0d48\u0d32\u0d3f\u0d7d "
+		"\u0d2f\u0d3e\u0d24\u0d4a\u0d30\u0d41\u0d35\u0d3f\u0d27 \u0d17\u0d4d\u0d2f\u0d3e"
+		"\u0d30\u0d28\u0d4d\u0d31\u0d3f\u0d2f\u0d41\u0d02 \u0d28\u0d7d\u0d15\u0d2a\u0d4d"
+		"\u0d2a\u0d46\u0d1f\u0d41\u0d28\u0d4d\u0d28\u0d24\u0d32\u0d4d\u0d32.",
+		"No guarantee is given on a repaired phone.",
+	),
+	(
+		"\u0d2e\u0d4a\u0d2c\u0d48\u0d7d \u0d2e\u0d1f\u0d15\u0d4d\u0d15\u0d3f "
+		"\u0d35\u0d3e\u0d19\u0d4d\u0d19\u0d41\u0d28\u0d4d\u0d28\u0d24\u0d3f\u0d28\u0d4d "
+		"\u0d2e\u0d41\u0d2e\u0d4d\u0d2a\u0d4d \u0d36\u0d30\u0d3f\u0d2f\u0d3e\u0d2f "
+		"\u0d35\u0d3f\u0d27\u0d24\u0d4d\u0d24\u0d3f\u0d7d \u0d2a\u0d30\u0d3f"
+		"\u0d36\u0d4b\u0d27\u0d3f\u0d15\u0d4d\u0d15\u0d47\u0d23\u0d4d\u0d1f\u0d24\u0d3e\u0d23\u0d4d.",
+		"Please check the phone properly before taking it back.",
+	),
+]
+
+
+def a3_service_terms(doc=None) -> list[tuple[str, str]]:
+	"""The service bill's terms, Malayalam and English side by side."""
+	return SERVICE_TERMS
+
+
+def a3_device_lock(doc) -> str:
+	"""The pattern or passcode the customer handed over.
+
+	A Password field is encrypted at rest, so it is asked for rather than read
+	off the document, and a document that has never been saved with one simply
+	has nothing to give.
+	"""
+	try:
+		return (doc.get_password("device_password", raise_exception=False) or "").strip()
+	except Exception:
+		return ""
+
+
+def a3_received_by(doc) -> str:
+	"""Who took the device in, by name rather than by employee number."""
+	who = doc.get("received_by")
+	return frappe.db.get_value("Employee", who, "employee_name") or "" if who else ""
+
+
+def a3_reported_issues(doc) -> str:
+	"""What the customer said was wrong, as the counter ticked it."""
+	named = []
+	for row in (doc.get("reported_issues") or []):
+		issue = (row.get("issue") or row.get("service_issue_type") or "").strip()
+		if issue and issue not in named:
+			named.append(issue)
+	return ", ".join(named)

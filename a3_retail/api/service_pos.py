@@ -553,6 +553,14 @@ def save_booking(payload) -> dict:
 		frappe.throw(_("Pick the model of the device before booking it in."),
 		             title=_("Model needed"))
 
+	# The service bill is made of the name, the number and the place — a bill
+	# missing any of them is one nobody can act on a month later, which is
+	# exactly when an uncollected phone becomes somebody's problem.
+	place = (data.get("place") or "").strip()
+	if not place:
+		frappe.throw(_("Where is the customer from? The service bill asks for a place."),
+		             title=_("Place needed"))
+
 	# Everything below answers a counter's question with the answer, not with a
 	# rule number: what is wrong, and what to do about it.
 	_check_not_already_booked(data, employee.branch)
@@ -565,6 +573,8 @@ def save_booking(payload) -> dict:
 	doc = frappe.new_doc("Service Job Card")
 	doc.branch = employee.branch
 	doc.customer = customer
+	if doc.meta.has_field("place"):
+		doc.place = place
 	doc.device_type = data.get("device_type") or "Mobile"
 	doc.brand = data.get("brand")
 	doc.device_model = data.get("device_model")

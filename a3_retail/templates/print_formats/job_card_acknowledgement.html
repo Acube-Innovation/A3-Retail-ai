@@ -1,49 +1,193 @@
-{% import "a3_retail/templates/print_formats/a3_base.html" as base %}
-{{ base.styles() }}
-{{ base.title_band(doc, "Job Card Acknowledgement", a3_tracking_qr(doc), "Track repair") }}
-{{ base.party_block(
-	"Customer",
-	'<strong>' ~ (doc.customer_name or "") ~ '</strong><br>' ~ (doc.customer_mobile or "") ~ '<br>' ~ (doc.customer_email or ""),
-	"Device",
-	(doc.brand or "") ~ ' ' ~ (doc.device_model or "") ~ '<br>IMEI: ' ~ (doc.imei_1 or "") ~ '<br>' ~ (doc.warranty_type or "")) }}
-<table class="a3-kv">
-	<tr><td class="a3-k">Received on</td><td>{{ frappe.format(doc.received_on, {"fieldtype": "Datetime"}) }}</td>
-		<td class="a3-k">Promised by</td><td>{{ frappe.format(doc.estimated_delivery_date, {"fieldtype": "Datetime"}) }}</td></tr>
-	<tr><td class="a3-k">Complaint</td><td colspan="3">{{ doc.complaint_description or "" }}</td></tr>
-	<tr><td class="a3-k">Physical condition</td><td colspan="3">{{ doc.physical_condition or "" }}</td></tr>
-	<tr><td class="a3-k">Priority</td><td>{{ doc.priority or "" }}</td>
-		<td class="a3-k">Repair category</td><td>{{ doc.repair_category or "" }}</td></tr>
-</table>
-{{ base.items_table(doc.device_condition_checklist, [("Accessory", "accessory", ""), ("Received", "is_received", "num"), ("Remarks", "remarks", "")], "No accessories recorded.") }}
-{#- At booking nobody has opened the device, so there is nothing to price: the
-    customer walks out with the figure they were quoted. The moment real parts
-    and labour are costed, those are what the bill is made of and they take the
-    estimate's place here. -#}
-{%- set costed = (doc.parts_total or 0) + (doc.labour_total or 0) > 0 -%}
-<div class="a3-block">
-	{% if costed %}
-		<h4>Parts &amp; Labour</h4>
-		{% if doc.parts %}{{ base.items_table(doc.parts,
-			[("Part", "item_name", ""), ("Qty", "qty", "num"),
-			 ("Rate", "rate", "money"), ("Amount", "amount", "money")]) }}{% endif %}
-		{% if doc.labour %}{{ base.items_table(doc.labour,
-			[("Service", "description", ""), ("Qty", "qty", "num"),
-			 ("Rate", "rate", "money"), ("Amount", "amount", "money")]) }}{% endif %}
-		{{ base.totals([("Parts", doc.parts_total), ("Labour", doc.labour_total),
-			("Discount", -(doc.total_discount or 0)), ("GST", doc.tax_amount),
-			("Advance received", -(doc.advance_amount or 0))],
-			"Payable", doc.customer_payable or doc.grand_total) }}
-	{% elif doc.estimate_amount %}
-		<h4>Estimate</h4>
-		{{ base.totals([], "Estimated amount", doc.estimate_amount) }}
-		<p class="a3-muted">Quoted before diagnosis. The final bill is made of the
-			parts and labour the repair actually needs, and is confirmed with you
-			before the work is charged for.</p>
-	{% else %}
-		<h4>Estimate</h4>
-		<p class="a3-muted">To be estimated once the device has been diagnosed.</p>
-	{% endif %}
-</div>
-{{ base.terms(doc, "Devices uncollected beyond the free storage period attract storage charges. Estimates are approximate until diagnosis is complete.") }}
-{{ base.signatures("Customer Signature", None, doc.customer_signature) }}
-{{ base.footer(doc) }}
+{#- The service bill, in the shape of the pad the counter has used for years.
+
+    This reproduces PhoneXpert's printed service bill line for line: the same
+    fields in the same order, the same three lines of what the shop does, the
+    same two signatures, and the same five terms. A customer handed one should
+    not be able to tell it from the pad.
+
+    Everything on it comes from the branch's own profile or the job card, so a
+    second branch prints its own name, address and number rather than
+    Parassala's. The tagline under the shop's name is `Branch Profile ·
+    Tagline (on the service bill)`.
+-#}
+{%- set profile = a3_branch_profile(doc.get("branch")) or {} -%}
+{%- set shop = profile.get("trade_name") or a3_company_name() or "" -%}
+{%- set addr = [profile.get("address_line1"), profile.get("address_line2"),
+                [profile.get("city"), profile.get("pincode")]|select|join(" "),
+                profile.get("state")]|select|list -%}
+
+{#- Battery and Sim Tray are two rows of the accessory checklist on the job
+    card. The pad asks for them by name, so they are pulled out by name. -#}
+{%- set checklist = doc.get("device_condition_checklist") or [] -%}
+{%- set ns = namespace(battery="", simtray=none) -%}
+{%- for row in checklist -%}
+	{%- set named = (row.get("accessory") or "")|lower -%}
+	{%- if "battery" in named -%}
+		{%- set ns.battery = (row.get("condition") or ("Yes" if row.get("received") else "No")) -%}
+	{%- elif "sim" in named -%}
+		{%- set ns.simtray = true if row.get("received") else false -%}
+	{%- endif -%}
+{%- endfor -%}
+
+<style>
+	@page { size: A4; margin: 9mm; }
+	.action-banner, .print-hide { display: none !important; }
+	html, body, .print-format, .print-format-gutter {
+		margin: 0 !important; padding: 0 !important; background: #fff !important; }
+
+	/* The pad is printed in a dark blue ink, and the bill number in red. */
+	.sb { font-family: "DejaVu Sans", "Noto Sans", Arial, sans-serif;
+	      color: #1f2a6b; font-size: 10pt; line-height: 1.35; }
+	.sb-frame { border: 1.6pt solid #1f2a6b; padding: 3mm; }
+	.sb-inner { border: 0.8pt solid #1f2a6b; padding: 3.5mm 4mm; }
+
+	.sb-head { text-align: center; position: relative; }
+	.sb-phone { position: absolute; right: 0; top: 0; font-size: 10pt; font-weight: 700; }
+	.sb-shop { font-size: 24pt; font-weight: 800; letter-spacing: -.3pt; margin: 0; }
+	.sb-tag { font-style: italic; font-size: 12pt; margin: 1mm 0 0.5mm; }
+	.sb-addr { font-size: 10.5pt; }
+
+	.sb-billrow { display: flex; align-items: baseline; justify-content: space-between;
+	              margin: 2.5mm 0 1mm; font-size: 12pt; }
+	/* The bill number, bold and in red, as it is stamped on the pad. */
+	.sb-no { color: #d81f26; font-weight: 800; font-size: 17pt; letter-spacing: .3pt; }
+	.sb-title { font-weight: 700; text-decoration: underline; font-size: 12.5pt;
+	            letter-spacing: .4pt; }
+
+	.sb-rule { border-top: 1pt solid #1f2a6b; margin: 1mm 0 2mm; }
+
+	table.sb-f { width: 100%; border-collapse: collapse; font-size: 11pt; }
+	table.sb-f td { padding: 1.1mm 0; vertical-align: bottom; }
+	td.sb-l { width: 32mm; white-space: nowrap; }
+	td.sb-c { width: 4mm; }
+	/* The dotted rule a counter writes on. */
+	td.sb-v { border-bottom: 1px dotted #1f2a6b; }
+	td.sb-v.filled { font-weight: 600; }
+	.sb-mini { white-space: nowrap; padding-left: 3mm !important; }
+
+	/* `min-height` and a line box, or an empty one collapses to a rule — the
+	   counter writes the pattern into this box by hand on most bills. */
+	.sb-box { display: inline-block; border: 1pt solid #1f2a6b; min-width: 13mm;
+	          min-height: 5.2mm; line-height: 5.2mm;
+	          padding: 0 1.6mm; text-align: center; font-weight: 700;
+	          vertical-align: middle; }
+	.sb-box.wide { min-width: 34mm; text-align: left; }
+	.sb-box.on { background: #1f2a6b; color: #fff; }
+
+	.sb-serv { margin: 2mm 0 1mm; font-size: 10.5pt; }
+	.sb-serv div { margin-bottom: 0.4mm; }
+	.sb-star { font-weight: 700; }
+
+	.sb-sign { font-size: 10.5pt; margin-top: 1mm; }
+	.sb-sign .row { display: flex; justify-content: space-between; gap: 6mm;
+	                margin-bottom: 1.2mm; }
+	.sb-sign .grow { flex: 1 1 auto; border-bottom: 1px dotted #1f2a6b; }
+	.sb-declare { margin: 1mm 0; }
+
+	.sb-dash { border-top: 1.2pt dashed #1f2a6b; margin: 2mm 0; }
+	.sb-work { display: flex; gap: 4mm; font-size: 10.5pt; }
+	.sb-work .cell { border: 1pt solid #1f2a6b; min-height: 9mm; padding: 1mm 2mm; }
+	.sb-work .cell.no { width: 38mm; }
+	.sb-work .cell.what { flex: 1 1 auto; }
+
+	.sb-terms { margin-top: 1.5mm; }
+	.sb-terms h4 { font-size: 11.5pt; font-weight: 700; text-decoration: underline;
+	               margin: 0 0 1mm; }
+	.sb-terms ol { margin: 0; padding-left: 6mm; }
+	.sb-terms li { margin-bottom: 1.2mm; }
+	/* Malayalam first, because that is the pad, and the English under it for
+	   anyone who does not read it. */
+	.sb-ml { font-family: "Noto Sans Malayalam", "Noto Serif Malayalam",
+	                      "Manjari", "FreeSans", sans-serif;
+	         font-size: 10pt; line-height: 1.45; }
+	.sb-en { font-size: 8.6pt; font-style: italic; color: #41508f; line-height: 1.3; }
+</style>
+
+<div class="sb"><div class="sb-frame"><div class="sb-inner">
+
+	<div class="sb-head">
+		{% if profile.get("phone") %}<div class="sb-phone">+91 {{ profile.phone }}</div>{% endif %}
+		<div class="sb-shop">{{ shop }}</div>
+		{% if profile.get("service_tagline") %}
+			<div class="sb-tag">{{ profile.service_tagline }}</div>{% endif %}
+		{% if addr %}<div class="sb-addr">{{ addr|join(", ") }}.</div>{% endif %}
+	</div>
+
+	<div class="sb-billrow">
+		<span>Bill No&nbsp;<span class="sb-no">{{ doc.name }}</span></span>
+		<span class="sb-title">SERVICE BILL</span>
+		<span>Date&nbsp;:&nbsp;{{ frappe.utils.formatdate(doc.received_on, "dd/MM/yyyy") }}</span>
+	</div>
+	<div class="sb-rule"></div>
+
+	<table class="sb-f">
+		<tr><td class="sb-l">Name</td><td class="sb-c">:</td>
+			<td class="sb-v filled" colspan="3">{{ doc.customer_name or "" }}</td></tr>
+		<tr><td class="sb-l">Place</td><td class="sb-c">:</td>
+			<td class="sb-v filled" colspan="3">{{ doc.get("place") or "" }}</td></tr>
+		<tr><td class="sb-l">Contact No</td><td class="sb-c">:</td>
+			<td class="sb-v filled" colspan="3">{{ doc.customer_mobile or "" }}</td></tr>
+		<tr><td class="sb-l">Company Name</td><td class="sb-c">:</td>
+			<td class="sb-v filled">{{ doc.brand or "" }}</td>
+			<td class="sb-mini">Model No</td>
+			<td class="sb-v filled">{{ doc.device_model or "" }}</td></tr>
+		<tr><td class="sb-l">Symptom</td><td class="sb-c">:</td>
+			<td class="sb-v filled" colspan="3">{{ doc.complaint_description or "" }}</td></tr>
+		<tr><td class="sb-l">IMEI/Sl. No</td><td class="sb-c">:</td>
+			<td class="sb-v filled" colspan="3">{{ doc.imei_1 or doc.get("serial_no") or "" }}</td></tr>
+		<tr><td class="sb-l">Battery</td><td class="sb-c">:</td>
+			<td class="sb-v filled">{{ ns.battery }}</td>
+			<td class="sb-mini">Sim Tray&nbsp;:</td>
+			<td>
+				<span class="sb-box {{ 'on' if ns.simtray is true }}">Yes</span>
+				<span class="sb-box {{ 'on' if ns.simtray is false }}">No</span>
+			</td></tr>
+		<tr><td class="sb-l">Customer No</td><td class="sb-c">:</td>
+			<td class="sb-v filled" colspan="3">{{ doc.customer or "" }}</td></tr>
+		<tr><td class="sb-l">Advance</td><td class="sb-c">:</td>
+			<td class="sb-v filled" colspan="3">{{
+				a3_money(doc.advance_amount) if doc.advance_amount else "" }}</td></tr>
+		<tr><td class="sb-l">We Provided</td><td class="sb-c">:</td>
+			<td colspan="3">Pattern, Password
+				<span class="sb-box wide">{{ a3_device_lock(doc) or "&nbsp;"|safe }}</span></td></tr>
+		<tr><td class="sb-l">Risk Informed</td><td class="sb-c">:</td>
+			<td colspan="3"><span class="sb-box">{{
+				"Yes" if doc.get("risk_informed") else "&nbsp;"|safe }}</span></td></tr>
+	</table>
+
+	<div class="sb-serv">
+		<div><span class="sb-star">&#10055;</span> Mobile Phone servicing (Both Hardware &amp; Software) Glass works</div>
+		<div><span class="sb-star">&#10055;</span> Chiplevel Servicing, Display Replacing, Battery Replacing, EMMC Re-&nbsp;Programing</div>
+		<div><span class="sb-star">&#10055;</span> Liquid Damage Repairing, Official Country Unlocking, Software Solution</div>
+	</div>
+
+	<div class="sb-sign">
+		<div class="row">
+			<span>Received by</span><span class="grow">&nbsp;{{ a3_received_by(doc) }}</span>
+			<span>Customer's Signature&nbsp;:</span><span class="grow">&nbsp;</span>
+		</div>
+		<div class="sb-declare">I have received the equipment in satisfactory working conditions</div>
+		<div class="row">
+			<span class="grow">&nbsp;</span>
+			<span>Customer's Signature&nbsp;:</span><span class="grow" style="max-width:62mm">&nbsp;</span>
+		</div>
+	</div>
+
+	<div class="sb-dash"></div>
+	<div class="sb-work">
+		<div class="cell no"><div>Work Order No.</div><b>{{ doc.name }}</b></div>
+		<div class="cell what"><div>Nature of complaint as reported by Customer</div>
+			<b>{{ a3_reported_issues(doc) or doc.complaint_description or "" }}</b></div>
+	</div>
+	<div class="sb-dash"></div>
+
+	<div class="sb-terms">
+		<h4>Terms &amp; Conditions</h4>
+		<ol>
+			{% for ml, en in a3_service_terms(doc) %}
+				<li><div class="sb-ml">{{ ml }}</div><div class="sb-en">{{ en }}</div></li>
+			{% endfor %}
+		</ol>
+	</div>
+
+</div></div></div>

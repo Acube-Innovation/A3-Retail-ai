@@ -17,6 +17,7 @@
   "cost_center",
   "address",
   "trade_name",
+  "service_tagline",
   "signature",
   "invoice_terms",
   "gstin",
@@ -141,6 +142,12 @@
    "fieldtype": "Data",
    "label": "Trade Name (on printed bills)",
    "description": "The name customers know this shop by \u2014 printed at the head of the tax invoice. Falls back to the branch name when blank."
+  },
+  {
+   "fieldname": "service_tagline",
+   "fieldtype": "Data",
+   "label": "Tagline (on the service bill)",
+   "description": "The line under the shop's name on a service bill \u2014 e.g. The Professional Grade Phone Service Centre."
   },
   {
    "fieldname": "signature",

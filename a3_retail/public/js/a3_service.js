@@ -423,6 +423,11 @@ window.SVC = (function () {
 		state.customer = found.name;
 		$("mobile").value = found.a3_mobile_no || found.mobile_no || $("mobile").value;
 		$("customer-name").value = found.customer_name || "";
+		// The pad's Place: the town we hold for them, which the counter can
+		// correct before saving.
+		if ($("svc-place") && !$("svc-place").value.trim()) {
+			$("svc-place").value = found.city || found.place || "";
+		}
 		$("customer-email").value = found.email_id || "";
 		const address = found.address || {};
 		$("customer-address").value = address.address_line1 || "";
@@ -889,6 +894,15 @@ window.SVC = (function () {
 		// nothing — the counter never got as far as the server.
 		if (state.requireSignature && !state.signed) return askSignature();
 
+		// Name, number and place are what the service bill is made of, and a
+		// bill missing any of them is one nobody can act on later.
+		if (!$("mobile").value.trim()) return say("The customer's number is needed.", "error");
+		if (!$("customer-name").value.trim()) return say("The customer needs a name.", "error");
+		if ($("svc-place") && !$("svc-place").value.trim()) {
+			$("svc-place").focus();
+			return say("Where is the customer from? The service bill asks for a place.", "error");
+		}
+
 		$("save-booking").disabled = true;
 
 		try {
@@ -897,6 +911,7 @@ window.SVC = (function () {
 					customer: state.customer,
 					mobile_no: $("mobile").value.trim(),
 					customer_name: $("customer-name").value.trim(),
+					place: $("svc-place") ? $("svc-place").value.trim() : "",
 					serial_no: device.serial_no,
 					imei_1: device.imei_1 || "",
 					imei_unreadable: device.imei_unreadable ? 1 : 0,
