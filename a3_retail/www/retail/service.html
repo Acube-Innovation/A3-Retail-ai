@@ -97,8 +97,17 @@
 								<label class="field"><span>{{ _("Email") }}</span>
 									<input id="customer-email" type="email" readonly></label>
 							</div>
-							<label class="field"><span>{{ _("Address") }}</span>
-								<input id="customer-address" readonly></label>
+							{#- The pad asks for a place, and the shop writes one on every
+							    bill. It starts as the town held against the customer and can
+							    be corrected, because the person in front of the counter is
+							    not always where their record says they are. -#}
+							<div class="field-grid">
+								<label class="field"><span>{{ _("Place") }} *</span>
+									<input id="svc-place" maxlength="60"
+									       placeholder="{{ _("Town or locality") }}"></label>
+								<label class="field"><span>{{ _("Address") }}</span>
+									<input id="customer-address" readonly></label>
+							</div>
 							<div class="field-grid three">
 								<label class="field"><span>{{ _("City") }}</span>
 									<input id="customer-city" readonly></label>

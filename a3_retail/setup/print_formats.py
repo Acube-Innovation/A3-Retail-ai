@@ -22,7 +22,7 @@ FORMATS = [
 	("Job Card Receipt (Thermal)", "Service Job Card", "job_card_receipt_thermal", "80mm"),
 	# The sticker that goes on the device, read by a scanner on the bench.
 	("Job Card Label", "Service Job Card", "job_card_label", "50x25mm"),
-	("Job Card Acknowledgement", "Service Job Card", "job_card_acknowledgement", "A5"),
+	("Job Card Acknowledgement", "Service Job Card", "job_card_acknowledgement", "A4"),
 	("Service Estimate", "Service Estimate", "service_estimate", "A4"),
 	("Service Invoice", "Sales Invoice", "service_tax_invoice", "A4"),
 	("Retail Tax Invoice", "Sales Invoice", "retail_tax_invoice", "A4"),

@@ -15,6 +15,7 @@
   "customer_section",
   "customer",
   "customer_name",
+  "place",
   "customer_mobile",
   "alternate_mobile",
   "col_break_2",
@@ -52,6 +53,7 @@
   "device_password",
   "data_backup_required",
   "data_loss_consent",
+  "risk_informed",
   "estimated_delivery_date",
   "condition_section",
   "device_condition_checklist",
@@ -194,14 +196,22 @@
    "label": "Customer Name",
    "fetch_from": "customer.customer_name",
    "read_only": 1,
-   "in_list_view": 1
+   "in_list_view": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "place",
+   "fieldtype": "Data",
+   "label": "Place",
+   "description": "Town or locality, as the service bill asks for it. Required when booking a device in; left as it stands on cards booked before this existed."
   },
   {
    "fieldname": "customer_mobile",
    "fieldtype": "Data",
    "label": "Mobile",
    "fetch_from": "customer.a3_mobile_no",
-   "in_list_view": 1
+   "in_list_view": 1,
+   "reqd": 1
   },
   {
    "fieldname": "alternate_mobile",
@@ -429,6 +439,13 @@
    "fieldname": "data_loss_consent",
    "fieldtype": "Check",
    "label": "Customer Consented to Data Loss"
+  },
+  {
+   "fieldname": "risk_informed",
+   "fieldtype": "Check",
+   "label": "Risk Informed",
+   "default": "0",
+   "description": "The customer was told the repair carries a risk."
   },
   {
    "fieldname": "estimated_delivery_date",
