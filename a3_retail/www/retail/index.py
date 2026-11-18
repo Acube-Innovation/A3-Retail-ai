@@ -14,6 +14,7 @@ def get_context(context):
 	from a3_retail.www.retail import asset_version
 
 	context.asset_v = asset_version()
+	from a3_retail.api.staff import _standing_in_at_a_counter
 	from a3_retail.setup.staff_portal import current_employee
 
 	context.no_cache = 1
@@ -21,8 +22,9 @@ def get_context(context):
 	context.company = frappe.db.get_single_value("Global Defaults", "default_company") or "A3 Retail"
 	context.branch_count = frappe.db.count("Branch Profile", {"is_active": 1}) or 0
 
-	employee = current_employee() if frappe.session.user != "Guest" else None
+	employee = (current_employee() or _standing_in_at_a_counter()) \
+		if frappe.session.user != "Guest" else None
 	context.signed_in = bool(employee)
-	context.employee_name = employee.employee_name if employee else ""
-	context.branch = employee.branch if employee else ""
+	context.employee_name = employee.get("employee_name") if employee else ""
+	context.branch = employee.get("branch") if employee else ""
 	return context

@@ -159,8 +159,18 @@ class TestTheItemThatLookedLikeTwo(FrappeTestCase):
 		if not rows:
 			self.skipTest("T150 is not on this site")
 		self.assertEqual(len(rows), 1, "there really are two records")
-		# The name carries the code, which is what read as a duplicate.
-		self.assertTrue(rows[0].item_name.strip().upper().endswith("T150"))
+
+	def test_the_name_no_longer_repeats_the_code(self):
+		"""This used to assert the opposite — that the name still ended in
+		`T150` — because at the time that was the whole of the complaint and
+		the sell screen only hid it. `item_names_carrying_their_code` takes it
+		off the name itself, which is what goes on a bill and into a report."""
+		name = frappe.db.get_value("Item", "T150", "item_name")
+		if not name:
+			self.skipTest("T150 is not on this site")
+		self.assertFalse(name.strip().upper().endswith("T150"),
+		                 f"the name still carries its own code: {name!r}")
+		self.assertTrue(name.strip(), "and it must still have a name")
 
 
 class TestAddingACustomerTwice(FrappeTestCase):

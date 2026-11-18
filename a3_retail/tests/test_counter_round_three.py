@@ -460,6 +460,74 @@ class TestTheOwnerStandingInAtACounter(FrappeTestCase):
 		self.assertEqual(_standing_in_at_a_counter()["branch"], branches[1])
 
 
+class TestTheScreensLetTheOwnerIn(FrappeTestCase):
+	"""The API allowing a stand-in is no use if the page in front of it does not.
+
+	Every branch screen used to ask `current_employee()` for itself, so the two
+	disagreed: the API would have served the owner's login and the page bounced
+	it to the sign-in screen, which then told it to sign out of the app it was
+	entitled to use. The feature existed and could not be reached.
+	"""
+
+	def test_no_screen_asks_for_an_employee_on_its_own(self):
+		import pathlib
+
+		root = pathlib.Path(frappe.get_app_path("a3_retail", "www", "retail"))
+		offenders = [p.name for p in sorted(root.glob("*.py"))
+		             if "or not current_employee()" in p.read_text()]
+		self.assertEqual(offenders, [],
+		                 f"these screens still guard themselves: {offenders}")
+
+	def test_every_screen_that_guards_imports_the_guard(self):
+		"""A NameError here is a white page on the shop floor."""
+		import ast
+		import pathlib
+
+		root = pathlib.Path(frappe.get_app_path("a3_retail", "www", "retail"))
+		for path in sorted(root.glob("*.py")):
+			source = path.read_text()
+			if path.name == "__init__.py" or "somebody_is_at_this_counter()" not in source:
+				continue
+			imported = {alias.asname or alias.name
+			            for node in ast.walk(ast.parse(source))
+			            if isinstance(node, ast.ImportFrom) for alias in node.names}
+			self.assertIn("somebody_is_at_this_counter", imported,
+			              f"{path.name} uses the guard without importing it")
+
+	def test_the_guard_turns_a_guest_away(self):
+		from a3_retail.www.retail import somebody_is_at_this_counter
+
+		frappe.set_user("Guest")
+		self.addCleanup(frappe.set_user, "Administrator")
+		self.assertFalse(somebody_is_at_this_counter())
+
+	def test_the_guard_lets_a_till_in(self):
+		from a3_retail.www.retail import somebody_is_at_this_counter
+
+		frappe.set_user(a_till_user())
+		self.addCleanup(frappe.set_user, "Administrator")
+		self.assertTrue(somebody_is_at_this_counter())
+
+	def test_the_guard_lets_the_owner_in(self):
+		from a3_retail.www.retail import somebody_is_at_this_counter
+
+		frappe.set_user("Administrator")
+		self.assertTrue(somebody_is_at_this_counter())
+
+	def test_the_guard_still_turns_away_an_account_with_no_employee(self):
+		from a3_retail.tests.fixtures import a_user_without_an_employee
+		from a3_retail.www.retail import somebody_is_at_this_counter
+
+		frappe.set_user(a_user_without_an_employee())
+		self.addCleanup(frappe.set_user, "Administrator")
+		self.assertFalse(somebody_is_at_this_counter())
+
+	def test_the_sign_in_page_no_longer_tells_the_owner_to_sign_out(self):
+		login = _source("www", "retail", "login.py")
+		self.assertIn("somebody_is_at_this_counter()", login)
+		self.assertNotIn("and current_employee()", login)
+
+
 # ---------------------------------------------------------------------------
 # 3. An item whose name repeats its own code
 # ---------------------------------------------------------------------------

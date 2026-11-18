@@ -12,12 +12,12 @@ def get_context(context):
 	from a3_retail.api.pos import _profile
 	from a3_retail.api.staff import session_context
 	from a3_retail.setup.staff_portal import current_employee
-	from a3_retail.www.retail import asset_version
+	from a3_retail.www.retail import asset_version, somebody_is_at_this_counter
 
 	context.asset_v = asset_version()
 	context.no_cache = 1
 
-	if frappe.session.user == "Guest" or not current_employee():
+	if not somebody_is_at_this_counter():
 		frappe.local.flags.redirect_location = "/retail/login"
 		raise frappe.Redirect
 
