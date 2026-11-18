@@ -227,3 +227,121 @@ class TestItIsWiredIn(FrappeTestCase):
 	def test_the_patch_runs_on_a_live_site(self):
 		self.assertIn("a3_retail.patches.google_review_links_per_shop",
 		              _source("patches.txt"))
+
+
+class TestTheMessagesThemselves(FrappeTestCase):
+	def test_all_seven_are_defined(self):
+		from a3_retail.api.service_pos import TEMPLATE_BY_STATUS
+		from a3_retail.setup.whatsapp_templates import TEMPLATES
+
+		defined = {spec["key"] for spec in TEMPLATES}
+		# Every status the service desk can message from must have a message.
+		missing = set(TEMPLATE_BY_STATUS.values()) - defined
+		self.assertEqual(missing, set(), f"no template for {missing}")
+		self.assertIn("sale_invoice", defined)
+
+	def test_every_one_of_them_is_transactional(self):
+		"""Marketing templates are gated by opt-in, quiet hours and a daily cap.
+		A customer who opted out of offers is still owed their invoice."""
+		from a3_retail.setup.whatsapp_templates import TEMPLATES
+
+		for spec in TEMPLATES:
+			row = frappe.db.get_value("WhatsApp Template",
+			                          {"template_key": spec["key"]}, "category")
+			if row:
+				self.assertEqual(row, "Utility", f"{spec['key']} is not Utility")
+
+	def test_the_review_ask_is_a_button_and_never_a_sentence(self):
+		"""A body that asks for a review reads as marketing to Meta, and would
+		drag the whole template — invoice and all — into the gated category."""
+		import re
+
+		from a3_retail.setup.whatsapp_templates import TEMPLATES
+
+		# Whole words: "star" is inside "started", and matching substrings
+		# failed a perfectly good message about work having started.
+		asking = re.compile(r"\b(reviews?|rate us|ratings?|feedback|stars?)\b")
+		for spec in TEMPLATES:
+			found = asking.search(spec["body"].lower())
+			self.assertIsNone(found,
+			                  f"{spec['key']} asks for a review in its body "
+			                  f"({found.group(0) if found else ''})")
+
+	def test_the_review_button_is_on_the_two_the_shop_asked_for(self):
+		from a3_retail.setup.whatsapp_templates import TEMPLATES
+
+		with_button = {spec["key"] for spec in TEMPLATES if spec.get("buttons")}
+		self.assertEqual(with_button, {"sale_invoice", "device_delivered"})
+
+	def test_only_the_invoice_carries_a_document(self):
+		from a3_retail.setup.whatsapp_templates import TEMPLATES
+
+		attaching = {spec["key"] for spec in TEMPLATES if spec.get("attach_print_format")}
+		self.assertEqual(attaching, {"sale_invoice"})
+
+	def test_every_variable_in_a_body_has_a_parameter_behind_it(self):
+		"""A `{{4}}` with no parameter row arrives blank on a customer's phone."""
+		import re
+
+		from a3_retail.setup.whatsapp_templates import TEMPLATES
+
+		for spec in TEMPLATES:
+			used = {int(n) for n in re.findall(r"\{\{(\d+)\}\}", spec["body"])}
+			supplied = set(range(1, len(spec["params"]) + 1))
+			self.assertEqual(used, supplied,
+			                 f"{spec['key']}: body uses {sorted(used)}, "
+			                 f"parameters supply {sorted(supplied)}")
+
+	def test_a_body_fits_what_whatsapp_accepts(self):
+		from a3_retail.setup.whatsapp_templates import TEMPLATES
+
+		for spec in TEMPLATES:
+			self.assertLessEqual(len(spec["body"]), 1024, f"{spec['key']} is too long")
+
+	def test_seeding_twice_changes_nothing_the_second_time(self):
+		from a3_retail.setup.whatsapp_templates import ensure_templates
+
+		first = ensure_templates()
+		second = ensure_templates()
+		self.assertEqual(second["created"], [],
+		                 "a second run created templates all over again")
+		self.assertTrue(set(second["updated"]) >= set(first["created"] + first["updated"]))
+
+
+class TestTheVariablesGetFilled(FrappeTestCase):
+	def test_the_direct_path_resolves_them_too(self):
+		"""`notify()` is what the Bills screen and the service desk call. It
+		passed no parameters, so a bill arrived with every variable blank while
+		the rules path filled them correctly."""
+		body = _source("communication", "engine.py")
+		block = body[body.index("def send_template("):]
+		block = block[:block.index("\ndef ", 10)]
+		self.assertIn("resolve_parameters(template, reference_doc)", block)
+
+	def test_a_caller_that_supplies_its_own_still_wins(self):
+		body = _source("communication", "engine.py")
+		self.assertIn("if template and not params and reference_doc is not None:", body)
+
+	def test_an_invoice_fills_name_number_and_amount(self):
+		from a3_retail.communication.engine import resolve_parameters
+
+		invoice = _an_invoice()
+		name = frappe.db.get_value("WhatsApp Template", {"template_key": "sale_invoice"},
+		                           "name")
+		if not (invoice and name):
+			self.skipTest("no invoice or no sale_invoice template on this site")
+
+		params = resolve_parameters(frappe.get_cached_doc("WhatsApp Template", name),
+		                            frappe.get_doc("Sales Invoice", invoice.name))
+		self.assertEqual(params["2"], invoice.name)
+		self.assertTrue(params["1"], "the customer is not named")
+		self.assertTrue(params["3"], "the amount is blank")
+
+	def test_a_gated_document_is_said_out_loud(self):
+		"""If Meta recategorises the invoice template, a customer who opted out
+		of offers silently stops receiving their bill. That must be visible."""
+		body = _source("communication", "engine.py")
+		block = body[body.index("def compliance_block("):]
+		block = block[:block.index("\ndef ", 10)]
+		self.assertIn('template.get("attach_print_format")', block)
+		self.assertIn("frappe.log_error", block)
