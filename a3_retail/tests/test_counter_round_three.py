@@ -569,6 +569,47 @@ class TestAnItemNameCarryingItsOwnCode(FrappeTestCase):
 		self.assertIn("a3_retail.patches.item_names_carrying_their_code",
 		              _source("patches.txt"))
 
+	def test_the_other_kind_of_duplicate_is_named_and_left_alone(self):
+		"""Taking the code off a name fixes a record that *read* as two. It
+		does nothing for two records whose codes differ by a space — `T200` and
+		`T 200` — which is what came over from myBillBook. Merging those moves
+		stock and rewrites what a customer was sold, so the patch lists them."""
+		import ast
+
+		body = _source("patches", "item_names_carrying_their_code.py")
+		self.assertIn("_report_the_real_duplicates", body)
+
+		# Asked of the calls rather than of the text: the docstring explains
+		# why it does not merge them, and a search for the word finds that.
+		called = {
+			node.func.attr for node in ast.walk(ast.parse(body))
+			if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+		}
+		for forbidden in ("rename_doc", "delete_doc", "merge_doc"):
+			self.assertNotIn(forbidden, called,
+			                 f"a patch must not {forbidden} a real item")
+
+	def test_it_reports_what_is_on_the_shelf_for_each_side(self):
+		"""Which record survives is the shop's call, and it cannot be made
+		without knowing what each one holds."""
+		body = _source("patches", "item_names_carrying_their_code.py")
+		self.assertIn("actual_qty", body)
+		self.assertIn("on hand", body)
+
+	def test_the_pairs_it_would_report_really_are_distinct_records(self):
+		import collections
+
+		by_shape = collections.defaultdict(list)
+		for row in frappe.get_all("Item", fields=["name"]):
+			by_shape["".join(row.name.split()).upper()].append(row.name)
+
+		for shape, codes in by_shape.items():
+			if len(codes) > 1:
+				self.assertEqual(len(set(codes)), len(codes),
+				                 f"{shape} was counted twice from one record")
+				return
+		self.skipTest("no near-duplicate item codes on this site")
+
 
 # ---------------------------------------------------------------------------
 # 4. Six Apple accessories tracked by serial

@@ -19,6 +19,7 @@ no spaces in it, which is what `T150` and `PT450` look like and what an English
 phrase does not.
 """
 
+import collections
 import re
 
 import frappe
@@ -45,6 +46,45 @@ def execute():
 	print(f"  looked at {looked} item(s); {len(fixed)} carried their own code")
 	for code, was, now in sorted(fixed):
 		print(f"      {code}: {was!r} -> {now!r}")
+
+	_report_the_real_duplicates()
+
+
+def _report_the_real_duplicates():
+	"""Name the items that genuinely are two records, and change nothing.
+
+	Taking the code off a name fixes one record that *read* as two. It does
+	nothing for the other kind, which came over from myBillBook: two separate
+	items whose codes differ only by a space or by case — `T200` and `T 200`,
+	`IPHONE 16 128GB` and `I PHONE 16 128GB`, `KEYCHAIN LIGHT` and
+	`KEY CHAIN LIGHT`. Each is a real Item with its own stock, its own history
+	and possibly its own submitted bills.
+
+	Merging them is not a patch's decision. It moves stock, it rewrites what a
+	customer was sold, and where both sides hold stock somebody has to count
+	the shelf and say which is which. So this lists them for the shop and
+	leaves them alone.
+	"""
+	by_shape = collections.defaultdict(list)
+	for row in frappe.get_all("Item", fields=["name", "item_name", "disabled"]):
+		by_shape["".join(row.name.split()).upper()].append(row)
+
+	pairs = [rows for rows in by_shape.values() if len(rows) > 1]
+	if not pairs:
+		return
+
+	print(f"\n  {len(pairs)} item(s) exist twice over, differing only by a space "
+	      "or by case. Nothing here is merged — each is a real record with its "
+	      "own stock and its own history, and which one survives is the shop's "
+	      "call:")
+	for rows in sorted(pairs, key=lambda rows: rows[0].name):
+		for row in sorted(rows, key=lambda r: r.name):
+			held = frappe.db.sql("""select ifnull(sum(actual_qty), 0)
+			                        from `tabBin` where item_code = %s""",
+			                     row.name)[0][0] or 0
+			note = " (disabled)" if row.disabled else ""
+			print(f"      {row.name!r} — {held:g} on hand{note}")
+		print()
 
 
 def _without_the_code(code: str, item_name: str) -> str | None:
