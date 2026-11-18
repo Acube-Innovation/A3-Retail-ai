@@ -3058,3 +3058,9 @@ kbd { display: inline-block; min-width: 17px; padding: 1px 5px; margin: 0 1px;
 .panel-head.is-clickable { cursor: pointer; }
 .panel-head.is-clickable:hover h2 { text-decoration: underline; }
 .panel-head.is-clickable:focus-visible { outline: 2px solid #f08a24; outline-offset: 2px; }
+
+/* A reverse-charge bill owes its GST to the government rather than to the
+   supplier, so the line is marked as money that is not part of what is paid
+   out — the counter pays against the Bill total just below it. */
+.bill-totals .tr.is-rcm { color: #9a6700; }
+.bill-totals .tr.is-rcm span:last-child::before { content: "↺ "; }

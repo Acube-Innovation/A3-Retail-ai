@@ -90,6 +90,51 @@ class TestReverseChargeIsAskedPerBill(FrappeTestCase):
 		js = _source("public", "js", "a3_purchase_entry.js")
 		self.assertIn("reverse_charge", js)
 
+	def test_the_screen_shows_what_the_supplier_is_actually_owed(self):
+		"""Not cosmetic: the Bill total is the figure the counter pays against.
+
+		Under reverse charge the supplier charges no GST, so a screen that
+		still totals goods-plus-GST tells the counter to hand over money that
+		is not owed. The server posted it correctly all along; the screen did
+		not, which is the half a person sees.
+		"""
+		js = _source("public", "js", "a3_purchase_entry.js")
+		block = js[js.index("function refreshTotals("):]
+		block = block[:block.index("\n\t/**", 10)]
+
+		self.assertIn("reverseCharge", block)
+		# The payable is the taxable amount alone when reverse charge applies.
+		self.assertIn("const payable = reverseCharge ? taxable : taxable + gst;",
+		              block)
+		self.assertIn('$("p-total").textContent = money(Math.round(payable));',
+		              block)
+
+	def test_the_gst_is_still_worked_out_for_an_unregistered_dealer(self):
+		"""An unregistered dealer is the usual reason a bill is reverse charge
+		at all. Zeroing the rate for them would show no GST on exactly the
+		bills that carry it."""
+		js = _source("public", "js", "a3_purchase_entry.js")
+		block = js[js.index("function refreshTotals("):]
+		block = block[:block.index("\n\t/**", 10)]
+		self.assertIn("state.supplierRegistered === false && !reverseCharge",
+		              block)
+
+	def test_ticking_it_redraws_the_figures(self):
+		"""Otherwise the counter reads the total from before the tick."""
+		js = _source("public", "js", "a3_purchase_entry.js")
+		self.assertIn('$("p-rcm").addEventListener("change", () => refreshTotals())',
+		              js)
+
+	def test_the_counter_is_told_where_the_money_goes(self):
+		js = _source("public", "js", "a3_purchase_entry.js")
+		self.assertIn('$("rcm-note")', js)
+		self.assertIn("paid by us to the government", js)
+
+		page = _source("www", "retail", "purchase_entry.html")
+		self.assertIn('id="rcm-note"', page)
+		self.assertIn('id="p-gst-label"', page)
+		self.assertIn('id="p-gst-row"', page)
+
 	def test_the_answer_survives_being_put_aside(self):
 		"""A held bill is picked up as the kind of bill it was."""
 		api = _source("api", "purchases.py")
