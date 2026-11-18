@@ -1,61 +1,68 @@
 # Copyright (c) 2026, Acube Innovations Pvt Ltd and contributors
 # For license information, please see license.txt
-"""Libromi / wa-api.cloud provider.
+"""Libromi provider — `wa-api.cloud/api/v1`.
 
 Libromi is a WhatsApp Business Solution Provider: Meta's Cloud API underneath,
-with its own REST layer on top at `https://api.wa-api.cloud/v1`. Its send call
-is flatter than Meta's — no `components` tree, just the values in named fields
-— so this builds its own payload rather than reusing `template_payload()`.
+and the send call is Meta's own shape — the same `components` tree — wrapped
+with the Libromi channel the message goes out from:
 
-Three things it gives us that Meta's own API does not:
+    POST https://wa-api.cloud/api/v1/messages
+    Authorization: Bearer <token>
+    {"channel_id": "409", "to": "+91…", "type": "template",
+     "template": {"name": …, "language": {"code": "en",
+                                          "policy": "deterministic"},
+                  "components": [ … ]}}
 
-- **`Idempotency-Key` is required on a send.** Keyed on the message log's own
-  name, a retry of a message that already went out returns the first result
-  instead of sending it twice. The retry logic in `dispatch` was written
-  hoping for this; here it is guaranteed.
-- **`header_media_url` takes a document.** That is how a customer's invoice PDF
-  rides along with the message, which is the whole point of the integration.
-- **Test keys (`ak_test_…`) read real data and change nothing.** The entire
-  path can be proved against the real account before one real message goes out.
+So the components are built the way `BaseProvider.template_payload()` builds
+them and this adds what Meta's own endpoint does not take: the channel, and the
+header and button parameters an invoice needs.
 
-Templates are named here and numbered there, so the name on our
-`WhatsApp Template` is resolved to Libromi's id once and cached.
+A note on which Libromi API this is. There are two, and they are not the same
+thing. `api.wa-api.cloud/v1` is the newer "API Platform" — numbered template
+ids, required idempotency keys, an OpenAPI spec — and reaching it needs a key
+that can only be minted through the Copilot, which is a paid feature. This one
+is the panel's own API, it takes the token from Settings → API Tokens, and it
+names templates rather than numbering them. It is the one this account can
+actually use.
+
+Templates are referred to **by name**, so there is no id to look up and no
+cache to go stale. The name is `WhatsApp Template.meta_template_name`.
 """
 
 import frappe
-import requests
 from frappe.utils import cint
 
 from a3_retail.communication.providers.base import BaseProvider
 
-BASE_URL = "https://api.wa-api.cloud/v1"
-API_VERSION = "2026-10-01"
+BASE_URL = "https://wa-api.cloud/api/v1"
 TIMEOUT = 30
-TEMPLATE_CACHE_SECONDS = 3600
 
 
 class LibromiProvider(BaseProvider):
 	# ------------------------------------------------------------------ send
 	def send(self, log) -> dict:
+		import requests
+
 		settings = self.settings()
 		token = settings.get_password("access_token", raise_exception=False)
 		if not token:
-			return {"ok": False, "error": "No Libromi API token configured",
+			return {"ok": False, "error": "No Libromi token configured",
 			        "error_code": "no_token"}
 
-		template_id, problem = self._template_id(log, token, settings)
-		if problem:
-			return problem
-
-		payload = self.payload_for(log, template_id, settings)
-		if not payload.get("phone"):
+		payload = self.payload_for(log, settings)
+		if not payload.get("to"):
 			return {"ok": False, "error": "No number to send to", "error_code": "no_number"}
+		if not payload["template"].get("name"):
+			return {"ok": False, "error": f"{log.template} has no WhatsApp name",
+			        "error_code": "no_template_name"}
 
 		try:
 			response = requests.post(
-				f"{self._base(settings)}/messages/template",
+				f"{self._base(settings)}/messages",
 				json=payload,
-				headers=self._headers(token, idempotency=log.name),
+				headers={"Authorization": f"Bearer {token}",
+				         "Content-Type": "application/json",
+				         "Accept": "application/json"},
 				timeout=TIMEOUT,
 			)
 		except requests.RequestException as exc:
@@ -64,54 +71,87 @@ class LibromiProvider(BaseProvider):
 		return self._read(response)
 
 	# --------------------------------------------------------------- payload
-	def payload_for(self, log, template_id, settings=None) -> dict:
-		"""What Libromi is asked to send. Separated so it can be read in a test
-		without a network call."""
+	def payload_for(self, log, settings=None) -> dict:
+		"""What Libromi is asked to send. Built without a network call so a
+		test can read it."""
 		settings = settings or self.settings()
-		stored = frappe.parse_json(log.payload or "{}")
-		params = stored.get("params") or {}
+		template = (frappe.get_cached_doc("WhatsApp Template", log.template)
+		            if log.template else None)
 
-		payload = {
-			"template_id": template_id,
-			"phone": self._e164(log.to_number, settings),
-			# One value per {{n}}, in order. Our params are keyed "1", "2", …
-			"body_variables": [
-				str(params[key])
-				for key in sorted(params, key=lambda k: cint(k) if str(k).isdigit() else 0)
-			],
+		body = {
+			"to": self._e164(log.to_number, settings),
+			"type": "template",
+			"template": {
+				"name": (template.meta_template_name if template else None),
+				"language": {
+					"code": (template.language if template else "en") or "en",
+					# Libromi's own note: the policy must be this word.
+					"policy": "deterministic",
+				},
+				"components": self.components(log, template),
+			},
 		}
 
 		channel = self._channel_id(log, settings)
 		if channel:
-			payload["channel_id"] = str(channel)
+			body["channel_id"] = str(channel)
+		return body
 
-		# A new number becomes a contact on Libromi's side; name it rather than
-		# leaving the shop with a contact list full of bare numbers.
-		if log.customer:
-			name = frappe.db.get_value("Customer", log.customer, "customer_name")
-			if name:
-				payload["name"] = name[:255]
+	def components(self, log, template) -> list[dict]:
+		"""Meta's component tree: the header's document, the body's values,
+		and a suffix for each dynamic URL button."""
+		components = []
 
-		document = self.document_link(log)
+		document = self.document_link(log, template)
 		if document:
-			payload["header_media_url"] = document
+			components.append({
+				"type": "header",
+				"parameters": [{
+					"type": "document",
+					"document": {
+						"link": document,
+						# Named, or WhatsApp shows the customer a filename
+						# taken from the URL.
+						"filename": f"{log.reference_name}.pdf",
+					},
+				}],
+			})
 
-		suffixes = self.button_suffixes(log)
-		if suffixes:
-			payload["button_url_suffixes"] = suffixes
+		values = self.body_values(log)
+		if values:
+			components.append({
+				"type": "body",
+				"parameters": [{"type": "text", "text": value} for value in values],
+			})
 
-		return payload
+		for index, suffix in self.button_suffixes(log):
+			components.append({
+				"type": "button",
+				"sub_type": "url",
+				"index": str(index),
+				"parameters": [{"type": "text", "text": suffix}],
+			})
 
-	def document_link(self, log) -> str | None:
-		"""The invoice PDF, as a link Meta can fetch.
+		return components
 
-		Only when the template says it carries one. `attach_print_format` on
-		the WhatsApp Template is what turns an attachment on, and
-		`shared_documents` decides what may be shared and for how long.
+	def body_values(self, log) -> list[str]:
+		"""One value per `{{n}}`, in the order the template numbers them."""
+		stored = frappe.parse_json(log.payload or "{}")
+		params = stored.get("params") or {}
+		return [str(params[key])
+		        for key in sorted(params,
+		                          key=lambda k: cint(k) if str(k).isdigit() else 0)]
+
+	def document_link(self, log, template) -> str | None:
+		"""The invoice PDF, as a link WhatsApp can fetch.
+
+		Libromi's own note prefers a media id uploaded beforehand and allows a
+		public link. A link is what suits a bill: it is made when the message
+		goes, it expires, and there is nothing to upload or clean up.
 		"""
-		if not (log.template and log.reference_doctype and log.reference_name):
+		if not (template and log.reference_doctype and log.reference_name):
 			return None
-		if not frappe.db.get_value("WhatsApp Template", log.template, "attach_print_format"):
+		if not template.get("attach_print_format"):
 			return None
 
 		from a3_retail.api import shared_documents
@@ -124,57 +164,44 @@ class LibromiProvider(BaseProvider):
 			frappe.log_error(frappe.get_traceback(), "A3 Retail: shareable link")
 			return None
 
-	def button_suffixes(self, log) -> list[dict]:
-		"""Values for dynamic URL buttons.
+	def button_suffixes(self, log) -> list[tuple[int, str]]:
+		"""Values for dynamic URL buttons, as (index, suffix).
 
-		The one we use is the Google review link, which differs per shop.
-		Parassala and Udayankulangara have entirely different review links, so
-		the template carries `https://share.google/{{1}}` and the branch
-		supplies its own code — one template, every shop.
+		The one in use is the Google review link, which differs per shop.
+		Parassala and Udayankulangara are separate Google listings, so the
+		template carries `https://share.google/{{1}}` and the branch supplies
+		its own code — one template, every counter.
 		"""
 		stored = frappe.parse_json(log.payload or "{}")
 		explicit = stored.get("button_url_suffixes")
 		if explicit:
-			return explicit
+			return [(cint(row.get("button_index")), str(row.get("value")))
+			        for row in explicit]
 
 		if not log.branch:
 			return []
 		code = frappe.db.get_value("Branch Profile", {"branch": log.branch},
 		                           "google_review_code")
-		if not code:
-			return []
-		return [{"button_index": 0, "value": code}]
+		return [(0, code)] if code else []
 
 	# -------------------------------------------------------------- plumbing
 	def _base(self, settings) -> str:
 		configured = (settings.api_base_url or "").strip().rstrip("/")
-		# The Meta default that ships in the doctype is not Libromi's.
-		if not configured or "facebook.com" in configured:
+		# The doctype ships Meta's own base URL as its default, and the newer
+		# Libromi API Platform is a different host again. Neither is this.
+		if not configured or "facebook.com" in configured or "api.wa-api.cloud" in configured:
 			return BASE_URL
 		return configured
 
-	def _headers(self, token: str, idempotency: str | None = None) -> dict:
-		headers = {
-			"Authorization": f"Bearer {token}",
-			"Content-Type": "application/json",
-			"Api-Version": API_VERSION,
-		}
-		if idempotency:
-			# 8–128 characters. A log name is unique and already means
-			# "this one message", which is exactly the guarantee wanted.
-			headers["Idempotency-Key"] = f"a3-{idempotency}"[:128]
-		return headers
-
 	def _channel_id(self, log, settings) -> str | None:
-		"""Which WhatsApp number to send from. Libromi falls back to the
-		account default when this is absent, so it stays optional."""
+		"""Which WhatsApp number to send from."""
 		if log.sender_profile:
 			return frappe.db.get_value("WhatsApp Sender Profile", log.sender_profile,
 			                           "phone_number_id")
-		return None
+		return settings.get("business_account_id") or None
 
 	def _e164(self, number: str, settings) -> str:
-		"""Libromi wants international format; the counter types ten digits."""
+		"""International format; the counter types ten digits."""
 		digits = "".join(ch for ch in str(number or "") if ch.isdigit() or ch == "+")
 		if digits.startswith("+"):
 			return digits
@@ -184,58 +211,26 @@ class LibromiProvider(BaseProvider):
 			return f"+{digits}"
 		return f"+{code}{digits}"
 
-	def _template_id(self, log, token, settings):
-		"""Libromi's numeric id for the template we know by name."""
-		if not log.template:
-			return None, {"ok": False, "error": "No template on this message",
-			              "error_code": "no_template"}
-
-		name = frappe.db.get_value("WhatsApp Template", log.template, "meta_template_name")
-		if not name:
-			return None, {"ok": False, "error": f"{log.template} has no WhatsApp name",
-			              "error_code": "no_template_name"}
-
-		cache_key = f"a3_libromi_template:{name}"
-		cached = frappe.cache().get_value(cache_key)
-		if cached:
-			return cached, None
-
-		try:
-			response = requests.get(
-				f"{self._base(settings)}/templates",
-				params={"search": name, "status": "APPROVED", "limit": 100},
-				headers=self._headers(token), timeout=TIMEOUT)
-		except requests.RequestException as exc:
-			return None, {"ok": False, "error": str(exc), "error_code": "network"}
-
-		if response.status_code >= 400:
-			return None, self._read(response)
-
-		rows = (response.json() or {}).get("data") or []
-		# `search` is "name contains", so an exact match is picked out rather
-		# than trusting the first row — `invoice` would also match
-		# `invoice_reminder`.
-		match = next((r for r in rows if str(r.get("name")) == name), None)
-		if not match:
-			return None, {"ok": False,
-			              "error": f"No approved WhatsApp template named {name}",
-			              "error_code": "template_not_approved"}
-
-		template_id = str(match.get("id"))
-		frappe.cache().set_value(cache_key, template_id, expires_in_sec=TEMPLATE_CACHE_SECONDS)
-		return template_id, None
-
 	def _read(self, response) -> dict:
 		if response.status_code >= 400:
 			try:
 				body = response.json() or {}
 			except ValueError:
 				body = {}
-			error = body.get("error") or body
-			message = (error.get("message") if isinstance(error, dict) else None) or response.text
-			code = (error.get("code") if isinstance(error, dict) else None) or response.status_code
-			return {"ok": False, "error": str(message)[:500], "error_code": str(code)}
+			return {"ok": False,
+			        "error": str(body.get("message") or response.text)[:500],
+			        "error_code": str(body.get("error_code") or response.status_code)}
 
-		data = response.json() or {}
+		try:
+			data = response.json() or {}
+		except ValueError:
+			return {"ok": True, "message_id": None}
+
 		inner = data.get("data") or data
-		return {"ok": True, "message_id": str(inner.get("id") or inner.get("message_id") or "")}
+		if isinstance(inner, dict):
+			messages = inner.get("messages") or []
+			if messages and isinstance(messages[0], dict):
+				return {"ok": True, "message_id": messages[0].get("id")}
+			return {"ok": True,
+			        "message_id": inner.get("id") or inner.get("message_id")}
+		return {"ok": True, "message_id": None}

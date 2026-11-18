@@ -87,6 +87,9 @@ class TestTheLinkMetaFetches(FrappeTestCase):
 
 
 class TestWhatLibromiIsHanded(FrappeTestCase):
+	"""Libromi's send call is Meta's own shape — the `components` tree —
+	wrapped with the channel to send from."""
+
 	def setUp(self):
 		from a3_retail.communication.providers.libromi import LibromiProvider
 
@@ -94,7 +97,6 @@ class TestWhatLibromiIsHanded(FrappeTestCase):
 		self.invoice = _an_invoice()
 		if not self.invoice:
 			self.skipTest("no submitted invoice on this site")
-
 		self.template = self._a_template(attaches=True)
 
 	def _a_template(self, attaches: bool):
@@ -113,6 +115,7 @@ class TestWhatLibromiIsHanded(FrappeTestCase):
 		frappe.db.set_value("WhatsApp Template", name, "attach_print_format",
 		                    "Retail Tax Invoice" if attaches else None,
 		                    update_modified=False)
+		frappe.clear_cache(doctype="WhatsApp Template")
 		return name
 
 	def _log(self, **over):
@@ -127,12 +130,41 @@ class TestWhatLibromiIsHanded(FrappeTestCase):
 		base.update(over)
 		return frappe._dict(base)
 
+	def _parts(self, log=None):
+		body = self.provider.payload_for(log or self._log())
+		return {c["type"]: c for c in body["template"]["components"]}, body
+
+	def test_it_posts_the_shape_libromi_documents(self):
+		_, body = self._parts()
+		self.assertEqual(body["type"], "template")
+		self.assertEqual(body["template"]["language"]["policy"], "deterministic",
+		                 "Libromi requires this exact policy word")
+		self.assertTrue(body["template"]["name"], "the template is named, not numbered")
+		self.assertTrue(body.get("channel_id"), "no channel to send from")
+
+	def test_it_talks_to_the_panel_api_and_not_the_other_two(self):
+		"""There are three candidate hosts and only one works for this account:
+		Meta's own, the paid API Platform, and the panel's API."""
+		from a3_retail.communication.providers.libromi import BASE_URL
+
+		self.assertEqual(BASE_URL, "https://wa-api.cloud/api/v1")
+		settings = self.provider.settings()
+		for wrong in ("https://graph.facebook.com/v20.0", "https://api.wa-api.cloud/v1"):
+			settings.api_base_url = wrong
+			self.assertEqual(self.provider._base(settings), BASE_URL,
+			                 f"{wrong} must not be used")
+
 	def test_the_variables_go_in_the_order_the_template_numbers_them(self):
 		"""`{{10}}` must not sort between `{{1}}` and `{{2}}`."""
 		log = self._log(payload=json.dumps({"params": {
 			"2": "second", "10": "tenth", "1": "first"}}))
-		body = self.provider.payload_for(log, template_id="1")
-		self.assertEqual(body["body_variables"], ["first", "second", "tenth"])
+		self.assertEqual(self.provider.body_values(log), ["first", "second", "tenth"])
+
+	def test_the_body_parameters_are_text_in_that_order(self):
+		parts, _ = self._parts()
+		texts = [p["text"] for p in parts["body"]["parameters"]]
+		self.assertEqual(texts[1], self.invoice.name)
+		self.assertTrue(all(p["type"] == "text" for p in parts["body"]["parameters"]))
 
 	def test_the_number_is_sent_in_international_form(self):
 		settings = self.provider.settings()
@@ -141,23 +173,25 @@ class TestWhatLibromiIsHanded(FrappeTestCase):
 			self.assertEqual(self.provider._e164(typed, settings), "+919847012345",
 			                 f"{typed!r} was not normalised")
 
-	def test_the_invoice_pdf_rides_along(self):
-		body = self.provider.payload_for(self._log(), template_id="1")
-		self.assertIn("header_media_url", body)
-		self.assertIn("download_pdf", body["header_media_url"])
-		self.assertIn("key=", body["header_media_url"])
+	def test_the_invoice_pdf_rides_along_as_a_named_document(self):
+		parts, _ = self._parts()
+		document = parts["header"]["parameters"][0]
+		self.assertEqual(document["type"], "document")
+		self.assertIn("download_pdf", document["document"]["link"])
+		self.assertIn("key=", document["document"]["link"])
+		# Without a filename WhatsApp shows the customer the URL's tail.
+		self.assertTrue(document["document"]["filename"].endswith(".pdf"))
 
 	def test_no_attachment_unless_the_template_asks_for_one(self):
 		"""`attach_print_format` is the switch. A template without it must not
 		quietly start carrying a customer's invoice."""
 		self._a_template(attaches=False)
-		body = self.provider.payload_for(self._log(), template_id="1")
-		self.assertNotIn("header_media_url", body)
+		parts, _ = self._parts()
+		self.assertNotIn("header", parts)
 
 	def test_no_attachment_without_a_document_to_attach(self):
-		body = self.provider.payload_for(
-			self._log(reference_doctype=None, reference_name=None), template_id="1")
-		self.assertNotIn("header_media_url", body)
+		parts, _ = self._parts(self._log(reference_doctype=None, reference_name=None))
+		self.assertNotIn("header", parts)
 
 	def test_the_review_button_points_at_this_shop(self):
 		"""Parassala and Udayankulangara are separate Google listings. One
@@ -168,10 +202,11 @@ class TestWhatLibromiIsHanded(FrappeTestCase):
 			                             {"site": site, "is_active": 1}, "branch")
 			if not branch:
 				continue
-			body = self.provider.payload_for(self._log(branch=branch), template_id="1")
-			suffixes = body.get("button_url_suffixes") or []
-			self.assertTrue(suffixes, f"{branch} has no review link")
-			codes[site] = suffixes[0]["value"]
+			parts, _ = self._parts(self._log(branch=branch))
+			self.assertIn("button", parts, f"{branch} has no review button")
+			self.assertEqual(parts["button"]["sub_type"], "url")
+			self.assertEqual(parts["button"]["index"], "0")
+			codes[site] = parts["button"]["parameters"][0]["text"]
 
 		if len(codes) == 2:
 			self.assertNotEqual(codes["PSLA"], codes["UK"],
@@ -179,26 +214,30 @@ class TestWhatLibromiIsHanded(FrappeTestCase):
 
 	def test_a_branch_with_no_review_link_simply_has_no_button(self):
 		"""The distribution desk is not a shop a customer reviews."""
-		body = self.provider.payload_for(self._log(branch=None), template_id="1")
-		self.assertEqual(body.get("button_url_suffixes", []), [])
+		parts, _ = self._parts(self._log(branch=None))
+		self.assertNotIn("button", parts)
 
-	def test_the_customer_is_named_rather_than_left_a_bare_number(self):
-		body = self.provider.payload_for(self._log(), template_id="1")
-		self.assertTrue(body.get("name"))
+	def test_a_failure_is_reported_rather_than_raised(self):
+		"""`dispatch.send_now` records what came back; it must be told."""
+		class Refused:
+			status_code = 422
+			text = "nope"
+			def json(self):
+				return {"message": "Template not approved", "error_code": "TEMPLATE_INVALID"}
 
-	def test_a_retry_cannot_send_twice(self):
-		"""Libromi requires an Idempotency-Key, and the log's own name is
-		exactly "this one message"."""
-		headers = self.provider._headers("token", idempotency="WAML-0001")
-		self.assertEqual(headers["Idempotency-Key"], "a3-WAML-0001")
-		self.assertLessEqual(len(headers["Idempotency-Key"]), 128)
-		self.assertGreaterEqual(len(headers["Idempotency-Key"]), 8)
+		out = self.provider._read(Refused())
+		self.assertFalse(out["ok"])
+		self.assertEqual(out["error_code"], "TEMPLATE_INVALID")
+		self.assertIn("not approved", out["error"])
 
-	def test_it_talks_to_libromi_and_not_to_meta(self):
-		settings = self.provider.settings()
-		# The doctype ships Meta's base URL as its default; Libromi's is not that.
-		self.assertEqual(self.provider._base(settings), "https://api.wa-api.cloud/v1")
-		self.assertIn("Bearer", self.provider._headers("tok")["Authorization"])
+	def test_a_sent_message_hands_back_its_id(self):
+		class Sent:
+			status_code = 200
+			def json(self):
+				return {"data": {"messages": [{"id": "wamid.ABC"}]}}
+
+		self.assertEqual(self.provider._read(Sent()),
+		                 {"ok": True, "message_id": "wamid.ABC"})
 
 
 class TestItIsWiredIn(FrappeTestCase):
