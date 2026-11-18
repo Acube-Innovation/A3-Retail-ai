@@ -25,3 +25,4 @@ a3_retail.patches.service_bill_letterhead
 a3_retail.patches.item_names_carrying_their_code
 a3_retail.patches.apple_accessories_serialised
 a3_retail.patches.rcm_templates_the_shape_india_compliance_reads
+a3_retail.patches.google_review_links_per_shop
