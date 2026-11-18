@@ -20,7 +20,8 @@ def get_context(context):
 	from a3_retail.www.retail import asset_version
 
 	context.asset_v = asset_version()
-	from a3_retail.setup.staff_portal import HOME_PAGE, current_employee
+	from a3_retail.setup.staff_portal import HOME_PAGE
+	from a3_retail.www.retail import somebody_is_at_this_counter
 
 	context.no_cache = 1
 	context.app_name = "A3 Retail"
@@ -38,8 +39,10 @@ def get_context(context):
 	# accessor the desk uses, and mints one when the session has none yet.
 	context.csrf_token = frappe.sessions.get_csrf_token()
 
-	# Already signed in as branch staff? Go straight in.
-	if frappe.session.user != "Guest" and current_employee():
+	# Already signed in as somebody who may work a counter? Go straight in.
+	# That includes the owner's own login standing in at one, which used to be
+	# told here to sign out of the app it was entitled to use.
+	if somebody_is_at_this_counter():
 		frappe.local.flags.redirect_location = HOME_PAGE
 		raise frappe.Redirect
 
@@ -48,6 +51,7 @@ def get_context(context):
 	context.other_session = (
 		frappe.session.user if frappe.session.user != "Guest" else ""
 	)
+
 
 	if frappe.local.request.method == "POST":
 		_sign_in(context)
@@ -85,9 +89,10 @@ def _sign_in(context):
 
 def _destination() -> str:
 	"""Branch staff land in the app; anyone else goes where they belong."""
-	from a3_retail.setup.staff_portal import HOME_PAGE, current_employee
+	from a3_retail.setup.staff_portal import HOME_PAGE
+	from a3_retail.www.retail import somebody_is_at_this_counter
 
-	if current_employee():
+	if somebody_is_at_this_counter():
 		return HOME_PAGE
 	if frappe.db.get_value("User", frappe.session.user, "user_type") == "System User":
 		return "/app"

@@ -401,18 +401,38 @@
 			if (cell) cell.textContent = money(line.qty * line.rate);
 		}
 		const taxable = total();
+		const reverseCharge = !!($("p-rcm") && $("p-rcm").checked);
+
 		// The bill is taxed at the highest rate its lines carry, which is what
 		// the document posts; a single-rate bill is the normal case anyway.
-		const rate = state.supplierRegistered === false ? 0
+		//
+		// Under reverse charge the GST is owed to the government rather than to
+		// the supplier, so it is still worked out even for an unregistered
+		// dealer — who cannot charge it, which is the usual reason the bill is
+		// reverse charge in the first place.
+		const rate = (state.supplierRegistered === false && !reverseCharge) ? 0
 			: state.lines.reduce((top, l) => Math.max(top, Number(l.gst_rate) || 0), 0);
 		const gst = taxable * rate / 100;
+		// What the supplier is actually owed. Getting this wrong is not a
+		// cosmetic matter: it is the figure the counter pays against.
+		const payable = reverseCharge ? taxable : taxable + gst;
 
 		$("p-lines").textContent = state.lines.length;
 		$("p-taxable").textContent = money(taxable);
 		$("p-gst-rate").textContent = rate || 0;
 		$("p-gst").textContent = money(gst);
-		$("p-gst").closest(".tr").hidden = !rate;
-		$("p-total").textContent = money(Math.round(taxable + gst));
+		$("p-gst-label").textContent = reverseCharge ? "GST we owe" : "GST";
+		$("p-gst-row").classList.toggle("is-rcm", reverseCharge);
+		$("p-gst-row").hidden = !rate;
+		$("p-total").textContent = money(Math.round(payable));
+
+		if ($("rcm-note")) {
+			$("rcm-note").hidden = !reverseCharge;
+			$("rcm-note").textContent = reverseCharge
+				? `The supplier is paid ${money(taxable)}. The ${money(gst)} GST `
+				  + "is paid by us to the government, and claimed back."
+				: "";
+		}
 	}
 
 	/** What the goods cost before tax — the figure the rep quotes per piece. */
@@ -729,6 +749,7 @@
 		return {
 			supplier: state.supplier,
 			bill_no: $("bill-no").value.trim(),
+			reverse_charge: $("p-rcm") && $("p-rcm").checked ? 1 : 0,
 			date: $("p-date").value,
 			notes: $("p-notes").value.trim(),
 			paid_amount: num($("paid").value),
@@ -812,6 +833,7 @@
 			}));
 			pickSupplier(held.supplier, held.supplier_name || held.supplier, null);
 			$("bill-no").value = held.bill_no || "";
+			if ($("p-rcm")) $("p-rcm").checked = !!held.reverse_charge;
 			if (held.date) $("p-date").value = held.date;
 			$("p-notes").value = held.notes || "";
 			paintLines();
@@ -888,6 +910,10 @@
 
 			$("p-mode").innerHTML = (boot.modes || [])
 				.map((m) => `<option value="${esc(m)}">${esc(m)}</option>`).join("");
+
+			// Reverse charge changes what the supplier is owed, so the footer
+			// has to be redrawn the moment it is ticked.
+			if ($("p-rcm")) $("p-rcm").addEventListener("change", () => refreshTotals());
 
 			const groups = stock.item_groups || [];
 			// No default: whatever sorts first is not where this item belongs,

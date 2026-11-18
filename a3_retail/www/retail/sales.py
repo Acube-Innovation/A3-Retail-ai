@@ -10,7 +10,8 @@ no_cache = 1
 
 
 def get_context(context):
-	from a3_retail.www.retail import asset_version, require_branch_kind
+	from a3_retail.www.retail import (asset_version, require_branch_kind,
+	                                  somebody_is_at_this_counter)
 
 	context.asset_v = asset_version()
 	from a3_retail.api.pos import _profile, item_groups
@@ -19,7 +20,7 @@ def get_context(context):
 
 	context.no_cache = 1
 
-	if frappe.session.user == "Guest" or not current_employee():
+	if not somebody_is_at_this_counter():
 		frappe.local.flags.redirect_location = "/retail/login"
 		raise frappe.Redirect
 

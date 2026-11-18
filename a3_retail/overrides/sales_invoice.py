@@ -313,3 +313,54 @@ def cross_branch_availability(item_code: str) -> list[dict]:
 
 	require_permission("Bin", "read")
 	return availability_matrix(item_code)
+
+
+# ---------------------------------------------------------------------------
+# Cancelling and amending a bill
+# ---------------------------------------------------------------------------
+def only_the_administrator_may_undo(doc, method=None):
+	"""Cancelling or amending a bill is the Administrator's alone.
+
+	A cancelled bill reverses stock, reverses the ledger and voids a tax
+	invoice that has already been handed to a customer and may already be in a
+	GST return. The shop asked for that to be one person's decision rather than
+	something any counter can reach.
+
+	This is a hook rather than a permission because permissions were tried and
+	did not hold: `cancel` is granted through several roles at once, an
+	Administrator-only role still leaves `Submit` able to amend, and a role
+	changed in one place is easily granted again in another. A document hook
+	runs for every route into the document — the desk, the counter screens, the
+	API, a background job — so there is one answer rather than one per door.
+
+	`frappe.flags.ignore_permissions` is deliberately *not* honoured here. It is
+	set by our own code when it builds documents on a counter's behalf, and
+	cancelling is never that.
+	"""
+	if frappe.session.user == "Administrator":
+		return
+
+	frappe.throw(
+		_("Only the Administrator can cancel {0}. Ask head office to do it.")
+		.format(doc.name),
+		frappe.PermissionError,
+		title=_("Not yours to cancel"),
+	)
+
+
+def only_the_administrator_may_amend(doc, method=None):
+	"""The other half of the same rule.
+
+	An amendment is a new document carrying `amended_from`, so it arrives as an
+	insert rather than as a cancel and would otherwise walk straight past the
+	hook above.
+	"""
+	if not doc.get("amended_from") or frappe.session.user == "Administrator":
+		return
+
+	frappe.throw(
+		_("Only the Administrator can amend {0}. Ask head office to do it.")
+		.format(doc.amended_from),
+		frappe.PermissionError,
+		title=_("Not yours to amend"),
+	)

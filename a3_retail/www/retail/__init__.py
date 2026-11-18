@@ -56,3 +56,23 @@ def _stamp() -> str:
 			if name.endswith(suffix):
 				newest = max(newest, os.path.getmtime(os.path.join(root, name)))
 	return str(int(newest))
+
+
+def somebody_is_at_this_counter() -> bool:
+	"""Whether this session may open a branch screen at all.
+
+	Every one of these pages used to ask `current_employee()` directly, which
+	meant a page and the API behind it could disagree: the API lets the owner's
+	own login stand in at a counter it has picked — so a count can be corrected
+	without giving Administrator a payroll record — while the page in front of
+	it still bounced to the sign-in screen, where it was told to sign out. The
+	feature existed and could not be reached.
+
+	Asked in one place so the two answers cannot drift apart again.
+	"""
+	from a3_retail.api.staff import _standing_in_at_a_counter
+	from a3_retail.setup.staff_portal import current_employee
+
+	if frappe.session.user == "Guest":
+		return False
+	return bool(current_employee() or _standing_in_at_a_counter())

@@ -806,6 +806,17 @@ def set_approved_amount(name: str, amount, print_format: str = "Financier Copy")
 # ---------------------------------------------------------------------------
 # Cancelling and amending
 # ---------------------------------------------------------------------------
+def _only_the_administrator() -> None:
+	"""Cancelling and amending a bill belong to head office."""
+	if frappe.session.user != "Administrator":
+		frappe.throw(
+			_("Only the Administrator can cancel or amend a bill. "
+			  "Ask head office to do it."),
+			frappe.PermissionError,
+			title=_("Not yours to undo"),
+		)
+
+
 @frappe.whitelist()
 def cancel_bill(name: str) -> dict:
 	"""Cancel a bill, exactly the way the desk does.
@@ -820,6 +831,12 @@ def cancel_bill(name: str) -> dict:
 	the counter never sees, so the reasons are collected and handed back as a
 	list rather than a wall.
 	"""
+	# Said here as well as in the document hook, so the counter is told plainly
+	# at the button rather than by an exception from somewhere inside ERPNext.
+	# The hook is what actually enforces it, for every other door into the
+	# document; this is only the courtesy.
+	_only_the_administrator()
+
 	employee = _me()
 	require_permission("Sales Invoice", "cancel")
 
@@ -884,6 +901,12 @@ def amend_bill(name: str) -> dict:
 	given a new number. The old bill stays cancelled in the books, which is
 	what the GST return has already been told about it.
 	"""
+	# Said here as well as in the document hook, so the counter is told plainly
+	# at the button rather than by an exception from somewhere inside ERPNext.
+	# The hook is what actually enforces it, for every other door into the
+	# document; this is only the courtesy.
+	_only_the_administrator()
+
 	employee = _me()
 	require_permission("Sales Invoice", "create")
 

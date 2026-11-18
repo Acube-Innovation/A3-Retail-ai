@@ -230,6 +230,19 @@ window.A3 = (function () {
 		if (chip) {
 			chip.replaceWith(select);
 		} else if (heading) {
+			// On the dashboard the heading *is* the branch name, so putting the
+			// picker beside it printed the same words twice —
+			// "PhoneXpert Accessories UK  PhoneXpert Accessories UK" — which
+			// reads as a stuttering label rather than a control. The counter
+			// then reaches for "Switch user", which signs them out, and
+			// reports that switching counters logs them out.
+			//
+			// The heading is emptied rather than removed: four screens write
+			// their own title into it once their data arrives, and taking it
+			// away left them setting textContent on nothing.
+			if ((heading.textContent || "").trim() === String(ctx.branch || "").trim()) {
+				heading.textContent = "";
+			}
 			heading.insertAdjacentElement("afterend", select);
 		} else {
 			host.prepend(select);

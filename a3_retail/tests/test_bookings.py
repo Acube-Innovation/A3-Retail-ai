@@ -10,7 +10,7 @@ from frappe.utils import add_days, flt, nowdate
 
 from a3_retail.a3_retail_service.doctype.service_job_card import state as st
 from a3_retail.api import bookings, service_pos
-from a3_retail.tests.fixtures import ensure_branch
+from a3_retail.tests.fixtures import a_user_without_an_employee, ensure_branch
 
 PIXEL = ("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJ"
          "AAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==")
@@ -96,6 +96,11 @@ class TestBookingsAccess(FrappeTestCase):
 			frappe.set_user("Administrator")
 
 	def test_a_user_without_an_employee_record_is_refused(self):
+		"""Administrator is no longer the way to check this: it may stand in at
+		a counter it has picked, so the owner can correct a count. Every other
+		account with no employee record behind it is still turned away."""
+		frappe.set_user(a_user_without_an_employee())
+		self.addCleanup(frappe.set_user, "Administrator")
 		self.assertRaises(frappe.PermissionError, bookings.bootstrap)
 
 

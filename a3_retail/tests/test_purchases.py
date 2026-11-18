@@ -213,14 +213,50 @@ class TestWhatTheSupplierIsOwed(FrappeTestCase):
 
 	def test_an_unregistered_supplier_charges_nothing(self):
 		"""A dealer with no GSTIN cannot charge it, and india_compliance refuses
-		the document outright if the bill tries to."""
-		import inspect
+		the document outright if the bill tries to.
 
+		Asked of the function rather than of its source: the line this used to
+		read for has a second clause on it now, because reverse charge is the
+		one case where a supplier with no GSTIN still produces a tax template.
+		"""
+		from a3_retail.api.purchases import _company
 		from a3_retail.utils import tax
 
-		source = inspect.getsource(tax.input_gst_template)
-		self.assertIn("if not theirs:", source)
-		self.assertIn("return None", source)
+		company = _company()
+		branch = frappe.db.get_value("Branch Profile",
+		                             {"is_active": 1, "company": company}, "branch")
+		unregistered = next(
+			(row.name for row in frappe.get_all("Supplier", fields=["name"],
+			                                    filters={"disabled": 0}, limit=300)
+			 if not tax.supplier_gstin(row.name)), None)
+		if not unregistered:
+			self.skipTest("every supplier on this site has a GSTIN")
+
+		self.assertIsNone(
+			tax.input_gst_template(company, branch, unregistered, 18),
+			"a plain bill from an unregistered dealer must carry no GST")
+
+	def test_reverse_charge_is_the_exception_to_that(self):
+		"""Reverse charge exists for exactly this supplier: they charge nothing
+		because they cannot, and the shop owes the tax itself. Refusing for want
+		of a GSTIN would refuse the case the feature is for."""
+		from a3_retail.api.purchases import _company
+		from a3_retail.utils import tax
+
+		company = _company()
+		branch = frappe.db.get_value("Branch Profile",
+		                             {"is_active": 1, "company": company}, "branch")
+		unregistered = next(
+			(row.name for row in frappe.get_all("Supplier", fields=["name"],
+			                                    filters={"disabled": 0}, limit=300)
+			 if not tax.supplier_gstin(row.name)), None)
+		if not unregistered:
+			self.skipTest("every supplier on this site has a GSTIN")
+
+		template = tax.input_gst_template(company, branch, unregistered, 18,
+		                                  reverse_charge=True)
+		self.assertTrue(template)
+		self.assertIn("RCM", template)
 
 	def test_in_state_splits_and_out_of_state_does_not(self):
 		"""Buying inside Kerala is CGST and SGST; from outside it is one IGST

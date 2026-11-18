@@ -241,3 +241,30 @@ def ensure_salary_structure(employee: str, base: float = 25000) -> str:
 		doc.submit()
 
 	return name
+
+
+def a_user_without_an_employee() -> str:
+	"""A signed-in account with no employee record behind it.
+
+	Every branch screen scopes itself to `_me().branch`, so an account with
+	nothing to scope to is turned away. These tests used to stand at
+	Administrator to prove it, and Administrator no longer serves: it is
+	allowed to stand in at a counter it has picked, so the owner can correct a
+	count without being given a payroll record. That is the one deliberate
+	exception, and this is how the rule itself is still checked.
+
+	Created rather than found — on a provisioned site every user is somebody —
+	and rolled back with the test.
+	"""
+	name = "nobody@a3retail.test"
+	if not frappe.db.exists("User", name):
+		user = frappe.get_doc({
+			"doctype": "User",
+			"email": name,
+			"first_name": "Nobody",
+			"send_welcome_email": 0,
+			"user_type": "System User",
+		})
+		user.flags.ignore_permissions = True
+		user.insert(ignore_permissions=True)
+	return name

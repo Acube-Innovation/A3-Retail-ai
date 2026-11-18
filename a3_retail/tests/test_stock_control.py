@@ -10,7 +10,7 @@ from frappe.tests.utils import FrappeTestCase
 from frappe.utils import flt
 
 from a3_retail.api import stock_control as stock
-from a3_retail.tests.fixtures import ensure_branch, ensure_stock
+from a3_retail.tests.fixtures import a_user_without_an_employee, ensure_branch, ensure_stock
 
 
 def user_for(employee_name: str) -> str | None:
@@ -62,6 +62,11 @@ class TestStockAccess(FrappeTestCase):
 			frappe.set_user("Administrator")
 
 	def test_a_user_without_an_employee_record_is_refused(self):
+		"""Administrator is no longer the way to check this: it may stand in at
+		a counter it has picked, so the owner can correct a count. Every other
+		account with no employee record behind it is still turned away."""
+		frappe.set_user(a_user_without_an_employee())
+		self.addCleanup(frappe.set_user, "Administrator")
 		self.assertRaises(frappe.PermissionError, stock.bootstrap)
 
 

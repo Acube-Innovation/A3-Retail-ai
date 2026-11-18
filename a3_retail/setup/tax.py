@@ -5,13 +5,27 @@
 The RCM pattern is the important one. On a reverse-charge purchase the recipient
 owes the GST directly to the government, so the invoice carries the tax twice:
 
-    Input CGST RCM      9%   Add      -> an ITC asset
-    Output CGST RCM     9%   Deduct   -> the liability that will be paid in cash
+    Input Tax CGST      9%   Add      -> the ITC, in the ordinary input account
+    Input Tax CGST RCM  9%   Deduct   -> the liability that will be paid in cash
 
 The two net to zero on the invoice, so the supplier is still paid the base
 amount, while the ledger shows both the liability (GSTR-3B table 3.1(d)) and the
 credit that offsets output tax on sales (table 4(A)(3)) — which is exactly the
 "pay the GST and claim it back" requirement (scope 11.2).
+
+Which account goes on which side is not ours to choose. india_compliance sorts
+every GST account into a type in GST Settings and refuses a purchase invoice
+carrying one from the wrong type: `Input Tax * RCM` is "Purchase Reverse
+Charge", while `Output Tax * RCM` is "Sales Reverse Charge" and belongs to the
+self-invoice, not here. Putting the output account on the Deduct side — the
+pattern ERPNext used before india_compliance existed — gives
+
+    Row #3: Output Tax CGST RCM - PT is not a valid GST account for this
+    transaction
+
+and the bill cannot be saved at all. The credit side is therefore the *ordinary*
+input account, which is also where `gst_itemised_purchase_register` and GSTR-2B
+matching look for it, and the RCM account carries the liability.
 """
 
 import frappe
@@ -418,37 +432,51 @@ def ensure_purchase_tax_templates(company: str):
 	_ensure_rcm_templates(company)
 
 
-def _ensure_rcm_templates(company: str):
-	"""The add-input / deduct-output pair that nets to the base amount payable."""
-	in_cgst = rcm_account(company, "Input CGST RCM")
-	in_sgst = rcm_account(company, "Input SGST RCM")
-	in_igst = rcm_account(company, "Input IGST RCM")
-	out_cgst = rcm_account(company, "Output CGST RCM")
-	out_sgst = rcm_account(company, "Output SGST RCM")
-	out_igst = rcm_account(company, "Output IGST RCM")
+def rcm_template_rows(company: str, rate: int, out_of_state: bool) -> list[dict]:
+	"""The tax rows of one reverse-charge purchase template.
 
-	for rate in (5, 18):
+	Shared with the patch that corrects templates already on a live site, so
+	there is one statement of the pattern rather than two that can drift.
+
+	Returns [] when an account is missing, which is how the caller knows not to
+	build a half-template that would post to nothing.
+	"""
+	# Add: the ITC, in the same account an ordinary purchase uses, so the
+	# purchase register and GSTR-2B matching find it where they look.
+	# Deduct: the liability, in the Purchase Reverse Charge account.
+	if out_of_state:
+		rows = [
+			(gst_account(company, "Input Tax IGST"), rate, f"IGST {rate}%", "Add"),
+			(rcm_account(company, "Input IGST RCM"), rate, f"IGST RCM {rate}%", "Deduct"),
+		]
+	else:
 		half = rate / 2
-		_purchase_template(
-			company,
-			f"Input GST RCM In-state {rate}%",
-			[
-				_tax_row(in_cgst, half, f"Input CGST RCM {half}%", "Add"),
-				_tax_row(in_sgst, half, f"Input SGST RCM {half}%", "Add"),
-				_tax_row(out_cgst, half, f"Output CGST RCM {half}%", "Deduct"),
-				_tax_row(out_sgst, half, f"Output SGST RCM {half}%", "Deduct"),
-			],
-			is_reverse_charge=True,
-		)
-		_purchase_template(
-			company,
-			f"Input GST RCM Out-state {rate}%",
-			[
-				_tax_row(in_igst, rate, f"Input IGST RCM {rate}%", "Add"),
-				_tax_row(out_igst, rate, f"Output IGST RCM {rate}%", "Deduct"),
-			],
-			is_reverse_charge=True,
-		)
+		rows = [
+			(gst_account(company, "Input Tax CGST"), half, f"CGST {half}%", "Add"),
+			(gst_account(company, "Input Tax SGST"), half, f"SGST {half}%", "Add"),
+			(rcm_account(company, "Input CGST RCM"), half, f"CGST RCM {half}%", "Deduct"),
+			(rcm_account(company, "Input SGST RCM"), half, f"SGST RCM {half}%", "Deduct"),
+		]
+
+	if any(not account for account, *_ in rows):
+		return []
+	return [_tax_row(account, amount, description, side)
+	        for account, amount, description, side in rows]
+
+
+def _ensure_rcm_templates(company: str):
+	"""One template per rate and direction, each netting to the base payable."""
+	# Every rate the shop buys at. A rate with no RCM template of its own falls
+	# through to none at all, and the bill would carry no tax rather than the
+	# wrong tax — silent, and wrong in the return.
+	for rate in (5, 12, 18, 28):
+		for out_of_state in (False, True):
+			rows = rcm_template_rows(company, rate, out_of_state)
+			if not rows:
+				continue
+			kind = "Out-state" if out_of_state else "In-state"
+			_purchase_template(company, f"Input GST RCM {kind} {rate}%", rows,
+			                   is_reverse_charge=True)
 
 
 # ---------------------------------------------------------------------------
