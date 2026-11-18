@@ -3063,4 +3063,6 @@ kbd { display: inline-block; min-width: 17px; padding: 1px 5px; margin: 0 1px;
    supplier, so the line is marked as money that is not part of what is paid
    out — the counter pays against the Bill total just below it. */
 .bill-totals .tr.is-rcm { color: #9a6700; }
-.bill-totals .tr.is-rcm span:last-child::before { content: "↺ "; }
+/* The amount cell only. Without the child combinator this also matched the
+   rate span nested inside the label, and the row read "GST we owe (↺ 18%)". */
+.bill-totals .tr.is-rcm > span:last-child::before { content: "↺ "; }
