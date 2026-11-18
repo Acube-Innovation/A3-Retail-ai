@@ -10,6 +10,9 @@
 
 window.BILLS = (function () {
 	const state = {
+		// Cancelling and amending belong to head office; the server enforces
+		// it and this only decides whether to offer the button.
+		mayUndo: false,
 		branch: "", page: 1, pageSize: 20, rows: [], invoice: null,
 		filters: { query: "", from_date: "", to_date: "", status: "all", mode: "all",
 		           branch: "current", customer: "", hide_cancelled: 1 },
@@ -230,10 +233,16 @@ window.BILLS = (function () {
 		// One slot, two meanings: a submitted bill offers Cancel, a cancelled
 		// one offers Amend in the same place. `stay` keeps the window open so
 		// the bar, the result and any refusal happen where the press happened.
-		if (row.status === "Submitted") {
-			options.push(["Cancel this bill", () => cancelBill(row), "stay"]);
-		} else if (row.status === "Cancelled") {
-			options.push(["Amend — open it again as a draft", () => amendBill(row), "stay"]);
+		//
+		// Both belong to head office. The server refuses either way — that is
+		// what actually holds the line — but a button that is always going to
+		// be refused is worse than no button, so the counter is not shown one.
+		if (state.mayUndo) {
+			if (row.status === "Submitted") {
+				options.push(["Cancel this bill", () => cancelBill(row), "stay"]);
+			} else if (row.status === "Cancelled") {
+				options.push(["Amend — open it again as a draft", () => amendBill(row), "stay"]);
+			}
 		}
 
 		paintOptions(options);
@@ -379,8 +388,20 @@ window.BILLS = (function () {
 
 	// --------------------------------------------------------------- start
 	let searchTimer;
+	/** Whether this session may undo a bill. The server refuses either way;
+	 *  this is only so the counter is not offered a button that cannot work. */
+	async function learnWhoIsHere() {
+		try {
+			const ctx = await A3.call("a3_retail.api.staff.session_context");
+			state.mayUndo = (ctx && ctx.user) === "Administrator";
+		} catch (error) {
+			state.mayUndo = false;   // offer nothing we cannot be sure of
+		}
+	}
+
 	function start(options) {
 		state.branch = options.branch;
+		learnWhoIsHere();
 
 		$("q").addEventListener("input", () => {
 			clearTimeout(searchTimer);

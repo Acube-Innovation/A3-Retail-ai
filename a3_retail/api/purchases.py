@@ -408,6 +408,25 @@ def _build(data: dict, employee, draft: str | None = None, complete: bool = True
 	if doc.meta.has_field("branch"):
 		doc.branch = employee.branch
 
+	# Reverse charge: the counter says so, because nothing on the bill can be
+	# read to mean it. An unregistered supplier is the common case but not the
+	# rule — notified goods carry it from a registered one too — so it is a
+	# question the person entering the bill answers.
+	#
+	# A bill that does not answer takes the supplier's standing answer:
+	# `a3_is_rcm_applicable` on the Supplier is exactly that, "we always pay
+	# the GST ourselves on this one". The bill overrides it either way, so a
+	# one-off can be ticked on or off against the usual case.
+	if "reverse_charge" in data or "rcm" in data:
+		reverse_charge = cint(data.get("reverse_charge") or data.get("rcm"))
+	else:
+		reverse_charge = cint(frappe.db.get_value(
+			"Supplier", supplier, "a3_is_rcm_applicable"))
+
+	# india_compliance's own flag, which is what the GST return is built from.
+	if doc.meta.has_field("is_reverse_charge"):
+		doc.is_reverse_charge = reverse_charge
+
 	stock_account = _stock_account(doc.company, warehouse)
 	priced: dict[str, float] = {}
 	for row in items:
@@ -550,6 +569,8 @@ def load_draft(name: str) -> dict:
 		"bill_no": "" if (doc.bill_no or "").startswith(HELD_MARKER) else (doc.bill_no or ""),
 		"date": str(doc.posting_date or nowdate()),
 		"notes": doc.remarks or "",
+		# So a bill put aside as reverse charge is picked up as one.
+		"reverse_charge": cint(doc.get("is_reverse_charge")),
 		"items": items,
 	}
 
@@ -627,7 +648,9 @@ def _apply_tax(doc, employee) -> None:
 	if not rate:
 		return
 
-	template = tax.input_gst_template(doc.company, employee.branch, doc.supplier, rate)
+	reverse_charge = bool(cint(doc.get("is_reverse_charge")))
+	template = tax.input_gst_template(doc.company, employee.branch, doc.supplier,
+	                                  rate, reverse_charge=reverse_charge)
 	if not template:
 		return
 

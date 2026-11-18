@@ -729,6 +729,7 @@
 		return {
 			supplier: state.supplier,
 			bill_no: $("bill-no").value.trim(),
+			reverse_charge: $("p-rcm") && $("p-rcm").checked ? 1 : 0,
 			date: $("p-date").value,
 			notes: $("p-notes").value.trim(),
 			paid_amount: num($("paid").value),
@@ -812,6 +813,7 @@
 			}));
 			pickSupplier(held.supplier, held.supplier_name || held.supplier, null);
 			$("bill-no").value = held.bill_no || "";
+			if ($("p-rcm")) $("p-rcm").checked = !!held.reverse_charge;
 			if (held.date) $("p-date").value = held.date;
 			$("p-notes").value = held.notes || "";
 			paintLines();

@@ -85,12 +85,51 @@ def _active_branch(employee: dict) -> str:
 	return employee.get("branch")
 
 
+def _standing_in_at_a_counter() -> dict | None:
+	"""The owner's own login, working a counter it has picked.
+
+	Every branch screen scopes itself to `_me().branch`, so an account with no
+	employee record behind it has nothing to scope to and is turned away. That
+	is right for ordinary staff — a till should be a person — and wrong for
+	Administrator, which could not so much as correct a count from the stock
+	screen without being given a payroll record it has no business having.
+
+	What this supplies is a branch and nothing else. Every endpoint's own
+	`require_permission` still runs, and the branch scoping still applies to
+	whichever counter has been chosen, so this is not a way past either of
+	them. Only Administrator: any other account without an employee record is
+	still refused, because for them it would be a missing record rather than a
+	deliberate one.
+	"""
+	if frappe.session.user != "Administrator":
+		return None
+
+	branch = frappe.cache().hget(ACTIVE_BRANCH_KEY, frappe.session.user)
+	if not branch or not frappe.db.exists("Branch Profile", {"branch": branch,
+	                                                         "is_active": 1}):
+		branch = frappe.db.get_value("Branch Profile", {"is_active": 1}, "branch",
+		                             order_by="branch")
+	if not branch:
+		return None
+
+	return frappe._dict({
+		"name": None,
+		"employee_name": "Administrator",
+		"user_id": "Administrator",
+		"branch": branch,
+		"designation": "Administrator",
+		# Screens that credit a sale to a person need a real employee; this is
+		# not one, and says so rather than being mistaken for one.
+		"is_stand_in": True,
+	})
+
+
 def _me() -> dict:
 	"""The employee making the request. Throws unless they are portal staff."""
 	if frappe.session.user == "Guest":
 		frappe.throw(_("Please sign in."), frappe.PermissionError)
 
-	employee = current_employee()
+	employee = current_employee() or _standing_in_at_a_counter()
 	if not employee:
 		frappe.throw(
 			_("This account is not linked to an employee record."), frappe.PermissionError

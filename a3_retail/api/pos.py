@@ -162,7 +162,13 @@ def catalogue(query: str = "", item_group: str | None = None, only_in_stock: int
 		as_dict=True,
 	)
 
-	if cint(only_in_stock):
+	# "In stock here" is a way of browsing, not a way of searching. A counter
+	# who has typed a code is asking after one particular thing, and answering
+	# "nothing matches that" because the shelf is empty reads as the item
+	# having been lost — which is what was reported of T100, a perfectly good
+	# item with none on hand at that till. A named search answers with the
+	# item, marked "Not here", and the filter applies to browsing as before.
+	if cint(only_in_stock) and not (query or "").strip():
 		rows = [row for row in rows if flt(row.branch_qty) > 0 or not cint(row.is_stock_item)]
 
 	for row in rows:
@@ -1386,7 +1392,13 @@ def resolve_mode(tile: str) -> str | None:
 	return frappe.db.get_value("Mode of Payment", {"enabled": 1}, "name")
 
 
-def _sales_person(employee: str) -> str | None:
+def _sales_person(employee: str | None) -> str | None:
+	# Without this guard a blank employee matches the first Sales Person whose
+	# own employee link is blank, and the sale is credited to a stranger. The
+	# owner's login standing in at a counter has no employee record at all, so
+	# this is reachable rather than theoretical.
+	if not employee:
+		return None
 	return frappe.db.get_value("Sales Person", {"employee": employee}, "name")
 
 

@@ -168,6 +168,9 @@ doc_events = {
 			"a3_retail.a3_retail_warranty.doctype.warranty_registration.warranty_registration.register_from_invoice",
 			"a3_retail.overrides.service_payment.from_invoice",
 		],
+		# Before anything is reversed, and before the amendment is written.
+		"before_cancel": "a3_retail.overrides.sales_invoice.only_the_administrator_may_undo",
+		"before_insert": "a3_retail.overrides.sales_invoice.only_the_administrator_may_amend",
 		"on_cancel": [
 			"a3_retail.overrides.sales_invoice.on_cancel",
 			"a3_retail.a3_retail_finance.doctype.emi_application.emi_application.unstamp_invoice_on_application",
@@ -182,6 +185,8 @@ doc_events = {
 			"a3_retail.overrides.sales_invoice.validate",
 		],
 		"on_submit": "a3_retail.overrides.sales_invoice.on_submit",
+		"before_cancel": "a3_retail.overrides.sales_invoice.only_the_administrator_may_undo",
+		"before_insert": "a3_retail.overrides.sales_invoice.only_the_administrator_may_amend",
 		"on_cancel": "a3_retail.overrides.sales_invoice.on_cancel",
 	},
 	"Purchase Invoice": {

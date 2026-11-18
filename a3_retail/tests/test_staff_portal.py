@@ -9,7 +9,7 @@ from frappe.tests.utils import FrappeTestCase
 
 from a3_retail.api import staff
 from a3_retail.setup import staff_portal
-from a3_retail.tests.fixtures import ensure_branch
+from a3_retail.tests.fixtures import a_user_without_an_employee, ensure_branch
 
 
 def user_for(employee_name: str) -> str | None:
@@ -211,7 +211,11 @@ class TestSessionBoundary(FrappeTestCase):
 			frappe.set_user("Administrator")
 
 	def test_a_user_without_an_employee_record_is_refused(self):
-		"""Administrator is not branch staff, even though it may do anything else."""
+		"""Administrator is no longer the way to check this: it may stand in at
+		a counter it has picked, so the owner can correct a count. Every other
+		account with no employee record behind it is still turned away."""
+		frappe.set_user(a_user_without_an_employee())
+		self.addCleanup(frappe.set_user, "Administrator")
 		self.assertRaises(frappe.PermissionError, staff.session_context)
 
 	def test_current_employee_is_none_for_guest(self):

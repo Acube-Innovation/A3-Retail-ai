@@ -47,7 +47,7 @@ def templates() -> list[dict]:
 
 
 def input_gst_template(company: str, branch: str, supplier: str,
-                       rate: int) -> str | None:
+                       rate: int, reverse_charge: bool = False) -> str | None:
 	"""The input-GST template for buying from this supplier, at that rate.
 
 	In-state buying splits into CGST and SGST; from another state it is one
@@ -60,14 +60,22 @@ def input_gst_template(company: str, branch: str, supplier: str,
 	check `has_gstin()` first and say so while the counter can still fix it.
 	"""
 	theirs = supplier_gstin(supplier)
-	if not theirs:
+	# Reverse charge is the case where the supplier charges nothing — most
+	# often because they are not registered and have no GSTIN to charge with.
+	# So "no GSTIN, no GST" is exactly the wrong answer here: the shop owes the
+	# tax itself, and the template that books both halves of it is the whole
+	# point. Where there is no GSTIN to read a state from, the supplier is
+	# treated as local, which is what an unregistered dealer almost always is.
+	if not theirs and not reverse_charge:
 		return None
 
 	ours = frappe.db.get_value("Branch Profile", {"branch": branch}, "state_code")
-	out_of_state = bool(ours and not str(theirs).startswith(str(ours)))
+	out_of_state = bool(theirs and ours and not str(theirs).startswith(str(ours)))
 
 	kind = "Out-state" if out_of_state else "In-state"
-	for candidate in (f"Input GST {kind} {rate}%", f"Input GST In-state {rate}%"):
+	stem = "Input GST RCM" if reverse_charge else "Input GST"
+	for candidate in (f"{stem} {kind} {rate}%", f"{stem} {kind}",
+	                  f"{stem} In-state {rate}%", f"{stem} In-state"):
 		name = frappe.db.get_value(
 			"Purchase Taxes and Charges Template",
 			{"title": candidate, "company": company}, "name")

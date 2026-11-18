@@ -132,6 +132,14 @@
 						<div class="field"><label for="p-date">{{ _("Date") }}</label>
 							<input id="p-date" type="date"></div>
 					</div>
+					{#- Reverse charge is a question only the person entering the bill
+					    can answer: an unregistered supplier is the common case, but
+					    notified goods carry it from a registered one too. -#}
+					<label class="tickbox" id="rcm-row">
+						<input type="checkbox" id="p-rcm">
+						<span>{{ _("Reverse charge (RCM) — we pay the GST on this bill") }}</span>
+					</label>
+					<p class="muted" id="rcm-note" hidden></p>
 
 					{#- The rep's own bill reads the rate before tax and the total
 					    after it, so the screen shows both and the GST between. -#}
