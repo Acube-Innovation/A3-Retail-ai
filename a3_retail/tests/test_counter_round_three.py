@@ -25,12 +25,32 @@ def a_till_user() -> str:
 
 	Administrator is the one account these tests must *not* use to stand at a
 	till, because half of what they check is what it alone may do.
+
+	Ordered, because an unordered pick is a different till on different runs
+	and these tests then pass or fail by whichever one the database handed
+	back. Not every counter is a selling one — the distribution desk cannot so
+	much as read an Item — so the roles are asked rather than assumed.
 	"""
-	user = frappe.db.get_value("Employee", {"status": "Active",
-	                                        "user_id": ["is", "set"]}, "user_id")
-	if not user:
-		raise frappe.DoesNotExistError("no till login on this site")
-	return user
+	candidates = frappe.db.sql("""select e.user_id
+	                              from `tabEmployee` e
+	                              join `tabBranch Profile` bp on bp.branch = e.branch
+	                              where e.status = 'Active'
+	                                and ifnull(e.user_id, '') != ''
+	                                and ifnull(bp.default_warehouse, '') != ''
+	                                and bp.is_active = 1
+	                              order by e.user_id""", pluck=True)
+	from a3_retail.utils.permissions import user_is_unrestricted
+
+	for user in candidates:
+		# Not a manager. An unrestricted account is offered every branch in the
+		# chain for a different reason, and would make the branch-scoping
+		# checks here pass whether the scoping worked or not.
+		if user_is_unrestricted(user):
+			continue
+		if all(frappe.has_permission(doctype, "read", user=user)
+		       for doctype in ("Item", "Sales Invoice", "Purchase Invoice")):
+			return user
+	raise frappe.DoesNotExistError("no ordinary till login on this site that may sell")
 
 
 def _a_supplier(with_gstin: bool) -> str | None:
@@ -649,13 +669,45 @@ class TestWhoMayUndoABill(FrappeTestCase):
 # 6. Two counters at one shop, without signing out
 # ---------------------------------------------------------------------------
 class TestSwitchingCounterWithoutSigningOut(FrappeTestCase):
-	def test_a_user_at_two_counters_is_offered_both(self):
-		"""Accessories and Sales at UK are two branches in one shop, and the
-		same person works both."""
+	def setUp(self):
+		self.user = a_till_user()
+
+	def test_a_till_at_two_counters_is_offered_both(self):
+		"""Accessories and Sales at UK are two branches at one address, and the
+		same person works both. Asked of a real till, not of Administrator:
+		Administrator is offered every branch for a different reason, and would
+		pass this whether the feature worked or not."""
+		from a3_retail.api.staff import _me, permitted_branches
+
+		frappe.set_user(self.user)
+		self.addCleanup(frappe.set_user, "Administrator")
+
+		me = _me()
+		offered = permitted_branches(me)
+		self.assertIn(me["branch"], offered, "a till must be offered its own counter")
+		if len(offered) == 1:
+			self.skipTest(f"{me['branch']} is the only counter at its site")
+
+		# And nothing beyond their own address.
+		site = frappe.db.get_value("Branch Profile", {"branch": me["branch"]}, "site")
+		for branch in offered:
+			self.assertEqual(
+				frappe.db.get_value("Branch Profile", {"branch": branch}, "site"), site,
+				f"{branch} is at another site and must not be offered")
+
+	def test_a_till_that_may_not_switch_is_offered_only_its_own(self):
 		from a3_retail.api.staff import permitted_branches
 
-		frappe.set_user("Administrator")
-		self.assertGreater(len(permitted_branches()), 1)
+		locked = frappe.db.get_value("Employee",
+		                             {"status": "Active", "user_id": ["is", "set"],
+		                              "a3_can_switch_counter": 0},
+		                             ["name", "branch", "user_id"], as_dict=True)
+		if not locked:
+			self.skipTest("every till on this site may switch counter")
+
+		frappe.set_user(locked.user_id)
+		self.addCleanup(frappe.set_user, "Administrator")
+		self.assertEqual(permitted_branches(locked), [locked.branch])
 
 	def test_switching_is_remembered_without_a_new_session(self):
 		from a3_retail.api.staff import (ACTIVE_BRANCH_KEY, permitted_branches,
@@ -677,13 +729,12 @@ class TestSwitchingCounterWithoutSigningOut(FrappeTestCase):
 
 	def test_another_branch_cannot_be_switched_to(self):
 		"""It is a picker, not a door."""
-		from a3_retail.api.staff import permitted_branches, switch_branch
+		from a3_retail.api.staff import _me, permitted_branches, switch_branch
 
-		self.user = a_till_user()
 		frappe.set_user(self.user)
 		self.addCleanup(frappe.set_user, "Administrator")
 
-		mine = set(permitted_branches())
+		mine = set(permitted_branches(_me()))
 		theirs = [row.branch for row in frappe.get_all(
 			"Branch Profile", filters={"is_active": 1}, fields=["branch"])
 			if row.branch not in mine]
