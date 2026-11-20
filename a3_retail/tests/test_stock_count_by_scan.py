@@ -11,6 +11,7 @@ heard of, or stock it has filed on another shelf.
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
+from frappe.utils import flt
 
 
 def _js() -> str:
@@ -203,3 +204,152 @@ class TestTheCounterIsAskedWhichKind(FrappeTestCase):
 		js = _js()
 		self.assertIn("a3_retail.api.stock_control.adjust_stock", js)
 		self.assertIn('serials: line.serials ? line.picked : null', js)
+
+
+class TestAnItemJustSwitchedToImeis(FrappeTestCase):
+	"""A handset switched to IMEI tracking has no numbers on file yet.
+
+	The count read "no IMEIs on this shelf" as "this item is not counted by
+	IMEI", offered a plain quantity box, and left the numbers nowhere to go —
+	which is exactly the state of every item the moment it is switched over,
+	and of the first one of a model to reach a branch.
+	"""
+
+	ITEM = "A3-TEST-JUST-SERIALISED"
+
+	def setUp(self):
+		frappe.set_user("Administrator")
+		self.warehouse = self._a_branch_shelf()
+		self._an_item_with_no_serials_yet()
+
+	@staticmethod
+	def _a_branch_shelf():
+		"""A shelf this counter may actually adjust — `adjust_stock` refuses
+		another branch's, so the network list is the wrong one to pick from."""
+		from a3_retail.api.staff import _me
+		from a3_retail.api.stock_control import _warehouses
+
+		mine = _warehouses(_me().branch)
+		if not mine:
+			raise AssertionError("this user's branch has no warehouse")
+		return mine[0]
+
+	@classmethod
+	def _an_item_with_no_serials_yet(cls):
+		if frappe.db.exists("Item", cls.ITEM):
+			return
+		src = frappe.db.get_value("Item", {"gst_hsn_code": "85171300"},
+		                          ["item_group", "stock_uom"], as_dict=True)
+		doc = frappe.new_doc("Item")
+		doc.item_code = cls.ITEM
+		doc.item_name = "Handset switched to IMEI tracking today"
+		doc.item_group = src.item_group
+		doc.stock_uom = src.stock_uom
+		doc.gst_hsn_code = "85171300"
+		doc.is_stock_item = 1
+		doc.has_serial_no = 1
+		doc.flags.ignore_permissions = True
+		doc.insert(ignore_permissions=True)
+
+	def test_the_item_is_asked_about_itself_not_the_shelf(self):
+		from a3_retail.api.stock_control import countable_serials
+
+		out = countable_serials(self.ITEM, self.warehouse)
+		self.assertTrue(out["has_serial"],
+		                "an empty shelf must not read as 'not serialised'")
+		self.assertEqual(out["serials"], [])
+
+	def test_an_ordinary_item_still_says_no(self):
+		from a3_retail.api.stock_control import countable_serials
+
+		plain = frappe.db.get_value(
+			"Item", {"is_stock_item": 1, "has_serial_no": 0, "disabled": 0}, "name")
+		if not plain:
+			self.skipTest("no unserialised stock item on this site")
+		self.assertFalse(countable_serials(plain, self.warehouse)["has_serial"])
+
+	def test_it_refuses_an_item_that_is_not_there(self):
+		from a3_retail.api.stock_control import countable_serials
+
+		with self.assertRaises(frappe.ValidationError):
+			countable_serials("A3-NO-SUCH-ITEM-AT-ALL", self.warehouse)
+
+	def test_the_screen_asks_the_item_rather_than_the_shelf(self):
+		js = _js()
+		self.assertIn("a3_retail.api.stock_control.countable_serials", js)
+		# The old inference is what put the IMEIs nowhere.
+		self.assertNotIn("line.serials = rows.length ?", js)
+
+	def test_an_empty_list_is_not_a_dead_end_while_counting(self):
+		js = _js()
+		block = js[js.index("function imeiMarkup("):]
+		block = block[:block.index("\n\t/** One scan,")]
+		self.assertIn("nothingYet && !counting", block)
+
+	def test_counting_a_serialised_item_without_its_numbers_is_refused(self):
+		"""Posted with a bare quantity, ERPNext either refuses in its own words
+		or invents numbers for handsets nobody read."""
+		from a3_retail.api.stock_control import adjust_stock
+
+		with self.assertRaises(frappe.ValidationError) as caught:
+			adjust_stock({
+				"warehouse": self.warehouse,
+				"reason": "counted without reading the boxes",
+				"items": [{"item_code": self.ITEM, "counted": 3, "rate": 12000}],
+			})
+		self.assertIn("IMEI", str(caught.exception))
+
+	def test_the_same_count_goes_through_once_the_numbers_are_there(self):
+		from a3_retail.api.stock_control import adjust_stock
+
+		out = adjust_stock({
+			"warehouse": self.warehouse,
+			"reason": "counted by reading every box",
+			"items": [{"item_code": self.ITEM, "counted": 2, "rate": 12000,
+			           "serials": ["A3TESTIMEI000001", "A3TESTIMEI000002"]}],
+		})
+		doc = frappe.get_doc("Stock Reconciliation", out["adjustment"])
+		self.assertEqual(doc.docstatus, 1)
+		self.assertEqual(flt(doc.items[0].qty), 2.0)
+
+
+class TestScanningTheBoxOfAHandset(FrappeTestCase):
+	def test_a_barcode_scan_does_not_count_a_handset_as_a_quantity(self):
+		"""The box barcode says which model is in hand and nothing about which
+		piece, so counting it as one more leaves a quantity with no IMEI."""
+		js = _js()
+		block = js[js.index("async function scanIntoCount("):]
+		block = block[:block.index("\n\tasync function loadSerials(")]
+		self.assertIn("} else if (hit.has_serial) {", block)
+		self.assertIn("scan the number on", block)
+
+	def test_the_resolver_says_whether_a_piece_needs_a_number(self):
+		from a3_retail.api.stock_control import scan_for_count
+		from a3_retail.api.stock_control import _network_warehouses
+
+		serialised = frappe.db.get_value(
+			"Item", {"has_serial_no": 1, "is_stock_item": 1, "disabled": 0}, "name")
+		if not serialised:
+			self.skipTest("no serialised item on this site")
+		hit = scan_for_count(serialised, _network_warehouses()[0]["warehouse"])
+		self.assertEqual(hit["found"], "item")
+		self.assertTrue(hit["has_serial"])
+
+
+class TestAnImeiNobodyHasOnFile(FrappeTestCase):
+	"""A handset on the shelf the system has never heard of is the find a
+	count exists to make, not an error to argue with."""
+
+	def test_the_line_gun_writes_it_down_while_counting(self):
+		js = _js()
+		block = js[js.index("function scanSerial("):]
+		block = block[:block.index("\n\tasync function scanIntoCount(")]
+		self.assertIn("not on file before", block)
+		# Stock leaving is the opposite case and must still refuse.
+		self.assertIn("is not on this shelf", block)
+
+	def test_stock_leaving_still_refuses_one_that_is_not_there(self):
+		js = _js()
+		block = js[js.index("function scanSerial("):]
+		block = block[:block.index("\n\tasync function scanIntoCount(")]
+		self.assertIn("if (!counting) {", block)

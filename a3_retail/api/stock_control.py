@@ -1586,6 +1586,30 @@ def scan_for_count(code: str = "", warehouse: str | None = None) -> dict:
 	return {"found": None, "code": code}
 
 
+@frappe.whitelist()
+def countable_serials(item_code: str, warehouse: str | None = None) -> dict:
+	"""Whether this item is counted piece by piece, and which pieces are here.
+
+	The two are separate questions and the screen used to ask only the second,
+	inferring the first from the answer: no IMEIs on the shelf was read as "not
+	a serialised item". That is wrong in the one case the counter meets most —
+	an item whose shelf is empty, or one just switched over to IMEI tracking,
+	which by definition has no numbers on file yet. The count then offered a
+	plain quantity box and the IMEIs had nowhere to go.
+
+	So the item is asked about itself, and the shelf only about its contents.
+	"""
+	_me()
+	require_permission("Item", "read")
+
+	if not frappe.db.exists("Item", item_code):
+		frappe.throw(_("No such item."), title=_("Item"))
+
+	has_serial = bool(frappe.db.get_value("Item", item_code, "has_serial_no"))
+	serials = _serials_on_shelf(item_code, warehouse) if (has_serial and warehouse) else []
+	return {"item_code": item_code, "has_serial": has_serial, "serials": serials}
+
+
 def _held_count(name: str, employee):
 	"""The held count this counter is allowed to carry on with."""
 	name = (name or "").strip()
@@ -1709,6 +1733,16 @@ def adjust_stock(payload) -> dict:
 	retiring = []
 	for row in items:
 		serials = [str(x).strip() for x in (row.get("serials") or []) if str(x).strip()]
+		# A piece that is tracked by IMEI has to be counted by its IMEI. Without
+		# one ERPNext either refuses in its own words or, where the item carries
+		# a number series, invents numbers for handsets nobody read — and a
+		# shelf of invented IMEIs is worse than an uncounted one.
+		if not serials and flt(row.get("counted")) and frappe.db.get_value(
+				"Item", row["item_code"], "has_serial_no"):
+			frappe.throw(
+				_("{0} is tracked by IMEI, so each piece has to be scanned. "
+				  "Scan the number on every box you counted.").format(row["item_code"]),
+				title=_("Scan each piece"))
 		line = doc.append("items", {
 			"item_code": row["item_code"],
 			"warehouse": warehouse,

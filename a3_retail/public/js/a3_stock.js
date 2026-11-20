@@ -1009,13 +1009,18 @@ window.STOCK = (function () {
 	 *  is moving these two. The list is what is actually on the source shelf, so
 	 *  a number that has already gone cannot be picked by mistake. */
 	function imeiMarkup(line, index) {
-		if (!line.serials.length) {
-			return `<p class="muted w-imei-none">No IMEIs of that item in this warehouse.</p>`;
-		}
 		// "count" ticks what the system already believes; "scan" starts empty
 		// and fills from the gun. Both are counting, and the list below reads
 		// the same for either.
 		const counting = workSerialMode === "count" || workSerialMode === "scan";
+		// Nothing on file is a dead end when stock is leaving — there is
+		// nothing to send. While counting it is the ordinary state of a handset
+		// just switched to IMEI tracking, and of the first one of a model to
+		// reach the shelf, so the gun and the add box stay.
+		const nothingYet = !line.serials.length;
+		if (nothingYet && !counting) {
+			return `<p class="muted w-imei-none">No IMEIs of that item in this warehouse.</p>`;
+		}
 		// Scanned rather than hunted for. A shelf can hold forty of the same
 		// handset, and finding one number in that list by eye is slower than
 		// reading the box — so the gun goes to the top, as it does on a
@@ -1033,7 +1038,8 @@ window.STOCK = (function () {
 			<div class="w-imei-head">${counting ? "Counted on this shelf" : "On this shelf"}
 				<b>${line.picked.length
 					? line.picked.length + (counting ? " counted" : " going")
-					: "none picked yet"}</b></div>
+					: (nothingYet ? "none on file yet \u2014 scan them in"
+					              : "none picked yet")}</b></div>
 			${counting ? `<div class="imei-scan-row w-imei-add-row">
 				<input class="w-imei-new" data-i="${index}" autocomplete="off"
 				       inputmode="numeric"
@@ -1066,7 +1072,27 @@ window.STOCK = (function () {
 		const found = line.serials.find(
 			(s) => s === imei || s.replace(/\s/g, "") === imei.replace(/\s/g, ""));
 		if (!found) {
-			flash(`${imei} is not on this shelf.`, "warn");
+			// Stock leaving can only be stock the system has. A count is the
+			// opposite: a handset on the shelf that nothing on file knows about
+			// is precisely what counting is for, so it is written down rather
+			// than argued with.
+			const counting = workSerialMode === "count" || workSerialMode === "scan";
+			if (!counting) {
+				flash(`${imei} is not on this shelf.`, "warn");
+				return;
+			}
+			if (!/^\d{6,20}$/.test(imei.replace(/\s/g, ""))) {
+				flash("An IMEI is digits only.", "warn");
+				return;
+			}
+			const fresh = imei.replace(/\s/g, "");
+			line.serials.push(fresh);
+			line.picked.push(fresh);
+			line.qty = line.picked.length;
+			flash(`${fresh} counted \u2014 not on file before.`, "ok");
+			paintLines();
+			const back = $("w-lines").querySelector(`.w-scan[data-i="${index}"]`);
+			if (back) back.focus();
 			return;
 		}
 		if (line.picked.includes(found)) {
@@ -1149,6 +1175,13 @@ window.STOCK = (function () {
 			if (!line.serials.includes(hit.serial_no)) line.serials.push(hit.serial_no);
 			line.picked.push(hit.serial_no);
 			line.qty = line.picked.length;
+		} else if (hit.has_serial) {
+			// The box barcode of a handset. It says which model is in hand and
+			// nothing about which piece, so counting it as one more would put a
+			// quantity on the line with no IMEI behind it.
+			if (!line.serials) line.serials = [];
+			flash(`${hit.item_name} is tracked by IMEI \u2014 scan the number on `
+			      + `the box, not the barcode.`, "warn");
 		} else {
 			// An accessory has no number of its own, so each scan is one more.
 			line.qty = (Number(line.qty) || 0) + 1;
@@ -1169,16 +1202,19 @@ window.STOCK = (function () {
 		const line = workLines[index];
 		const source = workWarehouse();
 		if (!line.item_code || !source) return;
-		let rows = [];
+		let found = null;
 		try {
-			rows = await A3.call("a3_retail.api.stock.serial_list",
-			                     { item_code: line.item_code, warehouse: source, limit: 200 });
+			found = await A3.call("a3_retail.api.stock_control.countable_serials",
+			                      { item_code: line.item_code, warehouse: source });
 		} catch (error) {
-			rows = [];
+			found = null;
 		}
-		// No serials in stock means the item is not tracked that way, and the
-		// plain quantity box is the right thing to leave in place.
-		line.serials = rows.length ? rows.map((r) => r.serial_no || r.name) : null;
+		// Whether the item is counted piece by piece is the item's own answer,
+		// not the shelf's. An empty shelf used to read as "not serialised", so
+		// a handset just switched over to IMEI tracking — which by definition
+		// has no numbers on file — offered a plain quantity box and the IMEIs
+		// had nowhere to go. An empty list still means "scan them in".
+		line.serials = found && found.has_serial ? (found.serials || []) : null;
 		line.picked = [];
 		line.loaded_for = line.item_code;
 		// Counting starts from "everything the system thinks is here is here",
