@@ -1,0 +1,51 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "format:COUNT-{YY}-{#####}",
+ "creation": "2026-11-20 09:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "branch", "warehouse", "counted_on", "column_break_1",
+  "kind", "reason", "status", "section_lines", "lines",
+  "section_posted", "posted_as"
+ ],
+ "fields": [
+  {"fieldname": "branch", "fieldtype": "Link", "label": "Branch", "options": "Branch",
+   "reqd": 1, "in_list_view": 1},
+  {"fieldname": "warehouse", "fieldtype": "Link", "label": "Warehouse",
+   "options": "Warehouse", "reqd": 1, "in_list_view": 1},
+  {"fieldname": "counted_on", "fieldtype": "Date", "label": "Counted On", "reqd": 1},
+  {"fieldname": "column_break_1", "fieldtype": "Column Break"},
+  {"fieldname": "kind", "fieldtype": "Select", "label": "Kind",
+   "options": "Adjustment\nReconciliation", "default": "Adjustment"},
+  {"fieldname": "reason", "fieldtype": "Data", "label": "Reason"},
+  {"fieldname": "status", "fieldtype": "Select", "label": "Status",
+   "options": "Open\nPosted", "default": "Open", "in_list_view": 1, "read_only": 1},
+  {"fieldname": "section_lines", "fieldtype": "Section Break", "label": "What has been counted"},
+  {"fieldname": "lines", "fieldtype": "Long Text", "label": "Lines",
+   "description": "The count so far, as JSON. Held here rather than on a Stock Reconciliation because ERPNext drops a reconciliation row whose count matches the system, which would silently lose part of a half-finished count."},
+  {"fieldname": "section_posted", "fieldtype": "Section Break"},
+  {"fieldname": "posted_as", "fieldtype": "Link", "label": "Posted As",
+   "options": "Stock Reconciliation", "read_only": 1}
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-11-20 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "A3 Retail Operations",
+ "name": "Stock Count Draft",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1,
+   "report": 1, "role": "A3 Retail Admin", "share": 1, "write": 1},
+  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1,
+   "report": 1, "role": "System Manager", "share": 1, "write": 1}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

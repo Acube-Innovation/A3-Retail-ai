@@ -402,7 +402,8 @@ window.STOCK = (function () {
 		            ["user", "By"], ["reference", "Reference"], ["status", "In / Out", "pill"]],
 		adjustments: [["name", "Adjustment"], ["date", "Date", "date"], ["warehouse", "Warehouse"],
 		              ["reason", "Reason"], ["items", "Items", "num"],
-		              ["amount", "Value", "money"], ["user", "By"], ["status", "Status", "pill"]],
+		              ["amount", "Value", "money"], ["user", "By"], ["status", "Status", "pill"],
+		              ["held", "", "continue"]],
 		reservations: [["item", "Item"], ["warehouse", "Warehouse"],
 		               ["reserved", "Reserved", "num"], ["available", "Available", "num"],
 		               ["status", "Status", "pill"]],
@@ -416,11 +417,15 @@ window.STOCK = (function () {
 
 	function cell(row, [key, , kind]) {
 		const value = row[key];
-		if (value == null || value === "") return "—";
+		if (value == null || value === "") return kind === "continue" ? "" : "—";
 		if (kind === "money") return money(value);
 		if (kind === "num") return qty(value);
 		if (kind === "date") return esc(day(value));
 		if (kind === "pill") return `<span class="pill ${tone(value)}">${esc(value)}</span>`;
+		if (kind === "continue") {
+			return `<button class="btn btn-quiet btn-sm" data-continue="${esc(value)}"
+			        type="button">Continue</button>`;
+		}
 		return esc(value);
 	}
 
@@ -440,6 +445,22 @@ window.STOCK = (function () {
 					<span>This list fills in as the branch works.</span></div>`}
 			</div>
 		</section>`;
+
+		$("tab-body").querySelectorAll("[data-continue]").forEach((node) => {
+			node.addEventListener("click", () => continueCount(node.dataset.continue));
+		});
+	}
+
+	/** Pick a half-finished count back up where it was left. */
+	async function continueCount(name) {
+		let held;
+		try {
+			held = await A3.call("a3_retail.api.stock_control.load_adjustment", { name });
+		} catch (error) {
+			toast(error.message || "Could not open that count.", "warn");
+			return;
+		}
+		openAdjust(held);
 	}
 
 	function paintCards(name, data) {
@@ -698,6 +719,11 @@ window.STOCK = (function () {
 		// opened next is not waiting on anything, so it starts live.
 		$("work-go").disabled = false;
 		$("work-msg").textContent = "";
+		// Every other dialog posts or does nothing; only a count can be put
+		// aside, so this starts hidden and the count turns it on.
+		const hold = $("work-hold");
+		if (hold) { hold.hidden = true; }
+		state.hold = null;
 		$("work-modal").hidden = false;
 		state.work = go;
 	}
@@ -1195,6 +1221,16 @@ window.STOCK = (function () {
 		}, 0);
 	}
 
+	/** The count, in the shape the server takes. Shared by "Submit" and
+	 *  "Save as draft" so the two can never describe it differently. */
+	const countedLines = () => workLines
+		.filter((line) => line.item_code)
+		.map((line) => ({ item_code: line.item_code,
+		                  counted: Number(line.qty) || 0,
+		                  rate: Number(line.rate) || 0,
+		                  // For a handset the list is the count.
+		                  serials: line.serials ? line.picked : null }));
+
 	const linesPayload = () => workLines
 		.filter((l) => l.item_code && l.qty > 0)
 		.map((l) => ({ item_code: l.item_code, qty: l.qty,
@@ -1386,7 +1422,7 @@ window.STOCK = (function () {
 		box.addEventListener("blur", () => setTimeout(() => { hits.innerHTML = ""; }, 120));
 	}
 
-	function openAdjust() {
+	function openAdjust(held) {
 		workSearch = "search_countable";
 		// Ticking means "this one is on the shelf", not "this one is leaving".
 		workSerialMode = "count";
@@ -1421,13 +1457,7 @@ window.STOCK = (function () {
 			${linesMarkup("Counted", true)}`,
 			"Submit adjustment",
 			async () => {
-				const counted = workLines
-					.filter((line) => line.item_code)
-					.map((line) => ({ item_code: line.item_code,
-					                  counted: Number(line.qty) || 0,
-					                  rate: Number(line.rate) || 0,
-					                  // For a handset the list is the count.
-					                  serials: line.serials ? line.picked : null }));
+				const counted = countedLines();
 				if (!counted.length) throw new Error("Add at least one item to count.");
 				const result = await A3.call("a3_retail.api.stock_control.adjust_stock", {
 					payload: {
@@ -1438,6 +1468,8 @@ window.STOCK = (function () {
 						date: $("w-date").value,
 						reason: $("w-reason").value.trim(),
 						items: counted,
+						// Carrying on with one that was put aside.
+						name: state.hold || null,
 					},
 				});
 				const gone = (result.retired || []).length;
@@ -1451,12 +1483,55 @@ window.STOCK = (function () {
 			});
 
 		setTimeout(() => {
+			// Put aside rather than posted. Offered only here.
+			const holdBtn = $("work-hold");
+			if (holdBtn) {
+				holdBtn.hidden = false;
+				holdBtn.onclick = async () => {
+					const counted = countedLines();
+					if (!counted.length) { say("Nothing counted yet.", "warn"); return; }
+					holdBtn.disabled = true;
+					try {
+						const out = await A3.call(
+							"a3_retail.api.stock_control.adjust_stock", {
+								payload: {
+									warehouse: $("w-warehouse").value,
+									date: $("w-date").value,
+									reason: $("w-reason").value.trim(),
+									kind: $("w-kind") ? $("w-kind").value : "count",
+									items: counted,
+									draft: 1,
+									name: state.hold || null,
+								},
+							});
+						// Held once, the same count is updated from then on
+						// rather than left behind as a second draft.
+						state.hold = out.adjustment;
+						say(`Held as ${out.adjustment}. Nothing has been posted.`, "ok");
+						loadTab("adjustments");
+					} catch (error) {
+						say(error.message || "Could not hold the count.", "warn");
+					} finally {
+						holdBtn.disabled = false;
+					}
+				};
+			}
+
+			// Carrying on with one that was put aside.
+			if (held) {
+				state.hold = held.name;
+				if ($("w-warehouse")) $("w-warehouse").value = held.warehouse;
+				if ($("w-date")) $("w-date").value = held.date;
+				if ($("w-reason")) $("w-reason").value = held.reason || "";
+			}
+
 			const kind = $("w-kind");
 			const note = $("w-kind-note");
 			const row = $("w-scan-row");
 			const box = $("w-countscan");
 			if (!kind) return;
 
+			let restoring = !!held;
 			const applyKind = () => {
 				workSerialMode = kind.value;      // "count" or "scan"
 				const scanning = kind.value === "scan";
@@ -1470,9 +1545,26 @@ window.STOCK = (function () {
 				}
 				// The two start from opposite ends, so switching has to clear
 				// what the other one filled in — a half-ticked list carried into
-				// a scan would count handsets nobody looked at.
-				workLines = [{ item_code: "", qty: scanning ? 0 : 1,
-				               serials: null, picked: [] }];
+				// a scan would count handsets nobody looked at. A count being
+				// carried on with is the exception: it is restored once, on the
+				// first pass, and only wiped if the kind is changed afterwards.
+				if (restoring && held) {
+					workLines = held.items.map((row) => ({
+						item_code: row.item_code,
+						qty: Number(row.counted) || 0,
+						rate: Number(row.rate) || 0,
+						serials: (row.serials || []).length ? row.serials.slice() : null,
+						picked: (row.serials || []).slice(),
+						loaded_for: row.item_code,
+					}));
+					if (!workLines.length) {
+						workLines = [{ item_code: "", qty: 0, serials: null, picked: [] }];
+					}
+				} else {
+					workLines = [{ item_code: "", qty: scanning ? 0 : 1,
+					               serials: null, picked: [] }];
+				}
+				restoring = false;
 				paintLines();
 				const tally = $("w-scan-tally");
 				if (tally) tally.textContent = "0";
@@ -1482,6 +1574,7 @@ window.STOCK = (function () {
 			};
 
 			kind.addEventListener("change", applyKind);
+			if (held && held.kind) kind.value = held.kind;
 			applyKind();
 
 			// The gun sends the digits then Enter, so this fires once a piece.
