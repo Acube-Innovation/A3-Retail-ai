@@ -1353,6 +1353,114 @@ window.STOCK = (function () {
 
 	}
 
+	/** Taking a second-hand handset in over the counter.
+	 *
+	 *  Not a line editor like the others: a used phone comes in one at a time,
+	 *  priced on its own, from a person rather than a supplier. The three
+	 *  things the margin scheme needs on it — which handset, what was paid,
+	 *  and who it was bought from — are the three the form asks for first.
+	 */
+	function openBuyUsed() {
+		state.usedItem = null;
+		openWork("Buy a used device",
+			"Books the handset in at what you paid for it, on this counter's "
+			+ "second-hand shelf. That price is what the GST on the resale is "
+			+ "worked out from, so it has to be right.",
+			`<div class="field-grid">
+				<label class="field"><span>Model</span>
+					<input id="w-used-item" autocomplete="off"
+					       placeholder="Which handset — type the model">
+					<div class="w-hits" id="w-used-hits"></div></label>
+				<label class="field"><span>IMEI</span>
+					<input id="w-used-imei" autocomplete="off" inputmode="numeric"
+					       placeholder="Scan the IMEI, or type it"></label>
+			</div>
+			<div class="field-grid">
+				<label class="field"><span>What you paid</span>
+					<input id="w-used-paid" inputmode="decimal" placeholder="0.00"></label>
+				<label class="field"><span>Bought on</span>
+					<input id="w-date" type="date" max="${today()}" value="${today()}"></label>
+			</div>
+			<p class="muted">Who you bought it from. The margin scheme assumes
+				the shop can show this, so it is kept against the handset.</p>
+			<div class="field-grid">
+				<label class="field"><span>Their name</span>
+					<input id="w-used-seller" autocomplete="off"></label>
+				<label class="field"><span>Their mobile</span>
+					<input id="w-used-mobile" inputmode="numeric" autocomplete="off"></label>
+			</div>
+			<div class="field-grid">
+				<label class="field"><span>ID shown (optional)</span>
+					<input id="w-used-id" placeholder="Aadhaar, licence…"></label>
+				<label class="field"><span>Condition (optional)</span>
+					<input id="w-used-condition"
+					       placeholder="Scratches, battery health…"></label>
+			</div>`,
+			"Take it in",
+			async () => {
+				if (!state.usedItem) throw new Error("Pick which handset this is.");
+				const imei = $("w-used-imei").value.trim();
+				if (!imei) throw new Error("A used handset needs its IMEI.");
+				const paid = Number($("w-used-paid").value) || 0;
+				if (paid <= 0) throw new Error("Say what you paid for it.");
+				const seller = $("w-used-seller").value.trim();
+				if (!seller) throw new Error("Record who you bought it from.");
+
+				const out = await A3.call(
+					"a3_retail.api.stock_control.buy_used_device", {
+						payload: {
+							item_code: state.usedItem,
+							serial_no: imei,
+							imei: imei,
+							paid: paid,
+							date: $("w-date").value,
+							seller: seller,
+							mobile: $("w-used-mobile").value.trim(),
+							id_shown: $("w-used-id").value.trim(),
+							condition: $("w-used-condition").value.trim(),
+						},
+					});
+				toast(`${out.serial_no} taken in at ${money(out.paid)} — `
+					+ `${out.entry}.`, "ok");
+				loadStock();
+				loadKpis();
+				loadSide();
+			});
+
+		// Only models set up for the margin scheme: buying a phone in against
+		// an ordinary item would have the resale taxed on the whole price.
+		const box = $("w-used-item");
+		const hits = $("w-used-hits");
+		let timer = null;
+		box.addEventListener("input", () => {
+			state.usedItem = null;
+			clearTimeout(timer);
+			timer = setTimeout(async () => {
+				const q = box.value.trim();
+				if (q.length < 2) { hits.innerHTML = ""; return; }
+				const rows = await A3.call(
+					"a3_retail.api.stock_control.search_used_models",
+					{ query: q, limit: 8 }).catch(() => []);
+				hits.innerHTML = (rows || []).length
+					? rows.map((r) => `<button type="button" class="w-hit"
+							data-code="${esc(r.item_code)}">${esc(r.item_name)}</button>`).join("")
+					: `<p class="muted">No second-hand model by that name. Ask head
+						office to add it.</p>`;
+			}, 220);
+		});
+		hits.addEventListener("mousedown", (event) => {
+			const hit = event.target.closest(".w-hit");
+			if (!hit) return;
+			event.preventDefault();
+			state.usedItem = hit.dataset.code;
+			box.value = hit.textContent.trim();
+			hits.innerHTML = "";
+			const imei = $("w-used-imei");
+			if (imei) imei.focus();
+		});
+		box.addEventListener("blur", () => setTimeout(() => { hits.innerHTML = ""; }, 120));
+	}
+
 	function openGoodsIn() {
 		workSearch = "search_countable";
 		startLines(null);
@@ -1980,7 +2088,7 @@ window.STOCK = (function () {
 		const ALLOWED = {
 			"new-item": "create_item", "request": "request", "procure": "procure",
 			"move": "transfer", "adjust": "adjust", "import": "create_item",
-			"damage": "transfer", "goods-in": "receive",
+			"damage": "transfer", "goods-in": "receive", "buy-used": "receive",
 		};
 		document.querySelectorAll("[data-do]").forEach((node) => {
 			const needs = ALLOWED[node.dataset.do];
@@ -2031,6 +2139,7 @@ window.STOCK = (function () {
 				if (what === "move") return openMove();
 				if (what === "damage") return openDamage();
 				if (what === "goods-in") return openGoodsIn();
+				if (what === "buy-used") return openBuyUsed();
 				if (what === "adjust") return openAdjust();
 				if (what === "new-item") return openNewItem();
 				if (what === "import") return openImport();
