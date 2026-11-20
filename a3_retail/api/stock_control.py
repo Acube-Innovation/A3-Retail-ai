@@ -1366,6 +1366,164 @@ def search_countable(query: str = "", warehouse: str | None = None,
 
 
 @frappe.whitelist()
+def search_used_models(query: str = "", limit: int = 8) -> list[dict]:
+	"""Second-hand models only, for taking a handset in over the counter.
+
+	Deliberately narrower than the catalogue search. Buying a phone in against
+	an ordinary item would have the resale taxed on the whole price instead of
+	the margin, and nothing downstream would notice — so the only models
+	offered are the ones that are set up for it.
+	"""
+	_me()
+	require_permission("Item", "read")
+
+	query = (query or "").strip()
+	if len(query) < 2:
+		return []
+
+	return frappe.db.sql(
+		"""
+		select i.name as item_code, i.item_name, i.stock_uom,
+		       ifnull(i.has_serial_no, 0) as has_serial
+		from `tabItem` i
+		where ifnull(i.disabled, 0) = 0
+		  and ifnull(i.is_stock_item, 0) = 1
+		  and ifnull(i.a3_is_margin_scheme, 0) = 1
+		  and (i.name like %(like)s or i.item_name like %(like)s)
+		order by i.item_name
+		limit %(limit)s
+		""",
+		{"like": f"%{query}%", "limit": cint(limit) or 8}, as_dict=True)
+
+
+@frappe.whitelist()
+def buy_used_device(payload) -> dict:
+	"""Take a second-hand handset in over the counter.
+
+	A used phone arrives from a member of the public, not from a distributor:
+	there is no bill, no GSTIN and no supplier account. What there is, and what
+	the margin scheme needs, is three things — which handset, what was paid for
+	it, and who it was bought from. All three are recorded against the piece
+	itself, because every used handset is priced on its own and the margin on
+	the eventual sale is measured against this one's own cost.
+
+	It books the stock in at what was paid. That is not the shop's usual
+	practice — ordinary stock comes in at cost from a bill — but here the two
+	are the same number, and it is the number the resale is taxed against.
+	"""
+	employee = _me()
+	require_permission("Stock Entry", "create")
+
+	data = frappe.parse_json(payload) if isinstance(payload, str) else (payload or {})
+
+	item_code = (data.get("item_code") or "").strip()
+	if not item_code or not frappe.db.exists("Item", item_code):
+		frappe.throw(_("Say which handset this is."))
+	if not frappe.db.get_value("Item", item_code, "a3_is_margin_scheme"):
+		frappe.throw(
+			_("{0} is not set up as a second-hand item, so a resale would be "
+			  "taxed on the whole price instead of the margin. Ask head office "
+			  "to tick 'Under Margin Scheme' on it first.").format(item_code),
+			title=_("Not a second-hand item"))
+
+	serial = (data.get("serial_no") or "").strip()
+	if not serial:
+		frappe.throw(_("A used handset needs its IMEI. Every one is priced on "
+		               "its own, so the number is how its cost is kept."))
+	if frappe.db.exists("Serial No", serial):
+		frappe.throw(_("{0} is already on file. Check the number on the box.")
+		             .format(serial), title=_("Already here"))
+
+	paid = flt(data.get("paid"))
+	if paid <= 0:
+		frappe.throw(_("Say what was paid for it. The GST on the resale is "
+		               "worked out from this figure."))
+
+	seller = (data.get("seller") or "").strip()
+	if not seller:
+		frappe.throw(_("Record who it was bought from."))
+
+	bought_on = getdate(data.get("date") or nowdate())
+	if bought_on > getdate(nowdate()):
+		frappe.throw(_("A handset cannot be bought on a day that has not "
+		               "happened."), title=_("Date"))
+
+	warehouse = _used_shelf(employee.branch)
+
+	entry = frappe.new_doc("Stock Entry")
+	entry.stock_entry_type = "Material Receipt"
+	entry.company = frappe.db.get_single_value("Global Defaults", "default_company")
+	entry.posting_date = bought_on
+	entry.set_posting_time = 1
+	if entry.meta.has_field("branch"):
+		entry.branch = employee.branch
+	entry.remarks = _("Second-hand purchase from {0}").format(seller)
+	entry.append("items", {
+		"item_code": item_code,
+		"qty": 1,
+		"t_warehouse": warehouse,
+		"basic_rate": paid,
+		"use_serial_batch_fields": 1,
+		"serial_no": serial,
+	})
+	entry.flags.ignore_permissions = True
+	entry.insert(ignore_permissions=True)
+	entry.submit()
+
+	_stamp_provenance(serial, data, seller, paid, bought_on)
+
+	return {
+		"entry": entry.name,
+		"serial_no": serial,
+		"item_code": item_code,
+		"warehouse": warehouse,
+		"paid": paid,
+	}
+
+
+def _used_shelf(branch: str) -> str:
+	"""Where second-hand stock lives at this counter.
+
+	Its own shelf, or the branch's own if none is named — never another
+	branch's, and never guessed at.
+	"""
+	profile = frappe.db.get_value("Branch Profile", {"branch": branch},
+	                              ["used_device_warehouse", "default_warehouse"],
+	                              as_dict=True)
+	warehouse = (profile or {}).get("used_device_warehouse") \
+		or (profile or {}).get("default_warehouse")
+	if not warehouse:
+		frappe.throw(_("{0} has no warehouse to put used stock on. Ask head "
+		               "office to set one.").format(branch))
+	return warehouse
+
+
+def _stamp_provenance(serial: str, data: dict, seller: str, paid: float, bought_on):
+	"""What the margin scheme needs to be able to show, kept on the handset.
+
+	Written straight to the row rather than through the document: the Serial No
+	was created a moment ago by the stock entry, and saving it again would have
+	ERPNext re-examine a submitted movement it has no reason to touch.
+	"""
+	values = {
+		"a3_purchase_cost": paid,
+		"a3_bought_from": seller[:140],
+		"a3_bought_from_mobile": (data.get("mobile") or "").strip()[:20],
+		"a3_bought_from_id": (data.get("id_shown") or "").strip()[:140],
+		"a3_bought_on": bought_on,
+		"a3_device_condition": (data.get("condition") or "").strip(),
+	}
+	if (data.get("imei") or "").strip():
+		values["a3_imei_1"] = data["imei"].strip()
+
+	meta = frappe.get_meta("Serial No")
+	for field, value in values.items():
+		if meta.has_field(field):
+			frappe.db.set_value("Serial No", serial, field, value,
+			                    update_modified=False)
+
+
+@frappe.whitelist()
 def scan_for_count(code: str = "", warehouse: str | None = None) -> dict:
 	"""Resolve one scan during a stock count.
 
@@ -1426,6 +1584,30 @@ def scan_for_count(code: str = "", warehouse: str | None = None) -> dict:
 		}
 
 	return {"found": None, "code": code}
+
+
+@frappe.whitelist()
+def countable_serials(item_code: str, warehouse: str | None = None) -> dict:
+	"""Whether this item is counted piece by piece, and which pieces are here.
+
+	The two are separate questions and the screen used to ask only the second,
+	inferring the first from the answer: no IMEIs on the shelf was read as "not
+	a serialised item". That is wrong in the one case the counter meets most —
+	an item whose shelf is empty, or one just switched over to IMEI tracking,
+	which by definition has no numbers on file yet. The count then offered a
+	plain quantity box and the IMEIs had nowhere to go.
+
+	So the item is asked about itself, and the shelf only about its contents.
+	"""
+	_me()
+	require_permission("Item", "read")
+
+	if not frappe.db.exists("Item", item_code):
+		frappe.throw(_("No such item."), title=_("Item"))
+
+	has_serial = bool(frappe.db.get_value("Item", item_code, "has_serial_no"))
+	serials = _serials_on_shelf(item_code, warehouse) if (has_serial and warehouse) else []
+	return {"item_code": item_code, "has_serial": has_serial, "serials": serials}
 
 
 def _held_count(name: str, employee):
@@ -1551,6 +1733,16 @@ def adjust_stock(payload) -> dict:
 	retiring = []
 	for row in items:
 		serials = [str(x).strip() for x in (row.get("serials") or []) if str(x).strip()]
+		# A piece that is tracked by IMEI has to be counted by its IMEI. Without
+		# one ERPNext either refuses in its own words or, where the item carries
+		# a number series, invents numbers for handsets nobody read — and a
+		# shelf of invented IMEIs is worse than an uncounted one.
+		if not serials and flt(row.get("counted")) and frappe.db.get_value(
+				"Item", row["item_code"], "has_serial_no"):
+			frappe.throw(
+				_("{0} is tracked by IMEI, so each piece has to be scanned. "
+				  "Scan the number on every box you counted.").format(row["item_code"]),
+				title=_("Scan each piece"))
 		line = doc.append("items", {
 			"item_code": row["item_code"],
 			"warehouse": warehouse,

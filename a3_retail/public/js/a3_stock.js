@@ -1009,13 +1009,18 @@ window.STOCK = (function () {
 	 *  is moving these two. The list is what is actually on the source shelf, so
 	 *  a number that has already gone cannot be picked by mistake. */
 	function imeiMarkup(line, index) {
-		if (!line.serials.length) {
-			return `<p class="muted w-imei-none">No IMEIs of that item in this warehouse.</p>`;
-		}
 		// "count" ticks what the system already believes; "scan" starts empty
 		// and fills from the gun. Both are counting, and the list below reads
 		// the same for either.
 		const counting = workSerialMode === "count" || workSerialMode === "scan";
+		// Nothing on file is a dead end when stock is leaving — there is
+		// nothing to send. While counting it is the ordinary state of a handset
+		// just switched to IMEI tracking, and of the first one of a model to
+		// reach the shelf, so the gun and the add box stay.
+		const nothingYet = !line.serials.length;
+		if (nothingYet && !counting) {
+			return `<p class="muted w-imei-none">No IMEIs of that item in this warehouse.</p>`;
+		}
 		// Scanned rather than hunted for. A shelf can hold forty of the same
 		// handset, and finding one number in that list by eye is slower than
 		// reading the box — so the gun goes to the top, as it does on a
@@ -1033,7 +1038,8 @@ window.STOCK = (function () {
 			<div class="w-imei-head">${counting ? "Counted on this shelf" : "On this shelf"}
 				<b>${line.picked.length
 					? line.picked.length + (counting ? " counted" : " going")
-					: "none picked yet"}</b></div>
+					: (nothingYet ? "none on file yet \u2014 scan them in"
+					              : "none picked yet")}</b></div>
 			${counting ? `<div class="imei-scan-row w-imei-add-row">
 				<input class="w-imei-new" data-i="${index}" autocomplete="off"
 				       inputmode="numeric"
@@ -1066,7 +1072,27 @@ window.STOCK = (function () {
 		const found = line.serials.find(
 			(s) => s === imei || s.replace(/\s/g, "") === imei.replace(/\s/g, ""));
 		if (!found) {
-			flash(`${imei} is not on this shelf.`, "warn");
+			// Stock leaving can only be stock the system has. A count is the
+			// opposite: a handset on the shelf that nothing on file knows about
+			// is precisely what counting is for, so it is written down rather
+			// than argued with.
+			const counting = workSerialMode === "count" || workSerialMode === "scan";
+			if (!counting) {
+				flash(`${imei} is not on this shelf.`, "warn");
+				return;
+			}
+			if (!/^\d{6,20}$/.test(imei.replace(/\s/g, ""))) {
+				flash("An IMEI is digits only.", "warn");
+				return;
+			}
+			const fresh = imei.replace(/\s/g, "");
+			line.serials.push(fresh);
+			line.picked.push(fresh);
+			line.qty = line.picked.length;
+			flash(`${fresh} counted \u2014 not on file before.`, "ok");
+			paintLines();
+			const back = $("w-lines").querySelector(`.w-scan[data-i="${index}"]`);
+			if (back) back.focus();
 			return;
 		}
 		if (line.picked.includes(found)) {
@@ -1149,6 +1175,13 @@ window.STOCK = (function () {
 			if (!line.serials.includes(hit.serial_no)) line.serials.push(hit.serial_no);
 			line.picked.push(hit.serial_no);
 			line.qty = line.picked.length;
+		} else if (hit.has_serial) {
+			// The box barcode of a handset. It says which model is in hand and
+			// nothing about which piece, so counting it as one more would put a
+			// quantity on the line with no IMEI behind it.
+			if (!line.serials) line.serials = [];
+			flash(`${hit.item_name} is tracked by IMEI \u2014 scan the number on `
+			      + `the box, not the barcode.`, "warn");
 		} else {
 			// An accessory has no number of its own, so each scan is one more.
 			line.qty = (Number(line.qty) || 0) + 1;
@@ -1169,16 +1202,19 @@ window.STOCK = (function () {
 		const line = workLines[index];
 		const source = workWarehouse();
 		if (!line.item_code || !source) return;
-		let rows = [];
+		let found = null;
 		try {
-			rows = await A3.call("a3_retail.api.stock.serial_list",
-			                     { item_code: line.item_code, warehouse: source, limit: 200 });
+			found = await A3.call("a3_retail.api.stock_control.countable_serials",
+			                      { item_code: line.item_code, warehouse: source });
 		} catch (error) {
-			rows = [];
+			found = null;
 		}
-		// No serials in stock means the item is not tracked that way, and the
-		// plain quantity box is the right thing to leave in place.
-		line.serials = rows.length ? rows.map((r) => r.serial_no || r.name) : null;
+		// Whether the item is counted piece by piece is the item's own answer,
+		// not the shelf's. An empty shelf used to read as "not serialised", so
+		// a handset just switched over to IMEI tracking — which by definition
+		// has no numbers on file — offered a plain quantity box and the IMEIs
+		// had nowhere to go. An empty list still means "scan them in".
+		line.serials = found && found.has_serial ? (found.serials || []) : null;
 		line.picked = [];
 		line.loaded_for = line.item_code;
 		// Counting starts from "everything the system thinks is here is here",
@@ -1351,6 +1387,114 @@ window.STOCK = (function () {
 				loadSide();
 			});
 
+	}
+
+	/** Taking a second-hand handset in over the counter.
+	 *
+	 *  Not a line editor like the others: a used phone comes in one at a time,
+	 *  priced on its own, from a person rather than a supplier. The three
+	 *  things the margin scheme needs on it — which handset, what was paid,
+	 *  and who it was bought from — are the three the form asks for first.
+	 */
+	function openBuyUsed() {
+		state.usedItem = null;
+		openWork("Buy a used device",
+			"Books the handset in at what you paid for it, on this counter's "
+			+ "second-hand shelf. That price is what the GST on the resale is "
+			+ "worked out from, so it has to be right.",
+			`<div class="field-grid">
+				<label class="field"><span>Model</span>
+					<input id="w-used-item" autocomplete="off"
+					       placeholder="Which handset — type the model">
+					<div class="w-hits" id="w-used-hits"></div></label>
+				<label class="field"><span>IMEI</span>
+					<input id="w-used-imei" autocomplete="off" inputmode="numeric"
+					       placeholder="Scan the IMEI, or type it"></label>
+			</div>
+			<div class="field-grid">
+				<label class="field"><span>What you paid</span>
+					<input id="w-used-paid" inputmode="decimal" placeholder="0.00"></label>
+				<label class="field"><span>Bought on</span>
+					<input id="w-date" type="date" max="${today()}" value="${today()}"></label>
+			</div>
+			<p class="muted">Who you bought it from. The margin scheme assumes
+				the shop can show this, so it is kept against the handset.</p>
+			<div class="field-grid">
+				<label class="field"><span>Their name</span>
+					<input id="w-used-seller" autocomplete="off"></label>
+				<label class="field"><span>Their mobile</span>
+					<input id="w-used-mobile" inputmode="numeric" autocomplete="off"></label>
+			</div>
+			<div class="field-grid">
+				<label class="field"><span>ID shown (optional)</span>
+					<input id="w-used-id" placeholder="Aadhaar, licence…"></label>
+				<label class="field"><span>Condition (optional)</span>
+					<input id="w-used-condition"
+					       placeholder="Scratches, battery health…"></label>
+			</div>`,
+			"Take it in",
+			async () => {
+				if (!state.usedItem) throw new Error("Pick which handset this is.");
+				const imei = $("w-used-imei").value.trim();
+				if (!imei) throw new Error("A used handset needs its IMEI.");
+				const paid = Number($("w-used-paid").value) || 0;
+				if (paid <= 0) throw new Error("Say what you paid for it.");
+				const seller = $("w-used-seller").value.trim();
+				if (!seller) throw new Error("Record who you bought it from.");
+
+				const out = await A3.call(
+					"a3_retail.api.stock_control.buy_used_device", {
+						payload: {
+							item_code: state.usedItem,
+							serial_no: imei,
+							imei: imei,
+							paid: paid,
+							date: $("w-date").value,
+							seller: seller,
+							mobile: $("w-used-mobile").value.trim(),
+							id_shown: $("w-used-id").value.trim(),
+							condition: $("w-used-condition").value.trim(),
+						},
+					});
+				toast(`${out.serial_no} taken in at ${money(out.paid)} — `
+					+ `${out.entry}.`, "ok");
+				loadStock();
+				loadKpis();
+				loadSide();
+			});
+
+		// Only models set up for the margin scheme: buying a phone in against
+		// an ordinary item would have the resale taxed on the whole price.
+		const box = $("w-used-item");
+		const hits = $("w-used-hits");
+		let timer = null;
+		box.addEventListener("input", () => {
+			state.usedItem = null;
+			clearTimeout(timer);
+			timer = setTimeout(async () => {
+				const q = box.value.trim();
+				if (q.length < 2) { hits.innerHTML = ""; return; }
+				const rows = await A3.call(
+					"a3_retail.api.stock_control.search_used_models",
+					{ query: q, limit: 8 }).catch(() => []);
+				hits.innerHTML = (rows || []).length
+					? rows.map((r) => `<button type="button" class="w-hit"
+							data-code="${esc(r.item_code)}">${esc(r.item_name)}</button>`).join("")
+					: `<p class="muted">No second-hand model by that name. Ask head
+						office to add it.</p>`;
+			}, 220);
+		});
+		hits.addEventListener("mousedown", (event) => {
+			const hit = event.target.closest(".w-hit");
+			if (!hit) return;
+			event.preventDefault();
+			state.usedItem = hit.dataset.code;
+			box.value = hit.textContent.trim();
+			hits.innerHTML = "";
+			const imei = $("w-used-imei");
+			if (imei) imei.focus();
+		});
+		box.addEventListener("blur", () => setTimeout(() => { hits.innerHTML = ""; }, 120));
 	}
 
 	function openGoodsIn() {
@@ -1980,7 +2124,7 @@ window.STOCK = (function () {
 		const ALLOWED = {
 			"new-item": "create_item", "request": "request", "procure": "procure",
 			"move": "transfer", "adjust": "adjust", "import": "create_item",
-			"damage": "transfer", "goods-in": "receive",
+			"damage": "transfer", "goods-in": "receive", "buy-used": "receive",
 		};
 		document.querySelectorAll("[data-do]").forEach((node) => {
 			const needs = ALLOWED[node.dataset.do];
@@ -2031,6 +2175,7 @@ window.STOCK = (function () {
 				if (what === "move") return openMove();
 				if (what === "damage") return openDamage();
 				if (what === "goods-in") return openGoodsIn();
+				if (what === "buy-used") return openBuyUsed();
 				if (what === "adjust") return openAdjust();
 				if (what === "new-item") return openNewItem();
 				if (what === "import") return openImport();

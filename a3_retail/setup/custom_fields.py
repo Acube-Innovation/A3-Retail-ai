@@ -158,6 +158,27 @@ MASTER_FIELDS = {
 		_field("a3_selling_price", "Selling Price", "Currency", SALES_MODULE,
 			insert_after="a3_purchase_cost", read_only=1,
 			description="What this piece was priced at when it was bought in"),
+		# Where a second-hand handset came from. The margin scheme assumes the
+		# shop can show what it paid and who it paid — so the provenance lives
+		# on the piece itself, which is the only thing that keeps its own
+		# history from the counter it was bought at to the one that sells it.
+		_field("a3_used_section", "Bought In Second-hand", "Section Break",
+			SALES_MODULE, insert_after="a3_selling_price",
+			depends_on="eval:doc.a3_bought_from"),
+		_field("a3_bought_from", "Bought From", "Data", SALES_MODULE,
+			insert_after="a3_used_section", read_only=1,
+			description="The person this handset was bought from"),
+		_field("a3_bought_from_mobile", "Their Mobile", "Data", SALES_MODULE,
+			insert_after="a3_bought_from", read_only=1, length=20),
+		_field("a3_used_col_break", "", "Column Break", SALES_MODULE,
+			insert_after="a3_bought_from_mobile"),
+		_field("a3_bought_from_id", "ID Shown", "Data", SALES_MODULE,
+			insert_after="a3_used_col_break", read_only=1,
+			description="Aadhaar, driving licence or whatever was produced"),
+		_field("a3_bought_on", "Bought On", "Date", SALES_MODULE,
+			insert_after="a3_bought_from_id", read_only=1),
+		_field("a3_device_condition", "Condition Noted", "Small Text", SALES_MODULE,
+			insert_after="a3_bought_on", read_only=1),
 		_field("a3_received_on", "Received On", "Date", SALES_MODULE,
 			insert_after="a3_selling_price", read_only=1, in_standard_filter=1),
 
@@ -248,6 +269,13 @@ MARGIN_SCHEME_FIELDS = {
 			insert_after="a3_purchase_cost", depends_on="eval:doc.a3_is_margin_scheme",
 			read_only=1, permlevel=1, print_hide=1,
 			description="Taxable value under Rule 32(5)"),
+		_field("a3_gross_rate", "Price to the Customer", "Currency", SALES_MODULE,
+			insert_after="a3_margin_value", read_only=1, print_hide=1,
+			description="What the customer pays for this line. The line's own "
+			            "rate carries the price less the GST on the margin, "
+			            "because ERPNext will not take an Actual tax as "
+			            "included in the rate — so this is the figure the "
+			            "customer's copy shows."),
 	],
 	"POS Invoice Item": [
 		_field("a3_is_margin_scheme", "Margin Scheme", "Check", SALES_MODULE,
@@ -257,6 +285,13 @@ MARGIN_SCHEME_FIELDS = {
 			insert_after="a3_is_margin_scheme", permlevel=1, print_hide=1),
 		_field("a3_margin_value", "Margin Value", "Currency", SALES_MODULE,
 			insert_after="a3_purchase_cost", read_only=1, permlevel=1, print_hide=1),
+		_field("a3_gross_rate", "Price to the Customer", "Currency", SALES_MODULE,
+			insert_after="a3_margin_value", read_only=1, print_hide=1,
+			description="What the customer pays for this line. The line's own "
+			            "rate carries the price less the GST on the margin, "
+			            "because ERPNext will not take an Actual tax as "
+			            "included in the rate — so this is the figure the "
+			            "customer's copy shows."),
 	],
 }
 

@@ -56,6 +56,9 @@ FORMATS = [
 	# The distributor's bill, in the shape the shop files them in.
 	("A3 Purchase Invoice", "Purchase Invoice", "purchase_invoice", "A4"),
 	("Courier Manifest", "Courier Dispatch", "courier_manifest", "A4"),
+	# A second-hand sale's customer copy: one line, one price, no tax. The
+	# working behind it would hand the customer the shop's buying price.
+	("Used Device Bill", "Sales Invoice", "used_device_bill", "A5"),
 ]
 
 THERMAL_SIZES = {"80mm", "50x25mm"}
