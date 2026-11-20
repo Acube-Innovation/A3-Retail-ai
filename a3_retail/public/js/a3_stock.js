@@ -986,7 +986,10 @@ window.STOCK = (function () {
 		if (!line.serials.length) {
 			return `<p class="muted w-imei-none">No IMEIs of that item in this warehouse.</p>`;
 		}
-		const counting = workSerialMode === "count";
+		// "count" ticks what the system already believes; "scan" starts empty
+		// and fills from the gun. Both are counting, and the list below reads
+		// the same for either.
+		const counting = workSerialMode === "count" || workSerialMode === "scan";
 		// Scanned rather than hunted for. A shelf can hold forty of the same
 		// handset, and finding one number in that list by eye is slower than
 		// reading the box — so the gun goes to the top, as it does on a
@@ -1055,6 +1058,85 @@ window.STOCK = (function () {
 		if (tally) tally.textContent = `${line.picked.length}/${line.serials.length}`;
 		const qty = host.querySelector(`.w-num[data-i="${index}"]`);
 		if (qty) qty.value = line.qty || "";
+	}
+
+	/** One scan during a reconciliation, against the whole count rather than
+	 *  one line of it.
+	 *
+	 *  The per-line scanner above answers "is this one of the handsets I am
+	 *  already counting". This one answers "what did I just pick up" — it finds
+	 *  the item itself, opens a line for it if there is not one yet, and adds
+	 *  the piece. That is the difference between ticking a list and counting a
+	 *  shelf: the person holding the gun does not know what is coming next.
+	 */
+	async function scanIntoCount(raw) {
+		const code = (raw || "").trim();
+		if (!code) return;
+		const flash = (text, kind) => {
+			const node = $("w-scan-flash");
+			if (!node) return;
+			node.textContent = text;
+			node.className = "imei-flash" + (kind ? " " + kind : "");
+			node.hidden = !text;
+		};
+
+		let hit;
+		try {
+			hit = await A3.call("a3_retail.api.stock_control.scan_for_count",
+			                    { code, warehouse: workWarehouse() });
+		} catch (error) {
+			flash(error.message || "Could not read that.", "warn");
+			return;
+		}
+		if (!hit || !hit.found) {
+			flash(`${code} is not an item or an IMEI we know.`, "warn");
+			return;
+		}
+
+		let index = workLines.findIndex((line) => line.item_code === hit.item_code);
+		if (index === -1) {
+			// The dialog opens with one blank line; fill that before adding more.
+			const blank = workLines.findIndex((line) => !line.item_code);
+			index = blank === -1
+				? workLines.push({ item_code: "", qty: 0, serials: null, picked: [] }) - 1
+				: blank;
+			workLines[index].item_code = hit.item_code;
+			workLines[index].qty = 0;
+			await loadSerials(index);
+		}
+
+		const line = workLines[index];
+		if (hit.found === "serial") {
+			if (line.picked.includes(hit.serial_no)) {
+				flash(`${hit.imei} is already counted.`, "warn");
+				return;
+			}
+			// A handset on this shelf that the system files elsewhere is a
+			// finding, not an error — it is half of what a count is for. It is
+			// counted here and the discrepancy is said out loud.
+			if (!hit.here) {
+				flash(`${hit.imei} is filed at ${hit.where} — counted here.`, "warn");
+			} else {
+				flash(`${hit.imei} counted`, "ok");
+			}
+			if (!line.serials) line.serials = [];
+			if (!line.serials.includes(hit.serial_no)) line.serials.push(hit.serial_no);
+			line.picked.push(hit.serial_no);
+			line.qty = line.picked.length;
+		} else {
+			// An accessory has no number of its own, so each scan is one more.
+			line.qty = (Number(line.qty) || 0) + 1;
+			flash(`${hit.item_name} \u00d7 ${line.qty}`, "ok");
+		}
+
+		paintLines();
+		const tally = $("w-scan-tally");
+		if (tally) {
+			tally.textContent = workLines.reduce(
+				(total, l) => total + (Number(l.qty) || 0), 0);
+		}
+		const box = $("w-countscan");
+		if (box) box.focus();
 	}
 
 	async function loadSerials(index) {
@@ -1316,6 +1398,11 @@ window.STOCK = (function () {
 			"Correct the system against what is actually on the shelf. Creates a Stock "
 			+ "Reconciliation — the count you enter becomes the new quantity.",
 			`<div class="field-grid">
+				<label class="field"><span>Type</span>
+					<select id="w-kind">
+						<option value="count">Adjustment \u2014 type what you counted</option>
+						<option value="scan">Reconciliation \u2014 scan every piece</option>
+					</select></label>
 				<label class="field"><span>Warehouse</span>
 					<select id="w-warehouse">${options}</select></label>
 				<label class="field"><span>Counted on</span>
@@ -1323,6 +1410,14 @@ window.STOCK = (function () {
 				<label class="field"><span>Reason</span>
 					<input id="w-reason" placeholder="Stock take, breakage, miscount…"></label>
 			</div>
+			<p class="muted" id="w-kind-note"></p>
+			<div class="imei-scan-row w-count-scan" id="w-scan-row" hidden>
+				<span class="scan-glyph" aria-hidden="true"></span>
+				<input id="w-countscan" autocomplete="off"
+				       placeholder="Scan each piece \u2014 the IMEI on a handset, or the barcode on a box">
+				<span class="imei-tally" id="w-scan-tally">0</span>
+			</div>
+			<div class="imei-flash" id="w-scan-flash" hidden></div>
 			${linesMarkup("Counted", true)}`,
 			"Submit adjustment",
 			async () => {
@@ -1354,6 +1449,52 @@ window.STOCK = (function () {
 				loadKpis();
 				loadTab("adjustments");
 			});
+
+		setTimeout(() => {
+			const kind = $("w-kind");
+			const note = $("w-kind-note");
+			const row = $("w-scan-row");
+			const box = $("w-countscan");
+			if (!kind) return;
+
+			const applyKind = () => {
+				workSerialMode = kind.value;      // "count" or "scan"
+				const scanning = kind.value === "scan";
+				if (row) row.hidden = !scanning;
+				if (note) {
+					note.textContent = scanning
+						? "Nothing is counted until it is scanned. Anything you do not "
+						  + "scan is treated as not on the shelf."
+						: "Every IMEI the system believes is here starts ticked. Untick "
+						  + "what is missing, or type the counted quantity.";
+				}
+				// The two start from opposite ends, so switching has to clear
+				// what the other one filled in — a half-ticked list carried into
+				// a scan would count handsets nobody looked at.
+				workLines = [{ item_code: "", qty: scanning ? 0 : 1,
+				               serials: null, picked: [] }];
+				paintLines();
+				const tally = $("w-scan-tally");
+				if (tally) tally.textContent = "0";
+				const flash = $("w-scan-flash");
+				if (flash) flash.hidden = true;
+				if (scanning && box) box.focus();
+			};
+
+			kind.addEventListener("change", applyKind);
+			applyKind();
+
+			// The gun sends the digits then Enter, so this fires once a piece.
+			if (box) {
+				box.addEventListener("keydown", (event) => {
+					if (event.key !== "Enter") return;
+					event.preventDefault();
+					const code = box.value;
+					box.value = "";
+					scanIntoCount(code);
+				});
+			}
+		}, 0);
 
 		// The lines search the shelf being counted, so changing the warehouse
 		// has to re-point them: a reconciliation sets a figure, and an item the
