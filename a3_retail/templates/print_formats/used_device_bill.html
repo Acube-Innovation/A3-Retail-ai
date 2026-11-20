@@ -1,0 +1,116 @@
+{#- The customer's copy of a second-hand sale.
+
+    One line, one price, and no tax anywhere on it.
+
+    That is not a simplification: it is what this sale is. GST on a used device
+    is charged on the margin under Rule 32(5), and a bill that printed the
+    working — the handset at what the shop paid, the margin beside it, the tax
+    on the margin — would hand the customer the shop's buying price. Nobody
+    sells a phone that way.
+
+    So the two lines the bill carries inside are added back together here and
+    shown as the one thing the customer bought, at the one price they paid.
+    The tax is in the ledger and on the GST return, where it belongs. The shop's
+    own copy is the Sales Invoice itself.
+-#}
+{%- set profile = a3_branch_profile(doc.get("branch")) or {} -%}
+{%- set shop = profile.get("trade_name") or a3_company_name() or "" -%}
+{%- set addr = [profile.get("address_line1"), profile.get("address_line2"),
+                [profile.get("city"), profile.get("pincode")]|select|join(" "),
+                profile.get("state")]|select|list -%}
+{%- set lines = doc.items | rejectattr("item_code", "equalto", "USED-DEVICE-MARGIN") | list -%}
+
+<style>
+	@page { size: A5; margin: 8mm; }
+	.action-banner, .print-hide { display: none !important; }
+	html, body, .print-format, .print-format-gutter {
+		margin: 0 !important; padding: 0 !important; background: #fff !important; }
+
+	.ud { font-family: "DejaVu Sans", "Noto Sans", Arial, sans-serif;
+	      color: #1f2430; font-size: 10pt; line-height: 1.45; }
+	.ud-head { text-align: center; border-bottom: 1.5pt solid #1f2430;
+	           padding-bottom: 2.5mm; margin-bottom: 3mm; }
+	.ud-shop { font-size: 17pt; font-weight: 800; letter-spacing: -.3pt; }
+	.ud-addr { font-size: 8.5pt; color: #4b5563; }
+	.ud-kind { margin-top: 1.5mm; font-size: 9pt; font-weight: 700;
+	           letter-spacing: 1.6pt; text-transform: uppercase; }
+
+	.ud-meta { display: flex; justify-content: space-between; font-size: 9pt;
+	           margin-bottom: 3mm; }
+	.ud-meta b { font-weight: 700; }
+
+	table.ud-items { width: 100%; border-collapse: collapse; font-size: 9.5pt; }
+	table.ud-items th { text-align: left; border-bottom: 1pt solid #1f2430;
+	                    padding: 1.5mm 1mm; font-size: 8.5pt;
+	                    text-transform: uppercase; letter-spacing: .6pt; }
+	table.ud-items td { padding: 2mm 1mm; border-bottom: 1px solid #e5e7eb;
+	                    vertical-align: top; }
+	td.num, th.num { text-align: right; white-space: nowrap; }
+	.ud-imei { font-size: 8.5pt; color: #4b5563; }
+
+	.ud-total { margin-top: 3mm; display: flex; justify-content: flex-end; }
+	.ud-total table { border-collapse: collapse; font-size: 11pt; }
+	.ud-total td { padding: 1.5mm 2mm; }
+	.ud-total .grand td { border-top: 1.5pt solid #1f2430; font-weight: 800;
+	                      font-size: 13pt; }
+
+	.ud-words { margin-top: 2mm; font-size: 8.5pt; color: #4b5563; }
+	.ud-note { margin-top: 4mm; border-top: 1px dashed #9ca3af; padding-top: 2mm;
+	           font-size: 8pt; color: #4b5563; }
+	.ud-sign { margin-top: 7mm; display: flex; justify-content: space-between;
+	           font-size: 8.5pt; }
+	.ud-sign span { border-top: 1px solid #9ca3af; padding-top: 1mm; min-width: 42mm;
+	                text-align: center; }
+</style>
+
+<div class="ud">
+	<div class="ud-head">
+		<div class="ud-shop">{{ shop }}</div>
+		{% if addr %}<div class="ud-addr">{{ addr|join(", ") }}</div>{% endif %}
+		{% if profile.get("phone") %}<div class="ud-addr">{{ profile.phone }}</div>{% endif %}
+		<div class="ud-kind">Bill of Sale &middot; Pre-owned device</div>
+	</div>
+
+	<div class="ud-meta">
+		<div><b>Bill</b> {{ doc.name }}<br>
+			<b>Date</b> {{ frappe.utils.formatdate(doc.posting_date, "dd/MM/yyyy") }}</div>
+		<div style="text-align:right"><b>{{ doc.customer_name or doc.customer }}</b>
+			{% if doc.get("contact_mobile") %}<br>{{ doc.contact_mobile }}{% endif %}</div>
+	</div>
+
+	<table class="ud-items">
+		<thead><tr>
+			<th>Item</th><th class="num">Qty</th><th class="num">Amount</th>
+		</tr></thead>
+		<tbody>
+		{% for row in lines %}
+			{#- The price the customer agreed, not the split the ledger needs. -#}
+			{%- set paid = row.get("a3_gross_rate") or (row.rate * row.qty) -%}
+			<tr>
+				<td>{{ row.item_name or row.item_code }}
+					{% if row.get("serial_no") %}
+						<div class="ud-imei">IMEI {{ row.serial_no.replace("\n", ", ") }}</div>
+					{% endif %}</td>
+				<td class="num">{{ row.qty | int }}</td>
+				<td class="num">{{ a3_money(paid) }}</td>
+			</tr>
+		{% endfor %}
+		</tbody>
+	</table>
+
+	<div class="ud-total"><table>
+		<tr class="grand"><td>Total</td>
+			<td class="num">{{ a3_money(doc.rounded_total or doc.grand_total) }}</td></tr>
+	</table></div>
+	<div class="ud-words">{{ a3_words(doc.rounded_total or doc.grand_total) }}</div>
+
+	<div class="ud-note">
+		This is a pre-owned device sold under the margin scheme, Rule 32(5) of
+		the CGST Rules. GST has been accounted for on the margin and no input
+		tax credit is available on this bill.
+	</div>
+
+	<div class="ud-sign">
+		<span>Customer</span><span>for {{ shop }}</span>
+	</div>
+</div>

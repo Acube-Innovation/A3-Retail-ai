@@ -25,8 +25,8 @@ class TestRegister(FrappeTestCase):
 	def test_every_registered_format_exists(self):
 		# Twenty-four at scope 13.3, plus the settlement statement the financing
 		# desk prints, the courier manifest, the distributor's bill, the RCM
-		# self-invoice and the salary slip.
-		self.assertEqual(len(pf.FORMATS), 29)
+		# self-invoice, the salary slip and the used-device bill.
+		self.assertEqual(len(pf.FORMATS), 30)
 		for name, doctype, _template, _size in pf.FORMATS:
 			self.assertTrue(frappe.db.exists("Print Format", name), name)
 			self.assertEqual(frappe.db.get_value("Print Format", name, "doc_type"), doctype, name)

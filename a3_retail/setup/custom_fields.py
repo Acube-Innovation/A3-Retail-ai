@@ -248,6 +248,13 @@ MARGIN_SCHEME_FIELDS = {
 			insert_after="a3_purchase_cost", depends_on="eval:doc.a3_is_margin_scheme",
 			read_only=1, permlevel=1, print_hide=1,
 			description="Taxable value under Rule 32(5)"),
+		_field("a3_gross_rate", "Price to the Customer", "Currency", SALES_MODULE,
+			insert_after="a3_margin_value", read_only=1, print_hide=1,
+			description="What the customer pays for this line. The line's own "
+			            "rate carries the price less the GST on the margin, "
+			            "because ERPNext will not take an Actual tax as "
+			            "included in the rate — so this is the figure the "
+			            "customer's copy shows."),
 	],
 	"POS Invoice Item": [
 		_field("a3_is_margin_scheme", "Margin Scheme", "Check", SALES_MODULE,
@@ -257,6 +264,13 @@ MARGIN_SCHEME_FIELDS = {
 			insert_after="a3_is_margin_scheme", permlevel=1, print_hide=1),
 		_field("a3_margin_value", "Margin Value", "Currency", SALES_MODULE,
 			insert_after="a3_purchase_cost", read_only=1, permlevel=1, print_hide=1),
+		_field("a3_gross_rate", "Price to the Customer", "Currency", SALES_MODULE,
+			insert_after="a3_margin_value", read_only=1, print_hide=1,
+			description="What the customer pays for this line. The line's own "
+			            "rate carries the price less the GST on the margin, "
+			            "because ERPNext will not take an Actual tax as "
+			            "included in the rate — so this is the figure the "
+			            "customer's copy shows."),
 	],
 }
 
