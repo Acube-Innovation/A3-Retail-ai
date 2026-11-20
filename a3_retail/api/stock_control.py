@@ -13,6 +13,8 @@ The Stock Request doctype already owns the whole transfer lifecycle, so this
 module calls it rather than restating it.
 """
 
+import json
+
 import frappe
 from frappe import _
 from frappe.utils import cint, flt, formatdate, getdate, nowdate
@@ -687,7 +689,20 @@ def _adjustments(branch: str, limit: int) -> list[dict]:
 	if not warehouses:
 		return []
 
-	return [
+	# Counts put aside half-finished sit above the posted ones: they are the
+	# only rows on this list that somebody still has to do something about.
+	held = [
+		{"name": row.name, "date": str(row.counted_on), "warehouse": row.warehouse,
+		 "reason": row.reason or row.kind, "items": len(json.loads(row.lines or "[]")),
+		 "amount": 0, "user": row.owner, "status": _("Held"), "held": row.name}
+		for row in frappe.get_all(
+			"Stock Count Draft",
+			filters={"status": "Open", "warehouse": ["in", warehouses]},
+			fields=["name", "counted_on", "warehouse", "reason", "kind", "lines", "owner"],
+			order_by="modified desc", limit_page_length=limit)
+	]
+
+	return held + [
 		{"name": row.name, "date": str(row.posting_date), "warehouse": row.set_warehouse,
 		 "reason": row.purpose, "items": row.items, "amount": flt(row.difference_amount),
 		 "user": row.owner, "status": _("Submitted") if row.docstatus == 1 else _("Draft")}
@@ -1413,6 +1428,75 @@ def scan_for_count(code: str = "", warehouse: str | None = None) -> dict:
 	return {"found": None, "code": code}
 
 
+def _held_count(name: str, employee):
+	"""The held count this counter is allowed to carry on with."""
+	name = (name or "").strip()
+	if not frappe.db.exists("Stock Count Draft", name):
+		frappe.throw(_("That held count no longer exists."))
+
+	doc = frappe.get_doc("Stock Count Draft", name)
+	if doc.status == "Posted":
+		frappe.throw(_("{0} has already been posted.").format(name),
+		             title=_("Already posted"))
+	if doc.warehouse not in set(_warehouses(employee.branch)):
+		frappe.throw(_("That count belongs to another branch."))
+	return doc
+
+
+def _hold_count(data, items, warehouse, posting, employee, held):
+	"""Write the count so far away, without touching stock."""
+	import json
+
+	doc = held or frappe.new_doc("Stock Count Draft")
+	doc.branch = employee.branch
+	doc.warehouse = warehouse
+	doc.counted_on = posting
+	doc.kind = "Reconciliation" if data.get("kind") == "scan" else "Adjustment"
+	doc.reason = (data.get("reason") or "").strip()
+	doc.status = "Open"
+	doc.lines = json.dumps([
+		{"item_code": row["item_code"],
+		 "counted": flt(row.get("counted")),
+		 "rate": flt(row.get("rate")),
+		 "serials": [str(x).strip() for x in (row.get("serials") or []) if str(x).strip()]}
+		for row in items
+	], indent=1)
+	doc.flags.ignore_permissions = True
+	doc.save(ignore_permissions=True)
+	return {"adjustment": doc.name, "draft": True, "items": len(items),
+	        "difference": 0, "retired": []}
+
+
+@frappe.whitelist()
+def load_adjustment(name: str) -> dict:
+	"""A held count, in the shape the dialog fills itself from."""
+	employee = _me()
+	if not _can_adjust():
+		frappe.throw(_("Stock is adjusted by head office."), frappe.PermissionError,
+		             title=_("Head office only"))
+	require_permission("Stock Reconciliation", "read")
+
+	doc = _held_count(name, employee)
+	items = []
+	for row in doc.rows():
+		items.append({
+			"item_code": row.get("item_code"),
+			"item_name": frappe.db.get_value("Item", row.get("item_code"), "item_name"),
+			"counted": flt(row.get("counted")),
+			"rate": flt(row.get("rate")),
+			"serials": row.get("serials") or [],
+		})
+
+	return {
+		"name": doc.name,
+		"warehouse": doc.warehouse,
+		"date": str(doc.counted_on),
+		"reason": doc.reason or "",
+		"kind": "scan" if doc.kind == "Reconciliation" else "count",
+		"items": items,
+	}
+
+
 @frappe.whitelist()
 def adjust_stock(payload) -> dict:
 	"""Correct the shelf against what is actually on it — a Stock Reconciliation."""
@@ -1444,6 +1528,15 @@ def adjust_stock(payload) -> dict:
 	if posting > getdate(nowdate()):
 		frappe.throw(_("A shelf cannot be counted on a day that has not happened."),
 		             title=_("Date"))
+
+	held = _held_count(data.get("name"), employee) if data.get("name") else None
+
+	# Put aside rather than posted. Held in its own holder because ERPNext
+	# drops a reconciliation row whose count already matches the system, and
+	# refuses to save at all when every row does — which would quietly lose
+	# part of a half-finished count. See `Stock Count Draft`.
+	if cint(data.get("draft")):
+		return _hold_count(data, items, warehouse, posting, employee, held)
 
 	doc = frappe.new_doc("Stock Reconciliation")
 	doc.company = frappe.db.get_single_value("Global Defaults", "default_company")
@@ -1489,6 +1582,12 @@ def adjust_stock(payload) -> dict:
 			)
 		raise
 	doc.submit()
+
+	if held:
+		held.status = "Posted"
+		held.posted_as = doc.name
+		held.flags.ignore_permissions = True
+		held.save(ignore_permissions=True)
 
 	retired = _retire_serials(retiring, doc.name)
 

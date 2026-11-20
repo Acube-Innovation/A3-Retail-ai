@@ -185,6 +185,8 @@
 		<div class="msg" id="work-msg"></div>
 		<div class="modal-actions">
 			<button class="btn btn-quiet" data-close>{{ _("Cancel") }}</button>
+			{#- Only the stock count offers this; everything else hides it. -#}
+			<button class="btn btn-outline" id="work-hold" hidden>{{ _("Save as draft") }}</button>
 			<button class="btn btn-primary" id="work-go"></button>
 		</div>
 	</div>
