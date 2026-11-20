@@ -225,10 +225,44 @@ class TestProviders(FrappeTestCase):
 		self.assertEqual(result["error_code"], "no_provider")
 
 	def test_registry_returns_meta_by_default(self):
+		"""The fallback when nothing is chosen — asked by setting it, not by
+		reading whatever this site happens to be configured with. It used to
+		read the live setting, so configuring a real provider broke it."""
 		from a3_retail.communication.providers import get_provider
 		from a3_retail.communication.providers.meta_cloud import MetaCloudProvider
 
-		self.assertIsInstance(get_provider(), MetaCloudProvider)
+		was = frappe.db.get_single_value("WhatsApp Settings", "provider")
+		self.addCleanup(self._set_provider, was)
+
+		for nothing_chosen in ("", None):
+			self._set_provider(nothing_chosen)
+			self.assertIsInstance(get_provider(), MetaCloudProvider,
+			                      f"provider={nothing_chosen!r} did not fall back")
+
+	def test_registry_returns_what_is_chosen(self):
+		from a3_retail.communication.providers import get_provider
+		from a3_retail.communication.providers.libromi import LibromiProvider
+
+		was = frappe.db.get_single_value("WhatsApp Settings", "provider")
+		self.addCleanup(self._set_provider, was)
+
+		self._set_provider("Libromi")
+		self.assertIsInstance(get_provider(), LibromiProvider)
+
+	def test_an_unknown_provider_sends_nothing_rather_than_guessing(self):
+		from a3_retail.communication.providers import get_provider
+		from a3_retail.communication.providers.base import NullProvider
+
+		was = frappe.db.get_single_value("WhatsApp Settings", "provider")
+		self.addCleanup(self._set_provider, was)
+
+		self._set_provider("Gupshup")   # listed, never implemented
+		self.assertIsInstance(get_provider(), NullProvider)
+
+	@staticmethod
+	def _set_provider(value):
+		frappe.db.set_single_value("WhatsApp Settings", "provider", value)
+		frappe.clear_cache(doctype="WhatsApp Settings")
 
 	def test_template_payload_shape(self):
 		from a3_retail.communication.providers.base import BaseProvider
@@ -242,7 +276,14 @@ class TestProviders(FrappeTestCase):
 
 		self.assertEqual(payload["messaging_product"], "whatsapp")
 		self.assertEqual(payload["to"], "919847012345")
-		self.assertEqual(payload["template"]["name"], "job_card_created")
+		# The name WhatsApp knows it by, which is not the key we file it under:
+		# `job_card_created` is sent as `service_booked_in`. This used to assert
+		# the two were equal, which held only while the templates were demo
+		# seed data named after their own keys.
+		self.assertEqual(
+			payload["template"]["name"],
+			frappe.db.get_value("WhatsApp Template", "job_card_created",
+			                    "meta_template_name"))
 		self.assertEqual(len(payload["template"]["components"][0]["parameters"]), 2)
 
 

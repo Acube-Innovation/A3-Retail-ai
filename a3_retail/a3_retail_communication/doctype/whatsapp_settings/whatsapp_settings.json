@@ -37,7 +37,7 @@
    "fieldname": "provider",
    "fieldtype": "Select",
    "label": "Provider",
-   "options": "Meta Cloud API\nGupshup\nTwilio\nInterakt\nAiSensy\nWati",
+   "options": "Meta Cloud API\nLibromi\nGupshup\nTwilio\nInterakt\nAiSensy\nWati",
    "default": "Meta Cloud API"
   },
   {

@@ -150,6 +150,12 @@
    "description": "The line under the shop's name on a service bill \u2014 e.g. The Professional Grade Phone Service Centre."
   },
   {
+   "fieldname": "google_review_code",
+   "fieldtype": "Data",
+   "label": "Google Review Code",
+   "description": "The part after share.google/ in this shop's own Google review link. One WhatsApp template serves every branch; this is what makes the button point here."
+  },
+  {
    "fieldname": "signature",
    "fieldtype": "Attach Image",
    "label": "Authorised Signature",

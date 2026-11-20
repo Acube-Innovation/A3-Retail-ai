@@ -49,6 +49,7 @@ CATEGORIES = [
 
 # One line per report, in the counter's language rather than the scope's.
 DESCRIPTIONS = {
+	"Stock Adjustment Register": "What each count changed \u2014 pieces over or short, and what it was worth.",
 	"Branch Sales Register": "Every submitted sale in the period, with tax and what is still owed.",
 	"Brand Wise Sales": "Every line sold with its brand — and, grouped, what each brand took.",
 	"Sales Person Performance": "What each sales person billed, and what it was worth.",
@@ -272,11 +273,25 @@ def _filters_of(doc) -> list[dict]:
 			"fieldname": fields["fieldname"],
 			"label": fields.get("label") or fields["fieldname"].replace("_", " ").title(),
 			"fieldtype": fields.get("fieldtype") or "Data",
-			"options": fields.get("options"),
+			"options": _unescape(fields.get("options")),
 			"reqd": bool(flags.get("reqd")),
-			"default": _default_for(fields["fieldname"], block),
+			"default": _default_for(fields["fieldname"], block, fields, flags),
 		})
 	return filters
+
+
+def _unescape(value: str | None) -> str | None:
+	"""Turn the JS source's `\\n` back into a real newline.
+
+	A Select filter writes its choices as `options: "A\\nB"`, and the source is
+	read as text, so what arrives here is a backslash and an `n` rather than a
+	line break. The page splits on newlines, so it saw one choice called
+	"A\\nB", matched nothing, and fell back to showing "All" while the report
+	quietly filtered on something else.
+	"""
+	if not value:
+		return value
+	return value.replace("\\n", "\n").replace("\\t", "\t")
 
 
 def _report_js(doc) -> str | None:
@@ -308,12 +323,28 @@ def _choices(doc, row: dict) -> list[str]:
 	return names + [value for value in extra if value not in names]
 
 
-def _default_for(fieldname: str, block: str) -> str | None:
-	"""Only the two defaults these reports actually use: today, and a month back."""
+def _default_for(fieldname: str, block: str, fields: dict | None = None,
+                 flags: dict | None = None):
+	"""The default this filter should open with.
+
+	The two date defaults are written as JavaScript calls, so they are
+	recognised by name. A Select or a Check writes a literal instead —
+	`default: "Stock Reconciliation"`, `default: 1` — and those were being
+	dropped, so a report that opens on a chosen purpose or a ticked box came up
+	blank and the page disagreed with what the report actually did.
+	"""
 	if "add_months" in block:
 		return add_months(nowdate(), -1)
 	if "get_today" in block:
 		return nowdate()
+
+	literal = (fields or {}).get("default")
+	if literal is not None:
+		return literal
+	numeric = (flags or {}).get("default")
+	if numeric is not None:
+		return numeric
+
 	if fieldname == "from_date":
 		return add_months(nowdate(), -1)
 	if fieldname == "to_date":

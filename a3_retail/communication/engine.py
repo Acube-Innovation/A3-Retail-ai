@@ -285,6 +285,14 @@ def send_template(template_key: str | None, to_number: str | None, params: dict,
 	if template_key and frappe.db.exists("WhatsApp Template", template_key):
 		template = frappe.get_cached_doc("WhatsApp Template", template_key)
 
+	# A template says where its own `{{1}}`, `{{2}}`… come from, in its
+	# `parameters` table. The rules path has always read it; the direct path —
+	# `notify()`, which is what the Bills screen and the service desk use —
+	# did not, so a bill sent from the counter arrived with every variable
+	# blank. A caller that passes its own params still wins.
+	if template and not params and reference_doc is not None:
+		params = resolve_parameters(template, reference_doc)
+
 	customer = _customer_for(reference_doc, to_number)
 	blocked = compliance_block(template, customer)
 
@@ -314,6 +322,22 @@ def compliance_block(template, customer: str | None) -> str | None:
 	"""
 	if not template or template.category != MARKETING:
 		return None
+
+	# A template that carries a printed document is a transactional one: an
+	# invoice, a job card. If Meta has categorised it Marketing, that is a
+	# wording problem to fix in the template, not something to wave through
+	# here — sending Marketing without opt-in is what gets a number banned.
+	# But a customer who opted out of offers is still owed their invoice, and
+	# the failure mode is a bill that silently never arrives. So it is said
+	# out loud rather than left to be discovered.
+	if template.get("attach_print_format"):
+		frappe.log_error(
+			f"{template.name} carries {template.attach_print_format} but is "
+			"categorised Marketing, so it is gated by marketing opt-in, quiet "
+			"hours and the daily cap. A customer who opted out of offers will "
+			"not receive their document. Reword the template so Meta "
+			"categorises it Utility.",
+			"A3 Retail: transactional template categorised Marketing")
 
 	settings = frappe.get_cached_doc("WhatsApp Settings")
 

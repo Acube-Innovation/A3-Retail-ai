@@ -3066,3 +3066,9 @@ kbd { display: inline-block; min-width: 17px; padding: 1px 5px; margin: 0 1px;
 /* The amount cell only. Without the child combinator this also matched the
    rate span nested inside the label, and the row read "GST we owe (↺ 18%)". */
 .bill-totals .tr.is-rcm > span:last-child::before { content: "↺ "; }
+
+/* The reconciliation scan box sits above the lines rather than inside one,
+   because the person holding the gun does not yet know which line the next
+   piece belongs to. */
+.w-count-scan { margin: 2px 0 10px; }
+.w-count-scan input { flex: 1 1 auto; }

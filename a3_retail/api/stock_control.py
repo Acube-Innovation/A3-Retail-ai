@@ -1309,6 +1309,12 @@ def search_countable(query: str = "", warehouse: str | None = None,
 
 	So this is the catalogue, matched the same way — name, code, barcode or
 	IMEI — carrying what the shelf is currently believed to hold.
+
+	The IMEI half of that sentence was a promise the query did not keep: it
+	matched name, code and barcode only, so scanning the number off a handset
+	found nothing. A serial is matched against its own name and its `a3_imei_1`,
+	and only for serials that exist, so the join stays off the hot path for the
+	ordinary case of someone typing a name.
 	"""
 	_me()
 	require_permission("Item", "read")
@@ -1330,14 +1336,81 @@ def search_countable(query: str = "", warehouse: str | None = None,
 		left join `tabBin` b on b.item_code = i.name and b.warehouse = %(warehouse)s
 		where ifnull(i.disabled, 0) = 0 and ifnull(i.is_stock_item, 0) = 1
 		  and (i.name like %(like)s or i.item_name like %(like)s
-		       or {barcode_clause("i", "like")})
+		       or {barcode_clause("i", "like")}
+		       or exists (select 1 from `tabSerial No` sn
+		                  where sn.item_code = i.name
+		                    and (sn.name = %(exact)s or sn.a3_imei_1 = %(exact)s)))
 		order by ifnull(b.actual_qty, 0) desc, i.item_name
 		limit %(limit)s
 		""",
-		{"warehouse": warehouse, "like": f"%{query}%", "limit": cint(limit) or 10},
+		{"warehouse": warehouse, "like": f"%{query}%", "exact": query,
+		 "limit": cint(limit) or 10},
 		as_dict=True,
 	)
 	return rows
+
+
+@frappe.whitelist()
+def scan_for_count(code: str = "", warehouse: str | None = None) -> dict:
+	"""Resolve one scan during a stock count.
+
+	A count is taken by reading what is physically on the shelf, one piece at a
+	time, so this has to answer for whatever comes off the gun: the IMEI on a
+	handset box, the barcode on an accessory, or an item code typed by hand.
+
+	Where it differs from the till's scanner is what it does with a surprise.
+	The till refuses a handset that belongs to another branch, because selling
+	it would be wrong. A count must not refuse it — a handset found on this
+	shelf that the system has filed elsewhere is exactly the kind of thing a
+	count exists to discover. So it is reported, with `here` false and the
+	shelf it is filed on, and the person counting decides.
+	"""
+	_me()
+	require_permission("Item", "read")
+
+	code = (code or "").strip()
+	if not code:
+		return {"found": None}
+	if not warehouse or warehouse not in {row["warehouse"] for row in _network_warehouses()}:
+		frappe.throw(_("That warehouse is not one of ours."))
+
+	serial = frappe.db.get_value(
+		"Serial No", {"name": code},
+		["name", "item_code", "warehouse", "status", "a3_imei_1"], as_dict=True
+	) or frappe.db.get_value(
+		"Serial No", {"a3_imei_1": code},
+		["name", "item_code", "warehouse", "status", "a3_imei_1"], as_dict=True)
+
+	if serial:
+		item = frappe.db.get_value("Item", serial.item_code,
+		                           ["item_name", "stock_uom"], as_dict=True) or {}
+		return {
+			"found": "serial",
+			"item_code": serial.item_code,
+			"item_name": item.get("item_name") or serial.item_code,
+			"stock_uom": item.get("stock_uom"),
+			"serial_no": serial.name,
+			"imei": serial.a3_imei_1 or serial.name,
+			"status": serial.status,
+			"where": serial.warehouse,
+			"here": serial.warehouse == warehouse,
+		}
+
+	item_code = code if frappe.db.exists("Item", code) else frappe.db.get_value(
+		"Item Barcode", {"barcode": code}, "parent")
+	if item_code:
+		item = frappe.db.get_value("Item", item_code,
+		                           ["item_name", "stock_uom", "has_serial_no"],
+		                           as_dict=True) or {}
+		return {
+			"found": "item",
+			"item_code": item_code,
+			"item_name": item.get("item_name") or item_code,
+			"stock_uom": item.get("stock_uom"),
+			"has_serial": bool(item.get("has_serial_no")),
+		}
+
+	return {"found": None, "code": code}
 
 
 @frappe.whitelist()
