@@ -27,3 +27,5 @@ a3_retail.patches.apple_accessories_serialised
 a3_retail.patches.rcm_templates_the_shape_india_compliance_reads
 a3_retail.patches.google_review_links_per_shop
 a3_retail.patches.second_hand_branches
+a3_retail.patches.late_bills_the_count_locked_out
+a3_retail.patches.sales_counter_clear_of_mybillbook
