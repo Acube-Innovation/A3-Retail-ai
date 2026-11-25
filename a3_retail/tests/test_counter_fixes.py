@@ -188,6 +188,30 @@ class TestPuttingAPurchaseAside(FrappeTestCase):
 		self.assertIn("purchases.load_draft", body)
 		self.assertIn("purchases.discard_draft", body)
 
+	def test_a_held_bill_on_the_list_can_be_opened_to_finish(self):
+		"""A draft row on the purchases list used to carry no button at all, so
+		the only way back to it was a dialog on another screen."""
+		listing = _js("a3_purchases.js")
+		self.assertIn("r.docstatus === 0", listing)
+		self.assertIn("/retail/purchase_entry?draft=", listing)
+
+		entry = _js("a3_purchase_entry.js")
+		self.assertIn('.get("draft")', entry)
+		self.assertIn("await openDraft(wanted)", entry)
+
+	def test_a_reopened_line_keeps_its_gst(self):
+		"""Rebuilt without the rate, the footer showed the bill before tax."""
+		import inspect
+
+		self.assertIn('"gst_rate"', inspect.getsource(purchases.load_draft))
+		self.assertIn('"registered"', inspect.getsource(purchases.load_draft))
+		self.assertIn("gst_rate: i.gst_rate", _js("a3_purchase_entry.js"))
+
+	def test_the_list_never_shows_the_marker(self):
+		import inspect
+
+		self.assertIn("HELD_MARKER", inspect.getsource(purchases.recent))
+
 
 class TestPressingPrint(FrappeTestCase):
 	"""3 · 4 · 8 — Print means the printer dialog, not a tab."""

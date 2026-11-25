@@ -780,7 +780,7 @@
 		try {
 			const held = await A3.call("a3_retail.api.purchases.save_draft",
 				{ payload: entryPayload(), draft: state.draft });
-			state.draft = held.draft;
+			rememberDraft(held.draft);
 			note(`Held as ${held.draft} \u2014 ${held.lines} line`
 				+ `${held.lines === 1 ? "" : "s"}, ${money(held.grand_total)}.`
 				+ " Nothing has posted.", "ok");
@@ -822,16 +822,33 @@
 		}
 	}
 
+	/**
+	 * Which held bill this screen is finishing, kept in the address as well, so
+	 * a reload, or the Edit button on the purchases list, lands back on it.
+	 */
+	function rememberDraft(name) {
+		state.draft = name || null;
+		const url = new URL(window.location.href);
+		if (name) url.searchParams.set("draft", name);
+		else url.searchParams.delete("draft");
+		history.replaceState(null, "", url.pathname + url.search);
+	}
+
 	async function openDraft(name) {
 		try {
 			const held = await A3.call("a3_retail.api.purchases.load_draft", { name });
-			state.draft = held.draft;
+			rememberDraft(held.draft);
+			// The same shape addLine() gives a line picked from the catalogue —
+			// without the GST rate the footer showed the bill before tax.
 			state.lines = held.items.map((i) => ({
 				item_code: i.item_code, item_name: i.item_name, qty: i.qty,
-				rate: i.rate, sell: i.sell || 0, uom: i.uom,
+				barcode: i.barcode || "",
+				rate: i.rate, sell: i.sell || 0, sell_hint: i.sell || 0, uom: i.uom,
+				gst_rate: i.gst_rate == null ? 18 : Number(i.gst_rate),
 				has_serial: !!i.has_serial, serials: i.serials || [],
 			}));
-			pickSupplier(held.supplier, held.supplier_name || held.supplier, null);
+			pickSupplier(held.supplier, held.supplier_name || held.supplier,
+			             held.registered === false ? false : null);
 			$("bill-no").value = held.bill_no || "";
 			if ($("p-rcm")) $("p-rcm").checked = !!held.reverse_charge;
 			if (held.date) $("p-date").value = held.date;
@@ -841,6 +858,9 @@
 			$("drafts-modal").hidden = true;
 			note(`${held.draft} opened. Finish it and press Save Purchase.`, "ok");
 		} catch (error) {
+			// Posted or thrown away since the link was made: a reload should not
+			// keep trying it.
+			if (!state.draft) rememberDraft(null);
 			note(error.message || "Could not open that held purchase.", "error");
 		}
 	}
@@ -848,7 +868,7 @@
 	async function dropDraft(name) {
 		try {
 			await A3.call("a3_retail.api.purchases.discard_draft", { name });
-			if (state.draft === name) state.draft = null;
+			if (state.draft === name) rememberDraft(null);
 			openDrafts();
 			say(name + " thrown away.", "ok");
 		} catch (error) {
@@ -1072,6 +1092,10 @@
 		$("drafts-modal").querySelectorAll("[data-close]").forEach((b) =>
 			b.addEventListener("click", () => { $("drafts-modal").hidden = true; }));
 		paintLines();
+
+		// Opened from the Edit button on a held bill in the purchases list.
+		const wanted = new URLSearchParams(window.location.search).get("draft");
+		if (wanted) await openDraft(wanted);
 	}
 
 	window.PURCHASE_ENTRY = { start };

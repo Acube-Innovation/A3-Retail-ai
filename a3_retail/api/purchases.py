@@ -282,6 +282,9 @@ def recent(limit: int = 30, filters=None) -> dict:
 		r["supplier_name"] = frappe.db.get_value("Supplier", r["supplier"], "supplier_name")
 		r["grand_total"] = flt(r["grand_total"])
 		r["outstanding_amount"] = flt(r["outstanding_amount"])
+		# A held bill's marker is ours, not the distributor's number.
+		if (r.get("bill_no") or "").startswith(HELD_MARKER):
+			r["bill_no"] = None
 	return {"branch": employee.branch, "rows": rows}
 
 
@@ -545,6 +548,8 @@ def load_draft(name: str) -> dict:
 	employee = _me()
 	require_permission("Purchase Invoice", "read")
 
+	from a3_retail.utils import tax
+
 	doc = _draft_doc(name, employee)
 	items = []
 	for line in doc.items:
@@ -558,12 +563,24 @@ def load_draft(name: str) -> dict:
 			"has_serial": bool(frappe.db.get_value("Item", line.item_code, "has_serial_no")),
 			"serials": serials,
 			"sell": _current_selling(line.item_code),
+			# What a line picked fresh from the catalogue carries, so a bill
+			# taken up again shows the same GST and total it showed when it was
+			# put aside — not the figure before tax.
+			"gst_rate": flt(tax.item_rate(line.item_code)),
+			"barcode": frappe.db.get_value("Item Barcode", {"parent": line.item_code},
+			                               "barcode", order_by="idx asc") or "",
 		})
 
+	supplier = frappe.db.get_value("Supplier", doc.supplier,
+	                               ["supplier_name", "gstin"], as_dict=True) or {}
 	return {
 		"draft": doc.name,
 		"supplier": doc.supplier,
-		"supplier_name": frappe.db.get_value("Supplier", doc.supplier, "supplier_name"),
+		"supplier_name": supplier.get("supplier_name"),
+		# The same answer the supplier search gives. Without it the screen takes
+		# every held bill to be from a registered dealer, and asks an
+		# unregistered one's bill for a number it does not have.
+		"registered": bool(supplier.get("gstin")),
 		# A held bill's marker is ours, not the distributor's — the box opens
 		# empty so nobody submits with it still in.
 		"bill_no": "" if (doc.bill_no or "").startswith(HELD_MARKER) else (doc.bill_no or ""),

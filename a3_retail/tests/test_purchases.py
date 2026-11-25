@@ -398,3 +398,39 @@ class TestBranchPurchases(FrappeTestCase):
 		data = purchases.recent()
 		self.assertEqual(data["branch"], self.branch)
 		self.assertTrue(data["rows"])
+
+	def test_a_held_bill_can_be_corrected_and_posted(self):
+		"""Put aside short of a bill number, taken up again, the quantity and
+		rate corrected, and posted — as the same document, not a second one."""
+		supplier = self._supplier()
+		before = self._qty()
+		held = purchases.save_draft({
+			"supplier": supplier,
+			"items": [{"item_code": "ACC-TGL-A55", "qty": 2, "rate": 150}],
+		})
+
+		listed = {r["name"]: r for r in purchases.recent()["rows"]}
+		self.assertEqual(listed[held["draft"]]["docstatus"], 0)
+		self.assertFalse((listed[held["draft"]]["bill_no"] or "").startswith(
+			purchases.HELD_MARKER))
+
+		loaded = purchases.load_draft(held["draft"])
+		self.assertEqual(loaded["bill_no"], "")
+		self.assertIn("registered", loaded)
+		line = loaded["items"][0]
+		self.assertIn("gst_rate", line)
+		line["qty"], line["rate"] = 3, 160
+
+		done = purchases.create({"supplier": loaded["supplier"], "bill_no": "KD/2026/77",
+		                         "items": loaded["items"]}, draft=held["draft"])
+		self.assertEqual(done["purchase"], held["draft"])
+		invoice = frappe.get_doc("Purchase Invoice", held["draft"])
+		self.assertEqual(invoice.docstatus, 1)
+		self.assertEqual(invoice.bill_no, "KD/2026/77")
+		self.assertEqual(flt(invoice.items[0].qty), 3)
+		self.assertEqual(flt(invoice.items[0].rate), 160)
+		self.assertEqual(self._qty(), before + 3)
+
+		# Posted, it is no longer something to open and edit.
+		with self.assertRaises(frappe.ValidationError):
+			purchases.load_draft(held["draft"])

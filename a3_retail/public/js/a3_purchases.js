@@ -78,7 +78,13 @@
 						<td>${money(r.grand_total)}</td>
 						<td>${r.outstanding_amount > 0 ? money(r.outstanding_amount) : "—"}</td>
 						<td><span class="pill">${esc(r.docstatus === 0 ? "Draft" : r.status)}</span></td>
-						<td class="row-actions">${r.docstatus === 1
+						<td class="row-actions">${r.docstatus === 0
+							// Held, not posted: open it on the entry screen to
+							// correct it and save it for real.
+							? `<a class="btn btn-outline btn-sm"
+							      href="/retail/purchase_entry?draft=${
+							      encodeURIComponent(r.name)}">Edit</a>` : ""}${
+							r.docstatus === 1
 							? `<button class="btn btn-quiet btn-sm print-bill"
 							           data-name="${esc(r.name)}">Bill</button>` : ""}${
 							r.outstanding_amount > 0 && r.docstatus === 1
