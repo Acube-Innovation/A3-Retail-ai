@@ -822,6 +822,14 @@
 		}
 	}
 
+	/** The bill's date, with the calendar box showing it. The box only redraws
+	 *  on a change event, so a value written straight in left it reading
+	 *  "Choose a date" over a bill that had one. */
+	function setDate(value) {
+		$("p-date").value = value;
+		$("p-date").dispatchEvent(new Event("change"));
+	}
+
 	/**
 	 * Which held bill this screen is finishing, kept in the address as well, so
 	 * a reload, or the Edit button on the purchases list, lands back on it.
@@ -851,7 +859,7 @@
 			             held.registered === false ? false : null);
 			$("bill-no").value = held.bill_no || "";
 			if ($("p-rcm")) $("p-rcm").checked = !!held.reverse_charge;
-			if (held.date) $("p-date").value = held.date;
+			if (held.date) setDate(held.date);
 			$("p-notes").value = held.notes || "";
 			paintLines();
 			refreshTotals();
@@ -916,7 +924,7 @@
 	// ----------------------------------------------------------------- start
 	async function start(options) {
 		state.branch = options.branch;
-		$("p-date").value = new Date().toISOString().slice(0, 10);
+		setDate(new Date().toLocaleDateString("en-CA"));
 
 		try {
 			const [boot, stock] = await Promise.all([

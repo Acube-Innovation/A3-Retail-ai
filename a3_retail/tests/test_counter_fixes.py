@@ -207,6 +207,14 @@ class TestPuttingAPurchaseAside(FrappeTestCase):
 		self.assertIn('"registered"', inspect.getsource(purchases.load_draft))
 		self.assertIn("gst_rate: i.gst_rate", _js("a3_purchase_entry.js"))
 
+	def test_the_date_box_shows_the_bills_date(self):
+		"""The calendar box redraws only on a change event; written straight
+		into, it read "Choose a date" over a held bill that had one."""
+		entry = _js("a3_purchase_entry.js")
+		self.assertIn('$("p-date").dispatchEvent(new Event("change"))', entry)
+		self.assertIn("setDate(held.date)", entry)
+		self.assertNotIn('$("p-date").value = held.date', entry)
+
 	def test_the_list_never_shows_the_marker(self):
 		import inspect
 
